@@ -1,0 +1,103 @@
+server:
+  port: 6543
+
+spring:
+  application:
+    name: auth-server
+  jackson:
+    default-property-inclusion: non_null
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+  controller:
+    path-prefix: /api/v1
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/flyway-test
+    username: postgres
+    password: "!QAZ2wsx"
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: "!QAZ2wsx"
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 100
+  mail:
+    host: smtp.qq.com
+    username: 2675808229@qq.com
+    password: cvbwuzkhouhbdhjd
+    port: 587
+    default-encoding: UTF-8
+    test-connection: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://auth.local.opensrcdevelop.cn:6543
+        opaquetoken:
+          client-id: 52cb8d26-a352-4e5c-99a7-d52b8afff3b1
+          client-secret: E26DBW3LH7C5O4OHNEUDOQU722LVQ2K5EHUQ7LFMCEYDZWHTJUB2ST4N6U2PNPVH
+          introspection-uri: http://auth.local.opensrcdevelop.cn:6543/oauth2/introspect
+  flyway:
+    enabled: true
+    clean-disabled: true
+    locations: classpath:flyway/postgre
+    baseline-on-migrate: true
+
+mybatis-plus:
+  mapper-locations: classpath:cn/opensrcdevelop/gateway/auth/lib/mapper/*.xml
+
+logging:
+  level:
+    root: info
+    cn.opensrcdevelop: debug
+    org.springframework: debug
+    org.apache.hc.client5: info
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    oauth:
+      oidc-url: http://auth.local.opensrcdevelop.cn:6543/.well-known/openid-configuration
+      client-id: 952f0927-5057-4b55-a2d5-fed543d75b12
+      client-secret: ATMX3I4D7IKMGXGBUS6XDFBO33FVTIXHA67CBGDAVKAZJXA6RO6NSVMKOWS5WROH
+      scopes:
+        - openid
+  group-configs:
+    - group: 'all'
+      paths-to-match: '/**'
+      paths-to-exclude: '/error'
+
+auth:
+  server:
+    email-code-live: 5
+    jws256: dcIgW<0eOsKs]<;5LK]J 1l!px|!R2%(?;}G*m#s~m0Lh|rIFCX,dh0TgP@t|C%jt4nzbW?QlVTb#8cxloVDJ/h #Pta>_ed=C@L
+    login-page-url: http://console.auth.local.opensrcdevelop.cn:4321/login
+    ignore-authentication-uri-list:
+      - /error
+      - /login
+      - /logout
+      - /login/email
+      - /swagger-ui/**
+      - /api/v1/docs/**
+      - /api/v1/code/email/*
+      - /api/v1/code/check
+      - /api/v1/user/resetPwd
+    enable-lock-account: false
+    max-login-failed-cnt: 5
+    introspect-token: true
+    check-code-result-live: 1

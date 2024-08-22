@@ -1,0 +1,29 @@
+server:
+  port: 8888
+
+spring:
+  profiles:
+    include: authorize
+  security:
+    oauth2:
+      client:
+        provider:
+          auth-server:
+            authorization-uri: http://localhost:6543/oauth2/authorize
+            token-uri: http://localhost:6543/oauth2/token
+            jwk-set-uri: http://localhost:6543/oauth2/jwks
+            user-name-attribute: sub
+        registration:
+          auth-server:
+            provider: auth-server
+            client-name: auth-server-client
+            client-id: 2985a4cb-9cf8-4f31-b100-717faeb0d9d2
+            client-secret: W37CFMUHESP3IOPC7KIMACI4JPAI75SGY3PJBAJK3KFWINTJOOSCPMSGGTYPWGBC
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8888/login/oauth2/code/auth-server
+            scope:
+              - openid
+              - roles
+logging:
+  level:
+    root: debug

@@ -1,0 +1,75 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.2'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+jar.enabled = false
+bootJar.enabled = false
+
+ext {
+    // dependencies version
+    commonsLang3Ver = '3.14.0'
+    springCloudVer = '2023.0.3'
+    mybatisVer = '3.0.3'
+    zxingVer = '3.5.3'
+    commonsCodecVer = '1.17.0'
+    vavrVer = '0.10.4'
+    mybatisPlusVer = '3.5.7'
+    commonsPool2Ver = '2.12.0'
+    springDocVer = '2.5.0'
+    commonsCollections4Ver = '4.5.0-M1'
+    userAgentUtilVer = '1.21'
+    commonsIoVer = '2.16.1'
+    joseJwtVer = '9.40'
+    ttlVer = '2.14.5'
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'cn.opensrcdevelop'
+
+    java {
+        sourceCompatibility = '17'
+
+    }
+
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/central/' }
+        maven { url 'https://maven.aliyun.com/repository/public/'}
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation "org.apache.commons:commons-lang3:$rootProject.commonsLang3Ver"
+        implementation "commons-codec:commons-codec:$rootProject.commonsCodecVer"
+        implementation "org.apache.commons:commons-collections4:$rootProject.commonsCollections4Ver"
+        implementation "commons-io:commons-io:$rootProject.commonsIoVer"
+        implementation "io.vavr:vavr:$rootProject.vavrVer"
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+        annotationProcessor 'org.projectlombok:lombok'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:$rootProject.springCloudVer"
+        }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}

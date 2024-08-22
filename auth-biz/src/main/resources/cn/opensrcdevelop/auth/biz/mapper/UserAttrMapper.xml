@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.UserAttrMapper">
+
+    <select id="searchUserAttrs" resultType="cn.opensrcdevelop.auth.biz.entity.UserAttr">
+        SELECT
+            t1.attr_id,
+            t2.attr_key,
+            t2.attr_name,
+            t2.attr_data_type,
+            t1.attr_value
+        FROM
+            t_user_attr_mapping t1
+                LEFT JOIN t_user_attr t2 ON t1.attr_id = t2.attr_id
+        WHERE
+            t1.user_id = #{userId}
+    </select>
+
+    <select id="getMaxDisplaySeq" resultType="Integer">
+        SELECT MAX
+               ( t1.display_seq ) + 1 max_seq
+        FROM
+            t_user_attr t1
+    </select>
+</mapper>

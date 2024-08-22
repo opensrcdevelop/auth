@@ -1,0 +1,26 @@
+jar {
+    enabled = true
+    archiveClassifier = ''
+    version = project.version
+}
+
+bootJar {
+    enabled = false
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
+    implementation "eu.bitwalker:UserAgentUtils:${rootProject.userAgentUtilVer}"
+    implementation "com.google.zxing:core:${rootProject.zxingVer}"
+    implementation "com.google.zxing:javase:${rootProject.zxingVer}"
+    implementation 'org.springframework.boot:spring-boot-starter-freemarker'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.security:spring-security-core'
+    implementation 'org.springframework.security:spring-security-oauth2-core'
+    // https://nimbusds.com/products/nimbus-jose-jwt/examples/jwt-with-hmac
+    implementation "com.nimbusds:nimbus-jose-jwt:${rootProject.joseJwtVer}"
+    implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+}

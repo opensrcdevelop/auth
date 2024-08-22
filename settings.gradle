@@ -1,0 +1,6 @@
+rootProject.name = 'auth'
+include 'common'
+include 'auth-server'
+include 'auth-biz'
+include 'auth-client-spring-boot-starter'
+

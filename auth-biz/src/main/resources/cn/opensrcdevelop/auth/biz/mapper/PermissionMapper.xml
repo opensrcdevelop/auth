@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.PermissionMapper">
+
+    <resultMap id="authorizeRecordResultMap" type="cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord">
+        <id column="authorize_id" property="authorizeId" />
+        <result column="authorize_time" property="authorizeTime" />
+        <association property="permission" resultMap="permissionResultMap" />
+        <association property="user" column="user_id" select="getUser"/>
+        <association property="role" column="role_id" select="getRole"/>
+        <association property="userGroup" column="user_group_id" select="getUserGroup"/>
+        <collection property="permissionExps" resultMap="expressionResultMap"/>
+    </resultMap>
+
+    <resultMap id="permissionResultMap" type="cn.opensrcdevelop.auth.biz.entity.Permission">
+        <id column="permission_id" property="permissionId"/>
+        <result column="permission_name" property="permissionName"/>
+        <result column="permission_code" property="permissionCode"/>
+        <result column="permission_desc" property="description"/>
+        <association property="resource" resultMap="resourceResultMap"/>
+    </resultMap>
+
+    <resultMap id="resourceResultMap" type="cn.opensrcdevelop.auth.biz.entity.Resource">
+        <id column="resource_id" property="resourceId"/>
+        <result column="resource_name" property="resourceName"/>
+        <result column="resource_code" property="resourceCode"/>
+        <result column="resource_desc" property="description"/>
+        <result column="api_identifier" property="apiIdentifier"/>
+        <association property="resourceGroup" resultMap="resourceGroupResultMap"/>
+    </resultMap>
+
+    <resultMap id="expressionResultMap" type="cn.opensrcdevelop.auth.biz.entity.PermissionExp">
+        <id column="expression_id" property="expressionId"/>
+        <result column="expression_name" property="expressionName"/>
+        <result column="expression" property="expression"/>
+        <result column="exp_desc" property="description"/>
+    </resultMap>
+
+    <resultMap id="resourceGroupResultMap" type="cn.opensrcdevelop.auth.biz.entity.ResourceGroup">
+        <id column="resource_group_id" property="resourceGroupId"/>
+        <result column="resource_group_name" property="resourceGroupName"/>
+        <result column="resource_group_code" property="resourceGroupCode"/>
+        <result column="resource_group_description" property="description"/>
+    </resultMap>
+
+    <select id="searchUserPermissions" resultMap="authorizeRecordResultMap">
+        SELECT
+            t1.authorize_id,
+            t1.user_id,
+            t1.role_id,
+            t1.user_group_id,
+            t1.permission_id,
+            t2.permission_name,
+            t2.permission_code,
+            t2.description permission_desc,
+            t3.resource_id,
+            t3.resource_name,
+            t3.resource_code,
+            t3.api_identifier,
+            t3.description resource_desc,
+            t4.resource_group_id,
+            t4.resource_group_name,
+            t4.resource_group_code,
+            t4.description resource_group_desc,
+            t6.expression_id,
+            t6.expression_name,
+            t6.expression,
+            t6.description exp_desc
+        FROM
+            t_authorize t1
+            LEFT JOIN t_permission t2 ON t1.permission_id = t2.permission_id
+            LEFT JOIN t_resource t3 ON t2.resource_id = t3.resource_id
+            LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
+            LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
+            LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
+        <where>
+            <if test="resourceGroupCode != null and resourceGroupCode != ''">
+                AND t4.resource_group_code = #{resourceGroupCode}
+            </if>
+            <if test="userId != null">
+                AND (
+                    t1.user_id = #{userId}
+                    OR t1.role_id IN (
+                        SELECT
+                            DISTINCT role_id
+                        FROM
+                            t_role_mapping
+                        WHERE
+                            user_id = #{userId}
+                            OR user_group_id IN (SELECT DISTINCT user_group_id FROM t_user_group_mapping WHERE user_id = #{userId})
+                    )
+                    OR t1.user_group_id IN ( SELECT DISTINCT user_group_id FROM t_user_group_mapping WHERE user_id =#{userId})
+                )
+            </if>
+        </where>
+        ORDER BY t4.resource_group_code, t1.authorize_time DESC
+    </select>
+
+    <select id="searchUserGroupPermissions" resultMap="authorizeRecordResultMap">
+        SELECT
+            t1.authorize_id,
+            t1.user_group_id,
+            t1.permission_id,
+            t2.permission_name,
+            t2.permission_code,
+            t2.description permission_desc,
+            t3.resource_id,
+            t3.resource_name,
+            t3.resource_code,
+            t3.api_identifier,
+            t3.description resource_desc,
+            t4.resource_group_id,
+            t4.resource_group_name,
+            t4.resource_group_code,
+            t4.description resource_group_desc,
+            t6.expression_id,
+            t6.expression_name,
+            t6.expression,
+            t6.description exp_desc
+        FROM
+            t_authorize t1
+            LEFT JOIN t_permission t2 ON t1.permission_id = t2.permission_id
+            LEFT JOIN t_resource t3 ON t2.resource_id = t3.resource_id
+            LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
+            LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
+            LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
+        WHERE t1.user_group_id = #{userGroupId}
+        ORDER BY t4.resource_group_code, t1.authorize_time DESC
+    </select>
+
+    <select id="searchRolePermissions" resultMap="authorizeRecordResultMap">
+        SELECT
+            t1.authorize_id,
+            t1.role_id,
+            t1.permission_id,
+            t2.permission_name,
+            t2.permission_code,
+            t2.description permission_desc,
+            t3.resource_id,
+            t3.resource_name,
+            t3.resource_code,
+            t3.api_identifier,
+            t3.description resource_desc,
+            t4.resource_group_id,
+            t4.resource_group_name,
+            t4.resource_group_code,
+            t4.description resource_group_desc,
+            t6.expression_id,
+            t6.expression_name,
+            t6.expression,
+            t6.description exp_desc
+        FROM
+            t_authorize t1
+            LEFT JOIN t_permission t2 ON t1.permission_id = t2.permission_id
+            LEFT JOIN t_resource t3 ON t2.resource_id = t3.resource_id
+            LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
+            LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
+            LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
+        WHERE t1.role_id = #{roleId}
+        ORDER BY t4.resource_group_code, t1.authorize_time DESC
+    </select>
+
+    <select id="searchPermissionAuthorizeRecords" resultMap="authorizeRecordResultMap">
+        SELECT
+            t1.authorize_id,
+            t1.authorize_time,
+            t1.user_id,
+            t1.role_id,
+            t1.user_group_id,
+            t3.expression_id,
+            t3.expression_name,
+            t3.expression,
+            t3.description exp_desc
+        FROM
+            t_authorize t1
+            LEFT JOIN t_authorize_cond t2 ON t2.authorize_id = t1.authorize_id
+            LEFT JOIN t_permission_exp t3 ON t3.expression_id = t2.permission_exp_id
+        WHERE
+            permission_id = #{permissionId}
+        <if test="keyword != null and keyword!=''">
+           AND (
+                user_id IN (SELECT user_id FROM t_user WHERE username LIKE CONCAT('%', #{keyword}, '%')) OR
+                role_id IN (SELECT role_id FROM t_role WHERE role_name LIKE CONCAT('%', #{keyword}, '%')) OR
+                user_group_id IN (SELECT user_group_id FROM t_user_group WHERE user_group_name LIKE CONCAT('%', #{keyword}, '%'))
+            )
+        </if>
+        ORDER BY authorize_time DESC
+    </select>
+
+    <select id="searchExpPermissions" resultMap="authorizeRecordResultMap">
+        SELECT
+            t1.authorize_id,
+            t1.user_id,
+            t1.role_id,
+            t1.user_group_id,
+            t1.permission_id,
+            t2.permission_name,
+            t2.permission_code,
+            t2.description permission_desc,
+            t3.resource_id,
+            t3.resource_name,
+            t3.resource_code,
+            t3.api_identifier,
+            t3.description resource_desc,
+            t4.resource_group_id,
+            t4.resource_group_name,
+            t4.resource_group_code,
+            t4.description resource_group_desc,
+            t6.expression_id,
+            t6.expression_name,
+            t6.expression,
+            t6.description exp_desc
+        FROM
+            t_authorize t1
+            LEFT JOIN t_permission t2 ON t1.permission_id = t2.permission_id
+            LEFT JOIN t_resource t3 ON t2.resource_id = t3.resource_id
+            LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
+            LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
+            LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
+        WHERE t6.expression_id = #{expressionId}
+    </select>
+
+    <select id="getUser" resultType="cn.opensrcdevelop.auth.biz.entity.User">
+        SELECT user_id,
+               username
+        FROM t_user
+        WHERE user_id = #{user_id}
+    </select>
+
+    <select id="getRole" resultType="cn.opensrcdevelop.auth.biz.entity.Role">
+        SELECT role_id,
+               role_code,
+               role_name
+        FROM t_role
+        WHERE role_id = #{role_id}
+    </select>
+
+    <select id="getUserGroup" resultType="cn.opensrcdevelop.auth.biz.entity.UserGroup">
+        SELECT user_group_id,
+               user_group_code,
+               user_group_name
+        FROM t_user_group
+        WHERE user_group_id = #{user_group_id}
+    </select>
+</mapper>

@@ -1,0 +1,16 @@
+jar {
+    enabled = true
+    archiveClassifier = ''
+    version = project.version
+}
+
+bootJar {
+    enabled = false
+}
+
+dependencies {
+    implementation project(':common')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+}

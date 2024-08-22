@@ -1,0 +1,28 @@
+jar {
+    enabled false
+}
+
+bootJar {
+    enabled = true
+    version = project.version
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':auth-biz')
+    implementation project(':auth-client-spring-boot-starter')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation "org.mybatis.spring.boot:mybatis-spring-boot-starter:$rootProject.mybatisVer"
+    implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
+    implementation "org.apache.commons:commons-pool2:$rootProject.commonsPool2Ver"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
+    // https://docs.spring.io/spring-session/reference/index.html
+    implementation 'org.springframework.session:spring-session-data-redis'
+    // https://documentation.red-gate.com/flyway
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
+}
