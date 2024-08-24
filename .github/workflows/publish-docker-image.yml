@@ -38,7 +38,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Auth-Server Artifacts
-          path: ./auth-server/build/libs
+          path: |
+            ./auth-server/build/libs
+            ./auth-server/DockerFile
 
   build-push-docker-image:
     name: Build and push Docker image
@@ -46,17 +48,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: Auth-Server Artifacts
+          path: auth-server
+        run: |
+          ls -R auth-server
 
       - name: Build Docker image
         run: |
-          docker build . --file ./auth-server/DockerFile --tag ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
+          echo pwd
+          docker build . --file ./DockerFile --tag ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
 
       - name: Login CCR
         run: |
