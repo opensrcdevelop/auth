@@ -30,7 +30,9 @@ jobs:
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
       - name: Build With Gradle Wrapper
-        run: ./gradlew -x test build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew -x test build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -40,6 +42,7 @@ jobs:
 
   build-push-docker-image:
     name: Build and push Docker image
+    needs: build-jar
     runs-on: ubuntu-latest
     environment: production
     steps:
