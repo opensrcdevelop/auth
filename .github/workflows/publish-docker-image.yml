@@ -55,9 +55,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          pwd
-          ls -al
-          docker build . --file ./DockerFile --tag ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
+          docker build -t ${CCR_IMAGE_URL}:${{ inputs.imageTag }} .
 
       - name: Login CCR
         run: |
