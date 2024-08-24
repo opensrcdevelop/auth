@@ -40,7 +40,7 @@ jobs:
           name: Auth-Server Artifacts
           path: |
             ./auth-server/build/libs
-            ./auth-server/DockerFile
+            ./auth-server/Dockerfile
 
   build-push-docker-image:
     name: Build and push Docker image
