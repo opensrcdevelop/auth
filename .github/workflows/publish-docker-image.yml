@@ -7,6 +7,14 @@ on:
         description: 'docker image tag'
         type: string
         required: true
+      registry:
+        description: 'switch registry'
+        type: choice
+        required: true
+        default: ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+        options:
+          - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+          - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
 
 env:
   CCR_IMAGE_URL: ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
@@ -15,7 +23,6 @@ jobs:
   build-jar:
     name: Build Jar
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,7 +53,6 @@ jobs:
     name: Build and push Docker image
     needs: build-jar
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -55,12 +61,18 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${CCR_IMAGE_URL}:${{ inputs.imageTag }} .
+          docker build -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
 
-      - name: Login CCR
+      - name: Login Registry
         run: |
-          docker login -u ${{ secrets.CCR_USERNAME }} -p '${{ secrets.CCR_PASSWORD }}' ${CCR_IMAGE_URL}
+          if [ ${{ inputs.registry }} == 'ccr.ccs.tencentyun.com/opensrcdevelop/auth-server' ]; then
+            echo "Login CCR"
+            docker login -u ${{ secrets.CCR_USERNAME }} -p '${{ secrets.CCR_PASSWORD }}' ${{ inputs.registry }}
+          elif [ ${{ inputs.registry }} == 'registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server' ]; then
+            echo "Login ACR"
+            docker login -u ${{ secrets.ACR_USERNAME }} -p '${{ secrets.ACR_PASSWORD }}' ${{ inputs.registry }}
+          fi
 
       - name: Push Docker image
         run: |
-          docker push ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
+          docker push ${{ inputs.registry }}:${{ inputs.imageTag }}
