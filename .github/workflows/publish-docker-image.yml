@@ -52,13 +52,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Auth-Server Artifacts
-          path: auth-server
-        run: |
-          ls -R auth-server
 
       - name: Build Docker image
         run: |
-          echo pwd
+          pwd
+          ls -al
           docker build . --file ./DockerFile --tag ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
 
       - name: Login CCR
