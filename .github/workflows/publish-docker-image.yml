@@ -1,0 +1,64 @@
+name: Publish Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: 'docker image tag'
+        type: string
+        required: true
+
+env:
+  CCR_IMAGE_URL: ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+
+jobs:
+  build-jar:
+    name: Build Jar
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+      - name: Build With Gradle Wrapper
+        run: ./gradlew -x test build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auth-Server Artifacts
+          path: ./auth-server/build/libs
+
+  build-push-docker-image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Auth-Server Artifacts
+
+      - name: Build Docker image
+        run: |
+          docker build . --file ./auth-server/DockerFile --tag ${CCR_IMAGE_URL}:${{ inputs.imageTag }}
+
+      - name: Login CCR
+        run: |
+          docker login -u ${{ secrets.CCR_USERNAME }} -p '${{ secrets.CCR_PASSWORD }}' ${CCR_IMAGE_URL}
+
+      - name: Push Docker image
+        run: |
+          docker push ${CCR_IMAGE_URL}:${{ inputs.imageTag }}

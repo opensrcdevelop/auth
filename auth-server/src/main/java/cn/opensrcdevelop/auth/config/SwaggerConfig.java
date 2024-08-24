@@ -9,23 +9,19 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
 @OpenAPIDefinition(
         info = @Info(
-                title = "Auth Gateway RESTful API",
-                description = "认证网关 API 文档",
-                version = "v1.0.0",
-                license = @io.swagger.v3.oas.annotations.info.License(
-                        name = "MIT",
-                        url = "https://opensource.org/licenses/MIT"
-                )
+                title = "Auth Server RESTful API",
+                description = "认证授权服务器 API 文档",
+                version = "v1.0.0"
         ),
         security = {
-                @SecurityRequirement(name = "OIDC Flow",  scopes = {"openid", "email_phone"}),
+                @SecurityRequirement(name = "OIDC Flow",  scopes = {"openid"}),
                 @SecurityRequirement(name = "Bearer access_token"),
         }
 )
 @SecurityScheme(
         name = "OIDC Flow",
         type = SecuritySchemeType.OPENIDCONNECT,
-        openIdConnectUrl = "${springdoc.swagger-ui.oauth.oidc-url}",
+        openIdConnectUrl = "${server.url}/.well-known/openid-configuration",
         description = "OpenIdConnect认证流程，<br/>由OIDC发现端点自动识别支持的授权流程，<br/>根据需要选择下方的Scopes。"
 )
 @SecurityScheme(
