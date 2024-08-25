@@ -78,7 +78,7 @@ jobs:
         run: |
           docker push ${{ inputs.registry }}:${{ inputs.imageTag }}
 
-  generate-git-tag:
+  create-git-tag:
     name: Create Git Tag
     if: inputs.createGitTag
     needs:
