@@ -80,6 +80,7 @@ jobs:
 
   create-git-tag:
     name: Create Git Tag
+    permissions: write-all
     if: inputs.createGitTag
     needs:
       - build-push-docker-image
