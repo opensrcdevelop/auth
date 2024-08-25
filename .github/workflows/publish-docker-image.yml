@@ -96,7 +96,7 @@ jobs:
 
       - name: Create Tag
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag_name="${{ inputs.imageTag }}"
           git tag -a ${tag_name} -m "Automatic tag creation on ${GITHUB_SHA}"
