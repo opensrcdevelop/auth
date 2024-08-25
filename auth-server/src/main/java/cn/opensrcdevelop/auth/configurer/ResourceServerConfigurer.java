@@ -49,8 +49,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 资源服务器配置
         http.oauth2ResourceServer(x -> {
-            x.accessDeniedHandler(new ResourceAccessDeniedHandler());
-            x.authenticationEntryPoint(new ResourceAuthenticationExceptionHandler());
             // 验证 Token
             if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
                 x.opaqueToken(t -> t.introspector(tokenIntrospector));
@@ -69,6 +67,12 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 禁用 cors 和 csrf
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(AbstractHttpConfigurer::disable);
+
+        // 未认证及未授权异常处理
+        http.exceptionHandling(exceptionHandler -> exceptionHandler
+                .accessDeniedHandler(new ResourceAccessDeniedHandler())
+                .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
+        );
     }
 
     @Override
