@@ -6,18 +6,18 @@ on:
       imageTag:
         description: 'docker image tag'
         type: string
-        required: true
+        default: ${GITHUB_SHA}
       registry:
-        description: 'switch registry'
+        description: 'select registry'
         type: choice
-        required: true
-        default: ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+        default: registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
         options:
           - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
           - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
-
-env:
-  CCR_IMAGE_URL: ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+      generateGitTag:
+        description: 'generate git tag'
+        type: boolean
+        default: false
 
 jobs:
   build-jar:
@@ -76,3 +76,20 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ${{ inputs.registry }}:${{ inputs.imageTag }}
+
+  generate-git-tag:
+    name: Generate Git tag
+    if: inputs.generateGitTag
+    needs:
+      - build-push-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Git tag
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git tag ${{ inputs.imageTag }}
+          git push origin ${{ inputs.imageTag }}
