@@ -6,6 +6,7 @@ on:
       imageTag:
         description: 'docker image tag'
         type: string
+        required: true
         default: ${GITHUB_SHA}
       registry:
         description: 'select registry'
@@ -14,8 +15,8 @@ on:
         options:
           - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
           - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
-      generateGitTag:
-        description: 'generate git tag'
+      createGitTag:
+        description: 'create git tag'
         type: boolean
         default: false
 
@@ -50,7 +51,7 @@ jobs:
             ./auth-server/Dockerfile
 
   build-push-docker-image:
-    name: Build and push Docker image
+    name: Build And Push Docker Image
     needs: build-jar
     runs-on: ubuntu-latest
     steps:
@@ -78,8 +79,8 @@ jobs:
           docker push ${{ inputs.registry }}:${{ inputs.imageTag }}
 
   generate-git-tag:
-    name: Generate Git tag
-    if: inputs.generateGitTag
+    name: Create Git Tag
+    if: inputs.createGitTag
     needs:
       - build-push-docker-image
     runs-on: ubuntu-latest
@@ -87,9 +88,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate Git tag
+      - name: Setup Git
+        run: |
+          git config --global user.email "${{ secrets.USER_EMAIL }}"
+          git config --global user.name "GitHub Action"
+
+      - name: Create Tag
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          git tag ${{ inputs.imageTag }}
-          git push origin ${{ inputs.imageTag }}
+          tag_name="${{ inputs.imageTag }}"
+          git tag -a ${tag_name} -m "Automatic tag creation on ${GITHUB_SHA}"
+          echo "Pushing tag ${tag_name}"
+          git push origin ${tag_name}
