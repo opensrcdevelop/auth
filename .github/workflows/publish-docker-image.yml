@@ -7,7 +7,7 @@ on:
         description: 'docker image tag'
         type: string
         required: true
-        default: ${GITHUB_SHA}
+        default: latest
       registry:
         description: 'select registry'
         type: choice
