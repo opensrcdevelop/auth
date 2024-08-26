@@ -20,6 +20,9 @@ on:
         type: boolean
         default: false
 
+env:
+  REPO_OPENSRCDEVELOP_PASSWORD: ${{ secrets.REPO_OPENSRCDEVELOP_PASSWORD }}
+
 jobs:
   build-jar:
     name: Build Jar

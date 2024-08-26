@@ -8,6 +8,9 @@ on:
         type: string
         required: true
 
+env:
+  REPO_OPENSRCDEVELOP_PASSWORD: ${{ secrets.REPO_OPENSRCDEVELOP_PASSWORD }}
+
 jobs:
   publish-jar:
     name: Publish Jar
@@ -36,7 +39,5 @@ jobs:
           ./gradlew -x test common:build
 
       - name: Publish to Maven repository
-        env:
-          REPO_OPENSRCDEVELOP_PASSWORD: ${{ secrets.REPO_OPENSRCDEVELOP_PASSWORD }}
         run: |
           ./gradlew common:publish
