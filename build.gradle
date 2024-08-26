@@ -34,7 +34,6 @@ allprojects {
 
     java {
         sourceCompatibility = '17'
-
     }
 
     configurations {
@@ -47,6 +46,13 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/central/' }
         maven { url 'https://maven.aliyun.com/repository/public/'}
         mavenCentral()
+        maven {
+            url = 'https://packages.aliyun.com/6512e2d3db8fc6072ca0c88c/maven/repo-opensrcdevelop'
+            credentials {
+                username = '6512e2bc3f15d5487d5296cb'
+                password = System.getenv("REPO_OPENSRCDEVELOP_PASSWORD")
+            }
+        }
     }
 
     dependencies {

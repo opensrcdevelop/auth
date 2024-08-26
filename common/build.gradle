@@ -1,3 +1,7 @@
+plugins {
+    id 'maven-publish'
+}
+
 jar {
     enabled = true
     archiveClassifier = ''
@@ -23,4 +27,24 @@ dependencies {
     // https://nimbusds.com/products/nimbus-jose-jwt/examples/jwt-with-hmac
     implementation "com.nimbusds:nimbus-jose-jwt:${rootProject.joseJwtVer}"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+}
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            from components.java
+            groupId = "${project.group}"
+            artifactId = "${project.archivesBaseName}"
+            version = "${project.version}"
+        }
+    }
+    repositories {
+        maven {
+            url = 'https://packages.aliyun.com/6512e2d3db8fc6072ca0c88c/maven/repo-opensrcdevelop'
+            credentials {
+                username = '6512e2bc3f15d5487d5296cb'
+                password = System.getenv("REPO_OPENSRCDEVELOP_PASSWORD")
+            }
+        }
+    }
 }
