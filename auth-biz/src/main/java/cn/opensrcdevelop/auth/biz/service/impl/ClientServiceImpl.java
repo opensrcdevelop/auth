@@ -319,8 +319,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         tokenSettingsBuilder.refreshTokenTimeToLive(Duration.ofMinutes(requestDto.getRefreshTokenTimeToLive()));
         clientBuilder.tokenSettings(tokenSettingsBuilder.build());
 
-        clientSettingsBuilder
-                .requireAuthorizationConsent(requestDto.getRequireAuthorizationConsent());
+        clientSettingsBuilder.requireAuthorizationConsent(!Objects.isNull(requestDto.getRequireAuthorizationConsent()) && requestDto.getRequireAuthorizationConsent());
         clientBuilder.clientSettings(clientSettingsBuilder.build());
 
         return clientBuilder.build();
