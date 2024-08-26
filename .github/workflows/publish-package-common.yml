@@ -33,7 +33,7 @@ jobs:
       - name: Build With Gradle Wrapper
         run: |
           chmod +x ./gradlew
-          ./gradlew -x test build
+          ./gradlew -x test common:build
 
       - name: Publish to Maven repository
         env:
