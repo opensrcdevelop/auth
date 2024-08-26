@@ -23,6 +23,7 @@ ext {
     commonsIoVer = '2.16.1'
     joseJwtVer = '9.40'
     ttlVer = '2.14.5'
+    commonVer = '1.0.0_beta'
 }
 
 allprojects {
