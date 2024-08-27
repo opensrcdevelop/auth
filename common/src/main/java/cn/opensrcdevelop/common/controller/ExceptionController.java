@@ -5,6 +5,7 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.web.ErrorProperties;
 import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -23,21 +24,28 @@ import java.util.Map;
 @RestController
 public class ExceptionController extends BasicErrorController {
 
+    private static final String STATUS = "status";
+    private static final String ERROR = "error";
+    private static final String MESSAGE = "message";
+
     public ExceptionController() {
         super(new DefaultErrorAttributes(), new ErrorProperties());
     }
 
     @RequestMapping(produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_HTML_VALUE })
     public void errorHandler(HttpServletRequest request) {
-        Map<String, Object> data = getErrorAttributes(request, ErrorAttributeOptions.of(ErrorAttributeOptions.Include.EXCEPTION,
-                ErrorAttributeOptions.Include.BINDING_ERRORS,
-                ErrorAttributeOptions.Include.MESSAGE));
-        HttpStatus status = HttpStatus.resolve((Integer) data.get("status"));
-        if (status != null) {
+        Map<String, Object> data = getErrorAttributes(request, ErrorAttributeOptions.of(
+                ErrorAttributeOptions.Include.STATUS,
+                ErrorAttributeOptions.Include.ERROR,
+                ErrorAttributeOptions.Include.EXCEPTION,
+                ErrorAttributeOptions.Include.MESSAGE)
+        );
+        HttpStatus status;
+        if (data.get(STATUS) != null && (status = HttpStatus.resolve((Integer) data.get(STATUS))) != null) {
             if (status.is5xxServerError()) {
-                throw new ServerException((String) data.get("message"), null);
+                throw new ServerException(data.get(MESSAGE) != null ? (String) data.get(MESSAGE) : StringUtils.EMPTY, null);
             } else if (status.is4xxClientError()) {
-                WebUtil.sendJsonResponse(R.optFailWithData(Map.of("error", data.get("message"))), status);
+                WebUtil.sendJsonResponse(R.optFailWithData(Map.of(ERROR, data.get(MESSAGE))), status);
             }
             return;
         }
