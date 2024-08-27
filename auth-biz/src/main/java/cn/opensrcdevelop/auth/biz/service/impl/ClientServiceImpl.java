@@ -213,9 +213,10 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         }
 
         // 更新客户端密钥
+        String secret = CommonUtil.getBase32StringKey(CLIENT_SECRETS_BYTES);
         Client updateClient = new Client();
         updateClient.setVersion(rawClient.getVersion());
-        String secret = CommonUtil.getBase32StringKey(CLIENT_SECRETS_BYTES);
+        updateClient.setClientId(rawClient.getClientId());
         updateClient.setClientSecret(passwordEncoder.encode(secret));
         super.updateById(updateClient);
 
