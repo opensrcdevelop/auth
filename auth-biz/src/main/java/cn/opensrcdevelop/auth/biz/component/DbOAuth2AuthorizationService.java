@@ -1,12 +1,12 @@
 package cn.opensrcdevelop.auth.biz.component;
 
 import cn.opensrcdevelop.auth.biz.entity.Authorization;
+import cn.opensrcdevelop.auth.biz.event.ClearExpiredTokensEvent;
 import cn.opensrcdevelop.auth.biz.repository.AuthorizationRepository;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
@@ -47,7 +47,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     public void save(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
         this.authorizationRepository.save(toEntity(authorization));
-        clearExpiredTokens(authorization.getRegisteredClientId());
+        SpringContextUtil.publishEvent(new ClearExpiredTokensEvent(authorization.getRegisteredClientId()));
     }
 
     @Override
@@ -88,6 +88,14 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         }
 
         return Optional.ofNullable(result).map(this::toObject).orElse(null);
+    }
+
+    public List<OAuth2Authorization> findByClientId(String clientId) {
+        return CommonUtil.stream(authorizationRepository.getAuthorizationsByClientId(clientId)).map(this::toObject).collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public void removeByIds(List<Long> ids) {
+        authorizationRepository.deleteByIds(ids);
     }
 
     private OAuth2Authorization toObject(Authorization entity) {
@@ -265,86 +273,5 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
             return AuthorizationGrantType.DEVICE_CODE;
         }
         return new AuthorizationGrantType(authorizationGrantType);              // Custom authorization grant type
-    }
-
-    /**
-     * 清除过期 token
-     *
-     * @param clientId 客户端 ID
-     */
-    private void clearExpiredTokens(String clientId) {
-        log.info("开始清除过期 token");
-        // 1. 获取客户端下所有授权的 token
-        var oauth2AuthorizationList = CommonUtil.stream(authorizationRepository.getAuthorizationsByClientId(clientId)).map(this::toObject).collect(Collectors.toCollection(ArrayList::new));
-
-        List<OAuth2Authorization> deleteTargetList = new ArrayList<>();
-        if (CollectionUtils.isEmpty(oauth2AuthorizationList)) {
-            log.info("结束清除过期 token");
-            return;
-        }
-
-        // 2. 清除 token，生命周期由长到短依次清除（refresh_token → access_token → authorization_code）
-        // 2.1 清除 refresh_token 过期的记录
-        oauth2AuthorizationList.forEach(authorization -> {
-            if (Objects.nonNull(authorization.getRefreshToken()) && authorization.getRefreshToken().isExpired()) {
-                deleteTargetList.add(authorization);
-            }
-        });
-        oauth2AuthorizationList.removeAll(deleteTargetList);
-
-        // 2.2 清除 access_token 过期的记录
-        // 2.2.1. 清除无 refresh_token，access_token 过期的记录
-        oauth2AuthorizationList.forEach(authorization -> {
-            if (Objects.nonNull(authorization.getAccessToken()) && Objects.isNull(authorization.getRefreshToken()) && authorization.getAccessToken().isExpired()) {
-                deleteTargetList.add(authorization);
-            }
-        });
-        oauth2AuthorizationList.removeAll(deleteTargetList);
-
-        // 2.2.2 清除有 refresh_token，access_token 过期的记录
-        // 2.2.2.1 按 refresh_token 分组，清除 access_token 过期的记录
-        var groupRes = CommonUtil.stream(oauth2AuthorizationList)
-                .filter(o -> Objects.nonNull(o.getRefreshToken()))
-                .collect(Collectors.groupingBy(OAuth2Authorization::getRefreshToken));
-        if (MapUtils.isNotEmpty(groupRes)) {
-            // 2.2.2.1.1 分组内按 ID 排序
-            groupRes.keySet().forEach(key -> groupRes.computeIfPresent(key, (k, v) -> v.stream().sorted(Comparator.comparing(OAuth2Authorization::getId)).collect(Collectors.toCollection(ArrayList::new))));
-            // 2.2.2.1.2 保留分组内最新的一条记录，即保留 refresh_token
-            groupRes.keySet().forEach(key -> groupRes.computeIfPresent(key, (k, v) -> {
-                if (!v.isEmpty()) {
-                    v.remove(v.size() - 1);
-                }
-                return v;
-            }));
-
-            // 2.2.2.1.3 清除 access_token 过期的记录
-            CommonUtil.stream(groupRes.values()).forEach(authorizationList -> {
-                authorizationList.forEach(authorization -> {
-                    if (Objects.nonNull(authorization.getAccessToken()) && authorization.getAccessToken().isExpired()) {
-                        deleteTargetList.add(authorization);
-                    }
-                });
-            });
-            oauth2AuthorizationList.removeAll(deleteTargetList);
-        }
-
-        // 2.3 清除 authorization_code 过期的记录
-        oauth2AuthorizationList.forEach(authorization -> {
-            if (Objects.isNull(authorization.getAccessToken()) && Objects.isNull(authorization.getRefreshToken())) {
-                var code = authorization.getToken(OAuth2AuthorizationCode.class);
-                if (Objects.nonNull(code) && code.isExpired()) {
-                    deleteTargetList.add(authorization);
-                }
-            }
-        });
-        oauth2AuthorizationList.removeAll(deleteTargetList);
-
-        // 3. 数据库操作
-        var deleteTargetIds = CommonUtil.stream(deleteTargetList).map(OAuth2Authorization::getId).map(Long::parseLong).toList();
-        log.info("清除的过期 token 数：{}", deleteTargetIds.size());
-        if (CollectionUtils.isNotEmpty(deleteTargetIds)) {
-            authorizationRepository.deleteByIds(deleteTargetIds);
-        }
-        log.info("结束清除过期 token");
     }
 }
