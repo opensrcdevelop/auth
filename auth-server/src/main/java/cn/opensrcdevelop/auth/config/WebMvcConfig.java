@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -45,6 +46,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         var filterRegistrationBean = new FilterRegistrationBean<RestFilter>();
         filterRegistrationBean.setFilter(traceFilter);
         filterRegistrationBean.addUrlPatterns("/*");
+        filterRegistrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return filterRegistrationBean;
     }
 
