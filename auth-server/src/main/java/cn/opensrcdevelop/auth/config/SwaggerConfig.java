@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 @SecurityScheme(
         name = "OIDC Flow",
         type = SecuritySchemeType.OPENIDCONNECT,
-        openIdConnectUrl = "${server.url}/.well-known/openid-configuration",
+        openIdConnectUrl = ".well-known/openid-configuration",
         description = "OpenIdConnect认证流程，<br/>由OIDC发现端点自动识别支持的授权流程，<br/>根据需要选择下方的Scopes。"
 )
 @SecurityScheme(

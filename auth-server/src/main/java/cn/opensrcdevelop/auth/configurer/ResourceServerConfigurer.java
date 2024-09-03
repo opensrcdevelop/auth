@@ -48,14 +48,14 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                 });
 
         // 资源服务器配置
-        http.oauth2ResourceServer(x -> {
-            // 验证 Token
-            if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
+        if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
+            http.oauth2ResourceServer(x -> {
+                // 向服务器验证 Token
                 x.opaqueToken(t -> t.introspector(tokenIntrospector));
-            } else {
-                x.opaqueToken(Customizer.withDefaults());
-            }
-        });
+            });
+        } else {
+            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults()));
+        }
 
         // 登出处理
         http.logout(x -> {

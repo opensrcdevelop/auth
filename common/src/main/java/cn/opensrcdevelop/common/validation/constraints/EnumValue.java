@@ -18,7 +18,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 public @interface EnumValue {
 
-    String message() default "{cn.opensrcdevelop.gateway.common.validation.constraints.EnumValue.message}";
+    String message() default "{cn.opensrcdevelop.common.validation.constraints.EnumValue.message}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 

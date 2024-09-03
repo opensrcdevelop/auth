@@ -18,7 +18,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 public @interface AlphaNum {
 
-    String message() default "{cn.opensrcdevelop.gateway.common.validation.constraints.AlphaNum.message}";
+    // 允许出现下划线 _
+    boolean allowUnderline() default true;
+    // 允许出现短横线 -
+    boolean allowHyphen() default true;
+
+    String message() default "{cn.opensrcdevelop.common.validation.constraints.AlphaNum.message}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

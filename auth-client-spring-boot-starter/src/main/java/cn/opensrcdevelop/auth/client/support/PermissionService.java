@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.client.config.AuthClientProperties;
 import cn.opensrcdevelop.auth.client.constants.ApiConstants;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import cn.opensrcdevelop.auth.client.util.SpringELUtil;
+import cn.opensrcdevelop.common.util.WebUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -14,10 +15,10 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
 
 /**
  * 客户端鉴权服务
@@ -29,6 +30,7 @@ public class PermissionService {
     private static final String API_USER_PERMISSIONS = "/api/v1/permission/me";
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String HEADER_BEARER = "Bearer ";
+    private static final String URL_FORMAT = "%s://%s";
 
     private final AuthClientProperties authClientProperties;
 
@@ -39,7 +41,7 @@ public class PermissionService {
      * @return 判断结果
      */
     @SuppressWarnings("unused")
-    public boolean hasAnyPermission(String... permissions) {
+    public boolean hasAnyPermission(String... permissions) throws IOException {
         try {
             // 1. 获取用户权限
             var userPermissions = getUserPermissions();
@@ -61,7 +63,7 @@ public class PermissionService {
      * @return 判断结果
      */
     @SuppressWarnings("unused")
-    public boolean hasAllPermission(String... permissions) {
+    public boolean hasAllPermission(String... permissions) throws IOException {
         try {
             // 1. 获取用户权限
             var userPermissions = getUserPermissions();
@@ -115,7 +117,7 @@ public class PermissionService {
      * @return 是否满足限制条件
      */
     public boolean checkCondition(String expression) {
-        return Boolean.TRUE.equals(SpringELUtil.parseAuthorizeCondition(OAuth2ContextHolder.getContext().getUserAttributes().getAttributes(), expression));
+        return Boolean.TRUE.equals(SpringELUtil.parseAuthorizeCondition(Objects.requireNonNull(OAuth2ContextHolder.getContext()).getUserAttributes().getAttributes(), expression));
     }
 
     /**
@@ -123,14 +125,26 @@ public class PermissionService {
      *
      * @return 用户权限
      */
-    private List<Map<String, Object>> getUserPermissions() {
+    private List<Map<String, Object>> getUserPermissions() throws MalformedURLException {
         if (OAuth2ContextHolder.getContext() == null) {
             return Collections.emptyList();
         }
 
         // 1. 调用 API
+        var request = WebUtil.getRequest();
+        if (request.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 1.1 获取 baseUrl
+        String baseUrl;
+        if (StringUtils.isEmpty(authClientProperties.getIssuer())) {
+            URL url = new URL(request.get().getRequestURL().toString());
+            baseUrl = String.format(URL_FORMAT, url.getProtocol(), url.getAuthority());
+        } else {
+            baseUrl = authClientProperties.getIssuer();
+        }
         var apiResponse = HttpUtil.getRestClient().get()
-                .uri(authClientProperties.getIssuer() + API_USER_PERMISSIONS)
+                .uri(baseUrl + API_USER_PERMISSIONS)
                 .header(HEADER_AUTHORIZATION, HEADER_BEARER + OAuth2ContextHolder.getContext().getAccessToken().getTokenValue())
                 .retrieve()
                 .body(new ParameterizedTypeReference<Map<String, Object>>() {});

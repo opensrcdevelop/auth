@@ -9,6 +9,8 @@ import java.util.List;
 @Data
 public class AuthorizationServerProperties {
 
+    private String defaultIssuer;
+
     private String consentPageUrl = "/oauth2/consent";
 
     private String loginPageUrl = "/login";
