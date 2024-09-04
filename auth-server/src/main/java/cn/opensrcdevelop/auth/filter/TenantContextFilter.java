@@ -25,15 +25,17 @@ import java.net.URL;
 @Slf4j
 public class TenantContextFilter extends RestFilter {
 
+    private static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
+
     @Override
     protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             // 1. 根据域名获取租户标识
-            URL baseUrl = new URL(SpringContextUtil.getProperty("auth.server.default-issuer"));
+            URL baseUrl = new URL(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER));
             URL requestUrl = new URL(request.getRequestURL().toString());
             // 1.1 默认租户
             if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
-                // 1.1.1 设置租户线程
+                // 1.1.1 设置租户线程上下文
                 MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
                 setTenantContext(multiTenantProperties.getDefaultTenant());
                 filterChain.doFilter(request, response);
@@ -50,8 +52,9 @@ public class TenantContextFilter extends RestFilter {
             }
             WebUtil.sendJsonResponse(response, R.optFail(MessageConstants.TENANT_MSG_1000, tenantCode), HttpStatus.NOT_FOUND);
         } finally {
-            // 3. 清空线程上下文
+            // 3. 清空租户线程上下文
             TenantHelper.clearTenantContext();
+            TenantHelper.clearTenantDsContext();
         }
     }
 
@@ -60,5 +63,7 @@ public class TenantContextFilter extends RestFilter {
         TraceFilter.TTL_MDC.get().put(CommonConstants.MDC_TENANT_CODE, tenantCode);
         // 切换租户数据源
         TenantHelper.switchTenantDs(tenantCode);
+        // 设置租户上下文
+        TenantContext.setTenant(tenantCode);
     }
 }

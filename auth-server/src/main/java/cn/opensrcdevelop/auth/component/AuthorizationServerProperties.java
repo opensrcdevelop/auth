@@ -11,6 +11,8 @@ public class AuthorizationServerProperties {
 
     private String defaultIssuer;
 
+    private String defaultConsoleUrl;
+
     private String consentPageUrl = "/oauth2/consent";
 
     private String loginPageUrl = "/login";

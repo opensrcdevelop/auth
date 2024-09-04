@@ -115,8 +115,6 @@ public class TenantHelper {
             }
             // 切换数据源
             DynamicDataSourceContextHolder.push(tenantCode);
-            // 设置租户上下文
-            TenantContext.setTenant(tenantCode);
         }
     }
 
@@ -135,6 +133,12 @@ public class TenantHelper {
      */
     public static void clearTenantContext() {
         TenantContext.remove();
+    }
+
+    /**
+     * 清空租户数据源线程上下文
+     */
+    public static void clearTenantDsContext() {
         DynamicDataSourceContextHolder.clear();
     }
 
