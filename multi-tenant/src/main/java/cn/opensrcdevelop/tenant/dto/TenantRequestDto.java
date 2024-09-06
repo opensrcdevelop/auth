@@ -23,7 +23,7 @@ public class TenantRequestDto {
     @Schema(description = "租户标识")
     @NotBlank(groups = ValidationGroups.Operation.INSERT.class)
     @NotBlankStr(groups = ValidationGroups.Operation.UPDATE.class)
-    @AlphaNum(allowHyphen = false, allowUnderline = false)
+    @AlphaNum(allowHyphen = false, allowUnderline = false, onlyLowerCaseLetter = true)
     private String code;
 
     @Schema(description = "租户描述")

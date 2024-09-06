@@ -22,6 +22,8 @@ public @interface AlphaNum {
     boolean allowUnderline() default true;
     // 允许出现短横线 -
     boolean allowHyphen() default true;
+    // 仅允许小写字母
+    boolean onlyLowerCaseLetter() default false;
 
     String message() default "{cn.opensrcdevelop.common.validation.constraints.AlphaNum.message}";
     Class<?>[] groups() default {};
