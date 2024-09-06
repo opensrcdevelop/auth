@@ -91,6 +91,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
         excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
         excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return totpValidFilter;
@@ -110,6 +111,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
         excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return changePwdCheckFilter;

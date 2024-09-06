@@ -17,6 +17,8 @@ public class AuthorizationServerProperties {
 
     private String loginPageUrl = "/login";
 
+    private String consoleRedirectPath;
+
     /** 无需认证的 URI 集合 */
     private List<String> ignoreAuthenticationUriList;
 

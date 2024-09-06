@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.tenant.service.impl;
 
-import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -14,33 +13,24 @@ import cn.opensrcdevelop.tenant.support.TenantHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 
 @Slf4j
 @Service
-@Transactional
 public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> implements TenantService {
-
-    @Value("${auth.server.default-issuer}")
-    private String defaultIssuer;
-
-    @Value("${auth.server.default-console-url}")
-    private String defaultConsoleUrl;
 
     /**
      * 创建租户
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
         // 1. 创建租户数据库
@@ -113,6 +103,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updateTenant(TenantRequestDto requestDto) {
         // 1. 获取版本号
@@ -152,8 +143,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         tenantResponse.setCode(tenantCode);
         tenantResponse.setDesc(tenant.getDescription());
         tenantResponse.setEnabled(tenant.getEnabled());
-        tenantResponse.setIssuer(getTenantIssuer(tenantCode));
-        tenantResponse.setConsoleUrl(getTenantConsoleUrl(tenantCode));
+        tenantResponse.setIssuer(TenantHelper.getTenantIssuer(tenantCode));
+        tenantResponse.setConsoleUrl(TenantHelper.getTenantConsoleUrl(tenantCode));
         tenantResponse.setCreateTime(tenant.getCreateTime());
         return tenantResponse;
     }
@@ -163,6 +154,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      *
      * @param tenantId 租户 ID
      */
+    @Transactional
     @Override
     public void removeTenant(String tenantId) {
         // 1. 获取租户信息
@@ -190,7 +182,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             CheckTenantResponseDto checkTenantResponse = new CheckTenantResponseDto();
             if (TenantHelper.tenantExists(tenantCode)) {
                 checkTenantResponse.setExists(true);
-                checkTenantResponse.setIssuer(getTenantIssuer(tenantCode));
+                checkTenantResponse.setIssuer(TenantHelper.getTenantIssuer(tenantCode));
             } else {
                 checkTenantResponse.setExists(false);
             }
@@ -198,21 +190,5 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         } catch (Exception e) {
             throw new ServerException(e);
         }
-    }
-
-    private String getTenantIssuer(String tenantCode) {
-        return Try.of(() -> {
-            // 添加租户子域名
-            URL tmpurl = new URL(defaultIssuer);
-            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
-        }).getOrElseThrow(ServerException::new);
-    }
-
-    private String getTenantConsoleUrl(String tenantCode) {
-        return Try.of(() -> {
-            // 添加租户子域名
-            URL tmpurl = new URL(defaultConsoleUrl);
-            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
-        }).getOrElseThrow(ServerException::new);
     }
 }
