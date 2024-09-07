@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> implements ClientService {
 
@@ -56,6 +55,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      * @param requestDto 请求
      * @return 响应
      */
+    @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto createClient(ClientRequestDto requestDto) {
         CreateOrUpdateSecretClientResponseDto responseDto = new CreateOrUpdateSecretClientResponseDto();
@@ -183,6 +183,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updateClient(ClientRequestDto requestDto) {
         // 获取版本号
@@ -202,6 +203,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param id 客户端 ID
      */
+    @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(String id) {
         var responseDto = new CreateOrUpdateSecretClientResponseDto();
@@ -229,6 +231,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param clientId 客户端ID
      */
+    @Transactional
     @Override
     public void deleteClient(String clientId) {
         super.removeById(clientId);

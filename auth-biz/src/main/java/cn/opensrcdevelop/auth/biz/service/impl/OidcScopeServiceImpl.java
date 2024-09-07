@@ -15,6 +15,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope> implements OidcScopeService {
 
@@ -35,6 +35,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      *
      * @param requestDto 创建 OIDC scope 请求
      */
+    @Transactional
     @Override
     public void createOidcScope(OidcScopeRequestDto requestDto) {
         // 1. 属性编辑
@@ -52,7 +53,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             OidcClaimScopeMappingRequestDto claimScopeMappingRequestDto = new OidcClaimScopeMappingRequestDto();
             claimScopeMappingRequestDto.setScopeId(scopeId);
             claimScopeMappingRequestDto.setClaimIds(claimIds);
-            this.setOidcClaimScopeMapping(claimScopeMappingRequestDto);
+            ((OidcScopeService) AopContext.currentProxy()).setOidcClaimScopeMapping(claimScopeMappingRequestDto);
         }
     }
 
@@ -61,6 +62,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      *
      * @param requestDto 设置 OIDC claim scope 映射关系请求
      */
+    @Transactional
     @Override
     public void setOidcClaimScopeMapping(OidcClaimScopeMappingRequestDto requestDto) {
         // 1. 删除原有的映射关系
@@ -118,6 +120,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      *
      * @param requestDto 更新 OIDC scope 请求
      */
+    @Transactional
     @Override
     public void updateOidcScope(OidcScopeRequestDto requestDto) {
         // 1. 更新 scope
@@ -132,7 +135,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             OidcClaimScopeMappingRequestDto claimScopeMappingRequestDto = new OidcClaimScopeMappingRequestDto();
             claimScopeMappingRequestDto.setScopeId(scopeId);
             claimScopeMappingRequestDto.setClaimIds(claimIds);
-            this.setOidcClaimScopeMapping(claimScopeMappingRequestDto);
+            ((OidcScopeService) AopContext.currentProxy()).setOidcClaimScopeMapping(claimScopeMappingRequestDto);
         }
     }
 
@@ -141,6 +144,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      *
      * @param scopeId scope ID
      */
+    @Transactional
     @Override
     public void removeOidcScope(String scopeId) {
         if (StringUtils.isNotEmpty(scopeId)) {

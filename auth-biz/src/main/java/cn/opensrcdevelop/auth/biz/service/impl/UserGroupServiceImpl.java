@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup> implements UserGroupService {
 
@@ -41,6 +40,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createUserGroup(UserGroupRequestDto requestDto) {
         // 1. 属性设置
@@ -59,6 +59,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createUserGroupMapping(UserGroupMappingRequestDto requestDto) {
 
@@ -134,6 +135,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void removeUserGroupMapping(UserGroupMappingRequestDto requestDto) {
 
@@ -154,6 +156,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param userId 用户UID
      */
+    @Transactional
     @Override
     public void removeUserGroupMapping(String userId) {
         userGroupMappingService.remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userId));
@@ -250,6 +253,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updateUserGroup(UserGroupRequestDto requestDto) {
         // 1. 获取版本号
@@ -275,6 +279,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param userGroupId 用户组 ID
      */
+    @Transactional
     @Override
     public void removeUserGroup(String userGroupId) {
         // 1. 删除用户组

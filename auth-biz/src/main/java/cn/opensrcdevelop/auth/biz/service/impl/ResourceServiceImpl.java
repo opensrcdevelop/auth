@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> implements ResourceService {
 
@@ -38,6 +37,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createResource(ResourceRequestDto requestDto) {
         // 1. 属性设置
@@ -170,6 +170,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updateResource(ResourceRequestDto requestDto) {
         // 1. 获取版本号
@@ -196,6 +197,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param resourceIds 资源ID集合
      */
+    @Transactional
     @Override
     public void removeResource(List<String> resourceIds) {
         // 1. 删除资源

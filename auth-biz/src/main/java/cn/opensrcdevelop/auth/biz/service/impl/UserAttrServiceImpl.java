@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> implements UserAttrService {
 
@@ -40,6 +39,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param requestDto 创建用户属性请求
      */
+    @Transactional
     @Override
     public void createUserAttr(UserAttrRequestDto requestDto) {
         // 1. 属性编辑
@@ -69,6 +69,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      * @param userId     用户 ID
      * @param attributes 用户的扩展属性
      */
+    @Transactional
     @Override
     public void createUserAttrMapping(String userId, List<UserAttrMappingRequestDto> attributes) {
         // 1. 属性编辑
@@ -149,6 +150,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      * @param userId     用户 ID
      * @param attributes 用户的扩展属性
      */
+    @Transactional
     @Override
     public void updateUserUserAttrMapping(String userId, List<UserAttrMappingRequestDto> attributes) {
         if (CollectionUtils.isEmpty(attributes)) {
@@ -215,6 +217,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param requestDto 更新用户属性请求
      */
+    @Transactional
     @Override
     public void updateUserAttr(UserAttrRequestDto requestDto) {
         // 1. 属性设置
@@ -241,6 +244,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param requestDtoList 设置用户属性显示顺序请求集合
      */
+    @Transactional
     @Override
     public void setUserAttrDisplaySeq(List<SetUserAttrDisplaySeqRequestDto> requestDtoList) {
         // 1. 属性设置
@@ -260,6 +264,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param userId 用户 ID
      */
+    @Transactional
     @Override
     public void removeUserAttrMapping(String userId) {
         userAttrMappingService.remove(Wrappers.<UserAttrMapping>lambdaQuery().eq(UserAttrMapping::getUserId, userId));
@@ -294,6 +299,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param userAttrId 用户属性ID
      */
+    @Transactional
     @Override
     public void removeUserAttr(String userAttrId) {
         // 1. 删除用户属性
