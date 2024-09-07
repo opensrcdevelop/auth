@@ -7,8 +7,8 @@ public class AuthConstants {
 
     private AuthConstants() {}
 
-    public static final String SECURITY_CONTEXT_REDIS_PREFIX = "security_context::";
-    public static final String JWK_REDIS_KEY = "auth_server_jwk";
+    public static final String SECURITY_CONTEXT_REDIS_PREFIX = "security_context:";
+    public static final String JWK_REDIS_KEY = "auth_server_jwk:";
     public static final String GRANT_TYPE_PASSWORD = "password";
     public static final String COOKIE_SESSION = "SESSION";
     public static final String TOTP_VALID_CONTEXT = "TOTP_VALID_CONTEXT";

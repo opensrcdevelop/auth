@@ -18,9 +18,6 @@ public class AuthClientProperties implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        if (!StringUtils.hasText(issuer)) {
-            throw new IllegalStateException("Issuer must not be empty.");
-        }
         authorize.values().forEach(this::validateResourcePermission);
     }
 

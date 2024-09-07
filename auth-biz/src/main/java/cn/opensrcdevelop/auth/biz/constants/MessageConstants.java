@@ -16,4 +16,5 @@ public class MessageConstants {
     public static final String LOGIN_MSG_1003 = "login.msg.1003";
     public static final String RESET_PWD_MSG_1000 = "reset.pwd.msg.1000";
     public static final String VERIFY_CODE_MSG_1000 = "verify.code.msg.1000";
+    public static final String TENANT_MSG_1000 = "tenant.msg.1000";
 }

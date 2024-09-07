@@ -64,6 +64,7 @@ public class TraceFilter extends RestFilter{
     private void doNext(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response, String requestId) throws ServletException, IOException {
         // API 审计
         StopWatch stopWatch = new StopWatch(requestId);
+        log.info("REQUEST API: {} {}", request.getMethod(), request.getRequestURI());
         stopWatch.start();
         filterChain.doFilter(request, response);
         stopWatch.stop();

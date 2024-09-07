@@ -43,7 +43,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService, UserDetailsService {
 
@@ -72,6 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 创建用户请求
      */
+    @Transactional
     @Override
     public void createUser(UserRequestDto requestDto) {
         // 1. 属性设置
@@ -173,6 +173,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 更新用户信息请求
      */
+    @Transactional
     @Override
     public void updateUser(UserRequestDto requestDto) {
         String userId = requestDto.getUserId();
@@ -244,6 +245,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 变更密码请求
      */
+    @Transactional
     @Override
     public void changePwd(ChangePwdRequestDto requestDto, HttpServletRequest request) {
         String rawPwd = requestDto.getRawPwd();
@@ -280,6 +282,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Transactional
     @Override
     public void removeUser(String userId) {
         // 1. 删除 Token
@@ -326,6 +329,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Transactional
     @Override
     public void rebindMfaDevice(String userId) {
         // 1. 获取版本号
@@ -350,6 +354,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Transactional
     @Override
     public void clearAuthorizedTokens(String userId) {
         // 1. 检索用户
@@ -367,6 +372,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void resetPwd(ResetPwdRequestDto requestDto) {
         // 1. 校验重置密码 token

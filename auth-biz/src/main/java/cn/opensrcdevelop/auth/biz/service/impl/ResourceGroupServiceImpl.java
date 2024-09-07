@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
-@Transactional
 public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, ResourceGroup> implements ResourceGroupService {
 
     private final ResourceService resourceService;
@@ -133,6 +132,7 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
      *
      * @param resourceGroupIds 资源组ID集合
      */
+    @Transactional
     @Override
     public void removeResourceGroup(List<String> resourceGroupIds) {
         // 1. 删除资源组
@@ -150,6 +150,7 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createResourceGroup(ResourceGroupRequestDto requestDto) {
         // 1. 属性编辑
@@ -163,6 +164,12 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         super.save(resourceGroup);
     }
 
+    /**
+     * 更新资源组
+     *
+     * @param requestDto 请求
+     */
+    @Transactional
     @Override
     public void updateResourceGroup(ResourceGroupRequestDto requestDto) {
         // 1. 获取版本号

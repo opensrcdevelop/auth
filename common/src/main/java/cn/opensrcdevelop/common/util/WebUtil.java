@@ -7,9 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import eu.bitwalker.useragentutils.UserAgent;
+import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
@@ -19,6 +21,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -39,17 +42,19 @@ public class WebUtil {
     private WebUtil () {}
 
     public static void sendJsonResponse(Object object, HttpStatus status) {
-        getResponse().ifPresent(response -> {
-            try {
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
-                response.setStatus(status.value());
-                response.getWriter().write(OBJECT_MAPPER.writeValueAsString(object));
-                response.getWriter().flush();
-            } catch (IOException e) {
-                throw new ServerException(e);
-            }
-        });
+        getResponse().ifPresent(response -> sendJsonResponse(response, object, status));
+    }
+
+    public static void sendJsonResponse(HttpServletResponse response, Object object, HttpStatus status) {
+        try {
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
+            response.setStatus(status.value());
+            response.getWriter().write(OBJECT_MAPPER.writeValueAsString(object));
+            response.getWriter().flush();
+        } catch (IOException e) {
+            throw new ServerException(e);
+        }
     }
 
     public static Optional<HttpServletRequest> getRequest() {
@@ -165,6 +170,21 @@ public class WebUtil {
             return userAgent.getBrowser().getName();
         }
         return CommonConstants.UNKNOWN;
+    }
+
+    /**
+     * 获取当前请求的根 URL
+     *
+     * @return 当前请求的根 URL
+     */
+    public static String getRootUrl() {
+        if (getRequest().isPresent()) {
+            return Try.of(() -> {
+                URL url = new URL(getRequest().get().getRequestURL().toString());
+                return String.format(CommonConstants.URL_FORMAT, url.getProtocol(), url.getAuthority());
+            }).getOrElseThrow(ServerException::new);
+        }
+        return StringUtils.EMPTY;
     }
 
     private static UserAgent getUserAgent() {

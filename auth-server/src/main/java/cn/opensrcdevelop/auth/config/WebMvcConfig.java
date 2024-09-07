@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.config;
 
+import cn.opensrcdevelop.auth.filter.TenantContextFilter;
 import cn.opensrcdevelop.auth.interceptor.OAuth2ContextInterceptor;
 import cn.opensrcdevelop.common.annoation.NoPathPrefix;
 import cn.opensrcdevelop.common.filter.RestFilter;
@@ -47,6 +48,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
         filterRegistrationBean.setFilter(traceFilter);
         filterRegistrationBean.addUrlPatterns("/*");
         filterRegistrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return filterRegistrationBean;
+    }
+
+    @Bean FilterRegistrationBean<RestFilter> tenantContextFilter() {
+        TenantContextFilter tenantContextFilter = new TenantContextFilter();
+        tenantContextFilter.excludePathPatterns(pathPrefix + "/tenant/check/*");
+
+        var filterRegistrationBean = new FilterRegistrationBean<RestFilter>();
+        filterRegistrationBean.setFilter(tenantContextFilter);
+        filterRegistrationBean.addUrlPatterns("/*");
+        filterRegistrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
         return filterRegistrationBean;
     }
 

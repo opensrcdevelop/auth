@@ -9,7 +9,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@MapperScan(basePackages = "cn.opensrcdevelop.auth.biz.mapper")
+@MapperScan(basePackages = {
+        "cn.opensrcdevelop.auth.biz.mapper",
+        "cn.opensrcdevelop.tenant.mapper"
+})
 public class MybatisPlusConfig {
 
     @Bean

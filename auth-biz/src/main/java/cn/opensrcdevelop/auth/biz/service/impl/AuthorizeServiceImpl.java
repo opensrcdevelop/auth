@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, AuthorizeRecord> implements AuthorizeService {
 
@@ -36,6 +35,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 授权请求
      */
+    @Transactional
     @Override
     public void authorize(AuthorizeRequestDto requestDto) {
         var userIds = requestDto.getUserIds();
@@ -129,6 +129,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param principalId 用户 / 用户组 / 角色ID
      */
+    @Transactional
     @Override
     public void removeAuthorization(String principalId) {
         var query = Wrappers.<AuthorizeRecord>lambdaQuery().eq(AuthorizeRecord::getUserId, principalId).or(o -> o.eq(AuthorizeRecord::getUserGroupId, principalId)).or(o -> o.eq(AuthorizeRecord::getRoleId, principalId));
@@ -150,6 +151,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param permissionId 权限ID
      * @param principalId  用户 / 用户组 / 角色ID
      */
+    @Transactional
     @Override
     public void removeAuthorization(String permissionId, String principalId) {
         var query = Wrappers.<AuthorizeRecord>lambdaQuery().eq(AuthorizeRecord::getPermissionId, permissionId).and(o -> o.eq(AuthorizeRecord::getUserId, principalId).or(i -> i.eq(AuthorizeRecord::getUserGroupId, principalId)).or(j -> j.eq(AuthorizeRecord::getRoleId, principalId)));
@@ -170,6 +172,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param permissionIds 权限ID 集合
      */
+    @Transactional
     @Override
     public void removeAuthorization(List<String> permissionIds) {
         var query = Wrappers.<AuthorizeRecord>lambdaQuery().in(AuthorizeRecord::getPermissionId, permissionIds);
@@ -191,6 +194,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
 
@@ -215,6 +219,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void removeAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
 

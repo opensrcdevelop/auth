@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMapper, PermissionExp> implements PermissionExpService {
 
@@ -37,6 +36,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createPermissionExp(PermissionExpRequestDto requestDto) {
         // 1. 属性设置
@@ -141,6 +141,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
         // 1. 获取版本号
@@ -166,6 +167,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param permissionExpId 权限表达式ID
      */
+    @Transactional
     @Override
     public void removePermissionExp(String permissionExpId) {
         // 1. 删除权限表达式

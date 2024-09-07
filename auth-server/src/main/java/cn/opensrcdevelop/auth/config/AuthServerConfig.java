@@ -9,17 +9,12 @@ import cn.opensrcdevelop.auth.configurer.AuthorizationServerConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
-import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import io.vavr.control.Try;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -42,13 +37,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Configuration
 @EnableConfigurationProperties(AuthorizationServerProperties.class)
@@ -101,6 +91,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
         excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
         excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return totpValidFilter;
@@ -120,6 +111,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
         excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return changePwdCheckFilter;
@@ -130,38 +122,7 @@ public class AuthServerConfig {
      */
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
-        String jwkSourceStr = RedisUtil.get(AuthConstants.JWK_REDIS_KEY, String.class);
-        JWKSet jwkSet;
-        if (StringUtils.isNotEmpty(jwkSourceStr)) {
-            jwkSet = Try.of(() -> JWKSet.parse(jwkSourceStr)).getOrElseThrow(ServerException::new);
-        } else {
-            KeyPair keyPair = generateRsaKey();
-            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-            RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                    .privateKey(privateKey)
-                    .keyID(UUID.randomUUID().toString())
-                    .build();
-            jwkSet = new JWKSet(rsaKey);
-            RedisUtil.set(AuthConstants.JWK_REDIS_KEY, jwkSet.toString(false));
-        }
-        return new ImmutableJWKSet<>(jwkSet);
-    }
-
-    /**
-     * 	An instance of java.security.KeyPair with keys generated on startup used to create the JWKSource above.
-     */
-    private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
-        try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
-        }
-        catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-        return keyPair;
+        return new DelegatingJWKSource();
     }
 
     /**
@@ -177,7 +138,9 @@ public class AuthServerConfig {
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder()
+                .multipleIssuersAllowed(true)
+                .build();
     }
 
     @Bean

@@ -33,7 +33,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
 
@@ -47,6 +46,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createRole(RoleRequestDto requestDto) {
         // 1. 设置属性
@@ -65,6 +65,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createUserRoleMapping(RoleMappingRequestDto requestDto) {
 
@@ -101,6 +102,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void removeUserRoleMapping(RoleMappingRequestDto requestDto) {
 
@@ -161,6 +163,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param principalId 用户 / 用户组ID
      */
+    @Transactional
     @Override
     public void removeUserRoleMapping(String principalId) {
         roleMappingService.remove(Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getUserId, principalId).or(o -> o.eq(RoleMapping::getUserGroupId, principalId)));
@@ -261,6 +264,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updateRole(RoleRequestDto requestDto) {
         // 1. 获取版本号
@@ -286,6 +290,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param roleId 角色ID
      */
+    @Transactional
     @Override
     public void removeRole(String roleId) {
         // 1. 删除角色

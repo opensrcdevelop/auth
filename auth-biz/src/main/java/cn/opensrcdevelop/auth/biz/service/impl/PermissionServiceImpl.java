@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permission> implements PermissionService {
 
@@ -40,6 +39,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void createPermission(PermissionRequestDto requestDto) {
         // 1.属性设置
@@ -208,6 +208,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param resourceIds 资源ID集合
      */
+    @Transactional
     @Override
     public void removeResourcePermissions(List<String> resourceIds) {
         // 1. 查询资源下的待删除权限
@@ -229,6 +230,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param permissionId 权限ID
      */
+    @Transactional
     @Override
     public void removePermission(String permissionId) {
         // 1. 删除权限
@@ -243,6 +245,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param requestDto 请求
      */
+    @Transactional
     @Override
     public void updatePermission(PermissionRequestDto requestDto) {
         // 1. 获取版本号

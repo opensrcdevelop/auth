@@ -9,9 +9,15 @@ import java.util.List;
 @Data
 public class AuthorizationServerProperties {
 
+    private String defaultIssuer;
+
+    private String defaultConsoleUrl;
+
     private String consentPageUrl = "/oauth2/consent";
 
     private String loginPageUrl = "/login";
+
+    private String consoleRedirectPath;
 
     /** 无需认证的 URI 集合 */
     private List<String> ignoreAuthenticationUriList;

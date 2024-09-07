@@ -9,12 +9,37 @@ import java.util.regex.Pattern;
 
 public class AlphaNumValidator implements ConstraintValidator<AlphaNum, CharSequence> {
 
-    private static final Pattern PATTERN = Pattern.compile("^[A-Za-z0-9-_]+$");
+    private static final String PATTERN_PREFIX = "^[a-z0-9";
+    private static final String PATTERN_SUFFIX = "]+$";
+    private boolean allowUnderline;
+    private boolean allowHyphen;
+    private boolean onlyLowerCaseLetter;
+
+    @Override
+    public void initialize(AlphaNum constraintAnnotation) {
+        allowUnderline = constraintAnnotation.allowUnderline();
+        allowHyphen = constraintAnnotation.allowHyphen();
+        onlyLowerCaseLetter = constraintAnnotation.onlyLowerCaseLetter();
+    }
 
     @Override
     public boolean isValid(CharSequence value, ConstraintValidatorContext context) {
         if (StringUtils.isNotEmpty(value)) {
-            return PATTERN.matcher(value).matches();
+            StringBuilder pattern = new StringBuilder(PATTERN_PREFIX);
+            if (!onlyLowerCaseLetter) {
+                pattern.append("A-Z");
+            }
+
+            if (allowHyphen) {
+                pattern.append("-");
+            }
+
+            if (allowUnderline) {
+                pattern.append("_");
+            }
+            pattern.append(PATTERN_SUFFIX);
+
+            return Pattern.compile(pattern.toString()).matcher(value).matches();
         }
         return true;
     }

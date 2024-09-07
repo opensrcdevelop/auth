@@ -18,7 +18,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 public @interface NotBlankStr {
 
-    String message() default "{cn.opensrcdevelop.gateway.common.validation.constraints.NotBlank.message}";
+    String message() default "{cn.opensrcdevelop.common.validation.constraints.NotBlank.message}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

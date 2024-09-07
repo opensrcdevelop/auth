@@ -16,7 +16,6 @@ public class OAuth2ContextHolder {
         if (webRequest.isPresent()) {
             var session = webRequest.get().getSession();
             if (session != null) {
-                log.debug("从 session: {} 中获取 OAuthContext", session.getId());
                 return (OAuth2Context) session.getAttribute(SESSION_OAUTH2_CONTEXT);
             }
         }

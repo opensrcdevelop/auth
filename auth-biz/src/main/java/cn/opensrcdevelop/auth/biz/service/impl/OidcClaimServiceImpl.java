@@ -19,7 +19,6 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim> implements OidcClaimService {
 
@@ -31,6 +30,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      *
      * @param requestDto 设置 OIDC claim 请求
      */
+    @Transactional
     @Override
     public void createOidcClaim(OidcClaimRequestDto requestDto) {
         // 1. 属性设置
@@ -69,6 +69,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      *
      * @param requestDto 更新 OIDC claim 请求
      */
+    @Transactional
     @Override
     public void updateOidcClaim(OidcClaimRequestDto requestDto) {
         // 1. 属性设置
@@ -86,6 +87,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      *
      * @param claimId claim ID
      */
+    @Transactional
     @Override
     public void removeOidcClaim(String claimId) {
         // 1. 移除 scope claim 映射关系

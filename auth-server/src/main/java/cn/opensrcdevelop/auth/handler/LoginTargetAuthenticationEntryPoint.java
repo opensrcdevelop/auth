@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.handler;
 
+import cn.opensrcdevelop.common.util.SpringContextUtil;
+import cn.opensrcdevelop.tenant.support.TenantContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +14,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.util.UrlUtils;
 
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -27,6 +30,18 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         String loginFormUrl = determineUrlToUseForThisRequest(request, response, authException);
+
+        // 添加租户二级域名
+        String defaultTenant = SpringContextUtil.getProperty("multi.tenant.default-tenant");
+        if (!StringUtils.equals(defaultTenant, TenantContext.getTenant())) {
+            URL tmpUrl = new URL(loginFormUrl);
+            loginFormUrl = tmpUrl.getProtocol() +
+                    "://" +
+                    TenantContext.getTenant() +
+                    "." +
+                    tmpUrl.getAuthority() +
+                    tmpUrl.getPath();
+        }
 
         // 非绝对路径
         if (!UrlUtils.isAbsoluteUrl(loginFormUrl)) {
