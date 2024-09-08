@@ -14,6 +14,7 @@ import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.tenant.support.TenantContext;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -317,7 +318,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
         List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
         Objects.requireNonNull(aud);
-        return userId + "_" + aud.get(0);
+        return TenantContext.getTenant() + ":" + userId + ":" + aud.get(0);
     }
 
     /**
