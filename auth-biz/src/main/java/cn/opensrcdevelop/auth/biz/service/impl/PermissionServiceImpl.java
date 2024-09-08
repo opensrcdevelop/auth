@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.AuthorizeRecordResponseDto;
@@ -11,15 +12,18 @@ import cn.opensrcdevelop.auth.biz.repository.PermissionRepository;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
+import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +63,11 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @return 当前用户权限
      */
+    @Cacheable(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS,
+            key = "#root.target.generateCurrentUserPermissionsCacheKey()",
+            condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
+    @CacheExpire("30 * 60")
     @Override
     public List<PermissionResponseDto> getCurrentUserPermissions() {
         // 1. 获取当前用户
@@ -208,6 +217,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param resourceIds 资源ID集合
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeResourcePermissions(List<String> resourceIds) {
@@ -230,6 +240,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param permissionId 权限ID
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removePermission(String permissionId) {
@@ -245,6 +256,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param requestDto 请求
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void updatePermission(PermissionRequestDto requestDto) {
@@ -294,5 +306,27 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(), PrincipalTypeEnum.ROLE.getDisplayName());
         }
         return Tuple.of(null, null, null, null);
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generateCurrentUserPermissionsCacheKey() {
+        String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+        List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
+        Objects.requireNonNull(aud);
+        return userId + "_" + aud.get(0);
+    }
+
+    /**
+     * 生成 Redis 缓存条件
+     *
+     * @return Redis 缓存条件
+     */
+    public boolean generateCurrentUserPermissionsCacheCondition() {
+        return Objects.nonNull(AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB)) &&
+                CollectionUtils.isNotEmpty(AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD));
     }
 }

@@ -1,8 +1,12 @@
 package cn.opensrcdevelop.auth.client.support;
 
-import cn.opensrcdevelop.common.util.WebUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.Optional;
 
 @Slf4j
 public class OAuth2ContextHolder {
@@ -12,7 +16,7 @@ public class OAuth2ContextHolder {
     private static final String SESSION_OAUTH2_CONTEXT = "OAUTH2_CONTEXT";
 
     public static OAuth2Context getContext() {
-        var webRequest = WebUtil.getRequest();
+        var webRequest = getRequest();
         if (webRequest.isPresent()) {
             var session = webRequest.get().getSession();
             if (session != null) {
@@ -23,7 +27,7 @@ public class OAuth2ContextHolder {
     }
 
     public static void clearContext() {
-        WebUtil.getRequest().ifPresent(request -> {
+        getRequest().ifPresent(request -> {
             var session = request.getSession();
             if (session != null) {
                 session.removeAttribute(SESSION_OAUTH2_CONTEXT);
@@ -34,12 +38,20 @@ public class OAuth2ContextHolder {
     @SuppressWarnings("all")
     public static void setContext(OAuth2Context context) {
         Assert.notNull(context, "OAuth2Context can not be null");
-        WebUtil.getRequest().ifPresent(request -> {
+        getRequest().ifPresent(request -> {
             var session = request.getSession(false);
             if (session != null) {
                 session.setAttribute(SESSION_OAUTH2_CONTEXT, context);
                 log.debug("设置 OAuth2Context 到 session: {} 中", session.getId());
             }
         });
+    }
+
+    private static Optional<HttpServletRequest> getRequest() {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (requestAttributes != null) {
+            return Optional.of(requestAttributes.getRequest());
+        }
+        return Optional.empty();
     }
 }
