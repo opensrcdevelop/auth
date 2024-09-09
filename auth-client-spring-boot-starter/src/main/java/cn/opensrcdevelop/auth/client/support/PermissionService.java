@@ -4,7 +4,7 @@ import cn.opensrcdevelop.auth.client.config.AuthClientProperties;
 import cn.opensrcdevelop.auth.client.constants.ApiConstants;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import cn.opensrcdevelop.auth.client.util.SpringELUtil;
-import cn.opensrcdevelop.common.util.WebUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -14,6 +14,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -131,14 +133,16 @@ public class PermissionService {
         }
 
         // 1. 调用 API
-        var request = WebUtil.getRequest();
-        if (request.isEmpty()) {
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (Objects.isNull(requestAttributes)) {
             return Collections.emptyList();
         }
+        HttpServletRequest request = requestAttributes.getRequest();
+
         // 1.1 获取 baseUrl
         String baseUrl;
         if (StringUtils.isEmpty(authClientProperties.getIssuer())) {
-            URL url = new URL(request.get().getRequestURL().toString());
+            URL url = new URL(request.getRequestURL().toString());
             baseUrl = String.format(URL_FORMAT, url.getProtocol(), url.getAuthority());
         } else {
             baseUrl = authClientProperties.getIssuer();

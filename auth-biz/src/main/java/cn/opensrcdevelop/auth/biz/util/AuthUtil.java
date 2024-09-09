@@ -46,7 +46,6 @@ public class AuthUtil {
                 new WebServletJackson2Module(),
                 new JavaTimeModule(),
                 new OAuth2AuthorizationServerJackson2Module());
-        AUTH_OBJECT_MAPPER.registerModule(new OAuth2AuthorizationServerJackson2Module());
     }
 
     /**

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.dto.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeCondition;
@@ -15,6 +16,7 @@ import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 授权请求
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void authorize(AuthorizeRequestDto requestDto) {
@@ -129,6 +132,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param principalId 用户 / 用户组 / 角色ID
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(String principalId) {
@@ -151,6 +155,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param permissionId 权限ID
      * @param principalId  用户 / 用户组 / 角色ID
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(String permissionId, String principalId) {
@@ -172,6 +177,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param permissionIds 权限ID 集合
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(List<String> permissionIds) {
@@ -194,6 +200,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 请求
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void createAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
@@ -219,6 +226,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 请求
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
