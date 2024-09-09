@@ -85,68 +85,68 @@
 
 登录
 
-![](.\docs\img\login.png)
+![](./docs/img/login.png)
 
 MFA
 
-![](.\docs\img\mfa.png)
+![](./docs/img/mfa.png)
 
-![](.\docs\img\mfa-valid.png)
+![](./docs/img/mfa-valid.png)
 
 客户端
 
-![](.\docs\img\client-list.png)
+![](./docs/img/client-list.png)
 
-![](.\docs\img\client-config.png)
+![](./docs/img/client-config.png)
 
-![](.\docs\img\client-oidc.png)
+![](./docs/img/client-oidc.png)
 
 用户管理
 
-![](.\docs\img\user-list.png)
+![](./docs/img/user-list.png)
 
-![](.\docs\img\user-info.png)
+![](./docs/img/user-info.png)
 
-![](.\docs\img\user-belong.png)
+![](./docs/img/user-belong.png)
 
-![](.\docs\img\user-permissions.png)
+![](./docs/img/user-permissions.png)
 
 用户组管理
 
-![](.\docs\img\usergroup-list.png)
+![](./docs/img/usergroup-list.png)
 
-![](.\docs\img\usergroup-info.png)
+![](./docs/img/usergroup-info.png)
 
-![](.\docs\img\usergroup-permissions.png)
+![](./docs/img/usergroup-permissions.png)
 
 字段管理
 
-![](.\docs\img\usercolumn-list.png)
+![](./docs/img/usercolumn-list.png)
 
 资源组管理
 
-![](.\docs\img\resourcegroup-info.png)
+![](./docs/img/resourcegroup-info.png)
 
 资源权限
 
-![](.\docs\img\resourcepermission-list.png)
+![](./docs/img/resourcepermission-list.png)
 
-![](.\docs\img\resourcepermission-info.png)
+![](./docs/img/resourcepermission-info.png)
 
-![](.\docs\img\permission-info.png)
+![](./docs/img/permission-info.png)
 
-![](.\docs\img\permission-authorization.png)
+![](./docs/img/permission-authorization.png)
 
-![](.\docs\img\authorize.png)
+![](./docs/img/authorize.png)
 
 角色管理
 
-![](.\docs\img\role-info.png)
+![](./docs/img/role-info.png)
 
 限制条件
 
-![](.\docs\img\condition-info.png)
+![](./docs/img/condition-info.png)
 
 多租户
 
-![](.\docs\img\tenant-info.png)
+![](./docs/img/tenant-info.png)
