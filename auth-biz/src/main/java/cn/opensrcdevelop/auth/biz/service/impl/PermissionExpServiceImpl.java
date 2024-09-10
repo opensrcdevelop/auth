@@ -1,13 +1,14 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
+import cn.opensrcdevelop.auth.biz.dto.PermissionExpRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.*;
+import cn.opensrcdevelop.auth.biz.mapper.PermissionExpressionMapper;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeConditionService;
 import cn.opensrcdevelop.auth.biz.service.PermissionExpService;
-import cn.opensrcdevelop.auth.biz.dto.PermissionExpRequestDto;
-import cn.opensrcdevelop.auth.biz.mapper.PermissionExpressionMapper;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -18,6 +19,7 @@ import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -141,6 +143,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param requestDto 请求
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
@@ -167,6 +170,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param permissionExpId 权限表达式ID
      */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removePermissionExp(String permissionExpId) {

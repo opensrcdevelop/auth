@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.client.config;
 
-import cn.opensrcdevelop.auth.client.support.PermissionService;
 import cn.opensrcdevelop.auth.client.support.CustomOAuth2UserService;
 import cn.opensrcdevelop.auth.client.support.CustomOidcUserService;
+import cn.opensrcdevelop.auth.client.support.PermissionService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

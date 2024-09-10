@@ -1,7 +1,10 @@
 package cn.opensrcdevelop.common.util;
 
 import cn.opensrcdevelop.common.exception.ServerException;
-import com.nimbusds.jose.*;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -12,7 +15,6 @@ import org.apache.commons.collections4.MapUtils;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
@@ -28,7 +30,7 @@ public class JwtUtil {
      * @param claims 负载
      * @param secret 密钥
      * @param liveTime 存活时间
-     * @param timeUnit 时间发明为
+     * @param timeUnit 时间单位
      * @return Jwt
      */
     public static String createJwtWithHS256(Map<String, Object> claims, String secret, long liveTime, ChronoUnit timeUnit) {

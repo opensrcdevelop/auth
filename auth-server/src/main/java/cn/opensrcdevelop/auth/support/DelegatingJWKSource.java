@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.auth.support;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;

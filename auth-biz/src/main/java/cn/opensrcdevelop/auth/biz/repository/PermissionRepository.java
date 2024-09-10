@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.auth.biz.repository;
 
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
-import cn.opensrcdevelop.auth.biz.entity.Permission;
 
 import java.util.List;
 

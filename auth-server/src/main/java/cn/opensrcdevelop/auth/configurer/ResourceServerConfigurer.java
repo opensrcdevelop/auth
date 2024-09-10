@@ -2,12 +2,12 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationFilter;
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvider;
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
+import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.*;
-import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

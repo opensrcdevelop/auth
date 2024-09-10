@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.dto.RoleMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.RoleMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.service.RoleService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -18,8 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "API-Role", description = "接口-角色管理")
 @RestController

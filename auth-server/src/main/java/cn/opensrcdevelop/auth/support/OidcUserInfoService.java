@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.support;
 
 import cn.opensrcdevelop.auth.biz.entity.Role;
-import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.biz.entity.User;
+import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -15,7 +14,6 @@ import org.springframework.security.oauth2.server.authorization.oidc.authenticat
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 public class OidcUserInfoService implements Converter<OidcUserInfoAuthenticationContext, OidcUserInfo> {

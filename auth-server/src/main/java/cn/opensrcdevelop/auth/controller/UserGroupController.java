@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.dto.UserGroupMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.UserGroupMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserResponseDto;
 import cn.opensrcdevelop.auth.biz.service.UserGroupService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
@@ -19,8 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "API-UserGroup", description = "接口-用户组管理")
 @RestController

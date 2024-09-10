@@ -3,8 +3,6 @@ package cn.opensrcdevelop.auth.biz.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.List;
-
 @Schema(description = "资源响应")
 @Data
 public class ResourceResponseDto {

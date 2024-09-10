@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.auth.biz.repository.impl;
 
-import cn.opensrcdevelop.auth.biz.entity.Role;
 import cn.opensrcdevelop.auth.biz.entity.RoleMapping;
 import cn.opensrcdevelop.auth.biz.mapper.RoleMapper;
 import cn.opensrcdevelop.auth.biz.repository.RoleRepository;
