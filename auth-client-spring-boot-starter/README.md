@@ -4,7 +4,7 @@
 
 ### 如何使用
 
-- 添加依赖，注入 Bean 对象：PermissionService、OAuth2UserService、OidcUserService
+- 添加依赖，自动注入 Bean 对象：PermissionService、OAuth2UserService、OidcUserService
 
   ```groovy
   implementation 'cn.opensrcdevelop:auth-client-spring-boot-starter:latest'
@@ -35,4 +35,32 @@
   @PreAuthorize("@pms.hasAllPermission('permissionName', ''otherPermissionName'')")
   ```
 
-  
+### 如何扩展鉴权上下文
+
+- 向 Spring 容器中添加一个或多个 **OAuth2UserAttributesCustomizer** 对象。初始上下文将包含 Auth Server 发行的 **id_token** 中包含的全部 **Claim**，可以添加或删除属性，扩展鉴权上下文
+
+  ```java
+  @Bean
+  public OAuth2UserAttributesCustomizer oAuth2UserAttributesCustomizer() {
+      return oAuth2UserAttributes -> {
+          // 添加属性
+          oAuth2UserAttributes.setAttribute("ip", ip);
+          
+          // 删除属性
+          oAuth2UserAttributes.removeAttribute("password");
+      };
+  }
+  ```
+
+- 在 Auth Server 限制条件的 **SpringEL 表达式**中使用鉴权上下文中属性
+
+  SpringEL 表达式示例：
+
+  - 限制访问 ip
+
+    `ip == '192.168.10.18'`
+
+  - 限制访问时间
+
+    `T(java.time.LocalTime).now() >= T(java.time.LocalTime).of(9, 0) && T(java.time.LocalTime).now() <= T(java.time.LocalTime).of(18, 0)`
+
