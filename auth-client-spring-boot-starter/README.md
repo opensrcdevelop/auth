@@ -32,7 +32,7 @@
   @PreAuthorize("@pms.hasAnyPermission('permissionName', 'otherPermissionName')")
   
   // 登录用户拥有全部权限，鉴权通过
-  @PreAuthorize("@pms.hasAllPermission('permissionName', ''otherPermissionName'')")
+  @PreAuthorize("@pms.hasAllPermission('permissionName', 'otherPermissionName')")
   ```
 
 ### 如何扩展鉴权上下文
