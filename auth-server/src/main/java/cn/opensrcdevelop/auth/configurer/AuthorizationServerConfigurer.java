@@ -2,12 +2,14 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationConverter;
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationProvider;
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
+import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
-import cn.opensrcdevelop.auth.handler.*;
-import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
+import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
+import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import cn.opensrcdevelop.auth.support.OidcUserInfoService;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.RequiredArgsConstructor;

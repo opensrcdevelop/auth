@@ -1,6 +1,9 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.dto.OidcClaimRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.OidcClaimResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.OidcScopeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.OidcScopeResponseDto;
 import cn.opensrcdevelop.auth.biz.service.OidcClaimService;
 import cn.opensrcdevelop.auth.biz.service.OidcScopeService;
 import cn.opensrcdevelop.common.annoation.RestResponse;

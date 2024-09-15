@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.common.util;
 
 import cn.opensrcdevelop.common.entity.MailInfo;
-import cn.opensrcdevelop.common.exception.ServerException;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import jakarta.mail.internet.MimeMessage;

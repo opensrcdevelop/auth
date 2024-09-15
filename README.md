@@ -8,7 +8,7 @@
 - Gradle
 - PostgreSQL
 - Redis
-- Spring Boot 3.3.2
+- Spring Boot 3
 - Spring Authorization Server
 - Spring Security
 - Spring Session
@@ -80,6 +80,10 @@
 ### 持续集成（CI）
 
 基于 [**GitHub Actions**](https://docs.github.com/zh/actions) 实现持续集成（CI），自动编译、打包、构建 Docker 镜像、发布到镜像仓库。
+
+### 前端工程
+
+**[Auth Server Console](https://github.com/opensrcdevelop/auth-server-front)**
 
 ### 演示截图
 

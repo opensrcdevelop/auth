@@ -1,16 +1,16 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.dto.SetUserAttrDisplaySeqRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.UserAttrRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrMappingRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.UserAttrRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.UserAttr;
 import cn.opensrcdevelop.auth.biz.entity.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.mapper.UserAttrMapper;
 import cn.opensrcdevelop.auth.biz.mapper.UserAttrMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.UserAttrRepository;
-import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrMappingService;
+import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.batch.MybatisBatch;
