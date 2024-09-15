@@ -214,7 +214,7 @@ public class AuthUtil {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         Boolean extFlg = filter.getExtFlg();
         boolean isExtFlag = Boolean.TRUE.equals(extFlg);
-        String key = Boolean.TRUE.equals(extFlg) ? filter.getKey() : com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(filter.getKey()) ;
+        String key = Boolean.TRUE.equals(extFlg) ? filter.getKey() : "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(filter.getKey()) ;
         Object value = convertDataFilterValue(filter.getValue(), UserAttrDataTypeEnum.valueOf(filter.getDataType()));
 
         // 布尔值类型的字段，基础字段在查询时转换为布尔类型，扩展字段在查询时保持字符串类型
