@@ -30,4 +30,7 @@ public class AuthorizationServerProperties {
 
     /** 验证 Token */
     private Boolean introspectToken;
+
+    /** 开启单点登录 */
+    private Boolean enableSso = false;
 }

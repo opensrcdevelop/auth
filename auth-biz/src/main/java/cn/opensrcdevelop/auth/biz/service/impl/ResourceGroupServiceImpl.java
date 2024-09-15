@@ -182,7 +182,6 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         ResourceGroup updateResourceGroup = new ResourceGroup();
         updateResourceGroup.setResourceGroupId(requestDto.getId());
         updateResourceGroup.setResourceGroupName(requestDto.getName());
-        updateResourceGroup.setResourceGroupCode(requestDto.getCode());
         updateResourceGroup.setDescription(requestDto.getDesc());
         updateResourceGroup.setVersion(rawResourceGroup.getVersion());
 

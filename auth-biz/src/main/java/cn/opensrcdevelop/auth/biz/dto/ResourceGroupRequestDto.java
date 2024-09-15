@@ -22,7 +22,6 @@ public class ResourceGroupRequestDto {
 
     @Schema(description = "资源组标识")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     @AlphaNum
     private String code;
 
