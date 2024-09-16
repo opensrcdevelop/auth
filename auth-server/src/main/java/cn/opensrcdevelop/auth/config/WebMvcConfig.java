@@ -2,6 +2,7 @@ package cn.opensrcdevelop.auth.config;
 
 import cn.opensrcdevelop.auth.filter.TenantContextFilter;
 import cn.opensrcdevelop.auth.interceptor.OAuth2ContextInterceptor;
+import cn.opensrcdevelop.auth.interceptor.TraceUserInterceptor;
 import cn.opensrcdevelop.common.annoation.NoPathPrefix;
 import cn.opensrcdevelop.common.filter.RestFilter;
 import cn.opensrcdevelop.common.filter.TraceFilter;
@@ -29,12 +30,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         RestResponseInterceptor restResponseInterceptor = new RestResponseInterceptor();
         OAuth2ContextInterceptor oAuth2ContextInterceptor = new OAuth2ContextInterceptor();
+        TraceUserInterceptor traceUserInterceptor = new TraceUserInterceptor();
 
         registry.addInterceptor(restResponseInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(SWAGGER_PATH);
 
         registry.addInterceptor(oAuth2ContextInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(SWAGGER_PATH);
+
+        registry.addInterceptor(traceUserInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(SWAGGER_PATH);
     }

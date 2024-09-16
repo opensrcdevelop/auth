@@ -25,6 +25,7 @@ public class CommonConstants {
     public static final String MDC_TRACE_ID = "TraceId";
     public static final String MDC_REMOTE_IP = "RemoteIP";
     public static final String MDC_TENANT_CODE = "TenantCode";
+    public static final String MDC_USERNAME = "username";
     public static final String REP_HEADER_X_REQUEST_ID = "X-Request-Id";
     public static final String URL_FORMAT = "%s://%s";
 

@@ -9,6 +9,7 @@ import cn.opensrcdevelop.common.util.WebUtil;
 import cn.opensrcdevelop.tenant.component.MultiTenantProperties;
 import cn.opensrcdevelop.tenant.constants.MessageConstants;
 import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -37,16 +38,26 @@ public class TenantContextFilter extends RestFilter {
             if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
                 // 1.1.1 设置租户线程上下文
                 MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
-                setTenantContext(multiTenantProperties.getDefaultTenant());
+                TenantContext tenantContext = new TenantContext();
+                tenantContext.setTenantCode(multiTenantProperties.getDefaultTenant());
+                tenantContext.setDefaultTenant(true);
+                setTenantContext(tenantContext);
+
                 filterChain.doFilter(request, response);
                 return;
             }
             String tenantCode = requestUrl.getHost().split("\\.")[0];
 
             // 2. 检查租户是否存在
-            if (TenantHelper.tenantExists(tenantCode)) {
+             var existsRes = TenantHelper.tenantExists(tenantCode);
+            if (Boolean.TRUE.equals(existsRes._1)) {
                 // 2.1 设置租户线程上下文
-                setTenantContext(tenantCode);
+                TenantContext tenantContext = new TenantContext();
+                tenantContext.setTenantCode(existsRes._2.getTenantCode());
+                tenantContext.setTenantName(existsRes._2.getTenantName());
+                tenantContext.setDefaultTenant(false);
+                setTenantContext(tenantContext);
+
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -58,12 +69,13 @@ public class TenantContextFilter extends RestFilter {
         }
     }
 
-    private void setTenantContext(String tenantCode) {
+    private void setTenantContext(TenantContext tenantContext) {
+        String tenantCode = tenantContext.getTenantCode();
         MDC.put(CommonConstants.MDC_TENANT_CODE, tenantCode);
         TraceFilter.TTL_MDC.get().put(CommonConstants.MDC_TENANT_CODE, tenantCode);
         // 切换租户数据源
         TenantHelper.switchTenantDs(tenantCode);
         // 设置租户上下文
-        TenantContext.setTenant(tenantCode);
+        TenantContextHolder.setTenantContext(tenantContext);
     }
 }

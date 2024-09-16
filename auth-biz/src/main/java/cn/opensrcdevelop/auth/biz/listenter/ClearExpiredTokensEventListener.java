@@ -4,7 +4,7 @@ import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.auth.biz.event.ClearExpiredTokensEvent;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class ClearExpiredTokensEventListener implements ApplicationListener<Clea
     @Async(ExecutorConstants.EXECUTOR_IO_DENSE)
     public void onApplicationEvent(ClearExpiredTokensEvent event) {
         // 异步场合，需要切换租户数据源
-        TenantHelper.switchTenantDs(TenantContext.getTenant());
+        TenantHelper.switchTenantDs(TenantContextHolder.getTenantContext().getTenantCode());
         log.info("开始清除过期 token");
 
         // 1. 获取客户端下所有授权的 token

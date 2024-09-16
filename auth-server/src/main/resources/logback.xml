@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
-    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight([%-5level]) [%-35.35(%thread)] [%X{TraceId:-TraceId}] [%X{RemoteIP:-RemoteIP}] [%X{TenantCode:-TenantCode}] --- %highlight(%-50.50(%logger{50})#%M\(%F:%L\)): %msg%n" />
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight([%-5level]) [%-35.35(%thread)] [%X{TraceId:-TraceId}] [%X{RemoteIP:-RemoteIP}] [%X{TenantCode:-TenantCode}] [%X{username:-username}] --- %highlight(%-50.50(%logger{50})#%M\(%F:%L\)): %msg%n" />
     <property name="log.home" value="/app/logs" />
     <property name="log.fileName" value="auth-server" />
 

@@ -18,7 +18,7 @@ public class OAuth2ContextHolder {
     public static OAuth2Context getContext() {
         var webRequest = getRequest();
         if (webRequest.isPresent()) {
-            var session = webRequest.get().getSession();
+            var session = webRequest.get().getSession(false);
             if (session != null) {
                 return (OAuth2Context) session.getAttribute(SESSION_OAUTH2_CONTEXT);
             }
@@ -28,7 +28,7 @@ public class OAuth2ContextHolder {
 
     public static void clearContext() {
         getRequest().ifPresent(request -> {
-            var session = request.getSession();
+            var session = request.getSession(false);
             if (session != null) {
                 session.removeAttribute(SESSION_OAUTH2_CONTEXT);
             }
@@ -39,7 +39,7 @@ public class OAuth2ContextHolder {
     public static void setContext(OAuth2Context context) {
         Assert.notNull(context, "OAuth2Context can not be null");
         getRequest().ifPresent(request -> {
-            var session = request.getSession(false);
+            var session = request.getSession(true);
             if (session != null) {
                 session.setAttribute(SESSION_OAUTH2_CONTEXT, context);
                 log.debug("设置 OAuth2Context 到 session: {} 中", session.getId());

@@ -9,6 +9,7 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.lang.NonNull;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -17,8 +18,7 @@ import java.util.HashMap;
 public class OAuth2ContextInterceptor implements HandlerInterceptor {
 
     @Override
-    @SuppressWarnings("NullableProblems")
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         OAuth2Context context =  OAuth2ContextHolder.getContext();
         // 1. 设置 context
         if (context == null) {

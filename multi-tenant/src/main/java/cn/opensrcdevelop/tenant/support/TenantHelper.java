@@ -5,11 +5,14 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.component.MultiTenantProperties;
+import cn.opensrcdevelop.tenant.entity.Tenant;
 import cn.opensrcdevelop.tenant.service.TenantService;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -138,7 +141,7 @@ public class TenantHelper {
      * 清除租户线程上下文
      */
     public static void clearTenantContext() {
-        TenantContext.remove();
+        TenantContextHolder.removeTenantContext();
     }
 
     /**
@@ -154,11 +157,15 @@ public class TenantHelper {
      * @param tenantCode 租户标识
      * @return 是否存在
      */
-    public static boolean tenantExists(String tenantCode) {
+    public static Tuple2<Boolean, Tenant> tenantExists(String tenantCode) {
+        if (StringUtils.isBlank(tenantCode)) {
+            return Tuple.of(false, null);
+        }
+
         MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
         switchTenantDs(multiTenantProperties.getDefaultTenant());
         TenantService tenantService = SpringContextUtil.getBean(TenantService.class);
-        return StringUtils.isNotBlank(tenantCode) && tenantService.exists(tenantCode);
+        return tenantService.exists(tenantCode);
     }
 
     /**
