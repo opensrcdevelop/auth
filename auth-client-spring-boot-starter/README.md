@@ -4,7 +4,7 @@
 
 ### 如何使用
 
-- 添加依赖，自动注入 Bean 对象：PermissionService、OAuth2UserService、OidcUserService
+- 添加依赖
 
   ```groovy
   implementation 'cn.opensrcdevelop:auth-client-spring-boot-starter:latest'
@@ -21,33 +21,33 @@
   auth.client.authorize.permissionName.permission
   ```
 
-- 向需要鉴权的 API 接口添加 **Spring Security** 注解 **@PreAuthorize** 执行鉴权
+- 向需要鉴权的 API 接口添加注解 **@Authorize** 执行鉴权
 
-  permissionName ：上述自定义的权限名称
+  String[] value：所需的权限名称集合
 
-  pms：鉴权服务（PermissionService）对象
+  boolean anyMatch：任意匹配，默认：true
 
   ```java
   // 登录用户拥有任意权限，鉴权通过
-  @PreAuthorize("@pms.hasAnyPermission('permissionName', 'otherPermissionName')")
+  @Authorize({ "permissionName", "otherPermissionName" })
   
   // 登录用户拥有全部权限，鉴权通过
-  @PreAuthorize("@pms.hasAllPermission('permissionName', 'otherPermissionName')")
+  @Authorize(value = { "permissionName", "otherPermissionName" }, anyMatch = false)
   ```
 
 ### 如何扩展鉴权上下文
 
-- 向 Spring 容器中添加一个或多个 **OAuth2UserAttributesCustomizer** 对象。初始上下文将包含 Auth Server 发行的 **id_token** 中包含的全部 **Claim**，可以添加或删除属性，扩展鉴权上下文
+- 向 Spring 容器中添加一个或多个 **OAuth2AttributesCustomizer** 对象。初始上下文将包含 Auth Server 发行的 **id_token** 中包含的全部 **Claim** 及拦截的方法调用（**MethodInvocation**），可以添加或删除属性，扩展鉴权上下文
 
   ```java
   @Bean
-  public OAuth2UserAttributesCustomizer oAuth2UserAttributesCustomizer() {
-      return oAuth2UserAttributes -> {
+  public OAuth2AttributesCustomizer oAuth2AttributesCustomizer() {
+      return oAuth2Attributes -> {
           // 添加属性
-          oAuth2UserAttributes.setAttribute("ip", ip);
+          oAuth2Attributes.setAttribute("ip", ip);
           
           // 删除属性
-          oAuth2UserAttributes.removeAttribute("password");
+          oAuth2Attributes.removeAttribute("password");
       };
   }
   ```
@@ -63,4 +63,28 @@
   - 限制访问时间
 
     `T(java.time.LocalTime).now() >= T(java.time.LocalTime).of(9, 0) && T(java.time.LocalTime).now() <= T(java.time.LocalTime).of(18, 0)`
+  
+- 在 SpringEL 表达式中调用自定义方法校验鉴权上下文
 
+  - 实现接口：`ICheckAttribute` ，向 Spring 中注入 Bean
+
+    ```java
+    @Component("customCheckAttribute")
+    public class CustomCheckAttribute implements ICheckAttribute {
+    
+        @Override
+        public boolean check(Map<String, Object> attributes) {
+            return false;
+        }
+    }
+    ```
+
+  - 获取拦截的方法调用
+
+    `MethodInvocation methodInvocation = (MethodInvocation) attributes.get(AuthClientConstants.METHOD_INVOCATION);`
+
+  - 在 SpringEL 表达式中调用方法
+
+    `@customCheckAttribute.check(#root)`
+
+    
