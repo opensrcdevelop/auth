@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -15,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,21 +34,21 @@ public class PermissionController {
 
     @Operation(summary = "创建权限", description = "创建权限")
     @PostMapping
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'createPermssion')")
+    @Authorize({ "allPermPermissions", "createPermssion" })
     public void createPermission(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) PermissionRequestDto requestDto) {
         permissionService.createPermission(requestDto);
     }
 
     @Operation(summary = "授权", description = "授权")
     @PostMapping("/authorize")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'authorizePermission')")
+    @Authorize({ "allPermPermissions", "authorizePermission" })
     public void authorize(@RequestBody @Valid AuthorizeRequestDto requestDto) {
         authorizeService.authorize(requestDto);
     }
 
     @Operation(summary = "创建权限表达式", description = "创建权限表达式")
     @PostMapping("/exp")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'createPermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "createPermissionExp" })
     public void createPermissionExpression(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) PermissionExpRequestDto requestDto) {
         permissionExpService.createPermissionExp(requestDto);
     }
@@ -65,7 +65,7 @@ public class PermissionController {
             @Parameter(name = "principalId", description = "用户 / 用户组 / 角色ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/authorize/{permissionId}/{principalId}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'cancelAuthorization')")
+    @Authorize({ "allPermPermissions", "cancelAuthorization" })
     public void cancelAuthorization(@PathVariable String permissionId, @PathVariable String principalId) {
         authorizeService.removeAuthorization(permissionId, principalId);
     }
@@ -76,7 +76,7 @@ public class PermissionController {
             @Parameter(name = "keyword", description = "被授权主体关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'getPermissionDetail')")
+    @Authorize({ "allPermPermissions", "getPermissionDetail" })
     public PermissionResponseDto detail(@PathVariable @NotBlank String id, @RequestParam(required = false) String keyword) {
         return permissionService.detail(id, keyword);
     }
@@ -86,14 +86,14 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'deletePermission')")
+    @Authorize({ "allPermPermissions", "deletePermission" })
     public void removePermission(@PathVariable @NotBlank String id) {
         permissionService.removePermission(id);
     }
 
     @Operation(summary = "更新权限", description = "更新权限")
     @PutMapping
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'updatePermission')")
+    @Authorize({ "allPermPermissions", "updatePermission" })
     public void updatePermission(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionRequestDto requestDto) {
         permissionService.updatePermission(requestDto);
     }
@@ -105,7 +105,7 @@ public class PermissionController {
             @Parameter(name = "keyword", description = "表达式 / 名称检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/exp/list")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'listPermissionExp')")
+    @Authorize({ "allPermPermissions", "listPermissionExp" })
     public PageData<PermissionExpResponseDto> listPermissionExp(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return permissionExpService.list(page, size, keyword);
     }
@@ -115,28 +115,28 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'getPermissionExpDetail')")
+    @Authorize({ "allPermissionExpPermissions", "getPermissionExpDetail" })
     public PermissionExpResponseDto expDetail(@PathVariable @NotBlank String id) {
         return permissionExpService.detail(id);
     }
 
     @Operation(summary = "添加授权条件", description = "添加授权条件")
     @PostMapping("/authorize/cond")
-    @PreAuthorize("@pms.hasAnyPermission('allAuthorizeCondPermissions', 'addAuthorizeCondition')")
+    @Authorize({ "allAuthorizeCondPermissions", "addAuthorizeCondition" })
     public void createAuthorizeCondition(@RequestBody AuthorizeConditionRequestDto requestDto) {
         authorizeService.createAuthorizeCondition(requestDto);
     }
 
     @Operation(summary = "删除授权条件", description = "删除授权条件")
     @DeleteMapping("/authorize/cond")
-    @PreAuthorize("@pms.hasAnyPermission('allAuthorizeCondPermissions', 'deleteAuthorizeCondition')")
+    @Authorize({ "allAuthorizeCondPermissions", "deleteAuthorizeCondition" })
     public void removeAuthorizeCondition(@RequestBody AuthorizeConditionRequestDto requestDto) {
         authorizeService.removeAuthorizeCondition(requestDto);
     }
 
     @Operation(summary = "更新权限表达式", description = "更新权限表达式")
     @PutMapping("/exp")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'updatePermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "updatePermissionExp" })
     public void updatePermissionExpression(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionExpRequestDto requestDto) {
         permissionExpService.updatePermissionExp(requestDto);
     }
@@ -146,7 +146,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/exp/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'deletePermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "deletePermissionExp" })
     public  void removePermissionExpression(@PathVariable @NotBlank String id) {
         permissionExpService.removePermissionExp(id);
     }

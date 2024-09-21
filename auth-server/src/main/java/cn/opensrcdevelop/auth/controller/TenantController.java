@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -15,7 +16,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +31,7 @@ public class TenantController {
     @Operation(summary = "创建租户", description = "创建租户")
     @PostMapping
     @TenantLimit("master")
-    @PreAuthorize("@pms.hasAnyPermission('allTenantPermissions', 'createTenant')")
+    @Authorize({ "allTenantPermissions", "createTenant" })
     public void createTenant(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) TenantRequestDto requestDto) {
         tenantService.createTenant(requestDto);
     }
@@ -44,7 +44,7 @@ public class TenantController {
     })
     @GetMapping("/list")
     @TenantLimit("master")
-    @PreAuthorize("@pms.hasAnyPermission('allTenantPermissions', 'listTenant')")
+    @Authorize({ "allTenantPermissions", "listTenant" })
     public PageData<TenantResponseDto> listTenants(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return tenantService.listTenants(page, size,keyword);
     }
@@ -52,7 +52,7 @@ public class TenantController {
     @Operation(summary = "更新租户", description = "更新租户")
     @PutMapping
     @TenantLimit("master")
-    @PreAuthorize("@pms.hasAnyPermission('allTenantPermissions', 'updateTenant')")
+    @Authorize({ "allTenantPermissions", "updateTenant" })
     public void updateTenant(@RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) TenantRequestDto requestDto) {
         tenantService.updateTenant(requestDto);
     }
@@ -63,7 +63,7 @@ public class TenantController {
     })
     @GetMapping("/{id}")
     @TenantLimit("master")
-    @PreAuthorize("@pms.hasAnyPermission('allTenantPermissions', 'getTenantDetail')")
+    @Authorize({ "allTenantPermissions", "getTenantDetail" })
     public TenantResponseDto detail(@PathVariable @NotBlank String id) {
         return tenantService.detail(id);
     }
@@ -74,7 +74,7 @@ public class TenantController {
     })
     @DeleteMapping("/{id}")
     @TenantLimit("master")
-    @PreAuthorize("@pms.hasAnyPermission('allTenantPermissions', 'deleteTenant')")
+    @Authorize({ "allTenantPermissions", "deleteTenant" })
     public void removeTenant(@PathVariable @NotBlank String id) {
         tenantService.removeTenant(id);
     }

@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.service.ResourceService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +31,7 @@ public class ResourceController {
 
     @Operation(summary = "创建资源", description = "创建资源")
     @PostMapping
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'createResource')")
+    @Authorize({ "allResourcePermissions", "createResource" })
     public void createResource(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ResourceRequestDto requestDto) {
         resourceService.createResource(requestDto);
     }
@@ -43,7 +43,7 @@ public class ResourceController {
             @Parameter(name = "keyword", description = "资源名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'listResource')")
+    @Authorize({ "allResourcePermissions", "listResource" })
     public PageData<ResourceResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return resourceService.list(page, size, keyword);
     }
@@ -53,7 +53,7 @@ public class ResourceController {
             @Parameter(name = "id", description = "资源ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'getResourceDetail')")
+    @Authorize({ "allResourcePermissions", "getResourceDetail" })
     public ResourceResponseDto detail(@PathVariable @NotBlank String id) {
         return resourceService.detail(id);
     }
@@ -66,14 +66,14 @@ public class ResourceController {
             @Parameter(name = "keyword", description = "权限名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/permissions")
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'getResourcePermissions')")
+    @Authorize({ "allResourcePermissions", "getResourcePermissions" })
     public PageData<PermissionResponseDto> getResourcePermissions(@PathVariable String id, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return resourceService.getResourcePermissions(page, size, id, keyword);
     }
 
     @Operation(summary = "更新资源", description = "更新资源")
     @PutMapping
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'updateResource')")
+    @Authorize({ "allResourcePermissions", "updateResource" })
     public void updateResource(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ResourceRequestDto requestDto) {
         resourceService.updateResource(requestDto);
     }
@@ -83,7 +83,7 @@ public class ResourceController {
             @Parameter(name = "id", description = "资源ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allResourcePermissions', 'deleteResource')")
+    @Authorize({ "allResourcePermissions", "deleteResource" })
     public void removeResource(@PathVariable @NotBlank String id) {
         resourceService.removeResource(List.of(id));
     }

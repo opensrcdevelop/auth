@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.interceptor;
 
 import cn.opensrcdevelop.auth.client.support.OAuth2Context;
 import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
-import cn.opensrcdevelop.auth.client.support.OAuth2UserAttributes;
-import cn.opensrcdevelop.auth.client.support.OAuth2UserAttributesCustomizer;
+import cn.opensrcdevelop.auth.client.support.OAuth2Attributes;
+import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +28,13 @@ public class OAuth2ContextInterceptor implements HandlerInterceptor {
                 // 1.1 设置 access_token
                 context.setAccessToken(new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, authorizeHeader.replace(CommonConstants.BEARER, StringUtils.EMPTY), null, null));
 
-                // 1.2 设置用户属性
-                var userAttributes = new OAuth2UserAttributes(new HashMap<>());
-                context.setUserAttributes(userAttributes);
+                // 1.2 设置属性
+                var attributes = new OAuth2Attributes(new HashMap<>());
+                context.setOAuth2Attributes(attributes);
                 // 1.2.1 自定义用户属性
-                var userAttributesCustomizerList = SpringContextUtil.getBeans(OAuth2UserAttributesCustomizer.class);
-                for (OAuth2UserAttributesCustomizer customizer : userAttributesCustomizerList) {
-                    customizer.customize(userAttributes);
+                var userAttributesCustomizerList = SpringContextUtil.getBeans(OAuth2AttributesCustomizer.class);
+                for (OAuth2AttributesCustomizer customizer : userAttributesCustomizerList) {
+                    customizer.customize(attributes);
                 }
                 OAuth2ContextHolder.setContext(context);
             }

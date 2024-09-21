@@ -1,5 +1,9 @@
-package cn.opensrcdevelop.auth.client.support;
+package cn.opensrcdevelop.auth.client.service;
 
+import cn.opensrcdevelop.auth.client.support.OAuth2Context;
+import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
+import cn.opensrcdevelop.auth.client.support.OAuth2Attributes;
+import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -24,14 +28,14 @@ public class CustomOidcUserService extends OidcUserService implements Applicatio
         OidcUser oidcUser = super.loadUser(userRequest);
 
         OAuth2Context context = new OAuth2Context();
-        // 2. 设置用户属性
-        var userAttributes = new OAuth2UserAttributes(oidcUser.getAttributes());
+        // 2. 设置属性
+        var attributes = new OAuth2Attributes(oidcUser.getAttributes());
         // 2.1 自定义用户属性
         var userAttributesCustomizerList = getAllOAuth2UserAttributesCustomizers();
-        for (OAuth2UserAttributesCustomizer customizer : userAttributesCustomizerList) {
-            customizer.customize(userAttributes);
+        for (OAuth2AttributesCustomizer customizer : userAttributesCustomizerList) {
+            customizer.customize(attributes);
         }
-        context.setUserAttributes(userAttributes);
+        context.setOAuth2Attributes(attributes);
 
         // 3. 设置令牌信息
         context.setAccessToken(userRequest.getAccessToken());
@@ -45,9 +49,9 @@ public class CustomOidcUserService extends OidcUserService implements Applicatio
         this.applicationContext = applicationContext;
     }
 
-    private List<OAuth2UserAttributesCustomizer> getAllOAuth2UserAttributesCustomizers() {
+    private List<OAuth2AttributesCustomizer> getAllOAuth2UserAttributesCustomizers() {
         DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
-        var beans = beanFactory.getBeansOfType(OAuth2UserAttributesCustomizer.class);
+        var beans = beanFactory.getBeansOfType(OAuth2AttributesCustomizer.class);
         if (MapUtils.isNotEmpty(beans)) {
             return beans.values().stream().toList();
         } else {

@@ -6,6 +6,7 @@ import cn.opensrcdevelop.auth.biz.dto.OidcScopeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.OidcScopeResponseDto;
 import cn.opensrcdevelop.auth.biz.service.OidcClaimService;
 import cn.opensrcdevelop.auth.biz.service.OidcScopeService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +16,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,35 +34,35 @@ public class OidcController {
 
     @Operation(summary = "创建 OIDC scope", description = "创建 OIDC scope")
     @PostMapping("/scope")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcScopePermissions', 'createOidcScope')")
+    @Authorize({ "allOidcScopePermissions", "createOidcScope" })
     public void createOidcScope(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) OidcScopeRequestDto requestDto) {
         oidcScopeService.createOidcScope(requestDto);
     }
 
     @Operation(summary = "创建 OIDC claim", description = "创建 OIDC claim")
     @PostMapping("/claim")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcClaimPermissions', 'createOidcClaim')")
+    @Authorize({ "allOidcClaimPermissions", "createOidcClaim" })
     public void createOidcClaim(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) OidcClaimRequestDto requestDto) {
         oidcClaimService.createOidcClaim(requestDto);
     }
 
     @Operation(summary = "获取所有 OIDC scope", description = "获取所有 OIDC scope")
     @GetMapping("/scope/list")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcScopePermissions', 'listOidcScope')")
+    @Authorize({ "allOidcScopePermissions", "listOidcScope" })
     public List<OidcScopeResponseDto> listScopes() {
         return oidcScopeService.listScopes();
     }
 
     @Operation(summary = "获取所有 OIDC claim", description = "获取所有 OIDC claim")
     @GetMapping("/claim/list")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcClaimPermissions', 'listOidcClaim')")
+    @Authorize({ "allOidcClaimPermissions", "listOidcClaim" })
     public List<OidcClaimResponseDto> listClaims() {
         return oidcClaimService.listClaims();
     }
 
     @Operation(summary = "更新 OIDC scope", description = "更新 OIDC scope")
     @PutMapping("/scope")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcScopePermissions', 'updateOidcScope')")
+    @Authorize({ "allOidcScopePermissions", "updateOidcScope" })
     public void updateOidcScope(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) OidcScopeRequestDto requestDto) {
         oidcScopeService.updateOidcScope(requestDto);
     }
@@ -72,14 +72,14 @@ public class OidcController {
             @Parameter(name = "id", description = "scope ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/scope/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcScopePermissions', 'deleteOidcScope')")
+    @Authorize({ "allOidcScopePermissions", "deleteOidcScope" })
     public void removeOidcScope(@PathVariable @NotBlank String id) {
         oidcScopeService.removeOidcScope(id);
     }
 
     @Operation(summary = "更新 OIDC claim", description = "更新 OIDC claim")
     @PutMapping("/claim")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcClaimPermissions', 'updateOidcClaim')")
+    @Authorize({ "allOidcClaimPermissions", "updateOidcClaim" })
     public void updateOidcClaim(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) OidcClaimRequestDto requestDto) {
         oidcClaimService.updateOidcClaim(requestDto);
     }
@@ -89,7 +89,7 @@ public class OidcController {
             @Parameter(name = "id", description = "claim ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/claim/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allOidcClaimPermissions', 'deleteOidcClaim')")
+    @Authorize({ "allOidcClaimPermissions", "deleteOidcClaim" })
     public void removeOidcClaim(@PathVariable @NotBlank String id) {
         oidcClaimService.removeOidcClaim(id);
     }

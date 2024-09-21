@@ -9,14 +9,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public class OAuth2UserAttributes implements Serializable {
+public class OAuth2Attributes implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -1529402053442724890L;
 
     private final Map<String, Object> attributes = new HashMap<>();
 
-    public OAuth2UserAttributes(Map<String, Object> userAttributes) {
+    public OAuth2Attributes(Map<String, Object> userAttributes) {
         Assert.notNull(userAttributes, "UserAttributes can not be null");
         attributes.putAll(userAttributes);
     }
