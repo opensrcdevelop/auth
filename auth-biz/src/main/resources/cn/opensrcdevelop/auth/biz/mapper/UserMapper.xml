@@ -9,6 +9,7 @@
         <result column="email_address" property="emailAddress" />
         <result column="enable_mfa" property="enableMfa" />
         <result column="locked" property="locked" />
+        <result column="console_access" property="consoleAccess" />
         <result column="create_time" property="createTime" />
         <collection property="userAttrs" ofType="cn.opensrcdevelop.auth.biz.entity.UserAttr">
             <id column="attr_id" property="attrId" />
@@ -28,6 +29,7 @@
             t1.email_address,
             t1.enable_mfa,
             t1.locked,
+            t1.console_access,
             t1.create_time,
             t3.attr_id,
             t3.attr_key,

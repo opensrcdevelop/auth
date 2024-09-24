@@ -49,6 +49,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         userAttr.setAttrName(requestDto.getName());
         userAttr.setAttrDataType(requestDto.getDataType());
         userAttr.setExtAttrFlg(requestDto.getExtFlg());
+        userAttr.setUserVisible(requestDto.getUserVisible());
+        userAttr.setUserEditable(requestDto.getUserEditable());
         Boolean display = requestDto.getUserLstDisplay();
         userAttr.setUserLstDisplay(display);
         CommonUtil.callSetWithCheck(Objects::nonNull, userAttr::setDisplayWidth, requestDto::getDisplayWidth);
@@ -224,6 +226,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         UserAttr updateUserAttr = new UserAttr();
         updateUserAttr.setAttrId(requestDto.getId());
         updateUserAttr.setAttrName(requestDto.getName());
+        updateUserAttr.setUserVisible(requestDto.getUserVisible());
+        updateUserAttr.setUserEditable(requestDto.getUserEditable());
         updateUserAttr.setDisplayWidth(requestDto.getDisplayWidth());
         Boolean display = requestDto.getUserLstDisplay();
         updateUserAttr.setUserLstDisplay(display);
@@ -290,6 +294,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         userAttrResponse.setUserLstDisplay(userAttr.getUserLstDisplay());
         userAttrResponse.setExtFlg(userAttr.getExtAttrFlg());
         userAttrResponse.setDisplayWidth(userAttr.getDisplayWidth());
+        userAttrResponse.setUserVisible(userAttr.getUserVisible());
+        userAttrResponse.setUserEditable(userAttr.getUserEditable());
 
         return userAttrResponse;
     }
@@ -307,6 +313,30 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
 
         // 2. 删除关联的用户的属性
         userAttrMappingService.remove(Wrappers.<UserAttrMapping>lambdaQuery().eq(UserAttrMapping::getAttrId, userAttrId));
+    }
+
+    /**
+     * 获取用户中心可见的用户属性
+     *
+     * @return 用户中心可见的用户属性
+     */
+    @Override
+    public List<UserAttrResponseDto> getVisibleUserAttrs() {
+        // 1. 数据库操作
+        List<UserAttr> userAttrs = super.list(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getUserVisible, true).orderByAsc(UserAttr::getAttrKey));
+
+        // 2. 属性编辑
+        return CommonUtil.stream(userAttrs).map(userAttr -> {
+            UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
+            userAttrResponse.setId(userAttr.getAttrId());
+            userAttrResponse.setKey(userAttr.getAttrKey());
+            userAttrResponse.setName(userAttr.getAttrName());
+            userAttrResponse.setDataType(userAttr.getAttrDataType());
+            userAttrResponse.setExtFlg(userAttr.getExtAttrFlg());
+            userAttrResponse.setUserEditable(userAttr.getUserEditable());
+
+            return userAttrResponse;
+        }).toList();
     }
 
     /**

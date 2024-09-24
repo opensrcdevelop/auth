@@ -15,6 +15,9 @@ public class VerificationCode implements Serializable {
     @Serial
     private static final long serialVersionUID = -7266905278310369706L;
 
+    /** 接收方 */
+    private String receiver;
+
     /** 验证码 */
     private String code;
 

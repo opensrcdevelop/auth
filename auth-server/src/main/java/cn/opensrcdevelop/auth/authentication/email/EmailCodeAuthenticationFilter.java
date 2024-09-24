@@ -44,7 +44,7 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
         String email = request.getParameter(PARAMETER_EMAIL);
         String requestCode = request.getParameter(PARAMETER_CODE);
-        if (!verificationCodeService.verifyCode(requestCode)) {
+        if (!verificationCodeService.verifyCode(email, requestCode)) {
             throw new AuthenticationServiceException("Invalid Code");
         }
 

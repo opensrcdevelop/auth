@@ -89,8 +89,8 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/totp/check");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
-        excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
-        excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/change");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/reset");
         excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
@@ -107,10 +107,10 @@ public class AuthServerConfig {
         excludePathPatterns.add("/login/email");
         excludePathPatterns.add("/swagger-ui/**");
         excludePathPatterns.add(controllerPathPrefix + "/docs/**");
-        excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/change");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
-        excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/reset");
         excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));

@@ -7,4 +7,6 @@ public interface EmailService {
     void sendCreateUserNotice(String to, String username, String password);
 
     void sendResetPwdNotice(String to, String username, String password);
+
+    void sendBindEmailCode(String to);
 }

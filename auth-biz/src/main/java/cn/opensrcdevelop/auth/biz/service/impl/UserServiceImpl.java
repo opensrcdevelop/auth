@@ -18,7 +18,6 @@ import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -29,15 +28,22 @@ import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ReflectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -216,7 +222,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 5. 删除 Token（禁用账号的场合 or 关闭控制台访问的场合）
         if (Boolean.TRUE.equals(requestDto.getLocked()) || Boolean.FALSE.equals(requestDto.getConsoleAccess())) {
-            clearAuthorizedTokens(userId);
+            ((UserService) AopContext.currentProxy()).clearAuthorizedTokens(userId);
         }
     }
 
@@ -236,7 +242,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 填充用户信息
-        fillUserResponse(user, userResponse, null);
+        fillUserResponse(user, userResponse);
         return userResponse;
     }
 
@@ -257,7 +263,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 获取用户
-        User user = (User) loadUserByUsername(requestDto.getUsername());
+        User user = null;
+        // 2.1 从 SecurityContext 中获取
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication instanceof UsernamePasswordAuthenticationToken) {
+            user = (User) authentication.getPrincipal();
+        } else {
+            // 2.2 从 access_token 中获取
+            String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+            if (StringUtils.isNotEmpty(userId)) {
+                user = super.getById(userId);
+            }
+        }
+        if (Objects.isNull(user)) {
+            throw new OAuth2AuthenticationException("invalid authentication");
+        }
         if (!passwordEncoder.matches(requestDto.getRawPwd(), user.getPassword())) {
             throw new BizException(MessageConstants.LOGIN_MSG_1002);
         }
@@ -286,7 +306,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void removeUser(String userId) {
         // 1. 删除 Token
-        clearAuthorizedTokens(userId);
+        ((UserService) AopContext.currentProxy()).clearAuthorizedTokens(userId);
 
         // 2. 删除用户信息
         super.removeById(userId);
@@ -310,18 +330,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * @return 当前用户信息
      */
     @Override
-    public UserResponseDto getCurrentUserInfo() {
-        UserResponseDto userResponse = new UserResponseDto();
-        // 1. 获取当前用户 ID 和客户端 ID
+    public Map<String, Object> getCurrentUserInfo() {
+        // 1. 获取当前用户 ID
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
-        List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
 
         // 2. 获取当前用户信息
-        if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
-            User user = super.getById(userId);
-            fillUserResponse(user, userResponse, aud.get(0));
+        if (StringUtils.isNotEmpty(userId)) {
+            Page<User> pageRequest = new Page<>(1, -1);
+            userRepository.searchUsers(pageRequest, Wrappers.<User>query().eq("t1.user_id", userId).eq("deleted", false));
+            List<User> queryRes = pageRequest.getRecords();
+            if (CollectionUtils.isEmpty(queryRes)) {
+                return Collections.emptyMap();
+            }
+
+            var userMap = AuthUtil.convertUserMap(queryRes.get(0));
+            // 2.1 获取可见的用户属性
+            var visibleUserAttrs = userAttrService.getVisibleUserAttrs();
+            // 2.2 删除不可见的用户信息
+            var unVisibleUserMapKeys = userMap.keySet().stream().filter(k -> CommonUtil.stream(visibleUserAttrs).noneMatch(attr -> StringUtils.equals(attr.getKey(), k))).collect(Collectors.toSet());
+            CommonUtil.stream(unVisibleUserMapKeys).forEach(userMap::remove);
+            // 2.3 添加控制台访问权限
+            userMap.put(AuthConstants.CONSOLE_ACCESS, queryRes.get(0).getConsoleAccess());
+            return userMap;
         }
-        return userResponse;
+        return Collections.emptyMap();
     }
 
     /**
@@ -396,6 +428,63 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         super.updateById(updateUser);
     }
 
+    /**
+     * 更新当前用户信息
+     *
+     * @param userInfo 用户信息
+     */
+    @Transactional
+    @Override
+    public void updateMe(Map<String, Object> userInfo) {
+        // 1. 获取当前用户 ID
+        String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+        if (StringUtils.isBlank(userId)) {
+            return;
+        }
+
+        // 2. 获取版本号
+        var rawUser = super.getById(userId);
+        if (Objects.isNull(rawUser)) {
+            return;
+        }
+
+        // 3. 获取用户可编辑的用户属性
+        var editableUserAttrs = CommonUtil.stream(userAttrService.getVisibleUserAttrs()).filter(UserAttrResponseDto::getUserEditable).toList();
+
+        // 4. 编辑属性
+        User updateUser = new User();
+        updateUser.setUserId(userId);
+        updateUser.setVersion(rawUser.getVersion());
+        List<UserAttrMappingRequestDto> attributes = new ArrayList<>();
+        convertUserInfo(userInfo, editableUserAttrs, updateUser, attributes);
+
+        // 5. 更新扩展属性
+        userAttrService.updateUserUserAttrMapping(userId, attributes);
+
+        // 6. 更新用户
+        super.updateById(updateUser);
+    }
+
+    /**
+     * 绑定邮箱
+     *
+     * @param requestDto 请求
+     */
+    @Override
+    public void bindEmail(BindOrUnbindEmailRequestDto requestDto) {
+        doBindOrUnbindEmail(requestDto, true);
+    }
+
+    /**
+     * 解绑邮箱
+     *
+     * @param requestDto 请求
+     */
+    @Override
+    public void unbindEmail(BindOrUnbindEmailRequestDto requestDto) {
+        doBindOrUnbindEmail(requestDto, false);
+    }
+
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -430,7 +519,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return Tuple.of(null, null);
     }
 
-    private void fillUserResponse(User user, UserResponseDto userResponse, String clientId) {
+    private void fillUserResponse(User user, UserResponseDto userResponse) {
         // 1. 基本信息
         userResponse.setId(user.getUserId());
         userResponse.setUsername(user.getUsername());
@@ -485,7 +574,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userResponse.setUserGroups(userGroups);
 
         // 5. 权限信息
-        var permissions = CommonUtil.stream(permissionService.getUserPermissions(user.getUserId(), clientId)).map(authorizeRecord -> {
+        var permissions = CommonUtil.stream(permissionService.getUserPermissions(user.getUserId(), null)).map(authorizeRecord -> {
             PermissionResponseDto permissionResponse = new PermissionResponseDto();
             var permission = authorizeRecord.getPermission();
 
@@ -519,5 +608,59 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return permissionResponse;
         }).toList();
         userResponse.setPermissions(permissions);
+    }
+
+    private void convertUserInfo(Map<String, Object> userInfo, List<UserAttrResponseDto> editableUserAttrs, User updateUser, List<UserAttrMappingRequestDto> attributes) {
+        CommonUtil.stream(editableUserAttrs).filter(x -> userInfo.containsKey(x.getKey())).forEach(userAttr -> {
+            Object userInfoValue = userInfo.get(userAttr.getKey());
+
+            // 4.1 非扩展属性
+            if (BooleanUtils.isFalse(userAttr.getExtFlg())) {
+                var userField = ReflectionUtils.findField(User.class, userAttr.getKey());
+                if (Objects.nonNull(userField)) {
+                    ReflectionUtils.makeAccessible(userField);
+                    ReflectionUtils.setField(userField, updateUser, userInfoValue);
+                }
+            }
+
+            // 4.2 扩展属性
+            if (BooleanUtils.isTrue(userAttr.getExtFlg())) {
+                UserAttrMappingRequestDto userAttrMappingRequest = new UserAttrMappingRequestDto();
+                userAttrMappingRequest.setAttrId(userAttr.getId());
+                userAttrMappingRequest.setAttrValue(Objects.isNull(userInfoValue) ? null : userInfoValue.toString());
+                attributes.add(userAttrMappingRequest);
+            }
+        });
+    }
+
+    private void doBindOrUnbindEmail(BindOrUnbindEmailRequestDto requestDto, boolean isBinding) {
+        // 1. 校验验证码
+        String email = requestDto.getEmail();
+        boolean result = verificationCodeService.verifyCode(email, requestDto.getCode());
+        if (!result) {
+            throw new BizException(MessageConstants.VERIFY_CODE_MSG_1000);
+        }
+
+        // 2. 检查邮箱是否已经被绑定
+        if (isBinding && Objects.nonNull(super.getOne(Wrappers.<User>lambdaQuery().eq(User::getEmailAddress, email)))) {
+                throw new BizException(MessageConstants.BIND_EMAIL_MSG_1000);
+        }
+
+        AuthUtil.getCurrentUserId().ifPresent(userId -> {
+            // 3. 获取当前用户
+            User rawUser = super.getById(userId);
+
+            // 4. 检查当前用户的邮箱是否与请求的邮箱一致
+            if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
+                throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
+            }
+
+            // 5. 更新用户信息
+            User updateUser = new User();
+            updateUser.setUserId(userId);
+            updateUser.setVersion(rawUser.getVersion());
+            updateUser.setEmailAddress(isBinding ? email : "");
+            super.updateById(updateUser);
+        });
     }
 }

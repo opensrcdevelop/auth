@@ -88,7 +88,7 @@
 </head>
 <body>
 <div class="container">
-    <div class="app">Auth-Server</div>
+    <div class="app">Auth Server</div>
     <p style="border-top: 1px solid #e5e6eb; margin-top: 16px"></p>
     <div class="welcome-text">你好，${username}</div>
     <div class="tip-text">管理员为你创建了账号，以下是详细信息</div>

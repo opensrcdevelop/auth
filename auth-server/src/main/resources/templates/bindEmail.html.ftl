@@ -104,7 +104,7 @@
     <div class="app">Auth Server</div>
     <p style="border-top: 1px solid #e5e6eb; margin-top: 16px"></p>
     <div class="welcome-text">你好，${username}</div>
-    <div class="tip-text">你的账号正在进行邮箱验证，验证码为</div>
+    <div class="tip-text">你正在绑定邮箱，验证码为</div>
     <div class="code-container">
         <div class="text">${code}</div>
         <div class="tip">${emailCodeLive} 分钟内有效，请尽快填写完成验证。</div>

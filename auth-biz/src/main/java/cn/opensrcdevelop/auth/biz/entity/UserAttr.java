@@ -40,6 +40,12 @@ public class UserAttr implements Serializable {
     /** 显示宽度 */
     private Integer displayWidth;
 
+    /** 用户可见 */
+    private Boolean userVisible;
+
+    /** 用户可编辑 */
+    private Boolean userEditable;
+
     @TableField(exist = false)
     private String attrValue;
 }

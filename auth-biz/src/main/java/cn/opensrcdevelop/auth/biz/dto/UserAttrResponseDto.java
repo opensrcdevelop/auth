@@ -33,4 +33,10 @@ public class UserAttrResponseDto {
 
     @Schema(description = "显示宽度")
     private Integer displayWidth;
+
+    @Schema(description = "用户可见")
+    private Boolean userVisible;
+
+    @Schema(description = "用户可编辑")
+    private Boolean userEditable;
 }

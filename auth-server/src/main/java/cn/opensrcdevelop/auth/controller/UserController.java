@@ -104,7 +104,7 @@ public class UserController {
     }
 
     @Operation(summary = "变更密码", description = "变更密码")
-    @PostMapping("/changePwd")
+    @PostMapping("/me/password/change")
     public void changePwd(@RequestBody @Valid ChangePwdRequestDto requestDto, HttpServletRequest request) {
         userService.changePwd(requestDto, request);
     }
@@ -138,7 +138,7 @@ public class UserController {
 
     @Operation(summary = "获取当前用户信息", description = "获取当前用户信息")
     @GetMapping
-    public UserResponseDto getCurrentUserInfo() {
+    public Map<String, Object> getCurrentUserInfo() {
         return userService.getCurrentUserInfo();
     }
 
@@ -163,8 +163,32 @@ public class UserController {
     }
 
     @Operation(summary = "重置密码", description = "重置密码")
-    @PostMapping("/resetPwd")
+    @PostMapping("/me/password/reset")
     public void resetPwd(@RequestBody @Valid ResetPwdRequestDto requestDto) {
         userService.resetPwd(requestDto);
+    }
+
+    @Operation(summary = "获取个人中心可见的用户属性", description = "获取个人中心可见的用户属性")
+    @GetMapping("/attr/list/visible")
+    public List<UserAttrResponseDto> getVisibleUserAttrs() {
+        return userAttrService.getVisibleUserAttrs();
+    }
+
+    @Operation(summary = "更新个人信息", description = "更新个人信息")
+    @PutMapping("/me")
+    public void updateMe(@RequestBody Map<String, Object> userInfo) {
+        userService.updateMe(userInfo);
+    }
+
+    @Operation(summary = "绑定邮箱", description = "绑定邮箱")
+    @PostMapping("/me/email/bind")
+    public void bindEmail(@RequestBody @Valid BindOrUnbindEmailRequestDto requestDto) {
+        userService.bindEmail(requestDto);
+    }
+
+    @Operation(summary = "解绑邮箱", description = "解绑邮箱")
+    @PostMapping("/me/email/unbind")
+    public void unbindEmail(@RequestBody @Valid BindOrUnbindEmailRequestDto requestDto) {
+        userService.unbindEmail(requestDto);
     }
 }

@@ -25,11 +25,17 @@ public interface UserService extends IService<User> {
 
     void removeUser(String userId);
 
-    UserResponseDto getCurrentUserInfo();
+    Map<String, Object> getCurrentUserInfo();
 
     void rebindMfaDevice(String userId);
 
     void clearAuthorizedTokens(String userId);
 
     void resetPwd(ResetPwdRequestDto requestDto);
+
+    void updateMe(Map<String, Object> userInfo);
+
+    void bindEmail(BindOrUnbindEmailRequestDto requestDto);
+
+    void unbindEmail(BindOrUnbindEmailRequestDto requestDto);
 }

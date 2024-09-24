@@ -18,6 +18,7 @@ import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
@@ -55,6 +56,15 @@ public class AuthUtil {
      */
     public static Optional<String> getCurrentUsername() {
         return Optional.ofNullable(getCurrentJwtClaim(CommonConstants.USERNAME));
+    }
+
+    /**
+     * 获取当前用户 ID
+     *
+     * @return 当前用户名
+     */
+    public static Optional<String> getCurrentUserId() {
+        return Optional.ofNullable(getCurrentJwtClaim(JwtClaimNames.SUB));
     }
 
     /**
@@ -214,28 +224,33 @@ public class AuthUtil {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         Boolean extFlg = filter.getExtFlg();
         boolean isExtFlag = Boolean.TRUE.equals(extFlg);
-        String key = Boolean.TRUE.equals(extFlg) ? filter.getKey() : "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(filter.getKey()) ;
-        Object value = convertDataFilterValue(filter.getValue(), UserAttrDataTypeEnum.valueOf(filter.getDataType()));
 
-        // 布尔值类型的字段，基础字段在查询时转换为布尔类型，扩展字段在查询时保持字符串类型
-        if (!isExtFlag && UserAttrDataTypeEnum.BOOLEAN.getType().equals(filter.getDataType()) && !(value instanceof Boolean)) {
-            value = Boolean.valueOf(value.toString());
+        // 基础字段，添加前缀 "t1."
+        String key = isExtFlag ? filter.getKey() : "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(filter.getKey()) ;
+
+        String attrKey = "t3.attr_key";
+        // 日期（时间类型）的扩展字段在查询时，将数据库中保存的字符类型的数据转换为长整型
+        String attrValue;
+        if (isExtFlag && (UserAttrDataTypeEnum.DATETIME.getType().equals(filter.getDataType()) || UserAttrDataTypeEnum.DATE.getType().equals(filter.getDataType()))) {
+            attrValue = "CAST(t2.attr_value AS BIGINT)";
+        } else {
+            attrValue = "t2.attr_value";
         }
 
-        String queryPrefixAttrKey = "t3.attr_key";
-        String queryPrefixAttrValue = "t2.attr_value";
-        Object queryVal = value;
+        // 数据类型转换
+        Object value = convertDataFilterValue(filter.getValue(), UserAttrDataTypeEnum.valueOf(filter.getDataType()), isExtFlag);
+
         return switch (filterType) {
-            case EQ ->isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.eq(queryPrefixAttrValue, queryVal)) : queryWrapper.eq(key, queryVal);
-            case NE -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.ne(queryPrefixAttrValue, queryVal)) : queryWrapper.ne(key, queryVal);
-            case LIKE -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.like(queryPrefixAttrValue, queryVal)) : queryWrapper.like(key, queryVal);
-            case NOT_LIKE -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.notLike(queryPrefixAttrValue, queryVal)) : queryWrapper.notLike(key, queryVal);
-            case IN -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.in(queryPrefixAttrValue, queryVal)) : queryWrapper.in(key, queryVal);
-            case NOT_IN -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.notIn(queryPrefixAttrValue, queryVal)) : queryWrapper.notIn(key, queryVal);
-            case GT -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.gt(queryPrefixAttrValue, queryVal)) : queryWrapper.gt(key, queryVal);
-            case GE -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.ge(queryPrefixAttrValue, queryVal)) : queryWrapper.ge(key, queryVal);
-            case LT -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.lt(queryPrefixAttrValue, queryVal)) : queryWrapper.lt(key, queryVal);
-            case LE -> isExtFlag ? queryWrapper.eq(queryPrefixAttrKey, key).and(o -> o.le(queryPrefixAttrValue, queryVal)) : queryWrapper.le(key, queryVal);
+            case EQ ->isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.eq(attrValue, value)) : queryWrapper.eq(key, value);
+            case NE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.ne(attrValue, value)) : queryWrapper.ne(key, value);
+            case LIKE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.like(attrValue, value)) : queryWrapper.like(key, value);
+            case NOT_LIKE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.notLike(attrValue, value)) : queryWrapper.notLike(key, value);
+            case IN -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.in(attrValue, value)) : queryWrapper.in(key, value);
+            case NOT_IN -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.notIn(attrValue, value)) : queryWrapper.notIn(key, value);
+            case GT -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.gt(attrValue, value)) : queryWrapper.gt(key, value);
+            case GE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.ge(attrValue, value)) : queryWrapper.ge(key, value);
+            case LT -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.lt(attrValue, value)) : queryWrapper.lt(key, value);
+            case LE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.le(attrValue, value)) : queryWrapper.le(key, value);
         };
     }
 
@@ -250,15 +265,16 @@ public class AuthUtil {
         return switch (dataType) {
             case NUMBER -> new BigDecimal(value);
             case BOOLEAN -> Boolean.valueOf(value);
-            case DATETIME -> Long.parseLong(value);
+            case DATETIME, DATE -> Long.parseLong(value);
             default -> value;
         };
     }
 
-    private static Object convertDataFilterValue(Object value, UserAttrDataTypeEnum dataType) {
+    private static Object convertDataFilterValue(Object value, UserAttrDataTypeEnum dataType, boolean extFlg) {
         return  switch (dataType) {
-            case DATETIME -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
+            case DATETIME, DATE -> extFlg ? value : Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
             case STRING -> value.toString();
+            case BOOLEAN -> extFlg ? value : Boolean.valueOf(value.toString());
             default -> value;
         };
     }
