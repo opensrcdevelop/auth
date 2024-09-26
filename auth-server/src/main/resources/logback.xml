@@ -94,6 +94,7 @@
         <root level="info">
             <appender-ref ref="console" />
             <appender-ref ref="file" />
+            <appender-ref ref="async-loki" />
         </root>
     </springProfile>
 
@@ -107,7 +108,6 @@
         </logger>
         <root level="info">
             <appender-ref ref="console" />
-            <appender-ref ref="async-loki" />
         </root>
     </springProfile>
 </configuration>
