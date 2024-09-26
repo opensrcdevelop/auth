@@ -3,6 +3,9 @@
     <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight([%-5level]) [%-35.35(%thread)] [%X{TraceId:-TraceId}] [%X{RemoteIP:-RemoteIP}] [%X{TenantCode:-TenantCode}] [%X{username:-username}] --- %highlight(%-50.50(%logger{50})#%M\(%F:%L\)): %msg%n" />
     <property name="log.home" value="/app/logs" />
     <property name="log.fileName" value="auth-server" />
+    <springProperty name="loki.url" source="loki.url" />
+    <springProperty name="loki.jobName" source="spring.application.name" />
+    <springProperty name="loki.env" source="loki.env" />
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -50,6 +53,40 @@
         </encoder>
     </appender>
 
+    <appender name="loki" class="com.github.loki4j.logback.Loki4jAppender">
+        <http class="com.github.loki4j.logback.ApacheHttpSender">
+            <url>${loki.url}</url>
+        </http>
+        <format>
+            <label>
+                <pattern>application=${loki.jobName},host=${HOSTNAME},env=${loki.env},level=%level</pattern>
+            </label>
+            <message>
+                <pattern>
+                    {
+                    "timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+                    "level":"%level",
+                    "thread":"%thread",
+                    "traceId": "%X{TraceId}",
+                    "remoteIp": "%X{RemoteIP}",
+                    "tenantCode": "%X{TenantCode}",
+                    "username": "%X{username}"
+                    "class":"%logger{50}#%M:%L",
+                    "message": "%message"
+                    }
+                </pattern>
+            </message>
+            <sortByTime>true</sortByTime>
+        </format>
+    </appender>
+
+    <appender name="async-loki" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="loki" />
+    </appender>
+
     <springProfile name="prod">
         <logger name="cn.opensrcdevelop" level="debug" />
         <!-- Spring framework logger -->
@@ -70,6 +107,7 @@
         </logger>
         <root level="info">
             <appender-ref ref="console" />
+            <appender-ref ref="async-loki" />
         </root>
     </springProfile>
 </configuration>
