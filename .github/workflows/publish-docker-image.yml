@@ -50,9 +50,9 @@ jobs:
         with:
           name: Auth-Server Artifacts
           path: |
+            ./elastic-apm
             ./auth-server/build/libs
             ./auth-server/Dockerfile
-            ./elastic-apm
 
   build-push-docker-image:
     name: Build And Push Docker Image
