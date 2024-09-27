@@ -7,4 +7,4 @@ COPY ./elastic-apm/elastic-apm-agent-*.jar /app/elastic-apm/elastic-apm-agent.ja
 ENV LANG C.UTF-8
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/'$TZ' /etc/localtime && echo '$TZ' > /etc/timezone
-ENTRYPOINT["sh", "-c", "java -javaagent:/app/elastic-apm/elastic-apm-agent.jar -Delastic.apm.service_name=auth-server -Delastic.apm.server_url=$APM_SERVER_URL -Delastic.apm.application_packages=cn.opensrcdevelop -Delastic.apm.environment=prod -Delastic.apm.enable_log_correlation=true -Dspring.profiles.active=prod -jar /app/app.jar"]
+ENTRYPOINT["sh", "-c", "java -javaagent:/app/elastic-apm/elastic-apm-agent.jar -Delastic.apm.service_name=auth-server -Delastic.apm.server_url=http://apm-server.ns-bb45gt31.svc.cluster.local:8200 -Delastic.apm.application_packages=cn.opensrcdevelop -Delastic.apm.environment=prod -Delastic.apm.enable_log_correlation=true -Dspring.profiles.active=prod -jar /app/app.jar"]
