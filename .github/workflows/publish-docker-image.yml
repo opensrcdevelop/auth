@@ -52,7 +52,7 @@ jobs:
           path: |
             ./auth-server/build/libs
             ./auth-server/Dockerfile
-            ./auth-server/elastic-apm
+            ./elastic-apm
 
   build-push-docker-image:
     name: Build And Push Docker Image
