@@ -8,5 +8,5 @@ ENV LANG C.UTF-8
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/'$TZ' /etc/localtime && echo '$TZ' > /etc/timezone
 ENV JAVA_OPTS=""
-ENTRYPOINT ["java", "$JAVA_OPTS", "-Dspring.profiles.active=prod", "-jar"]
+ENTRYPOINT ["java", "$JAVA_OPTS -Dspring.profiles.active=prod", "-jar"]
 CMD ["/app/app.jar"]
