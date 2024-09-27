@@ -66,8 +66,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          pwd
-          ls -al
+          cd ./auth-server
           docker build -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
 
       - name: Login Registry
