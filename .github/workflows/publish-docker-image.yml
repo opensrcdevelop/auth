@@ -50,7 +50,7 @@ jobs:
         with:
           name: Auth-Server Artifacts
           path: |
-            ./elastic-apm
+            ./auth-server/elastic-apm
             ./auth-server/build/libs
             ./auth-server/Dockerfile
 
@@ -66,7 +66,6 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd ./auth-server
           docker build -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
 
       - name: Login Registry
