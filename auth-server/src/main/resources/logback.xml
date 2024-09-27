@@ -68,6 +68,7 @@
                     "level":"%level",
                     "thread":"%thread",
                     "traceId": "%X{TraceId}",
+                    "apmTraceId": "%X{trace.id}"
                     "remoteIp": "%X{RemoteIP}",
                     "tenantCode": "%X{TenantCode}",
                     "username": "%X{username}"
