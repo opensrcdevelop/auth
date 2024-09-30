@@ -24,6 +24,7 @@
 - 资源管理
 - 权限管理
 - 多租户
+- 个人中心
 
 ### 功能概述
 
@@ -77,13 +78,30 @@
   - 创建租户
   - 关闭 / 启用租户
 
+- 个人中心
+
+  支持用户更新可见的个人信息、账号绑定、修改密码。
+
 ### 持续集成（CI）
 
 基于 [**GitHub Actions**](https://docs.github.com/zh/actions) 实现持续集成（CI），自动编译、打包、构建 Docker 镜像、发布到镜像仓库。
 
+### 日志收集
+
+集成 **[Grafana Loki](https://grafana.com/docs/loki/latest/)** 实现日志收集与显示。
+
+### 性能监控
+
+集成 [**Elastic APM**](https://www.elastic.co/cn/observability/application-performance-monitoring) 实现程序性能监控。
+
 ### 前端工程
 
 **[Auth Server Console](https://github.com/opensrcdevelop/auth-server-front)**
+
+### 演示地址
+
+- URL：[https://tm5wt3mp.console.opensrcdevelop.cn](https://tm5wt3mp.console.opensrcdevelop.cn/)
+- 账号 / 密码：preview / preview
 
 ### 演示截图
 
