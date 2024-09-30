@@ -76,7 +76,7 @@ public class UserController {
     @Operation(summary = "更新用户信息", description = "更新用户信息")
     @PutMapping
     @Authorize({ "allUserPermissions", "updateUser" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#requestDto.userId")
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#requestDto.userId")
     public void updateUser(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserRequestDto requestDto) {
         userService.updateUser(requestDto);
     }
@@ -127,7 +127,7 @@ public class UserController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allUserPermissions", "deleteUser" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#id")
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void removeUser(@PathVariable @NotBlank String id) {
         userService.removeUser(id);
     }
@@ -157,7 +157,7 @@ public class UserController {
             "37479a6e-e777-4114-9f81-c8e31f0ce49b",
             "1c092d28-81fb-4e97-92ef-93d446c826c6",
             "edf63d7e-fa66-4483-b38b-1cd7200b05ec"
-    }, idEl = "#requestDto.id")
+    }, idEl = "#id")
     public void removeUserAttr(@PathVariable @NotBlank String id) {
         userAttrService.removeUserAttr(id);
     }
@@ -174,7 +174,7 @@ public class UserController {
     })
     @PutMapping("/{id}/mfa/device")
     @Authorize({ "allUserPermissions", "rebindMfaDevice" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#id")
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void rebindMfaDevice(@PathVariable @NotBlank String id) {
         userService.rebindMfaDevice(id);
     }
@@ -185,7 +185,7 @@ public class UserController {
     })
     @DeleteMapping("/{id}/token")
     @Authorize({ "allUserPermissions", "clearTokens" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#id")
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void clearAuthorizedToken(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokens(id);
     }
