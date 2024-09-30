@@ -226,8 +226,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         UserAttr updateUserAttr = new UserAttr();
         updateUserAttr.setAttrId(requestDto.getId());
         updateUserAttr.setAttrName(requestDto.getName());
-        updateUserAttr.setUserVisible(requestDto.getUserVisible());
-        updateUserAttr.setUserEditable(requestDto.getUserEditable());
+        CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserVisible, requestDto::getUserVisible);
+        CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserEditable, requestDto::getUserEditable);
         updateUserAttr.setDisplayWidth(requestDto.getDisplayWidth());
         Boolean display = requestDto.getUserLstDisplay();
         updateUserAttr.setUserLstDisplay(display);

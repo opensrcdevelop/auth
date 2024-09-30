@@ -92,7 +92,10 @@ public class UserController {
             "6a5a3759-3fb3-47c3-bec6-f14d32e170c2",
             "3845b5d4-36a0-45bb-854e-6d79593aefd4",
             "d019fb4e-8acd-4411-9061-9d8aee961703",
-            "3cb048e2-5896-46aa-96e6-fa975b4780f5"
+            "3cb048e2-5896-46aa-96e6-fa975b4780f5",
+            "37479a6e-e777-4114-9f81-c8e31f0ce49b",
+            "1c092d28-81fb-4e97-92ef-93d446c826c6",
+            "edf63d7e-fa66-4483-b38b-1cd7200b05ec"
     }, idEl = "#requestDto.id")
     public void updateUserAttr(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserAttrRequestDto requestDto) {
         userAttrService.updateUserAttr(requestDto);

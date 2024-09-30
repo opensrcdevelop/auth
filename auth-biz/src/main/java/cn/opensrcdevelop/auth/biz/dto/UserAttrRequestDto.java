@@ -42,10 +42,10 @@ public class UserAttrRequestDto {
     private Integer displayWidth;
 
     @Schema(description = "用户可见")
-    @NotNull
+    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
     private Boolean userVisible;
 
     @Schema(description = "用户可编辑")
-    @NotNull
+    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
     private Boolean userEditable;
 }
