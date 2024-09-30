@@ -19,6 +19,9 @@ public class AuthorizeRequestDto {
     @Schema(description = "用户组ID")
     private List<String> userGroupIds;
 
+    @Schema(description = "资源ID（鉴权用）")
+    private String resourceId;
+
     @Schema(description = "权限ID集合")
     @NotEmpty
     private List<String> permissionIds;

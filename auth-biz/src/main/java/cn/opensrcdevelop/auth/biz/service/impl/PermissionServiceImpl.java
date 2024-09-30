@@ -182,6 +182,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionName(permission.getPermissionName());
         permissionResponse.setPermissionCode(permission.getPermissionCode());
         permissionResponse.setPermissionDesc(permission.getDescription());
+        permissionResponse.setResourceId(permission.getResourceId());
 
         // 3. 设置授权记录
         var records = CommonUtil.stream(permissionRepository.searchPermissionAuthorizeRecords(permissionId, keyword)).map(authorizeRecord -> {

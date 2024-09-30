@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationFilter
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvider;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
@@ -88,6 +89,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        http.authenticationProvider(new EmailCodeAuthenticationProvider(SpringContextUtil.getBean(UserService.class)));
+        http.authenticationProvider(new EmailCodeAuthenticationProvider(SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
     }
 }

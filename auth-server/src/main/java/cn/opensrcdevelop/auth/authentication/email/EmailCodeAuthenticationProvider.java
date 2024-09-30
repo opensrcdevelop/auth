@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.authentication.email;
 
 import cn.opensrcdevelop.auth.biz.entity.User;
+import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,26 +22,27 @@ import java.util.Collections;
 public class EmailCodeAuthenticationProvider implements AuthenticationProvider {
 
     private final UserDetailsService userDetailsService;
+    private final VerificationCodeService verificationCodeService;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         EmailCodeAuthenticationToken authenticationToken = (EmailCodeAuthenticationToken) authentication;
         String email = authenticationToken.getEmail();
-        String code = authenticationToken.getCode();
         String requestCode = authenticationToken.getRequestCode();
 
         if (StringUtils.isEmpty(email) || StringUtils.isEmpty(requestCode)) {
-            throw new AuthenticationServiceException("Email or request code not found");
+            throw new AuthenticationServiceException("email or request code not found");
+        }
+
+        if (!verificationCodeService.verifyCode(email, requestCode)) {
+            throw new AuthenticationServiceException("invalid Code");
         }
 
         User user = (User) userDetailsService.loadUserByUsername(email);
         if (user == null) {
-            throw new AuthenticationServiceException("Cannot get user info");
+            throw new AuthenticationServiceException("cannot get user info");
         }
 
-        if (!StringUtils.equals(code, requestCode)) {
-            throw new AuthenticationServiceException("Invalid request code");
-        }
         // 避免 EmailCodeAuthenticationToken 反序列化异常
         return new UsernamePasswordAuthenticationToken(user, "", Collections.emptyList());
     }

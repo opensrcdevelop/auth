@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
@@ -59,6 +60,7 @@ public class ClientController {
     @Operation(summary = "更新客户端", description = "更新客户端")
     @PutMapping
     @Authorize({ "allClientPermissions", "updateClient" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#requestDto.id")
     public void updateClient(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ClientRequestDto requestDto) {
         clientService.updateClient(requestDto);
     }
@@ -69,6 +71,7 @@ public class ClientController {
     })
     @PutMapping("/secret/{id}")
     @Authorize({ "allClientPermissions", "updateClientSecret" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#id")
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(@PathVariable @NotBlank String id) {
         return clientService.updateClientSecret(id);
     }
@@ -79,6 +82,7 @@ public class ClientController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allClientPermissions", "deleteClient" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#id")
     public void deleteClient(@PathVariable @NotBlank String id) {
         clientService.deleteClient(id);
     }

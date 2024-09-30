@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
@@ -64,6 +65,7 @@ public class ResourceGroupController {
     @Operation(summary = "更新资源组", description = "更新资源组")
     @PutMapping
     @Authorize({ "allResourceGroupPermissions", "updateResourceGroup" })
+    @ResourceLimit(ids = { "c0b4ee30-bf40-4299-9fab-ff32328b047a" }, idEl = "#requestDto.id")
     public void updateResourceGroup(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ResourceGroupRequestDto requestDto) {
         resourceGroupService.updateResourceGroup(requestDto);
     }
@@ -74,6 +76,7 @@ public class ResourceGroupController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allResourceGroupPermissions", "deleteResourceGroup" })
+    @ResourceLimit(ids = { "c0b4ee30-bf40-4299-9fab-ff32328b047a" }, idEl = "#id")
     public void removeResourceGroup(@PathVariable @NotBlank String id) {
         resourceGroupService.removeResourceGroup(List.of(id));
     }

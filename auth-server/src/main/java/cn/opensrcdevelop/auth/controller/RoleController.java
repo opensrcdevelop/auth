@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.RoleMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleResponseDto;
@@ -38,6 +39,9 @@ public class RoleController {
     @Operation(summary = "创建用户角色映射", description = "创建用户角色映射")
     @PostMapping("/mapping")
     @Authorize({ "allRoleMappingPermissions", "createRoleMapping" })
+    @ResourceLimit(ids = { "baec302c-39ac-4e51-9d28-fb8c9c43caa3" }, idEl = "#requestDto.roleIds", isList = true)
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#requestDto.userIds", isList = true)
+    @ResourceLimit(ids = { "3c6cdb57-7a78-4680-b1f2-3da0673bd883" }, idEl = "#requestDto.userGroupIds", isList = true)
     public void createUserRoleMapping(@RequestBody @Valid RoleMappingRequestDto requestDto) {
         roleService.createUserRoleMapping(requestDto);
     }
@@ -45,6 +49,9 @@ public class RoleController {
     @Operation(summary = "删除用户角色映射", description = "删除用户角色映射")
     @DeleteMapping("/mapping")
     @Authorize({ "allRoleMappingPermissions", "deleteRoleMapping" })
+    @ResourceLimit(ids = { "baec302c-39ac-4e51-9d28-fb8c9c43caa3" }, idEl = "#requestDto.roleIds", isList = true)
+    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#requestDto.userIds", isList = true)
+    @ResourceLimit(ids = { "3c6cdb57-7a78-4680-b1f2-3da0673bd883" }, idEl = "#requestDto.userGroupIds", isList = true)
     public void removeUserRoleMapping(@RequestBody @Valid RoleMappingRequestDto requestDto) {
         roleService.removeUserRoleMapping(requestDto);
     }
@@ -87,6 +94,7 @@ public class RoleController {
     @Operation(summary = "更新角色", description = "更新角色")
     @PutMapping
     @Authorize({ "allRolePermissions", "updateRole" })
+    @ResourceLimit(ids = { "baec302c-39ac-4e51-9d28-fb8c9c43caa3" }, idEl = "#requestDto.id")
     public void updateRole(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) RoleRequestDto requestDto) {
         roleService.updateRole(requestDto);
     }
@@ -97,6 +105,7 @@ public class RoleController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allRolePermissions", "deleteRole" })
+    @ResourceLimit(ids = { "baec302c-39ac-4e51-9d28-fb8c9c43caa3" }, idEl = "#id")
     public void removeRole(@PathVariable @NotBlank String id) {
         roleService.removeRole(id);
     }

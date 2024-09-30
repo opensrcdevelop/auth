@@ -1,9 +1,7 @@
 package cn.opensrcdevelop.auth.authentication.email;
 
-import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
-import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,7 +25,6 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
     private static final String PARAMETER_EMAIL = "email";
     private static final String PARAMETER_CODE = "code";
     private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/login/email", "POST");
-    private final VerificationCodeService verificationCodeService = SpringContextUtil.getBean(VerificationCodeService.class);
 
     public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager) {
         super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
@@ -44,11 +41,7 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
         String email = request.getParameter(PARAMETER_EMAIL);
         String requestCode = request.getParameter(PARAMETER_CODE);
-        if (!verificationCodeService.verifyCode(email, requestCode)) {
-            throw new AuthenticationServiceException("Invalid Code");
-        }
-
-        EmailCodeAuthenticationToken authenticationToken = new EmailCodeAuthenticationToken(email, requestCode, requestCode);
+        EmailCodeAuthenticationToken authenticationToken = new EmailCodeAuthenticationToken(email, requestCode);
         return this.getAuthenticationManager().authenticate(authenticationToken);
     }
 }

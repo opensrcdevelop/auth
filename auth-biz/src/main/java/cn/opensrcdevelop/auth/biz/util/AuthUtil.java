@@ -61,7 +61,7 @@ public class AuthUtil {
     /**
      * 获取当前用户 ID
      *
-     * @return 当前用户名
+     * @return 当前用户 ID
      */
     public static Optional<String> getCurrentUserId() {
         return Optional.ofNullable(getCurrentJwtClaim(JwtClaimNames.SUB));
