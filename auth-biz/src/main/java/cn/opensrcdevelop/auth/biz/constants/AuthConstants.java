@@ -15,4 +15,5 @@ public class AuthConstants {
     public static final String VERIFICATION_CODE = "VERIFICATION_CODE";
     public static final String SESSION_CHANGED_PWD = "SESSION_CHANGED_PWD";
     public static final String OIDC_SCOPE_ROLES = "roles";
+    public static final String CONSOLE_ACCESS = "consoleAccess";
 }

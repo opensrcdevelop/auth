@@ -1,9 +1,11 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -15,7 +17,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,21 +35,55 @@ public class PermissionController {
 
     @Operation(summary = "创建权限", description = "创建权限")
     @PostMapping
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'createPermssion')")
+    @Authorize({ "allPermPermissions", "createPermission" })
+    @ResourceLimit(ids = {
+            "14ee7b7e-db4c-40cc-b93e-d38969be5542",
+            "75a3dee9-a95f-4ad3-a32a-a7f6d34c0050",
+            "931848a2-beb6-444e-a7d7-72e909553b00",
+            "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c",
+            "75c35dc3-1996-48ab-be27-e4078f86a559",
+            "79a30d3a-0fde-4087-a307-619cc0c56b17",
+            "edd2a541-f482-45cd-9842-c1ebf43c346c",
+            "911e08a0-d91a-4c66-8a7d-c8fda2c79c69",
+            "4d367bc0-d043-402c-a1d5-d4e5c55c9e23",
+            "df35c2ee-f8fb-4a3e-8627-879d2bcd23cc",
+            "97392350-5214-4dbb-83e8-45b678ce145e",
+            "da2c6573-d236-4e4d-96a4-85c517b72c59",
+            "1624ca73-e656-48d9-800e-b5762b51d7c5",
+            "6df389ec-09be-4443-a80a-b3fed5d9b9d8"
+
+    }, idEl = "#requestDto.resourceId")
     public void createPermission(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) PermissionRequestDto requestDto) {
         permissionService.createPermission(requestDto);
     }
 
     @Operation(summary = "授权", description = "授权")
     @PostMapping("/authorize")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'authorizePermission')")
+    @Authorize({ "allPermPermissions", "authorizePermission" })
+    @ResourceLimit(ids = {
+            "14ee7b7e-db4c-40cc-b93e-d38969be5542",
+            "75a3dee9-a95f-4ad3-a32a-a7f6d34c0050",
+            "931848a2-beb6-444e-a7d7-72e909553b00",
+            "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c",
+            "75c35dc3-1996-48ab-be27-e4078f86a559",
+            "79a30d3a-0fde-4087-a307-619cc0c56b17",
+            "edd2a541-f482-45cd-9842-c1ebf43c346c",
+            "911e08a0-d91a-4c66-8a7d-c8fda2c79c69",
+            "4d367bc0-d043-402c-a1d5-d4e5c55c9e23",
+            "df35c2ee-f8fb-4a3e-8627-879d2bcd23cc",
+            "97392350-5214-4dbb-83e8-45b678ce145e",
+            "da2c6573-d236-4e4d-96a4-85c517b72c59",
+            "1624ca73-e656-48d9-800e-b5762b51d7c5",
+            "6df389ec-09be-4443-a80a-b3fed5d9b9d8"
+
+    }, idEl = "#requestDto.resourceId")
     public void authorize(@RequestBody @Valid AuthorizeRequestDto requestDto) {
         authorizeService.authorize(requestDto);
     }
 
     @Operation(summary = "创建权限表达式", description = "创建权限表达式")
     @PostMapping("/exp")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'createPermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "createPermissionExp" })
     public void createPermissionExpression(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) PermissionExpRequestDto requestDto) {
         permissionExpService.createPermissionExp(requestDto);
     }
@@ -65,7 +100,12 @@ public class PermissionController {
             @Parameter(name = "principalId", description = "用户 / 用户组 / 角色ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/authorize/{permissionId}/{principalId}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'cancelAuthorization')")
+    @Authorize({ "allPermPermissions", "cancelAuthorization" })
+    @ResourceLimit(ids = {
+            "baec302c-39ac-4e51-9d28-fb8c9c43caa3",
+            "3c6cdb57-7a78-4680-b1f2-3da0673bd883",
+            "4a7eb192-b0e8-4678-bf81-bbbd70ba1880"
+    },idEl = "#principalId")
     public void cancelAuthorization(@PathVariable String permissionId, @PathVariable String principalId) {
         authorizeService.removeAuthorization(permissionId, principalId);
     }
@@ -76,7 +116,7 @@ public class PermissionController {
             @Parameter(name = "keyword", description = "被授权主体关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'getPermissionDetail')")
+    @Authorize({ "allPermPermissions", "getPermissionDetail" })
     public PermissionResponseDto detail(@PathVariable @NotBlank String id, @RequestParam(required = false) String keyword) {
         return permissionService.detail(id, keyword);
     }
@@ -86,14 +126,31 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'deletePermission')")
+    @Authorize({ "allPermPermissions", "deletePermission" })
     public void removePermission(@PathVariable @NotBlank String id) {
         permissionService.removePermission(id);
     }
 
     @Operation(summary = "更新权限", description = "更新权限")
     @PutMapping
-    @PreAuthorize("@pms.hasAnyPermission('allPermPermissions', 'updatePermission')")
+    @Authorize({ "allPermPermissions", "updatePermission" })
+    @ResourceLimit(ids = {
+            "14ee7b7e-db4c-40cc-b93e-d38969be5542",
+            "75a3dee9-a95f-4ad3-a32a-a7f6d34c0050",
+            "931848a2-beb6-444e-a7d7-72e909553b00",
+            "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c",
+            "75c35dc3-1996-48ab-be27-e4078f86a559",
+            "79a30d3a-0fde-4087-a307-619cc0c56b17",
+            "edd2a541-f482-45cd-9842-c1ebf43c346c",
+            "911e08a0-d91a-4c66-8a7d-c8fda2c79c69",
+            "4d367bc0-d043-402c-a1d5-d4e5c55c9e23",
+            "df35c2ee-f8fb-4a3e-8627-879d2bcd23cc",
+            "97392350-5214-4dbb-83e8-45b678ce145e",
+            "da2c6573-d236-4e4d-96a4-85c517b72c59",
+            "1624ca73-e656-48d9-800e-b5762b51d7c5",
+            "6df389ec-09be-4443-a80a-b3fed5d9b9d8"
+
+    }, idEl = "#requestDto.resourceId")
     public void updatePermission(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionRequestDto requestDto) {
         permissionService.updatePermission(requestDto);
     }
@@ -105,7 +162,7 @@ public class PermissionController {
             @Parameter(name = "keyword", description = "表达式 / 名称检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/exp/list")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'listPermissionExp')")
+    @Authorize({ "allPermPermissions", "listPermissionExp" })
     public PageData<PermissionExpResponseDto> listPermissionExp(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return permissionExpService.list(page, size, keyword);
     }
@@ -115,28 +172,28 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'getPermissionExpDetail')")
+    @Authorize({ "allPermissionExpPermissions", "getPermissionExpDetail" })
     public PermissionExpResponseDto expDetail(@PathVariable @NotBlank String id) {
         return permissionExpService.detail(id);
     }
 
     @Operation(summary = "添加授权条件", description = "添加授权条件")
     @PostMapping("/authorize/cond")
-    @PreAuthorize("@pms.hasAnyPermission('allAuthorizeCondPermissions', 'addAuthorizeCondition')")
+    @Authorize({ "allAuthorizeCondPermissions", "addAuthorizeCondition" })
     public void createAuthorizeCondition(@RequestBody AuthorizeConditionRequestDto requestDto) {
         authorizeService.createAuthorizeCondition(requestDto);
     }
 
     @Operation(summary = "删除授权条件", description = "删除授权条件")
     @DeleteMapping("/authorize/cond")
-    @PreAuthorize("@pms.hasAnyPermission('allAuthorizeCondPermissions', 'deleteAuthorizeCondition')")
+    @Authorize({ "allAuthorizeCondPermissions", "deleteAuthorizeCondition" })
     public void removeAuthorizeCondition(@RequestBody AuthorizeConditionRequestDto requestDto) {
         authorizeService.removeAuthorizeCondition(requestDto);
     }
 
     @Operation(summary = "更新权限表达式", description = "更新权限表达式")
     @PutMapping("/exp")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'updatePermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "updatePermissionExp" })
     public void updatePermissionExpression(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionExpRequestDto requestDto) {
         permissionExpService.updatePermissionExp(requestDto);
     }
@@ -146,7 +203,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/exp/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allPermissionExpPermissions', 'deletePermissionExp')")
+    @Authorize({ "allPermissionExpPermissions", "deletePermissionExp" })
     public  void removePermissionExpression(@PathVariable @NotBlank String id) {
         permissionExpService.removePermissionExp(id);
     }

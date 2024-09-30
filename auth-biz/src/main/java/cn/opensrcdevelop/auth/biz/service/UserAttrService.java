@@ -31,4 +31,6 @@ public interface UserAttrService extends IService<UserAttr> {
     UserAttrResponseDto detail(String userAttrId);
 
     void removeUserAttr(String userAttrId);
+
+    List<UserAttrResponseDto> getVisibleUserAttrs();
 }

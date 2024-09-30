@@ -23,14 +23,10 @@ public class EmailCodeAuthenticationToken extends AbstractAuthenticationToken {
     /** 请求验证码 */
     private final String requestCode;
 
-    /** 验证码 */
-    private final String code;
-
-    public EmailCodeAuthenticationToken(String email, String requestCode, String code) {
+    public EmailCodeAuthenticationToken(String email, String requestCode) {
         super(Collections.emptyList());
         this.email = email;
         this.requestCode = requestCode;
-        this.code = code;
         super.setAuthenticated(false);
     }
 

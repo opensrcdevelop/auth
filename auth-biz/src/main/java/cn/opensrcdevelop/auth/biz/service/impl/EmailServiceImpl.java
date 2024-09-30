@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.service.EmailService;
 import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.entity.MailInfo;
 import cn.opensrcdevelop.common.exception.BizException;
@@ -14,6 +15,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
@@ -32,6 +35,7 @@ public class EmailServiceImpl implements EmailService {
     private static final String EMAIL_CODE_TEMPLATE_PATH = "templates/emilaCode.html.ftl";
     private static final String CREATE_USER_NOTICE_PATH = "templates/createUserNotice.html.ftl";
     private static final String RESET_PWD_NOTICE_PATH = "templates/resetPwdNotice.html.ftl";
+    private static final String BIND_EMAIL_TEMPLATE_PATH = "templates/bindEmail.html.ftl";
 
     private final JavaMailSender mailSender;
     private final UserService userService;
@@ -71,7 +75,7 @@ public class EmailServiceImpl implements EmailService {
         }
 
         // 2. 设置验证码
-        String code = verificationCodeService.setCode(emailCodeLive, ChronoUnit.MINUTES);
+        String code = verificationCodeService.setCode(to, emailCodeLive, ChronoUnit.MINUTES);
 
         // 3. 发送邮件
         MailInfo mailInfo = new MailInfo();
@@ -116,6 +120,32 @@ public class EmailServiceImpl implements EmailService {
         mailInfo.setSubject(DEFAULT_RESET_PWD_NOTICE_SUBJECT);
         CompletableFuture.runAsync(() -> MailUtil.sendHtmlTemplateEmail(mailInfo, RESET_PWD_NOTICE_PATH,
                 Map.of(CommonConstants.USERNAME, username, "password", password, "loginUrl", loginUrl)));
+    }
+
+    /**
+     * 发送绑定邮箱验证码
+     *
+     * @param to 收件人
+     */
+    @Override
+    public void sendBindEmailCode(String to) {
+        // 1. 获取用户信息
+        String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+        User user = userService.getById(userId);
+        if (user == null) {
+            throw new OAuth2AuthenticationException("invalid authentication");
+        }
+
+        // 2. 设置验证码
+        String code = verificationCodeService.setCode(to, emailCodeLive, ChronoUnit.MINUTES);
+
+        // 3. 发送邮件
+        MailInfo mailInfo = new MailInfo();
+        mailInfo.setFrom(MessageFormat.format(DEFAULT_FROM_FORMAT, appName, fromUsername));
+        mailInfo.setTo(List.of(to));
+        mailInfo.setSubject(DEFAULT_EMAIL_CODE_SUBJECT);
+        CompletableFuture.runAsync(() -> MailUtil.sendHtmlTemplateEmail(mailInfo, BIND_EMAIL_TEMPLATE_PATH,
+                Map.of(CommonConstants.USERNAME, user.getUsername(), "emailCodeLive", emailCodeLive, "code", code)));
     }
 
     @PostConstruct

@@ -13,6 +13,8 @@ import cn.opensrcdevelop.tenant.support.TenantHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -53,8 +55,9 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      * @return 是否存在
      */
     @Override
-    public boolean exists(String tenantCode) {
-        return super.exists(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode).and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
+    public Tuple2<Boolean, Tenant> exists(String tenantCode) {
+        Tenant tenant =  super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode).and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
+        return Objects.isNull(tenant) ? Tuple.of(false, null) : Tuple.of(true, tenant);
     }
 
     /**
@@ -180,9 +183,11 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     public CheckTenantResponseDto checkTenant(String tenantCode){
         try {
             CheckTenantResponseDto checkTenantResponse = new CheckTenantResponseDto();
-            if (TenantHelper.tenantExists(tenantCode)) {
+            var existsRes = TenantHelper.tenantExists(tenantCode);
+            if (Boolean.TRUE.equals(existsRes._1)) {
                 checkTenantResponse.setExists(true);
                 checkTenantResponse.setIssuer(TenantHelper.getTenantIssuer(tenantCode));
+                checkTenantResponse.setTenantName(existsRes._2.getTenantName());
             } else {
                 checkTenantResponse.setExists(false);
             }

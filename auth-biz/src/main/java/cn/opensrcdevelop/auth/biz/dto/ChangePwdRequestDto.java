@@ -8,10 +8,6 @@ import lombok.Data;
 @Data
 public class ChangePwdRequestDto {
 
-    @Schema(description = "用户名")
-    @NotBlank
-    private String username;
-
     @Schema(description = "原密码")
     @NotBlank
     private String rawPwd;

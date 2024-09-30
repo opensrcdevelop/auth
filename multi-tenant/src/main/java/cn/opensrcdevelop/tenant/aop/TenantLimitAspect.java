@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.tenant.aop;
 
 import cn.opensrcdevelop.tenant.annoation.TenantLimit;
-import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -28,7 +28,7 @@ public class TenantLimitAspect {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         TenantLimit tenantLimit = methodSignature.getMethod().getAnnotation(TenantLimit.class);
         List<String> limitedTenants = Arrays.asList(tenantLimit.value());
-        String currentTenant = TenantContext.getTenant();
+        String currentTenant = TenantContextHolder.getTenantContext().getTenantCode();
         if (!limitedTenants.contains(currentTenant)) {
             throw new AccessDeniedException(MessageFormat.format(ACCESS_DENIED_EXCEPTION_MESSAGE, currentTenant, limitedTenants));
         }

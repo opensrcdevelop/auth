@@ -17,7 +17,10 @@ public enum UserAttrDataTypeEnum {
     BOOLEAN("BOOLEAN"),
 
     /** 日期时间类型 */
-    DATETIME("DATETIME");
+    DATETIME("DATETIME"),
+
+    /** 日期类型 */
+    DATE("DATE");
 
     private final String type;
 }

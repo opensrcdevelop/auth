@@ -14,7 +14,7 @@ import cn.opensrcdevelop.auth.biz.service.PermissionService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -182,6 +182,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionName(permission.getPermissionName());
         permissionResponse.setPermissionCode(permission.getPermissionCode());
         permissionResponse.setPermissionDesc(permission.getDescription());
+        permissionResponse.setResourceId(permission.getResourceId());
 
         // 3. 设置授权记录
         var records = CommonUtil.stream(permissionRepository.searchPermissionAuthorizeRecords(permissionId, keyword)).map(authorizeRecord -> {
@@ -318,7 +319,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
         List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
         Objects.requireNonNull(aud);
-        return TenantContext.getTenant() + ":" + userId + ":" + aud.get(0);
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId + ":" + aud.get(0);
     }
 
     /**

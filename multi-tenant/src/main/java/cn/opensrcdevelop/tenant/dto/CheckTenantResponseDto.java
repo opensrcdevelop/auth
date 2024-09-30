@@ -11,4 +11,7 @@ public class CheckTenantResponseDto {
 
     @Schema(description = "是否存在")
     private Boolean exists;
+
+    @Schema(description = "租户名称")
+    private String tenantName;
 }

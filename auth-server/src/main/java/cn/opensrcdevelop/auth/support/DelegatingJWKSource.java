@@ -4,7 +4,7 @@ import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
-import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.nimbusds.jose.KeySourceException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSelector;
@@ -28,7 +28,7 @@ public class DelegatingJWKSource implements JWKSource<SecurityContext> {
     }
 
     private JWKSet getJwkSet() {
-        String tenantCode = TenantContext.getTenant();
+        String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
         String jwkSourceStr = RedisUtil.get(AuthConstants.JWK_REDIS_KEY + tenantCode, String.class);
         JWKSet jwkSet;
         if (StringUtils.isNotEmpty(jwkSourceStr)) {

@@ -1,9 +1,11 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.service.ResourceGroupService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -14,7 +16,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +37,7 @@ public class ResourceGroupController {
             @Parameter(name = "keyword", description = "资源组名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'listResourceGroup')")
+    @Authorize({ "allResourceGroupPermissions", "listResourceGroup" })
     public PageData<ResourceGroupResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return resourceGroupService.list(page, size, keyword);
     }
@@ -49,21 +50,22 @@ public class ResourceGroupController {
             @Parameter(name = "keyword", description = "资源名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/resources")
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'getResourceGroupResources')")
+    @Authorize({ "allResourceGroupPermissions", "getResourceGroupResources" })
     public PageData<ResourceResponseDto> getGroupResources(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable String id, @RequestParam(required = false) String keyword) {
         return resourceGroupService.getGroupResources(page, size, id, keyword);
     }
 
     @Operation(summary = "创建资源组", description = "创建资源组")
     @PostMapping
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'createResourceGroup')")
+    @Authorize({ "allResourceGroupPermissions", "createResourceGroup" })
     public void createResourceGroup(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class })ResourceGroupRequestDto requestDto) {
         resourceGroupService.createResourceGroup(requestDto);
     }
 
     @Operation(summary = "更新资源组", description = "更新资源组")
     @PutMapping
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'updateResourceGroup')")
+    @Authorize({ "allResourceGroupPermissions", "updateResourceGroup" })
+    @ResourceLimit(ids = { "c0b4ee30-bf40-4299-9fab-ff32328b047a" }, idEl = "#requestDto.id")
     public void updateResourceGroup(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ResourceGroupRequestDto requestDto) {
         resourceGroupService.updateResourceGroup(requestDto);
     }
@@ -73,7 +75,8 @@ public class ResourceGroupController {
             @Parameter(name = "id", description = "资源组ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'deleteResourceGroup')")
+    @Authorize({ "allResourceGroupPermissions", "deleteResourceGroup" })
+    @ResourceLimit(ids = { "c0b4ee30-bf40-4299-9fab-ff32328b047a" }, idEl = "#id")
     public void removeResourceGroup(@PathVariable @NotBlank String id) {
         resourceGroupService.removeResourceGroup(List.of(id));
     }
@@ -83,7 +86,7 @@ public class ResourceGroupController {
             @Parameter(name = "id", description = "资源组ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allResourceGroupPermissions', 'getResourceGroupDetail')")
+    @Authorize({ "allResourceGroupPermissions", "getResourceGroupDetail" })
     public ResourceGroupResponseDto detail(@PathVariable @NotBlank String id) {
         return resourceGroupService.detail(id);
     }

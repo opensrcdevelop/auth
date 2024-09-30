@@ -34,4 +34,10 @@ public class VerificationCodeController {
     public CheckCodeResponseDto checkCode(@RequestBody @Valid CheckCodeRequestDto requestDto) {
         return verificationCodeService.checkCode(requestDto);
     }
+
+    @Operation(summary = "发送绑定邮箱验证码", description = "发送绑定邮箱验证码")
+    @PostMapping("/email/bind/{to}")
+    public void sendBindEmailCode(@PathVariable @Email String to) {
+        emailService.sendBindEmailCode(to);
+    }
 }

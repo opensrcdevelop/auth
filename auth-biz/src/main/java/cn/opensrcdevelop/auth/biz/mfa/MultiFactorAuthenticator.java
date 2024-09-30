@@ -2,6 +2,8 @@ package cn.opensrcdevelop.auth.biz.mfa;
 
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import org.apache.commons.codec.binary.Base32;
 
 import javax.crypto.Mac;
@@ -17,6 +19,7 @@ public class MultiFactorAuthenticator {
 
     private static final String RANDOM_NUMBER_ALGORITHM = "SHA1PRNG";
     private static final String ISSUER = SpringContextUtil.getProperty("spring.application.name", "auth-server");
+    private static final String TENANT_ISSUER_FORMAT = "%s - %s";
     private static final int SECRET_SIZE = 10;
     // 偏移时间 1 ~ 17
     private static final int WINDOW_SIZE = 0;
@@ -49,7 +52,12 @@ public class MultiFactorAuthenticator {
      * @return 二维码字符串
      */
     public static String getQrCodeString(String username, String secret) {
-        return String.format(TOTP_QRCODE_FORMAT, username, secret, ISSUER);
+        TenantContext tenantContext = TenantContextHolder.getTenantContext();
+        if (tenantContext.isDefaultTenant()) {
+            return String.format(TOTP_QRCODE_FORMAT, username, secret, ISSUER);
+        } else {
+            return String.format(TOTP_QRCODE_FORMAT, username, secret, String.format(TENANT_ISSUER_FORMAT, ISSUER, tenantContext.getTenantName()));
+        }
     }
 
     /**

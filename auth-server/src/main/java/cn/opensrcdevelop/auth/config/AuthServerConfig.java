@@ -3,7 +3,7 @@ package cn.opensrcdevelop.auth.config;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
-import cn.opensrcdevelop.auth.client.support.OAuth2UserAttributesCustomizer;
+import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.configurer.AuthorizationServerConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
@@ -89,8 +89,8 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/totp/check");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
-        excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
-        excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/change");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/reset");
         excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
@@ -107,10 +107,10 @@ public class AuthServerConfig {
         excludePathPatterns.add("/login/email");
         excludePathPatterns.add("/swagger-ui/**");
         excludePathPatterns.add(controllerPathPrefix + "/docs/**");
-        excludePathPatterns.add(controllerPathPrefix + "/user/changePwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/change");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
         excludePathPatterns.add(controllerPathPrefix + "/code/check");
-        excludePathPatterns.add(controllerPathPrefix + "/user/resetPwd");
+        excludePathPatterns.add(controllerPathPrefix + "/user/me/password/reset");
         excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
@@ -149,8 +149,8 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public OAuth2UserAttributesCustomizer oAuth2UserAttributesCustomizer() {
-        return oAuth2UserAttributes -> {
+    public OAuth2AttributesCustomizer oAuth2UserAttributesCustomizer() {
+        return oAuth2Attributes -> {
             // 1. 获取用户信息
             String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
             List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
@@ -161,11 +161,11 @@ public class AuthServerConfig {
                 // 2. 获取用户 map
                 var userMap = AuthUtil.convertUserMap(user);
 
-                // 3. 设置用户属性
-                userMap.forEach(oAuth2UserAttributes::setAttribute);
-                oAuth2UserAttributes.setAttribute("ip", WebUtil.getRemoteIP());
-                oAuth2UserAttributes.setAttribute("device", WebUtil.getDeviceType());
-                oAuth2UserAttributes.setAttribute("browser", WebUtil.getBrowserType());
+                // 3. 设置属性
+                userMap.forEach(oAuth2Attributes::setAttribute);
+                oAuth2Attributes.setAttribute("ip", WebUtil.getRemoteIP());
+                oAuth2Attributes.setAttribute("device", WebUtil.getDeviceType());
+                oAuth2Attributes.setAttribute("browser", WebUtil.getBrowserType());
             }
         };
     }

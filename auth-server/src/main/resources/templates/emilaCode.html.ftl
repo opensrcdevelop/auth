@@ -101,7 +101,7 @@
 </head>
 <body>
 <div class="container">
-    <div class="app">Auth-Server</div>
+    <div class="app">Auth Server</div>
     <p style="border-top: 1px solid #e5e6eb; margin-top: 16px"></p>
     <div class="welcome-text">你好，${username}</div>
     <div class="tip-text">你的账号正在进行邮箱验证，验证码为</div>

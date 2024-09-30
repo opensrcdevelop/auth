@@ -38,20 +38,22 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
     /**
      * 设置验证码
      *
+     * @param receiver 接收方
      * @param liveTime 存活时间
      * @param timeUnit 时间单位
      * @return 验证码
      */
     @Override
-    public String setCode(long liveTime, ChronoUnit timeUnit) {
+    public String setCode(String receiver, long liveTime, ChronoUnit timeUnit) {
         // 1. 生成随机 6 位验证码
         String code =  RandomStringUtils.randomNumeric(6);
         Instant expireTime = Instant.now(Clock.systemDefaultZone()).plus(liveTime, timeUnit);
         VerificationCode verificationCode = new VerificationCode();
         verificationCode.setCode(code);
 
-        // 2. 设置过期时间
+        // 2. 设置过期时间和接收方
         verificationCode.setExpireTime(expireTime);
+        verificationCode.setReceiver(receiver);
 
         // 3. 设置验证码到 session 中
         HttpSession session = httpRequest.getSession(true);
@@ -62,17 +64,22 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
     /**
      * 校验验证码
      *
+     * @param receiver 接收方
      * @param code 验证码
      * @return 校验结果
      */
     @Override
-    public boolean verifyCode(String code) {
+    public boolean verifyCode(String receiver, String code) {
         // 1. 从 session 获取验证码
         HttpSession session = httpRequest.getSession(false);
         if (Objects.nonNull(session) && Objects.nonNull(session.getAttribute(AuthConstants.VERIFICATION_CODE))) {
             VerificationCode verificationCode = (VerificationCode) session.getAttribute(AuthConstants.VERIFICATION_CODE);
+            // 2. 校验接收方
+            if (!StringUtils.equals(receiver, verificationCode.getReceiver())) {
+                return false;
+            }
 
-            // 2. 校验验证码
+            // 3. 校验验证码
             boolean result = Instant.now(Clock.systemDefaultZone()).isBefore(verificationCode.getExpireTime()) && StringUtils.equals(code, verificationCode.getCode());
             if (result) {
                 session.removeAttribute(AuthConstants.VERIFICATION_CODE);
@@ -105,9 +112,10 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
     @Override
     public CheckCodeResponseDto checkCode(CheckCodeRequestDto requestDto) {
         String code = requestDto.getCode();
-        if (verifyCode(code)) {
+        String username = requestDto.getUsername();
+        if (verifyCode(username, code)) {
             CheckCodeResponseDto responseDto = new CheckCodeResponseDto();
-            responseDto.setResultToken(JwtUtil.createJwtWithHS256(Map.of(JWTClaimNames.SUBJECT, requestDto.getUsername()), jws256, checkCodeResultLive, ChronoUnit.MINUTES));
+            responseDto.setResultToken(JwtUtil.createJwtWithHS256(Map.of(JWTClaimNames.SUBJECT, username), jws256, checkCodeResultLive, ChronoUnit.MINUTES));
             return responseDto;
         }
         throw new BizException(MessageConstants.VERIFY_CODE_MSG_1000);

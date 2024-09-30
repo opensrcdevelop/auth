@@ -19,6 +19,6 @@ public class OAuth2Context implements Serializable {
     /** 刷新令牌 */
     private OAuth2RefreshToken refreshToken;
 
-    /** 用户属性 */
-    private OAuth2UserAttributes userAttributes;
+    /** 属性 */
+    private OAuth2Attributes oAuth2Attributes;
 }

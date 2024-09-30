@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.handler;
 
-import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,12 +32,12 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
         String loginFormUrl = determineUrlToUseForThisRequest(request, response, authException);
 
         // 添加租户二级域名
-        String defaultTenant = SpringContextUtil.getProperty("multi.tenant.default-tenant");
-        if (!StringUtils.equals(defaultTenant, TenantContext.getTenant())) {
+        TenantContext tenantContext = TenantContextHolder.getTenantContext();
+        if (!tenantContext.isDefaultTenant()) {
             URL tmpUrl = new URL(loginFormUrl);
             loginFormUrl = tmpUrl.getProtocol() +
                     "://" +
-                    TenantContext.getTenant() +
+                    tenantContext.getTenantCode() +
                     "." +
                     tmpUrl.getAuthority() +
                     tmpUrl.getPath();

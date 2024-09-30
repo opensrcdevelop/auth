@@ -50,6 +50,7 @@ jobs:
         with:
           name: Auth-Server Artifacts
           path: |
+            ./auth-server/elastic-apm
             ./auth-server/build/libs
             ./auth-server/Dockerfile
 

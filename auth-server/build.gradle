@@ -26,5 +26,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation "com.github.loki4j:loki-logback-appender:${rootProject.lokiVer}"
+    implementation "org.apache.httpcomponents:httpclient:${rootProject.httpClient4Ver}"
     runtimeOnly 'org.postgresql:postgresql'
 }

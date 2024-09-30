@@ -1,9 +1,11 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
 import cn.opensrcdevelop.auth.biz.service.impl.ClientServiceImpl;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -14,7 +16,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,7 @@ public class ClientController {
 
     @Operation(summary = "创建客户端", description = "创建客户端")
     @PostMapping
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'createClient')")
+    @Authorize({ "allClientPermissions", "createClient" })
     public CreateOrUpdateSecretClientResponseDto createClient(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) ClientRequestDto requestDto) {
         return clientService.createClient(requestDto);
     }
@@ -41,7 +42,7 @@ public class ClientController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/list")
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'listClient')")
+    @Authorize({ "allClientPermissions", "listClient" })
     public PageData<ClientResponseDto> list(@RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         return clientService.list(keyword, page, size);
     }
@@ -51,14 +52,15 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'getClientDetail')")
+    @Authorize({ "allClientPermissions", "getClientDetail" })
     public ClientResponseDto details(@PathVariable @NotBlank String id) {
         return clientService.details(id);
     }
 
     @Operation(summary = "更新客户端", description = "更新客户端")
     @PutMapping
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'updateClient')")
+    @Authorize({ "allClientPermissions", "updateClient" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#requestDto.id")
     public void updateClient(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ClientRequestDto requestDto) {
         clientService.updateClient(requestDto);
     }
@@ -68,7 +70,8 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @PutMapping("/secret/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'updateClientSecret')")
+    @Authorize({ "allClientPermissions", "updateClientSecret" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#id")
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(@PathVariable @NotBlank String id) {
         return clientService.updateClientSecret(id);
     }
@@ -78,7 +81,8 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("@pms.hasAnyPermission('allClientPermissions', 'deleteClient')")
+    @Authorize({ "allClientPermissions", "deleteClient" })
+    @ResourceLimit(ids = { "52cb8d26-a352-4e5c-99a7-d52b8afff3b1" }, idEl = "#id")
     public void deleteClient(@PathVariable @NotBlank String id) {
         clientService.deleteClient(id);
     }
