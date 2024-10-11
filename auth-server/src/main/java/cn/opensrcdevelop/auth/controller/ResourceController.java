@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
@@ -33,7 +32,6 @@ public class ResourceController {
     @Operation(summary = "创建资源", description = "创建资源")
     @PostMapping
     @Authorize({ "allResourcePermissions", "createResource" })
-    @ResourceLimit(ids = { "c0b4ee30-bf40-4299-9fab-ff32328b047a" }, idEl = "#requestDto.resourceGroupId")
     public void createResource(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ResourceRequestDto requestDto) {
         resourceService.createResource(requestDto);
     }
@@ -76,23 +74,6 @@ public class ResourceController {
     @Operation(summary = "更新资源", description = "更新资源")
     @PutMapping
     @Authorize({ "allResourcePermissions", "updateResource" })
-    @ResourceLimit(ids = {
-            "14ee7b7e-db4c-40cc-b93e-d38969be5542",
-            "75a3dee9-a95f-4ad3-a32a-a7f6d34c0050",
-            "931848a2-beb6-444e-a7d7-72e909553b00",
-            "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c",
-            "75c35dc3-1996-48ab-be27-e4078f86a559",
-            "79a30d3a-0fde-4087-a307-619cc0c56b17",
-            "edd2a541-f482-45cd-9842-c1ebf43c346c",
-            "911e08a0-d91a-4c66-8a7d-c8fda2c79c69",
-            "4d367bc0-d043-402c-a1d5-d4e5c55c9e23",
-            "df35c2ee-f8fb-4a3e-8627-879d2bcd23cc",
-            "97392350-5214-4dbb-83e8-45b678ce145e",
-            "da2c6573-d236-4e4d-96a4-85c517b72c59",
-            "1624ca73-e656-48d9-800e-b5762b51d7c5",
-            "6df389ec-09be-4443-a80a-b3fed5d9b9d8"
-
-    }, idEl = "#requestDto.id")
     public void updateResource(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ResourceRequestDto requestDto) {
         resourceService.updateResource(requestDto);
     }
@@ -102,23 +83,6 @@ public class ResourceController {
             @Parameter(name = "id", description = "资源ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @ResourceLimit(ids = {
-            "14ee7b7e-db4c-40cc-b93e-d38969be5542",
-            "75a3dee9-a95f-4ad3-a32a-a7f6d34c0050",
-            "931848a2-beb6-444e-a7d7-72e909553b00",
-            "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c",
-            "75c35dc3-1996-48ab-be27-e4078f86a559",
-            "79a30d3a-0fde-4087-a307-619cc0c56b17",
-            "edd2a541-f482-45cd-9842-c1ebf43c346c",
-            "911e08a0-d91a-4c66-8a7d-c8fda2c79c69",
-            "4d367bc0-d043-402c-a1d5-d4e5c55c9e23",
-            "df35c2ee-f8fb-4a3e-8627-879d2bcd23cc",
-            "97392350-5214-4dbb-83e8-45b678ce145e",
-            "da2c6573-d236-4e4d-96a4-85c517b72c59",
-            "1624ca73-e656-48d9-800e-b5762b51d7c5",
-            "6df389ec-09be-4443-a80a-b3fed5d9b9d8"
-
-    }, idEl = "#id")
     @Authorize({ "allResourcePermissions", "deleteResource" })
     public void removeResource(@PathVariable @NotBlank String id) {
         resourceService.removeResource(List.of(id));

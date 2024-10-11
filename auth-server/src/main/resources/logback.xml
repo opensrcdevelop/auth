@@ -92,6 +92,7 @@
         <logger name="cn.opensrcdevelop" level="debug" />
         <!-- Spring framework logger -->
         <logger name="org.springframework" level="info" />
+        <logger name="org.springframework.session.web.http.SessionRepositoryFilter" level="warn" />
         <root level="info">
             <appender-ref ref="console" />
             <appender-ref ref="file" />
@@ -105,6 +106,9 @@
         </logger>
         <!-- Spring framework logger -->
         <logger name="org.springframework" level="debug" additivity="false">
+            <appender-ref ref="console" />
+        </logger>
+        <logger name="org.springframework.session.web.http.SessionRepositoryFilter" level="warn" additivity="false">
             <appender-ref ref="console" />
         </logger>
         <root level="info">

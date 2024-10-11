@@ -57,7 +57,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         return filterRegistrationBean;
     }
 
-    @Bean FilterRegistrationBean<RestFilter> tenantContextFilter() {
+    @Bean
+    public FilterRegistrationBean<RestFilter> tenantContextFilter() {
         TenantContextFilter tenantContextFilter = new TenantContextFilter();
         tenantContextFilter.excludePathPatterns(pathPrefix + "/tenant/check/*");
 
