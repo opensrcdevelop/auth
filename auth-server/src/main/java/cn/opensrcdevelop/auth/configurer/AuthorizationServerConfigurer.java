@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthe
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
+import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
@@ -39,6 +40,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     private final CorsFilter corsFilter;
     private final TotpValidFilter totpValidFilter;
     private final ChangePwdCheckFilter changePwdCheckFilter;
+    private final CaptchaVerificationCheckFilter captchaVerificationCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OidcUserInfoService oidcUserInfoService = new OidcUserInfoService(SpringContextUtil.getBean(UserService.class));
 
@@ -95,6 +97,8 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
         // 添加 Totp 校验过滤器
         http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
+        // 添加图像验证码二次校验过滤器
+        http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
 
         // 自定义授权类型认证提供
         OAuth2TokenGenerator<?> tokenGenerator =  http.getSharedObject(OAuth2TokenGenerator.class);

@@ -28,5 +28,6 @@ dependencies {
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "com.github.loki4j:loki-logback-appender:${rootProject.lokiVer}"
     implementation "org.apache.httpcomponents:httpclient:${rootProject.httpClient4Ver}"
+    implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
     runtimeOnly 'org.postgresql:postgresql'
 }

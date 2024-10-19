@@ -7,6 +7,7 @@ import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.configurer.AuthorizationServerConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
+import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
@@ -53,7 +54,7 @@ public class AuthServerConfig {
 
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties) throws Exception {
-        http.with(new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties), x-> {});
+        http.with(new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties), x-> {});
         return http.build();
     }
 
@@ -115,6 +116,11 @@ public class AuthServerConfig {
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return changePwdCheckFilter;
+    }
+
+    @Bean
+    public CaptchaVerificationCheckFilter captchaVerificationCheckFilter() {
+        return new CaptchaVerificationCheckFilter(List.of("/login"));
     }
 
     /**
