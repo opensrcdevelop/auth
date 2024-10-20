@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.UserService;
@@ -76,7 +75,6 @@ public class UserController {
     @Operation(summary = "更新用户信息", description = "更新用户信息")
     @PutMapping
     @Authorize({ "allUserPermissions", "updateUser" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#requestDto.userId")
     public void updateUser(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserRequestDto requestDto) {
         userService.updateUser(requestDto);
     }
@@ -84,19 +82,6 @@ public class UserController {
     @Operation(summary = "更新用户属性", description = "更新用户属性")
     @PutMapping("/attr")
     @Authorize({ "allUserAttrPermissions", "updateUserAttr" })
-    @ResourceLimit(ids = {
-            "47c3b7fb-fbce-4410-aa1e-3b1353468d49",
-            "08604464-2832-44e3-8bd4-d8dbda7db9d7",
-            "ff289375-461b-4e6f-8e16-9187d7e44a14",
-            "0965fca9-d005-4cd8-8a77-531d01b8fc05",
-            "6a5a3759-3fb3-47c3-bec6-f14d32e170c2",
-            "3845b5d4-36a0-45bb-854e-6d79593aefd4",
-            "d019fb4e-8acd-4411-9061-9d8aee961703",
-            "3cb048e2-5896-46aa-96e6-fa975b4780f5",
-            "37479a6e-e777-4114-9f81-c8e31f0ce49b",
-            "1c092d28-81fb-4e97-92ef-93d446c826c6",
-            "edf63d7e-fa66-4483-b38b-1cd7200b05ec"
-    }, idEl = "#requestDto.id")
     public void updateUserAttr(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserAttrRequestDto requestDto) {
         userAttrService.updateUserAttr(requestDto);
     }
@@ -130,7 +115,6 @@ public class UserController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allUserPermissions", "deleteUser" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void removeUser(@PathVariable @NotBlank String id) {
         userService.removeUser(id);
     }
@@ -148,19 +132,6 @@ public class UserController {
     @Operation(summary = "删除用户属性", description = "删除用户属性")
     @DeleteMapping("/attr/{id}")
     @Authorize({ "allUserAttrPermissions", "deleteUserAttr" })
-    @ResourceLimit(ids = {
-            "47c3b7fb-fbce-4410-aa1e-3b1353468d49",
-            "08604464-2832-44e3-8bd4-d8dbda7db9d7",
-            "ff289375-461b-4e6f-8e16-9187d7e44a14",
-            "0965fca9-d005-4cd8-8a77-531d01b8fc05",
-            "6a5a3759-3fb3-47c3-bec6-f14d32e170c2",
-            "3845b5d4-36a0-45bb-854e-6d79593aefd4",
-            "d019fb4e-8acd-4411-9061-9d8aee961703",
-            "3cb048e2-5896-46aa-96e6-fa975b4780f5",
-            "37479a6e-e777-4114-9f81-c8e31f0ce49b",
-            "1c092d28-81fb-4e97-92ef-93d446c826c6",
-            "edf63d7e-fa66-4483-b38b-1cd7200b05ec"
-    }, idEl = "#id")
     public void removeUserAttr(@PathVariable @NotBlank String id) {
         userAttrService.removeUserAttr(id);
     }
@@ -177,7 +148,6 @@ public class UserController {
     })
     @PutMapping("/{id}/mfa/device")
     @Authorize({ "allUserPermissions", "rebindMfaDevice" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void rebindMfaDevice(@PathVariable @NotBlank String id) {
         userService.rebindMfaDevice(id);
     }
@@ -188,14 +158,12 @@ public class UserController {
     })
     @DeleteMapping("/{id}/token")
     @Authorize({ "allUserPermissions", "clearTokens" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880", "d0d5d9fc-30cd-456b-9f20-ca0559cb7131" }, idEl = "#id")
     public void clearAuthorizedToken(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokens(id);
     }
 
     @Operation(summary = "重置密码", description = "重置密码")
     @PostMapping("/me/password/reset")
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#id")
     public void resetPwd(@RequestBody @Valid ResetPwdRequestDto requestDto) {
         userService.resetPwd(requestDto);
     }

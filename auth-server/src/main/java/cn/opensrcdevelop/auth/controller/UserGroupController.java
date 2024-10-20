@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.annocation.ResourceLimit;
 import cn.opensrcdevelop.auth.biz.dto.UserGroupMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserGroupResponseDto;
@@ -40,7 +39,6 @@ public class UserGroupController {
     @Operation(summary = "创建用户组映射", description = "创建用户组映射")
     @PostMapping("/mapping")
     @Authorize({ "allUserGroupMappingPermissions", "createUserGroupMapping" })
-    @ResourceLimit(ids = { "4a7eb192-b0e8-4678-bf81-bbbd70ba1880" }, idEl = "#requestDto.userIds", isList = true)
     public void createUserUserGroupMapping(@RequestBody @Valid UserGroupMappingRequestDto requestDto) {
         userGroupService.createUserGroupMapping(requestDto);
     }
@@ -60,7 +58,6 @@ public class UserGroupController {
     @Operation(summary = "删除用户组映射", description = "删除用户组映射")
     @DeleteMapping("/mapping")
     @Authorize({ "allUserGroupMappingPermissions", "deleteUserGroupMapping" })
-    @ResourceLimit(ids = { "7a15b5bc-8454-4db2-8fc8-43af0f411c8d" }, idEl = "#requestDto.userIds", isList = true)
     public void removeUserUserGroupMapping(@RequestBody @Valid UserGroupMappingRequestDto requestDto) {
         userGroupService.removeUserGroupMapping(requestDto);
     }
@@ -91,7 +88,6 @@ public class UserGroupController {
     @Operation(summary = "更新用户组", description = "更新用户组")
     @PutMapping
     @Authorize({ "allUserGroupPermissions", "updateUserGroup" })
-    @ResourceLimit(ids = { "3c6cdb57-7a78-4680-b1f2-3da0673bd883" }, idEl = "#requestDto.id")
     public void updateUserGroup(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserGroupRequestDto requestDto ) {
         userGroupService.updateUserGroup(requestDto);
     }
@@ -102,7 +98,6 @@ public class UserGroupController {
     })
     @DeleteMapping("/{id}")
     @Authorize({ "allUserGroupPermissions", "deleteUserGroup" })
-    @ResourceLimit(ids = { "3c6cdb57-7a78-4680-b1f2-3da0673bd883" }, idEl = "#id")
     public void removeUserGroup(@PathVariable String id) {
         userGroupService.removeUserGroup(id);
     }

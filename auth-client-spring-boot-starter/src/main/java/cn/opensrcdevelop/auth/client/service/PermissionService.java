@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.util.Assert;
@@ -29,9 +30,11 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * 客户端鉴权服务
@@ -171,9 +174,11 @@ public class PermissionService implements ApplicationContextAware {
         if (Objects.isNull(oAuth2Context)) {
             return false;
         }
-        Map<String, Object> attributes = oAuth2Context.getOAuth2Attributes().getAttributes();
+        Map<String, Object> attributes = new HashMap<>(oAuth2Context.getOAuth2Attributes().getAttributes());
         // 添加方法调用
         attributes.put(AuthClientConstants.METHOD_INVOCATION, mi);
+        // 添加方法调用参数
+        attributes.put(AuthClientConstants.METHOD_PARAMS, getMethodParams(mi));
         return Boolean.TRUE.equals(SpringELUtil.parseAuthorizeCondition(attributes, applicationContext, expression));
     }
 
@@ -220,6 +225,25 @@ public class PermissionService implements ApplicationContextAware {
         }
 
         return HttpUtil.getApiResponseItem(apiResponse, ApiConstants.DATA);
+    }
+
+    /**
+     * 获取方法调用参数
+     *
+     * @param mi 方法调用
+     * @return 方法调用参数
+     */
+    private Map<String, Object> getMethodParams(MethodInvocation mi) {
+        DefaultParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
+        Object[] args = mi.getArguments();
+        Method method = mi.getMethod();
+        String[] paramNames = parameterNameDiscoverer.getParameterNames(method);
+
+        Map<String, Object> methodParams = new LinkedHashMap<>(args.length);
+        if (Objects.nonNull(paramNames) && args.length == paramNames.length ) {
+            IntStream.range(0, args.length).forEach(i -> methodParams.put(paramNames[i], args[i]));
+        }
+        return methodParams;
     }
 
     @Override
