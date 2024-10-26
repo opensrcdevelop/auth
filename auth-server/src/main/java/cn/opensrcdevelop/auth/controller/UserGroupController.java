@@ -110,6 +110,7 @@ public class UserGroupController {
             @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
     })
     @GetMapping("/{id}/permissions")
+    @Authorize({ "allUserGroupPermissions", "getUserGroupPermissions" })
     public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
                                                           @RequestParam(required = false) String resourceGroupNameSearchKeyword,
                                                           @RequestParam(required = false) String resourceNameSearchKeyword,
