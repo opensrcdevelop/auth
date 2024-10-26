@@ -4,7 +4,7 @@
 
 ### 主要技术
 
-- Java 17
+- Java 21
 - Gradle
 - PostgreSQL
 - Redis
