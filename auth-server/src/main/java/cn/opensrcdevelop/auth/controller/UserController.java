@@ -191,4 +191,23 @@ public class UserController {
     public void unbindEmail(@RequestBody @Valid BindOrUnbindEmailRequestDto requestDto) {
         userService.unbindEmail(requestDto);
     }
+
+    @Operation(summary = "获取用户权限", description = "获取用户权限")
+    @Parameters({
+            @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "resourceGroupNameSearchKeyword", description = "资源组名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "resourceNameSearchKeyword", description = "资源名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "permissionNameSearchKeyword", description = "权限名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
+    })
+    @GetMapping("/{id}/permissions")
+    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+                                                          @RequestParam(required = false) String resourceGroupNameSearchKeyword,
+                                                          @RequestParam(required = false) String resourceNameSearchKeyword,
+                                                          @RequestParam(required = false) String permissionNameSearchKeyword,
+                                                          @RequestParam(required = false) String permissionCodeSearchKeyword) {
+        return userService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+    }
 }

@@ -120,14 +120,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 2.1 去除重复角色信息（同时授予角色主体和用户）
         user.setRoles(CommonUtil.stream(roles).collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Role::getRoleCode))), ArrayList::new)));
 
-        // 3. 设置用户权限信息
-        var permissions = CommonUtil.stream(permissionService.getUserPermissions(userId, resourceGroupCode)).map(AuthorizeRecord::getPermission).toList();
-        user.setPermissions(permissions);
-
-        // 4. 设置用户属性
+        // 3. 设置用户属性
         user.setUserAttrs(userAttrService.getUserAttrs(userId));
 
-        // 5. 设置用户组信息
+        // 4. 设置用户组信息
         user.setUserGroups(userGroupService.getUserGroups(userId));
         return user;
     }
@@ -485,6 +481,68 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         doBindOrUnbindEmail(requestDto, false);
     }
 
+    /**
+     * 获取权限信息
+     *
+     * @param page                           页数
+     * @param size                           条数
+     * @param userId                         用户ID
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @return 权限信息
+     */
+    @Override
+    public PageData<PermissionResponseDto> getPermissions(int page, int size, String userId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
+        // 1. 查询数据库
+        Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
+        permissionService.getUserPermissions(pageRequest, userId, null, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+
+        // 2. 属性编辑
+        PageData<PermissionResponseDto> pageData = new PageData<>();
+        pageData.setTotal(pageRequest.getTotal());
+        pageData.setSize(pageRequest.getSize());
+        pageData.setPages(pageRequest.getPages());
+        pageData.setCurrent(pageRequest.getCurrent());
+        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords()).map(authorizeRecord -> {
+            PermissionResponseDto permissionResponse = new PermissionResponseDto();
+            var permission = authorizeRecord.getPermission();
+
+            // 2.1 权限响应属性
+            permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+            permissionResponse.setPermissionId(permission.getPermissionId());
+            permissionResponse.setPermissionName(permission.getPermissionName());
+            permissionResponse.setPermissionCode(permission.getPermissionCode());
+            permissionResponse.setResourceId(permission.getResource().getResourceId());
+            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
+            permissionResponse.setResourceName(permission.getResource().getResourceName());
+            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
+            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
+            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+
+            // 2.2 限定条件
+            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                condition.setId(exp.getExpressionId());
+                condition.setName(exp.getExpressionName());
+                condition.setExpression(exp.getExpression());
+                return condition;
+            }).toList();
+            permissionResponse.setConditions(conditions);
+
+            // 2.3 被授权主体和主体类型
+            var permissionPrincipal = getPermissionPrincipal(authorizeRecord);
+            permissionResponse.setPrincipalId(permissionPrincipal._1);
+            permissionResponse.setPrincipal(permissionPrincipal._2);
+            permissionResponse.setPrincipalType(permissionPrincipal._3);
+            permissionResponse.setPrincipalTypeDisplayName(permissionPrincipal._4);
+            return permissionResponse;
+        }).toList();
+        pageData.setList(permissionResponseList);
+        return pageData;
+    }
+
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -572,42 +630,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return userGroupResponse;
         }).toList();
         userResponse.setUserGroups(userGroups);
-
-        // 5. 权限信息
-        var permissions = CommonUtil.stream(permissionService.getUserPermissions(user.getUserId(), null)).map(authorizeRecord -> {
-            PermissionResponseDto permissionResponse = new PermissionResponseDto();
-            var permission = authorizeRecord.getPermission();
-
-            permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
-            permissionResponse.setPermissionId(permission.getPermissionId());
-            permissionResponse.setPermissionName(permission.getPermissionName());
-            permissionResponse.setPermissionCode(permission.getPermissionCode());
-            permissionResponse.setResourceId(permission.getResource().getResourceId());
-            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
-            permissionResponse.setResourceName(permission.getResource().getResourceName());
-            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
-            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
-            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
-
-            // 5.1 限定条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
-                return condition;
-            }).toList();
-            permissionResponse.setConditions(conditions);
-
-            // 5.2 被授权主体和主体类型
-            var permissionPrincipal = getPermissionPrincipal(authorizeRecord);
-            permissionResponse.setPrincipalId(permissionPrincipal._1);
-            permissionResponse.setPrincipal(permissionPrincipal._2);
-            permissionResponse.setPrincipalType(permissionPrincipal._3);
-            permissionResponse.setPrincipalTypeDisplayName(permissionPrincipal._4);
-            return permissionResponse;
-        }).toList();
-        userResponse.setPermissions(permissions);
     }
 
     private void convertUserInfo(Map<String, Object> userInfo, List<UserAttrResponseDto> editableUserAttrs, User updateUser, List<UserAttrMappingRequestDto> attributes) {
@@ -643,7 +665,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 检查邮箱是否已经被绑定
         if (isBinding && Objects.nonNull(super.getOne(Wrappers.<User>lambdaQuery().eq(User::getEmailAddress, email)))) {
-                throw new BizException(MessageConstants.BIND_EMAIL_MSG_1000);
+            throw new BizException(MessageConstants.BIND_EMAIL_MSG_1000);
         }
 
         AuthUtil.getCurrentUserId().ifPresent(userId -> {

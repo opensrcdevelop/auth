@@ -3,8 +3,6 @@ package cn.opensrcdevelop.auth.biz.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.List;
-
 @Schema(description = "用户组响应")
 @Data
 public class UserGroupResponseDto {
@@ -23,7 +21,4 @@ public class UserGroupResponseDto {
 
     @Schema(description = "成员数")
     private long memberNum;
-
-    @Schema(description = "权限")
-    private List<PermissionResponseDto> permissions;
 }

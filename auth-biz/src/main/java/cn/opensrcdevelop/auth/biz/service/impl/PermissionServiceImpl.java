@@ -17,6 +17,7 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
@@ -77,7 +78,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
         if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
             // 2. 数据库操作
-            List<AuthorizeRecord> authorizeRecords = getUserPermissions(userId, aud.get(0));
+            Page<AuthorizeRecord> pageRequest = new Page<>(1, -1);
+            getUserPermissions(pageRequest, userId, aud.get(0), null, null, null, null);
+            List<AuthorizeRecord> authorizeRecords = pageRequest.getRecords();
             // 2.1 过滤重复的权限（按授权先后顺序）
             var records = CommonUtil.stream(authorizeRecords).collect(Collectors
                     .collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(r -> {
@@ -95,7 +98,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 response.setResourceCode(permission.getResource().getResourceCode());
 
                 // 3.2 限制条件
-                var conditions =  CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
                     PermissionExpResponseDto permissionExpResponse = new PermissionExpResponseDto();
                     permissionExpResponse.setExpression(exp.getExpression());
                     return permissionExpResponse;
@@ -110,43 +113,71 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 获取用户权限
      *
-     * @param userId 用户ID
-     * @param resourceGroupCode 资源组码
-     * @return 用户权限
+     * @param page                           分页对象
+     * @param userId                         用户ID
+     * @param resourceGroupCode              资源组标识
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
      */
     @Override
-    public List<AuthorizeRecord> getUserPermissions(String userId, String resourceGroupCode) {
-        return permissionRepository.searchUserPermissions(userId, resourceGroupCode);
+    public void getUserPermissions(IPage<AuthorizeRecord> page,
+                                   String userId,
+                                   String resourceGroupCode,
+                                   String resourceGroupNameSearchKeyword,
+                                   String resourceNameSearchKeyword,
+                                   String permissionNameSearchKeyword,
+                                   String permissionCodeSearchKeyword) {
+        permissionRepository.searchUserPermissions(page, userId, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 获取用户组权限
      *
-     * @param userGroupId 用户组ID
-     * @return 用户组权限
+     * @param page                           分页对象
+     * @param userGroupId                    用户组ID
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
      */
     @Override
-    public List<AuthorizeRecord> getUserGroupPermissions(String userGroupId) {
-        return permissionRepository.searchUserGroupPermissions(userGroupId);
+    public void getUserGroupPermissions(IPage<AuthorizeRecord> page,
+                                        String userGroupId,
+                                        String resourceGroupNameSearchKeyword,
+                                        String resourceNameSearchKeyword,
+                                        String permissionNameSearchKeyword,
+                                        String permissionCodeSearchKeyword) {
+        permissionRepository.searchUserGroupPermissions(page, userGroupId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 获取角色权限
      *
-     * @param roleId 角色ID
-     * @return 角色权限
+     * @param page                           分页对象
+     * @param roleId                         角色ID
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
      */
     @Override
-    public List<AuthorizeRecord> getRolePermissions(String roleId) {
-        return permissionRepository.searchRolePermissions(roleId);
+    public void getRolePermissions(IPage<AuthorizeRecord> page,
+                                   String roleId,
+                                   String resourceGroupNameSearchKeyword,
+                                   String resourceNameSearchKeyword,
+                                   String permissionNameSearchKeyword,
+                                   String permissionCodeSearchKeyword) {
+        permissionRepository.searchRolePermissions(page, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 获取资源内权限
      *
-     * @param page 分页对象
+     * @param page       分页对象
      * @param resourceId 资源ID
-     * @param keyword 资源名称 / 标识搜索关键字
+     * @param keyword    资源名称 / 标识搜索关键字
      */
     @Override
     public void getResourcePermissions(IPage<Permission> page, String resourceId, String keyword) {
@@ -165,7 +196,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      * 获取权限详情
      *
      * @param permissionId 权限ID
-     * @param keyword 被授权主体关键字
+     * @param keyword      被授权主体关键字
      * @return 权限详情
      */
     @Override

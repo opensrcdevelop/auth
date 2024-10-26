@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.entity.UserGroup;
 import cn.opensrcdevelop.auth.biz.entity.UserGroupMapping;
@@ -92,8 +93,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取用户组列表
      *
-     * @param page 页数
-     * @param size 条数
+     * @param page    页数
+     * @param size    条数
      * @param keyword 用户组名称 / 标识检索关键字
      * @return 用户组列表
      */
@@ -181,36 +182,6 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         userGroupResponse.setName(userGroup.getUserGroupName());
         userGroupResponse.setCode(userGroup.getUserGroupCode());
         userGroupResponse.setDesc(userGroup.getDescription());
-
-        // 2. 获取权限信息
-        var permissions = CommonUtil.stream(permissionService.getUserGroupPermissions(userGroupId)).map(authorizeRecord -> {
-            PermissionResponseDto permissionResponse = new PermissionResponseDto();
-
-            var permission = authorizeRecord.getPermission();
-            permissionResponse.setPermissionId(permission.getPermissionId());
-            permissionResponse.setPermissionName(permission.getPermissionName());
-            permissionResponse.setPermissionCode(permission.getPermissionCode());
-            permissionResponse.setResourceId(permission.getResource().getResourceId());
-            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
-            permissionResponse.setResourceName(permission.getResource().getResourceName());
-            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
-            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
-            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
-
-            // 2.1 限定条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
-                return condition;
-            }).toList();
-            permissionResponse.setConditions(conditions);
-
-            return permissionResponse;
-        }).toList();
-        userGroupResponse.setPermissions(permissions);
-
         return userGroupResponse;
     }
 
@@ -293,6 +264,62 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         // 4. 删除关联的授权
         authorizeService.removeAuthorization(userGroupId);
+    }
+
+    /**
+     * 获取权限
+     *
+     * @param page                           页数
+     * @param size                           条数
+     * @param userGroupId                    用户组ID
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @return 权限信息
+     */
+    @Override
+    public PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
+        // 1. 查询数据库
+        Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
+        permissionService.getUserGroupPermissions(pageRequest, userGroupId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+
+        // 2. 属性编辑
+        PageData<PermissionResponseDto> pageData = new PageData<>();
+        pageData.setTotal(pageRequest.getTotal());
+        pageData.setSize(pageRequest.getSize());
+        pageData.setPages(pageRequest.getPages());
+        pageData.setCurrent(pageRequest.getCurrent());
+        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords()).map(authorizeRecord -> {
+            PermissionResponseDto permissionResponse = new PermissionResponseDto();
+
+            // 2.1 权限响应属性
+            var permission = authorizeRecord.getPermission();
+            permissionResponse.setPermissionId(permission.getPermissionId());
+            permissionResponse.setPermissionName(permission.getPermissionName());
+            permissionResponse.setPermissionCode(permission.getPermissionCode());
+            permissionResponse.setResourceId(permission.getResource().getResourceId());
+            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
+            permissionResponse.setResourceName(permission.getResource().getResourceName());
+            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
+            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
+            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+
+            // 2.2 限定条件
+            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                condition.setId(exp.getExpressionId());
+                condition.setName(exp.getExpressionName());
+                condition.setExpression(exp.getExpression());
+                return condition;
+            }).toList();
+            permissionResponse.setConditions(conditions);
+
+            return permissionResponse;
+        }).toList();
+        pageData.setList(permissionResponseList);
+
+        return pageData;
     }
 
     private List<UserGroupMapping> getMappings(UserGroupMappingRequestDto requestDto) {

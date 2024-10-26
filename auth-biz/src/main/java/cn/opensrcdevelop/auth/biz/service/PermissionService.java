@@ -15,11 +15,11 @@ public interface PermissionService extends IService<Permission> {
 
     List<PermissionResponseDto> getCurrentUserPermissions();
 
-    List<AuthorizeRecord> getUserPermissions(String userId, String resourceGroupCode);
+    void getUserPermissions(IPage<AuthorizeRecord> page, String userId, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
-    List<AuthorizeRecord> getUserGroupPermissions(String userGroupId);
+    void getUserGroupPermissions(IPage<AuthorizeRecord> page, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
-    List<AuthorizeRecord> getRolePermissions(String roleId);
+    void getRolePermissions(IPage<AuthorizeRecord> page, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
     void getResourcePermissions(IPage<Permission> page, String resourceId, String keyword);
 
