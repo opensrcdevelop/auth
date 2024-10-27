@@ -2,10 +2,7 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.*;
-import cn.opensrcdevelop.auth.biz.entity.Role;
-import cn.opensrcdevelop.auth.biz.entity.RoleMapping;
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.entity.UserGroup;
+import cn.opensrcdevelop.auth.biz.entity.*;
 import cn.opensrcdevelop.auth.biz.mapper.RoleMapper;
 import cn.opensrcdevelop.auth.biz.mapper.RoleMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.RoleRepository;
@@ -124,8 +121,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 获取角色列表
      *
-     * @param page 页数
-     * @param size 条数
+     * @param page    页数
+     * @param size    条数
      * @param keyword 角色名称 / 标识检索关键字
      * @return 所有角色
      */
@@ -135,7 +132,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         Page<Role> pageRequest = new Page<>(page, size);
         List<Role> roles;
         if (StringUtils.isNotEmpty(keyword)) {
-            roles = super.list(pageRequest,  Wrappers.<Role>lambdaQuery().like(Role::getRoleName, keyword).or(o -> o.like(Role::getRoleCode, keyword)).orderByAsc(Role::getRoleCode));
+            roles = super.list(pageRequest, Wrappers.<Role>lambdaQuery().like(Role::getRoleName, keyword).or(o -> o.like(Role::getRoleCode, keyword)).orderByAsc(Role::getRoleCode));
         } else {
             roles = super.list(pageRequest, Wrappers.<Role>lambdaQuery().orderByAsc(Role::getRoleCode));
         }
@@ -216,46 +213,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     @Override
     public RoleResponseDto detail(String roleId) {
         RoleResponseDto roleResponseDto = new RoleResponseDto();
-        // 1. 获取基本信息
+        // 1. 查询数据库
         Role role = super.getById(roleId);
         if (role == null) {
             return roleResponseDto;
         }
 
+        // 2. 属性设置
         roleResponseDto.setId(role.getRoleId());
         roleResponseDto.setName(role.getRoleName());
         roleResponseDto.setCode(role.getRoleCode());
         roleResponseDto.setDesc(role.getDescription());
-
-        // 2. 获取权限信息
-        var permissions = CommonUtil.stream(permissionService.getRolePermissions(roleId)).map(authorizeRecord -> {
-            PermissionResponseDto permissionResponse = new PermissionResponseDto();
-
-            var permission = authorizeRecord.getPermission();
-            permissionResponse.setPermissionId(permission.getPermissionId());
-            permissionResponse.setPermissionName(permission.getPermissionName());
-            permissionResponse.setPermissionCode(permission.getPermissionCode());
-            permissionResponse.setResourceId(permission.getResource().getResourceId());
-            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
-            permissionResponse.setResourceName(permission.getResource().getResourceName());
-            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
-            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
-            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
-
-            // 2.1 限定条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
-                return condition;
-            }).toList();
-            permissionResponse.setConditions(conditions);
-
-            return permissionResponse;
-        }).toList();
-        roleResponseDto.setPermissions(permissions);
-
         return roleResponseDto;
     }
 
@@ -303,6 +271,61 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         authorizeService.removeAuthorization(roleId);
     }
 
+    /**
+     * 获取权限
+     *
+     * @param page                           页数
+     * @param size                           条数
+     * @param roleId                         角色ID
+     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
+     * @param resourceNameSearchKeyword      资源名称搜索关键字
+     * @param permissionNameSearchKeyword    权限名称搜索关键字
+     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @return 权限信息
+     */
+    @Override
+    public PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
+        // 1. 查询数据库
+        Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
+        permissionService.getRolePermissions(pageRequest, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+
+        // 2. 属性编辑
+        PageData<PermissionResponseDto> pageData = new PageData<>();
+        pageData.setTotal(pageRequest.getTotal());
+        pageData.setSize(pageRequest.getSize());
+        pageData.setPages(pageRequest.getPages());
+        pageData.setCurrent(pageRequest.getCurrent());
+        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords()).map(authorizeRecord -> {
+            PermissionResponseDto permissionResponse = new PermissionResponseDto();
+
+            // 2.1 权限响应属性
+            var permission = authorizeRecord.getPermission();
+            permissionResponse.setPermissionId(permission.getPermissionId());
+            permissionResponse.setPermissionName(permission.getPermissionName());
+            permissionResponse.setPermissionCode(permission.getPermissionCode());
+            permissionResponse.setResourceId(permission.getResource().getResourceId());
+            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
+            permissionResponse.setResourceName(permission.getResource().getResourceName());
+            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
+            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
+            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+
+            // 2.2 限定条件
+            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                condition.setId(exp.getExpressionId());
+                condition.setName(exp.getExpressionName());
+                condition.setExpression(exp.getExpression());
+                return condition;
+            }).toList();
+            permissionResponse.setConditions(conditions);
+
+            return permissionResponse;
+        }).toList();
+        pageData.setList(permissionResponseList);
+        return pageData;
+    }
+
     private List<RoleMapping> getMappings(RoleMappingRequestDto requestDto) {
         var userIds = CommonUtil.stream(requestDto.getUserIds()).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
         var userGroupIds = CommonUtil.stream(requestDto.getUserGroupIds()).filter(StringUtils::isNotBlank).toList();
@@ -337,7 +360,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         UserGroup userGroup = roleMapping.getUserGroup();
 
         if (user != null) {
-            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(),  PrincipalTypeEnum.USER.getDisplayName());
+            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(), PrincipalTypeEnum.USER.getDisplayName());
         }
 
         if (userGroup != null) {

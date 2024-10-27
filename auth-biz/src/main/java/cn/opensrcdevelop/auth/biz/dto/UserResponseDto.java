@@ -58,7 +58,4 @@ public class UserResponseDto {
 
     @Schema(description = "用户组")
     private List<UserGroupResponseDto> userGroups;
-
-    @Schema(description = "权限")
-    private List<PermissionResponseDto> permissions;
 }

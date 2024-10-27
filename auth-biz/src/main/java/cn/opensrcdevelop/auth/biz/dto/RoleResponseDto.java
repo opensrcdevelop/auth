@@ -3,8 +3,6 @@ package cn.opensrcdevelop.auth.biz.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.util.List;
-
 @Schema(description = "角色响应")
 @Data
 public class RoleResponseDto {
@@ -32,7 +30,4 @@ public class RoleResponseDto {
 
     @Schema(description = "主体类型显示名称")
     private String principalTypeDisplayName;
-
-    @Schema(description = "权限")
-    private List<PermissionResponseDto> permissions;
 }

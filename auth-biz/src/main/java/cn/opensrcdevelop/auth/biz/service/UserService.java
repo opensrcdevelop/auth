@@ -38,4 +38,6 @@ public interface UserService extends IService<User> {
     void bindEmail(BindOrUnbindEmailRequestDto requestDto);
 
     void unbindEmail(BindOrUnbindEmailRequestDto requestDto);
+
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String userId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 }

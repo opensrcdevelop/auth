@@ -1,9 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.UserGroupMappingRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.UserGroupRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.UserGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.UserResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.entity.UserGroup;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -31,4 +28,6 @@ public interface UserGroupService extends IService<UserGroup> {
     void updateUserGroup(UserGroupRequestDto requestDto);
 
     void removeUserGroup(String userGroupId);
+
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 }

@@ -92,6 +92,18 @@
                     OR t1.user_group_id IN ( SELECT DISTINCT user_group_id FROM t_user_group_mapping WHERE user_id =#{userId})
                 )
             </if>
+            <if test="resourceGroupNameSearchKeyword != null and resourceGroupNameSearchKeyword != ''">
+                AND t4.resource_group_name LIKE CONCAT('%', #{resourceGroupNameSearchKeyword}, '%')
+            </if>
+            <if test="resourceNameSearchKeyword != null and resourceNameSearchKeyword != ''">
+                AND t3.resource_name LIKE CONCAT('%', #{resourceNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionNameSearchKeyword != null and permissionNameSearchKeyword != ''">
+                AND t2.permission_name LIKE CONCAT('%', #{permissionNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionCodeSearchKeyword != null and permissionCodeSearchKeyword != ''">
+                AND t2.permission_code LIKE CONCAT('%', #{permissionCodeSearchKeyword}, '%')
+            </if>
         </where>
         ORDER BY t4.resource_group_code, t1.authorize_time DESC
     </select>
@@ -124,7 +136,21 @@
             LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
             LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
             LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
-        WHERE t1.user_group_id = #{userGroupId}
+        <where>
+            t1.user_group_id = #{userGroupId}
+            <if test="resourceGroupNameSearchKeyword != null and resourceGroupNameSearchKeyword != ''">
+                AND t4.resource_group_name LIKE CONCAT('%', #{resourceGroupNameSearchKeyword}, '%')
+            </if>
+            <if test="resourceNameSearchKeyword != null and resourceNameSearchKeyword != ''">
+                AND t3.resource_name LIKE CONCAT('%', #{resourceNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionNameSearchKeyword != null and permissionNameSearchKeyword != ''">
+                AND t2.permission_name LIKE CONCAT('%', #{permissionNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionCodeSearchKeyword != null and permissionCodeSearchKeyword != ''">
+                AND t2.permission_code LIKE CONCAT('%', #{permissionCodeSearchKeyword}, '%')
+            </if>
+        </where>
         ORDER BY t4.resource_group_code, t1.authorize_time DESC
     </select>
 
@@ -156,7 +182,21 @@
             LEFT JOIN t_resource_group t4 ON t4.resource_group_id = t3.resource_group_id
             LEFT JOIN t_authorize_cond t5 ON t5.authorize_id = t1.authorize_id
             LEFT JOIN t_permission_exp t6 ON t6.expression_id = t5.permission_exp_id
-        WHERE t1.role_id = #{roleId}
+        <where>
+            t1.role_id = #{roleId}
+            <if test="resourceGroupNameSearchKeyword != null and resourceGroupNameSearchKeyword != ''">
+                AND t4.resource_group_name LIKE CONCAT('%', #{resourceGroupNameSearchKeyword}, '%')
+            </if>
+            <if test="resourceNameSearchKeyword != null and resourceNameSearchKeyword != ''">
+                AND t3.resource_name LIKE CONCAT('%', #{resourceNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionNameSearchKeyword != null and permissionNameSearchKeyword != ''">
+                AND t2.permission_name LIKE CONCAT('%', #{permissionNameSearchKeyword}, '%')
+            </if>
+            <if test="permissionCodeSearchKeyword != null and permissionCodeSearchKeyword != ''">
+                AND t2.permission_code LIKE CONCAT('%', #{permissionCodeSearchKeyword}, '%')
+            </if>
+        </where>
         ORDER BY t4.resource_group_code, t1.authorize_time DESC
     </select>
 

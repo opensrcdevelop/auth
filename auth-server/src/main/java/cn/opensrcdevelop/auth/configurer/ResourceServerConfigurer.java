@@ -50,12 +50,12 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
-            http.oauth2ResourceServer(x -> {
+            http.oauth2ResourceServer(x ->
                 // 向服务器验证 Token
-                x.opaqueToken(t -> t.introspector(tokenIntrospector));
-            });
+                x.opaqueToken(t -> t.introspector(tokenIntrospector)).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
+            );
         } else {
-            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults()));
+            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults()).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
         }
 
         // 登出处理

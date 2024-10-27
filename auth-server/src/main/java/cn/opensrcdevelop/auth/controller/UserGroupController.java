@@ -1,9 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.UserGroupMappingRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.UserGroupRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.UserGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.UserResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.service.UserGroupService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
@@ -77,7 +74,7 @@ public class UserGroupController {
             @Parameter(name = "id", description = "用户组ID", in = ParameterIn.PATH, required = true),
             @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
-            @Parameter(name = "keyword", description = "用户名 / 邮箱 / 手机号检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "keyword", description = "用户名 / 邮箱 / 手机号检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/users")
     @Authorize({ "allUserGroupPermissions", "getUserGroupUsers" })
@@ -100,5 +97,25 @@ public class UserGroupController {
     @Authorize({ "allUserGroupPermissions", "deleteUserGroup" })
     public void removeUserGroup(@PathVariable String id) {
         userGroupService.removeUserGroup(id);
+    }
+
+    @Operation(summary = "获取用户组权限", description = "获取用户组权限")
+    @Parameters({
+            @Parameter(name = "id", description = "用户组ID", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "resourceGroupNameSearchKeyword", description = "资源组名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "resourceNameSearchKeyword", description = "资源名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "permissionNameSearchKeyword", description = "权限名称检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
+    })
+    @GetMapping("/{id}/permissions")
+    @Authorize({ "allUserGroupPermissions", "getUserGroupPermissions" })
+    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+                                                          @RequestParam(required = false) String resourceGroupNameSearchKeyword,
+                                                          @RequestParam(required = false) String resourceNameSearchKeyword,
+                                                          @RequestParam(required = false) String permissionNameSearchKeyword,
+                                                          @RequestParam(required = false) String permissionCodeSearchKeyword) {
+        return userGroupService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 }

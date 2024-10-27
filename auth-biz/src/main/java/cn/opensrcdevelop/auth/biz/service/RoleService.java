@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service;
 
+import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.RoleResponseDto;
@@ -30,4 +31,6 @@ public interface RoleService extends IService<Role> {
     void updateRole(RoleRequestDto requestDto);
 
     void removeRole(String roleId);
+
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 }

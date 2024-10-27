@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.biz.mapper;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.Permission;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -11,11 +12,27 @@ import java.util.List;
 @Mapper
 public interface PermissionMapper extends BaseMapper<Permission> {
 
-    List<AuthorizeRecord> searchUserPermissions(@Param("userId") String userId, @Param("resourceGroupCode") String resourceGroupCode);
+    IPage<AuthorizeRecord> searchUserPermissions(@Param("page") IPage<AuthorizeRecord> page,
+                                                 @Param("userId") String userId,
+                                                 @Param("resourceGroupCode") String resourceGroupCode,
+                                                 @Param("resourceGroupNameSearchKeyword") String resourceGroupNameSearchKeyword,
+                                                 @Param("resourceNameSearchKeyword") String resourceNameSearchKeyword,
+                                                 @Param("permissionNameSearchKeyword") String permissionNameSearchKeyword,
+                                                 @Param("permissionCodeSearchKeyword") String permissionCodeSearchKeyword);
 
-    List<AuthorizeRecord> searchUserGroupPermissions(@Param("userGroupId") String userGroupId);
+    IPage<AuthorizeRecord> searchUserGroupPermissions(@Param("page") IPage<AuthorizeRecord> page,
+                                                      @Param("userGroupId") String userGroupId,
+                                                      @Param("resourceGroupNameSearchKeyword") String resourceGroupNameSearchKeyword,
+                                                      @Param("resourceNameSearchKeyword") String resourceNameSearchKeyword,
+                                                      @Param("permissionNameSearchKeyword") String permissionNameSearchKeyword,
+                                                      @Param("permissionCodeSearchKeyword") String permissionCodeSearchKeyword);
 
-    List<AuthorizeRecord> searchRolePermissions(@Param("roleId") String roleId);
+    IPage<AuthorizeRecord> searchRolePermissions(@Param("page") IPage<AuthorizeRecord> page,
+                                                 @Param("roleId") String roleId,
+                                                 @Param("resourceGroupNameSearchKeyword") String resourceGroupNameSearchKeyword,
+                                                 @Param("resourceNameSearchKeyword") String resourceNameSearchKeyword,
+                                                 @Param("permissionNameSearchKeyword") String permissionNameSearchKeyword,
+                                                 @Param("permissionCodeSearchKeyword") String permissionCodeSearchKeyword);
 
     List<AuthorizeRecord> searchPermissionAuthorizeRecords(@Param("permissionId") String permissionId, @Param("keyword") String keyword);
 
