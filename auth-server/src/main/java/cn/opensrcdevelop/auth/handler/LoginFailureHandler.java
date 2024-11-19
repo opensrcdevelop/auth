@@ -29,7 +29,7 @@ import java.util.Objects;
 @Slf4j
 public class LoginFailureHandler implements AuthenticationFailureHandler {
 
-    private final UserServiceImpl userService = SpringContextUtil.getBean(UserService.class);
+    private final UserServiceImpl userService = (UserServiceImpl) SpringContextUtil.getBean(UserService.class);
     private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
 
     @Override

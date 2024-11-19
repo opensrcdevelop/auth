@@ -5,8 +5,10 @@ import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.DataFilterRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.Role;
 import cn.opensrcdevelop.auth.biz.entity.User;
+import cn.opensrcdevelop.auth.biz.service.DictDataService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -189,6 +191,18 @@ public class AuthUtil {
      * @return User Map
      */
     public static Map<String, Object> convertUserMap(User user) {
+        return convertUserMap(user, false, false);
+    }
+
+    /**
+     * 将 User 转换为 Map（含扩展属性）
+     *
+     * @param user 用户
+     * @param withDictDataId 字典类型返回字典数据ID
+     * @param withTimestamp 日期 / 日期时间类型返回时间戳
+     * @return User Map
+     */
+    public static Map<String, Object> convertUserMap(User user, boolean withDictDataId, boolean withTimestamp) {
         if (user == null) {
             return Collections.emptyMap();
         }
@@ -208,7 +222,7 @@ public class AuthUtil {
 
         // 扩展字段属性
         CommonUtil.stream(user.getUserAttrs()).forEach(userAttr ->
-                userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr.getAttrValue(), UserAttrDataTypeEnum.valueOf(userAttr.getAttrDataType()))));
+                userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr.getAttrValue(), UserAttrDataTypeEnum.valueOf(userAttr.getAttrDataType()), withDictDataId, withTimestamp)));
         return userMap;
     }
 
@@ -262,10 +276,25 @@ public class AuthUtil {
      * @return 用户扩展属性值
      */
     public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType) {
+        return convertUserAttrData(value, dataType, false, false);
+    }
+
+    /**
+     * 转换用户扩展属性值
+     *
+     * @param value 用户扩展属性值
+     * @param dataType 数据类型
+     * @param withDictDataId 字典类型返回字典数据ID
+     * @param withTimestamp 日期 / 日期时间类型返回时间戳
+     * @return 用户扩展属性值
+     */
+    public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType, boolean withDictDataId, boolean withTimestamp) {
         return switch (dataType) {
             case NUMBER -> new BigDecimal(value);
             case BOOLEAN -> Boolean.valueOf(value);
-            case DATETIME, DATE -> Long.parseLong(value);
+            case DATETIME -> withTimestamp ? Long.parseLong(value) : CommonUtil.convertTimestamp2String(Long.parseLong(value), CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS);
+            case DATE -> withTimestamp ? Long.parseLong(value) : CommonUtil.convertTimestamp2String(Long.parseLong(value), CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDD);
+            case DICT -> withDictDataId ? SpringContextUtil.getBean(DictDataService.class).detail(value).getId() : SpringContextUtil.getBean(DictDataService.class).detail(value).getLabel();
             default -> value;
         };
     }
@@ -273,7 +302,7 @@ public class AuthUtil {
     private static Object convertDataFilterValue(Object value, UserAttrDataTypeEnum dataType, boolean extFlg) {
         return  switch (dataType) {
             case DATETIME, DATE -> extFlg ? value : Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
-            case STRING -> value.toString();
+            case STRING, DICT -> value.toString();
             case BOOLEAN -> extFlg ? value : Boolean.valueOf(value.toString());
             default -> value;
         };

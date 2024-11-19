@@ -339,7 +339,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 return Collections.emptyMap();
             }
 
-            var userMap = AuthUtil.convertUserMap(queryRes.get(0));
+            var userMap = AuthUtil.convertUserMap(queryRes.get(0), true, true);
             // 2.1 获取可见的用户属性
             var visibleUserAttrs = userAttrService.getVisibleUserAttrs();
             // 2.2 删除不可见的用户信息
@@ -597,7 +597,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
             userAttrResponse.setId(attr.getAttrId());
             userAttrResponse.setKey(attr.getAttrKey());
-            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr.getAttrValue(), UserAttrDataTypeEnum.valueOf(attr.getAttrDataType())));
+            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr.getAttrValue(), UserAttrDataTypeEnum.valueOf(attr.getAttrDataType()), true, true));
             userAttrResponse.setDataType(attr.getAttrDataType());
             userAttrResponse.setExtFlg(attr.getExtAttrFlg());
             return userAttrResponse;

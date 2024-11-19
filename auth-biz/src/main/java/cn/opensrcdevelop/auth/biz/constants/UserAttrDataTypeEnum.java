@@ -20,7 +20,10 @@ public enum UserAttrDataTypeEnum {
     DATETIME("DATETIME"),
 
     /** 日期类型 */
-    DATE("DATE");
+    DATE("DATE"),
+
+    /** 字典类型 */
+    DICT("DICT");
 
     private final String type;
 }

@@ -39,4 +39,7 @@ public class UserAttrResponseDto {
 
     @Schema(description = "用户可编辑")
     private Boolean userEditable;
+
+    @Schema(description = "字典ID")
+    private String dictId;
 }

@@ -27,7 +27,7 @@ public class UserAttrRequestDto {
 
     @Schema(description = "属性数据类型")
     @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
-    @EnumValue(value = { "STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE" }, groups = { ValidationGroups.Operation.INSERT.class })
+    @EnumValue(value = { "STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE", "DICT" }, groups = { ValidationGroups.Operation.INSERT.class })
     private String dataType;
 
     @Schema(description = "扩展属性标记")
@@ -35,7 +35,7 @@ public class UserAttrRequestDto {
     private Boolean extFlg;
 
     @Schema(description = "是否在用户列表显示")
-    @NotNull
+    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
     private Boolean userLstDisplay;
 
     @Schema(description = "显示宽度")
@@ -48,4 +48,7 @@ public class UserAttrRequestDto {
     @Schema(description = "用户可编辑")
     @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
     private Boolean userEditable;
+
+    @Schema(description = "字典ID")
+    private String dictId;
 }
