@@ -1,0 +1,24 @@
+plugins {
+    id 'org.siouan.frontend-jdk21'
+}
+
+frontend {
+    nodeVersion = '20.18.0'
+    installScript = 'install'
+    assembleScript = 'run build'
+    maxDownloadAttempts = 5
+}
+
+tasks.named('installFrontend') {
+    inputs.files('package.json', 'package-lock.json')
+    outputs.dir('node_modules')
+}
+
+tasks.named('assembleFrontend') {
+    shouldRunAfter installFrontend
+
+    inputs.dir('src')
+    inputs.dir('public')
+    inputs.files('vite.config.js')
+    outputs.dir('../auth-server/src/main/resources/ui')
+}

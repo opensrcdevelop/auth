@@ -1,0 +1,118 @@
+.user-center-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f7f9fc;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 64px;
+    padding: 0 20px;
+    border: 1px solid #eee;
+    z-index: 100;
+    background: #fff;
+    position: fixed;
+    top: 0;
+
+    .left {
+      display: flex;
+      align-items: center;
+
+      .logo {
+        width: 42px;
+        display: flex;
+        justify-content: center;
+
+        .logo-img {
+          height: 42px;
+          max-width: 42px;
+        }
+      }
+
+      .title {
+        font-size: 18px;
+        color: #293350;
+        line-height: 25px;
+        font-size: 500;
+      }
+    }
+
+    .right {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+
+      .console {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        color: #515b78;
+        margin-right: 16px;
+
+        :hover {
+          color: #396aff;
+        }
+      }
+    }
+  }
+
+  .main {
+    margin-top: 64px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .tabs-container {
+      overflow: auto;
+      height: 100vh;
+      width: 1200px;
+      padding: 24px 0 86px 0;
+      box-sizing: border-box;
+
+      .card {
+        width: 100%;
+      }
+
+      .card:not(:first-child) {
+        margin-top: 24px;
+      }
+
+      .binding-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+
+        .icon-container {
+          display: flex;
+          align-items: center;
+          font-size: 16px;
+
+          .icon {
+            height: 36px;
+            width: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #eff2f6;
+            font-size: 20px;
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.btn-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
