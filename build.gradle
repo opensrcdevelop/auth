@@ -33,22 +33,6 @@ ext {
 }
 
 allprojects {
-    apply plugin: 'java'
-    apply plugin: 'org.springframework.boot'
-    apply plugin: 'io.spring.dependency-management'
-
-    group = 'cn.opensrcdevelop'
-
-    java {
-        sourceCompatibility = '21'
-    }
-
-    configurations {
-        compileOnly {
-            extendsFrom annotationProcessor
-        }
-    }
-
     repositories {
         maven { url 'https://maven.aliyun.com/repository/central/' }
         maven { url 'https://maven.aliyun.com/repository/public/'}
@@ -62,27 +46,45 @@ allprojects {
         }
     }
 
-    dependencies {
-        implementation 'org.springframework.boot:spring-boot-starter'
-        implementation "org.apache.commons:commons-lang3:$rootProject.commonsLang3Ver"
-        implementation "commons-codec:commons-codec:$rootProject.commonsCodecVer"
-        implementation "org.apache.commons:commons-collections4:$rootProject.commonsCollections4Ver"
-        implementation "commons-io:commons-io:$rootProject.commonsIoVer"
-        implementation "io.vavr:vavr:$rootProject.vavrVer"
-        compileOnly 'org.projectlombok:lombok'
-        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-        annotationProcessor 'org.projectlombok:lombok'
-        testImplementation 'org.springframework.boot:spring-boot-starter-test'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
+    if (it.name != 'ui') {
+        apply plugin: 'java'
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'io.spring.dependency-management'
 
-    dependencyManagement {
-        imports {
-            mavenBom "org.springframework.cloud:spring-cloud-dependencies:$rootProject.springCloudVer"
+        group = 'cn.opensrcdevelop'
+
+        java {
+            sourceCompatibility = '21'
         }
-    }
 
-    tasks.named('test') {
-        useJUnitPlatform()
+        configurations {
+            compileOnly {
+                extendsFrom annotationProcessor
+            }
+        }
+
+        dependencies {
+            implementation 'org.springframework.boot:spring-boot-starter'
+            implementation "org.apache.commons:commons-lang3:$rootProject.commonsLang3Ver"
+            implementation "commons-codec:commons-codec:$rootProject.commonsCodecVer"
+            implementation "org.apache.commons:commons-collections4:$rootProject.commonsCollections4Ver"
+            implementation "commons-io:commons-io:$rootProject.commonsIoVer"
+            implementation "io.vavr:vavr:$rootProject.vavrVer"
+            compileOnly 'org.projectlombok:lombok'
+            annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+            annotationProcessor 'org.projectlombok:lombok'
+            testImplementation 'org.springframework.boot:spring-boot-starter-test'
+            testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+        }
+
+        dependencyManagement {
+            imports {
+                mavenBom "org.springframework.cloud:spring-cloud-dependencies:$rootProject.springCloudVer"
+            }
+        }
+
+        tasks.named('test') {
+            useJUnitPlatform()
+        }
     }
 }
