@@ -15,10 +15,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -73,18 +70,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         return filterRegistrationBean;
     }
 
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        // 为接口配置统一前缀
-        configurer.addPathPrefix(pathPrefix, c -> !c.isAnnotationPresent(NoPathPrefix.class) && (c.isAnnotationPresent(RestController.class) || c.isAnnotationPresent(Controller.class)));
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // UI页面静态资源处理
-        registry.addResourceHandler(UI_PATH).addResourceLocations("classpath:/ui/");
-    }
-
     @Bean
     public FilterRegistrationBean<RestFilter> vueRouterForward() {
         // vue页面路由转发至 /ui/index.html
@@ -95,5 +80,23 @@ public class WebMvcConfig implements WebMvcConfigurer {
         filterRegistrationBean.addUrlPatterns("/ui/*");
         filterRegistrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE + 2);
         return filterRegistrationBean;
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        // 为接口配置统一前缀
+        configurer.addPathPrefix(pathPrefix, c -> !c.isAnnotationPresent(NoPathPrefix.class) && (c.isAnnotationPresent(RestController.class) || c.isAnnotationPresent(Controller.class)));
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        // 首页重定向
+        registry.addRedirectViewController("/", "/ui");
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // UI页面静态资源处理
+        registry.addResourceHandler(UI_PATH).addResourceLocations("classpath:/ui/");
     }
 }

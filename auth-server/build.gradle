@@ -1,3 +1,7 @@
+processResources {
+    dependsOn(':ui:assembleFrontend')
+}
+
 jar {
     enabled false
 }
