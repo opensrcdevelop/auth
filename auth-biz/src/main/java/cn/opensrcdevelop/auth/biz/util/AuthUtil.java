@@ -227,48 +227,6 @@ public class AuthUtil {
     }
 
     /**
-     * 编辑查询条件
-     *
-     * @param queryWrapper query
-     * @param filter 过滤条件
-     * @return 查询条件
-     * @param <T> T
-     */
-    public static <T> QueryWrapper<T> editQuery(QueryWrapper<T> queryWrapper, DataFilterRequestDto filter) {
-        DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
-        Boolean extFlg = filter.getExtFlg();
-        boolean isExtFlag = Boolean.TRUE.equals(extFlg);
-
-        // 基础字段，添加前缀 "t1."
-        String key = isExtFlag ? filter.getKey() : "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(filter.getKey()) ;
-
-        String attrKey = "t3.attr_key";
-        // 日期（时间类型）的扩展字段在查询时，将数据库中保存的字符类型的数据转换为长整型
-        String attrValue;
-        if (isExtFlag && (UserAttrDataTypeEnum.DATETIME.getType().equals(filter.getDataType()) || UserAttrDataTypeEnum.DATE.getType().equals(filter.getDataType()))) {
-            attrValue = "CAST(t2.attr_value AS BIGINT)";
-        } else {
-            attrValue = "t2.attr_value";
-        }
-
-        // 数据类型转换
-        Object value = convertDataFilterValue(filter.getValue(), UserAttrDataTypeEnum.valueOf(filter.getDataType()), isExtFlag);
-
-        return switch (filterType) {
-            case EQ ->isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.eq(attrValue, value)) : queryWrapper.eq(key, value);
-            case NE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.ne(attrValue, value)) : queryWrapper.ne(key, value);
-            case LIKE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.like(attrValue, value)) : queryWrapper.like(key, value);
-            case NOT_LIKE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.notLike(attrValue, value)) : queryWrapper.notLike(key, value);
-            case IN -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.in(attrValue, value)) : queryWrapper.in(key, value);
-            case NOT_IN -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.notIn(attrValue, value)) : queryWrapper.notIn(key, value);
-            case GT -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.gt(attrValue, value)) : queryWrapper.gt(key, value);
-            case GE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.ge(attrValue, value)) : queryWrapper.ge(key, value);
-            case LT -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.lt(attrValue, value)) : queryWrapper.lt(key, value);
-            case LE -> isExtFlag ? queryWrapper.eq(attrKey, key).and(o -> o.le(attrValue, value)) : queryWrapper.le(key, value);
-        };
-    }
-
-    /**
      * 转换用户扩展属性值
      *
      * @param value 用户扩展属性值
@@ -299,12 +257,100 @@ public class AuthUtil {
         };
     }
 
-    private static Object convertDataFilterValue(Object value, UserAttrDataTypeEnum dataType, boolean extFlg) {
-        return  switch (dataType) {
-            case DATETIME, DATE -> extFlg ? value : Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
-            case STRING, DICT -> value.toString();
-            case BOOLEAN -> extFlg ? value : Boolean.valueOf(value.toString());
+    /**
+     * 编辑查询条件
+     *
+     * @param queryWrapper query
+     * @param filter 过滤条件
+     * @param <T> T
+     */
+    public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterRequestDto filter) {
+        DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
+        UserAttrDataTypeEnum dataType = UserAttrDataTypeEnum.valueOf(filter.getDataType());
+        if (Boolean.TRUE.equals(filter.getExtFlg())) {
+            editExistsQuery(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType);
+        } else {
+            editQueryCondition(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType);
+        }
+    }
+
+    private static <T> void editExistsQuery(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+        String sqlSegment = """
+                SELECT
+                    1
+                FROM
+                    t_user_attr_mapping,
+                    t_user_attr
+                WHERE
+                    t_user_attr_mapping.attr_id = t_user_attr.attr_id
+                    AND
+                    user_id = t1.user_id
+                    AND
+                    %s
+                """;
+        queryWrapper.and(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+    }
+
+    private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+        String queryKey = "t_user_attr.attr_key";
+        String valueKey;
+        // 日期、日期时间、数字类型进行 sql 类型强制转换为数值类型进行条件判断
+        if (List.of(UserAttrDataTypeEnum.DATE, UserAttrDataTypeEnum.DATETIME, UserAttrDataTypeEnum.NUMBER).contains(valueDataType)) {
+            valueKey = "CASE WHEN t_user_attr_mapping.attr_value ~ '^\\d+(\\.\\d+)?$' THEN CAST(t_user_attr_mapping.attr_value AS NUMERIC) ELSE NULL END";
+        } else {
+            valueKey = "t_user_attr_mapping.attr_value";
+        }
+
+        // 构造查询条件
+        QueryWrapper<Object> queryWrapper = new QueryWrapper<>();
+        switch (filterType) {
+            case EQ -> queryWrapper.eq(queryKey, attrKey).and(o -> o.eq(valueKey, value));
+            case NE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ne(valueKey, value));
+            case LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.like(valueKey, value));
+            case NOT_LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notLike(valueKey, value));
+            case IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.in(valueKey, value));
+            case NOT_IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notIn(valueKey, value));
+            case GT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.gt(valueKey, value));
+            case GE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ge(valueKey, value));
+            case LT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.lt(valueKey, value));
+            case LE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.le(valueKey, value));
+        }
+
+        // 替换参数
+        String paramName1 = "#{ew.paramNameValuePairs.MPGENVAL1}";
+        String paramName2 = "#{ew.paramNameValuePairs.MPGENVAL2}";
+        String sqlSegment = queryWrapper.getSqlSegment();
+        sqlSegment = sqlSegment.replace(paramName1, "'" + attrKey + "'");
+        if (value instanceof Number) {
+            sqlSegment = sqlSegment.replace(paramName2, value.toString());
+        } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)){
+            sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
+        } else {
+            sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
+        }
+        return sqlSegment;
+    }
+
+    private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+        String queryKey = "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
+        Object queryValue = switch (valueDataType) {
+            case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
+            case BOOLEAN -> Boolean.valueOf(value.toString());
             default -> value;
         };
+
+        // 构造查询条件
+        switch (filterType) {
+            case EQ -> queryWrapper.eq(queryKey, queryValue);
+            case NE -> queryWrapper.ne(queryKey, queryValue);
+            case LIKE -> queryWrapper.like(queryKey, queryValue);
+            case NOT_LIKE -> queryWrapper.notLike(queryKey, queryValue);
+            case IN -> queryWrapper.in(queryKey, queryValue);
+            case NOT_IN -> queryWrapper.notIn(queryKey, queryValue);
+            case GT -> queryWrapper.gt(queryKey, queryValue);
+            case GE -> queryWrapper.ge(queryKey, queryValue);
+            case LT -> queryWrapper.lt(queryKey, queryValue);
+            case LE -> queryWrapper.le(queryKey, queryValue);
+        }
     }
 }

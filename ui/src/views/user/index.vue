@@ -120,7 +120,7 @@ export default userTs;
                           <a-option
                             value="GT"
                             v-if="
-                              ['NUMBERE', 'DATETIME', 'DATE'].includes(
+                              ['NUMBER', 'DATETIME', 'DATE'].includes(
                                 filter.dataType
                               )
                             "
@@ -129,7 +129,7 @@ export default userTs;
                           <a-option
                             value="LT"
                             v-if="
-                              ['NUMBERE', 'DATETIME', 'DATE'].includes(
+                              ['NUMBER', 'DATETIME', 'DATE'].includes(
                                 filter.dataType
                               )
                             "

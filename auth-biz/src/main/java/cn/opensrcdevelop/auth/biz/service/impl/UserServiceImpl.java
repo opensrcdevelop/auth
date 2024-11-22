@@ -146,7 +146,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(CommonUtil.extractFileNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterRequestDto filter : filters) {
-                queryWrapper = AuthUtil.editQuery(queryWrapper, filter);
+                AuthUtil.editQuery(queryWrapper, filter);
             }
             userRepository.searchUsers(pageRequest, queryWrapper);
         } else {
