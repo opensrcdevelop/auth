@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.component.DbRegisteredClientRepository;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
@@ -11,6 +12,7 @@ import cn.opensrcdevelop.auth.biz.service.ClientService;
 import cn.opensrcdevelop.auth.biz.service.ResourceGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -58,28 +60,31 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto createClient(ClientRequestDto requestDto) {
+        // 1. 检查客户端名称是否存在
+        checkClientName(requestDto, null);
+
         CreateOrUpdateSecretClientResponseDto responseDto = new CreateOrUpdateSecretClientResponseDto();
-        // 1. 客户端编辑
-        // 1.1 生成客户端随机密钥
+        // 2. 客户端编辑
+        // 2.1 生成客户端随机密钥
         String clientSecret = CommonUtil.getBase32StringKey(CLIENT_SECRETS_BYTES);
         RegisteredClient registeredClient = editInsertClient(requestDto, clientSecret);
 
-        // 2. 存入数据库
+        // 3. 存入数据库
         registeredClientRepository.save(registeredClient);
-        // 2.1 更新客户端描述信息
+        // 3.1 更新客户端描述信息
         if (StringUtils.isNotEmpty(requestDto.getDesc())) {
             super.update(Wrappers.<Client>lambdaUpdate()
                     .set(Client::getDescription, requestDto.getDesc())
                     .eq(Client::getClientId, registeredClient.getClientId()));
         }
 
-        // 3. 响应编辑
+        // 4. 响应编辑
         responseDto.setId(registeredClient.getClientId());
-        // 3.1 设置生成的明文密钥
+        // 4.1 设置生成的明文密钥
         responseDto.setSecret(clientSecret);
         responseDto.setRedirectUri(requestDto.getRedirectUri());
 
-        // 4. 设置资源组
+        // 5. 设置资源组
         ResourceGroup resourceGroup = new ResourceGroup();
         resourceGroup.setResourceGroupId(CommonUtil.getUUIDString());
         resourceGroup.setResourceGroupName(registeredClient.getClientName());
@@ -186,13 +191,16 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     @Transactional
     @Override
     public void updateClient(ClientRequestDto requestDto) {
-        // 获取版本号
+        // 1. 获取版本号
         Client rawClient = super.getById(requestDto.getId());
         if (Objects.isNull(rawClient)) {
             return;
         }
 
-        // 更新客户端
+        // 2. 检查客户端名称是否存在
+        checkClientName(requestDto, rawClient);
+
+        // 3. 更新客户端
         Client client = editUpdateClient(requestDto);
         client.setVersion(rawClient.getVersion());
         super.updateById(client);
@@ -327,5 +335,15 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         clientBuilder.clientSettings(clientSettingsBuilder.build());
 
         return clientBuilder.build();
+    }
+
+    private void checkClientName(ClientRequestDto requestDto, Client rawClient) {
+        if (Objects.nonNull(rawClient) && StringUtils.equals(requestDto.getName(), rawClient.getClientName())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, requestDto.getName())))) {
+            throw new BizException(MessageConstants.CLIENT_MSG_1000, requestDto.getName());
+        }
     }
 }

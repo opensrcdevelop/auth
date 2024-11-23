@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
@@ -8,13 +9,14 @@ import cn.opensrcdevelop.auth.biz.entity.ResourceGroup;
 import cn.opensrcdevelop.auth.biz.mapper.ResourceGroupMapper;
 import cn.opensrcdevelop.auth.biz.service.ResourceGroupService;
 import cn.opensrcdevelop.auth.biz.service.ResourceService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,11 +27,9 @@ import java.util.Objects;
 @Service
 public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, ResourceGroup> implements ResourceGroupService {
 
-    private final ResourceService resourceService;
-
-    public ResourceGroupServiceImpl(@Lazy ResourceService resourceService) {
-        this.resourceService = resourceService;
-    }
+    @jakarta.annotation.Resource
+    @Lazy
+    private ResourceService resourceService;
 
     /**
      * 获取资源组列表
@@ -45,9 +45,9 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         Page<ResourceGroup> pageRequest = new Page<>(page, size);
         List<ResourceGroup> queryResult;
         if (StringUtils.isNotEmpty(keyword)) {
-            queryResult = super.list(pageRequest, Wrappers.<ResourceGroup>lambdaQuery().like(ResourceGroup::getResourceGroupName, keyword).or(o -> o.like(ResourceGroup::getResourceGroupCode, keyword)));
+            queryResult = super.list(pageRequest, Wrappers.<ResourceGroup>lambdaQuery().like(ResourceGroup::getResourceGroupName, keyword).or(o -> o.like(ResourceGroup::getResourceGroupCode, keyword)).orderByAsc(ResourceGroup::getResourceGroupCode));
         } else {
-            queryResult = super.list(pageRequest);
+            queryResult = super.list(pageRequest, Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode));
         }
         // 2. 属性设置
         PageData<ResourceGroupResponseDto> pageData = new PageData<>();
@@ -153,14 +153,17 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     @Transactional
     @Override
     public void createResourceGroup(ResourceGroupRequestDto requestDto) {
-        // 1. 属性编辑
+        // 1. 检查资源组标识是否存在
+        checkResourceGroupCode(requestDto, null);
+
+        // 2. 属性编辑
         ResourceGroup resourceGroup = new ResourceGroup();
         resourceGroup.setResourceGroupId(CommonUtil.getUUIDString());
         resourceGroup.setResourceGroupName(requestDto.getName());
         resourceGroup.setResourceGroupCode(requestDto.getCode());
         resourceGroup.setDescription(requestDto.getDesc());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(resourceGroup);
     }
 
@@ -178,14 +181,27 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
             return;
         }
 
-        // 2. 属性编辑
+        // 3. 检查资源组标识是否存在
+        checkResourceGroupCode(requestDto, rawResourceGroup);
+
+        // 4. 属性编辑
         ResourceGroup updateResourceGroup = new ResourceGroup();
         updateResourceGroup.setResourceGroupId(requestDto.getId());
         updateResourceGroup.setResourceGroupName(requestDto.getName());
         updateResourceGroup.setDescription(requestDto.getDesc());
         updateResourceGroup.setVersion(rawResourceGroup.getVersion());
 
-        // 3. 数据库操作
+        // 5. 数据库操作
         super.updateById(updateResourceGroup);
+    }
+
+    private void checkResourceGroupCode(ResourceGroupRequestDto requestDto, ResourceGroup rawResourceGroup) {
+        if (Objects.nonNull(rawResourceGroup) && StringUtils.equals(requestDto.getCode(), rawResourceGroup.getResourceGroupCode())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<ResourceGroup>lambdaQuery().eq(ResourceGroup::getResourceGroupCode, requestDto.getCode())))) {
+            throw new BizException(MessageConstants.RESOURCE_GROUP_MSG_1000, requestDto.getCode());
+        }
     }
 }

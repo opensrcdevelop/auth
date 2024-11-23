@@ -13,6 +13,9 @@ public class DictDataResponseDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 2865788407458441780L;
 
+    @Schema(description = "字典ID")
+    private String dictId;
+
     @Schema(description = "字典数据ID")
     private String id;
 

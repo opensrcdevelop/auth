@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
@@ -11,8 +12,10 @@ import cn.opensrcdevelop.auth.biz.mapper.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.repository.PermissionRepository;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
+import cn.opensrcdevelop.auth.biz.service.ResourceService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -21,11 +24,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +45,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     private final PermissionRepository permissionRepository;
     private final AuthorizeService authorizeService;
 
+    @Resource
+    @Lazy
+    private ResourceService resourceService;
+
     /**
      * 创建权限
      *
@@ -48,7 +57,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Transactional
     @Override
     public void createPermission(PermissionRequestDto requestDto) {
-        // 1.属性设置
+        // 1. 检查权限标识是否存在
+        checkPermissionCode(requestDto, null);
+
+        // 2.属性设置
         Permission permission = new Permission();
         permission.setPermissionName(requestDto.getName());
         permission.setPermissionCode(requestDto.getCode());
@@ -56,7 +68,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permission.setPermissionId(CommonUtil.getUUIDString());
         permission.setResourceId(requestDto.getResourceId());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(permission);
     }
 
@@ -299,7 +311,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             return;
         }
 
-        // 2. 属性设置
+        // 2. 检查权限标识是否存在
+        checkPermissionCode(requestDto, rawPermission);
+
+        // 3. 属性设置
         Permission updatePermission = new Permission();
         updatePermission.setPermissionId(requestDto.getId());
         updatePermission.setPermissionName(requestDto.getName());
@@ -307,7 +322,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         updatePermission.setDescription(requestDto.getDesc());
         updatePermission.setVersion(rawPermission.getVersion());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updatePermission);
     }
 
@@ -361,5 +376,19 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     public boolean generateCurrentUserPermissionsCacheCondition() {
         return Objects.nonNull(AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB)) &&
                 CollectionUtils.isNotEmpty(AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD));
+    }
+
+    private void checkPermissionCode(PermissionRequestDto requestDto, Permission rawPermission) {
+        if (Objects.nonNull(rawPermission) && StringUtils.equals(requestDto.getCode(), rawPermission.getPermissionCode())) {
+            return;
+        }
+
+        if (Objects.isNull(resourceService.getById(requestDto.getResourceId()))) {
+            throw new BizException(MessageConstants.PERMISSION_MSG_1001);
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<Permission>lambdaQuery().eq(Permission::getPermissionCode, requestDto.getCode()).and(q -> q.eq(Permission::getResourceId, requestDto.getResourceId()))))) {
+            throw new BizException(MessageConstants.PERMISSION_MSG_1000, requestDto.getCode());
+        }
     }
 }

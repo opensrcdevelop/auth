@@ -53,6 +53,7 @@ const resourceInfoForm = reactive({
   code: undefined,
   desc: undefined,
   api: undefined,
+  resourceGroupId: undefined,
 });
 const resourceInfoFormRuels = {
   name: [{ required: true, message: "资源名称未填写" }],
@@ -91,6 +92,7 @@ const handleGetResourceDetail = (id: string) => {
         resourceInfoForm.code = data.code;
         resourceInfoForm.desc = data.desc;
         resourceInfoForm.api = data.api;
+        resourceInfoForm.resourceGroupId = data.resourceGroup.id;
       });
     })
     .catch((err: any) => {

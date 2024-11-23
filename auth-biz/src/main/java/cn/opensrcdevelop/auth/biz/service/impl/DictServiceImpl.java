@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.DictRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.DictResponseDto;
@@ -10,14 +12,18 @@ import cn.opensrcdevelop.auth.biz.mapper.DictMapper;
 import cn.opensrcdevelop.auth.biz.service.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.DictService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +34,10 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements DictService {
 
-    private final DictDataService dictDataService;
     private final UserAttrService userAttrService;
+
+    @Resource
+    private DictDataService dictDataService;
 
     /**
      * 创建字典
@@ -39,14 +47,17 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     @Transactional
     @Override
     public void createDict(DictRequestDto requestDto) {
-        // 1. 属性设置
+        // 1. 检查字典标识是否存在
+        checkDictCode(requestDto, null);
+
+        // 2. 属性设置
         Dict dict = new Dict();
         dict.setDictId(CommonUtil.getUUIDString());
         dict.setDictName(requestDto.getName());
         dict.setDictCode(requestDto.getCode());
         dict.setDescription(requestDto.getDesc());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(dict);
     }
 
@@ -64,14 +75,17 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             return;
         }
 
-        // 2. 属性设置
+        // 2. 检查字典标识是否存在
+        checkDictCode(requestDto, rawDict);
+
+        // 3. 属性设置
         Dict updateDict = new Dict();
         updateDict.setDictId(requestDto.getId());
         updateDict.setDictName(requestDto.getName());
         updateDict.setDictCode(requestDto.getCode());
         updateDict.setDescription(requestDto.getDesc());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updateDict);
     }
 
@@ -143,6 +157,10 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
      *
      * @param dictId 字典ID
      */
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
+            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0])"
+    )
     @Transactional
     @Override
     public void removeDict(String dictId) {
@@ -159,6 +177,20 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         UserAttr userAttr = userAttrService.getOne(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrDataType, UserAttrDataTypeEnum.DICT.getType()).and(o -> o.eq(UserAttr::getDictId, dictId)));
         if (Objects.nonNull(userAttr)) {
             userAttrService.removeUserAttr(userAttr.getAttrId());
+        }
+    }
+
+    public String generateEnabledDictDataCacheKey(String dictId) {
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictId;
+    }
+
+    private void  checkDictCode(DictRequestDto requestDto, Dict rawDict) {
+        if (Objects.nonNull(rawDict) && StringUtils.equals(requestDto.getCode(), rawDict.getDictCode())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<Dict>lambdaQuery().eq(Dict::getDictCode, requestDto.getCode())))) {
+            throw new BizException(MessageConstants.DICT_MSG_1000, requestDto.getCode());
         }
     }
 }

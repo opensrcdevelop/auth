@@ -32,6 +32,7 @@ const handleTabChange = (tabKey: string) => {
 /** 字典数据信息表单 */
 const dictDataInfoFormRef = ref();
 const dictDataInfoForm = reactive({
+  dictId: undefined,
   id: undefined,
   label: undefined,
   value: undefined,
@@ -58,6 +59,7 @@ const handleGetDictDatatDetail = (id: string) => {
         dictDataId.value = data.id;
         dictDataLabel.value = data.label;
 
+        dictDataInfoForm.dictId = data.dictId;
         dictDataInfoForm.id = data.id;
         dictDataInfoForm.label = data.label;
         dictDataInfoForm.value = data.value;

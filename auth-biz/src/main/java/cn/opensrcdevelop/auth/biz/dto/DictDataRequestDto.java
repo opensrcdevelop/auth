@@ -12,7 +12,7 @@ import lombok.Data;
 public class DictDataRequestDto {
 
     @Schema(description = "字典ID")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlank
     private String dictId;
 
     @Schema(description = "字典数据ID")

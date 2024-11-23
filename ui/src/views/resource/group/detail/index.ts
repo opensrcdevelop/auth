@@ -136,6 +136,7 @@ const handleResourceGroupInfoFormSubmit = (formData: any) => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
+        handleGetResourceGroupDetail(resourceGroupId.value);
       });
     })
     .catch((err: any) => {

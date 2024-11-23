@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.ResourceRequestDto;
@@ -12,12 +13,14 @@ import cn.opensrcdevelop.auth.biz.repository.ResourceRepository;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.ResourceGroupService;
 import cn.opensrcdevelop.auth.biz.service.ResourceService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +32,12 @@ import java.util.Objects;
 public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> implements ResourceService {
 
     private final ResourceRepository resourceRepository;
-    private final PermissionService permissionService;
-    private final ResourceGroupService resourceGroupService;
+
+    @jakarta.annotation.Resource
+    private ResourceGroupService resourceGroupService;
+
+    @jakarta.annotation.Resource
+    private PermissionService permissionService;
 
     /**
      * 创建资源
@@ -40,7 +47,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     @Transactional
     @Override
     public void createResource(ResourceRequestDto requestDto) {
-        // 1. 属性设置
+        // 1. 检查资源标识是否存在
+        checkResourceCode(requestDto, null);
+
+        // 2. 属性设置
         Resource resource = new Resource();
         resource.setResourceName(requestDto.getName());
         resource.setResourceId(CommonUtil.getUUIDString());
@@ -49,7 +59,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         resource.setResourceGroupId(requestDto.getResourceGroupId());
         resource.setApiIdentifier(requestDto.getApi());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(resource);
     }
 
@@ -179,7 +189,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             return;
         }
 
-        // 2. 属性设置
+        // 2. 检查资源标识是否存在
+        checkResourceCode(requestDto, rawResource);
+
+        // 3. 属性设置
         Resource updateResource = new Resource();
         updateResource.setResourceId(requestDto.getId());
         updateResource.setResourceName(requestDto.getName());
@@ -188,7 +201,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         updateResource.setDescription(requestDto.getDesc());
         updateResource.setVersion(rawResource.getVersion());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updateResource);
     }
 
@@ -205,5 +218,19 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
         // 2. 删除资源下的所有权限
         permissionService.removeResourcePermissions(resourceIds);
+    }
+
+    private void checkResourceCode(ResourceRequestDto requestDto, Resource rawResource) {
+        if (Objects.nonNull(rawResource) && StringUtils.equals(requestDto.getCode(), rawResource.getResourceCode())) {
+            return;
+        }
+
+        if (Objects.isNull(resourceGroupService.getById(requestDto.getResourceGroupId()))) {
+            throw new BizException(MessageConstants.RESOURCE_MSG_1001);
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceCode, requestDto.getCode()).and(q -> q.eq(Resource::getResourceGroupId, requestDto.getResourceGroupId()))))) {
+            throw new BizException(MessageConstants.RESOURCE_MSG_1000, requestDto.getCode());
+        }
     }
 }

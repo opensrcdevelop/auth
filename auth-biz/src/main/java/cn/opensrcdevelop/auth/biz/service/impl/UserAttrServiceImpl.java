@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.SetUserAttrDisplaySeqRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrMappingRequestDto;
@@ -12,6 +13,7 @@ import cn.opensrcdevelop.auth.biz.mapper.UserAttrMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.UserAttrRepository;
 import cn.opensrcdevelop.auth.biz.service.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.batch.MybatisBatch;
@@ -43,7 +45,12 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     @Transactional
     @Override
     public void createUserAttr(UserAttrRequestDto requestDto) {
-        // 1. 属性编辑
+        // 1. 检查属性 Key 是否存在
+        if (Objects.nonNull(super.getOne(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrKey, requestDto.getKey())))) {
+            throw new BizException(MessageConstants.USER_ATTR_MSG_1000, requestDto.getKey());
+        }
+
+        // 2. 属性编辑
         UserAttr userAttr = new UserAttr();
         userAttr.setAttrId(CommonUtil.getUUIDString());
         userAttr.setAttrKey(requestDto.getKey());
@@ -56,17 +63,17 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         userAttr.setUserLstDisplay(display);
         CommonUtil.callSetWithCheck(Objects::nonNull, userAttr::setDisplayWidth, requestDto::getDisplayWidth);
 
-        // 1.1 若在用户列表显示，则获取最大显示顺序
+        // 2.1 若在用户列表显示，则获取最大显示顺序
         if (Boolean.TRUE.equals(display)) {
             userAttr.setDisplaySeq(userAttrRepository.getMaxDisplaySeq());
         }
 
-        // 1.2 属性数据类型为 DICT，设置字典ID
+        // 2.2 属性数据类型为 DICT，设置字典ID
         if (StringUtils.equals(UserAttrDataTypeEnum.DICT.getType(), requestDto.getDataType()) && StringUtils.isNotEmpty(requestDto.getDictId())) {
             userAttr.setDictId(requestDto.getDictId());
         }
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(userAttr);
     }
 

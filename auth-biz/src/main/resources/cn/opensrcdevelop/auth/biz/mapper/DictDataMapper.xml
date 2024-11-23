@@ -9,5 +9,6 @@
             t_dict_data
         WHERE
             dict_id = #{dictId}
+            AND deleted = false
     </select>
 </mapper>

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.DictDataRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.DictDataResponseDto;
@@ -8,15 +9,22 @@ import cn.opensrcdevelop.auth.biz.entity.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.mapper.DictDataMapper;
 import cn.opensrcdevelop.auth.biz.repository.impl.DictDataRepositoryImpl;
 import cn.opensrcdevelop.auth.biz.service.DictDataService;
+import cn.opensrcdevelop.auth.biz.service.DictService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrMappingService;
+import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,30 +38,33 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     private final DictDataRepositoryImpl dictDataRepository;
     private final UserAttrMappingService userAttrMappingService;
 
+    @Resource
+    @Lazy
+    private DictService dictService;
+
     /**
      * 创建字典数据
      *
      * @param requestDto 请求
      */
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
+            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)"
+    )
     @Transactional
     @Override
     public void createDictData(DictDataRequestDto requestDto) {
-        String dictId = requestDto.getDictId();
-
         // 1. 检查字典数据值是否存在
-        var queryRes = super.getOne(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId).eq(DictData::getDataValue, requestDto.getValue()));
-        if (Objects.nonNull(queryRes)) {
-            throw new BizException(MessageConstants.DICT_DATA_MSG_1000, requestDto.getValue());
-        }
+        checkDictDataValue(requestDto, null);
 
         // 2. 属性设置
         DictData dictData = new DictData();
-        dictData.setDictId(dictId);
+        dictData.setDictId(requestDto.getDictId());
         dictData.setDataId(CommonUtil.getUUIDString());
         dictData.setDataLabel(requestDto.getLabel());
         dictData.setDataValue(requestDto.getValue());
         CommonUtil.callSetWithCheck(Objects::nonNull, dictData::setEnable, requestDto::getEnable);
-        setDictDataDisplaySeq(dictData, requestDto.getDisplaySeq(), dictId);
+        setDictDataDisplaySeq(dictData, requestDto.getDisplaySeq(), requestDto.getDictId());
 
         // 3. 数据库操作
         super.save(dictData);
@@ -64,6 +75,10 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      *
      * @param requestDto 请求
      */
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
+            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)"
+    )
     @Transactional
     @Override
     public void updateDictData(DictDataRequestDto requestDto) {
@@ -73,15 +88,18 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             return;
         }
 
-        // 2. 属性设置
+        // 2. 检查字典数据值是否存在
+        checkDictDataValue(requestDto, rawDictData);
+
+        // 3. 属性设置
         DictData updateDictData = new DictData();
         updateDictData.setDataId(requestDto.getId());
         updateDictData.setDataLabel(requestDto.getLabel());
         updateDictData.setDataValue(requestDto.getValue());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateDictData::setEnable, requestDto::getEnable);
-        setDictDataDisplaySeq(updateDictData, requestDto.getDisplaySeq(), rawDictData.getDictId());
+        setDictDataDisplaySeq(updateDictData, requestDto.getDisplaySeq(), requestDto.getDictId());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updateDictData);
     }
 
@@ -101,6 +119,7 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         }
 
         // 2. 属性设置
+        dictDataResponse.setDictId(dictData.getDictId());
         dictDataResponse.setId(dictData.getDataId());
         dictDataResponse.setLabel(dictData.getDataLabel());
         dictDataResponse.setValue(dictData.getDataValue());
@@ -150,6 +169,12 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      *
      * @param dictDataIds 字典数据ID集合
      */
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
+            key = "#root.target.generateEnabledDictDataCacheKeyById(#root.args[0])",
+            condition = "#root.args[0]?.size() > 0",
+            beforeInvocation = true
+    )
     @Transactional
     @Override
     public void removeDictData(List<String> dictDataIds) {
@@ -166,6 +191,11 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      * @param dictId 字典ID
      * @return 启用的字典数据
      */
+    @Cacheable(
+            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
+            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0])"
+    )
+    @CacheExpire("7 * 24 * 3600")
     @Override
     public List<DictDataResponseDto> getEnabledDictData(String dictId) {
         // 1. 查询数据库
@@ -203,5 +233,28 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         dictDataResponse.setEnable(dictData.getEnable());
         dictDataResponse.setDisplaySeq(dictData.getDisplaySeq());
         return dictDataResponse;
+    }
+
+    public String generateEnabledDictDataCacheKey(String dictId) {
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictId;
+    }
+
+    public String generateEnabledDictDataCacheKeyById(List<String> dictDataIds) {
+        DictData dictData = super.getById(dictDataIds.get(0));
+        return Objects.nonNull(dictData) ? TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictData.getDictId() : "";
+    }
+
+    private void checkDictDataValue(DictDataRequestDto requestDto, DictData rawDictData) {
+        if (Objects.nonNull(rawDictData) && StringUtils.equals(requestDto.getValue(), rawDictData.getDataValue())) {
+            return;
+        }
+
+        if (Objects.isNull(dictService.getById(requestDto.getDictId()))) {
+            throw new BizException(MessageConstants.DICT_DATA_MSG_1001);
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, requestDto.getDictId()).eq(DictData::getDataValue, requestDto.getValue())))) {
+            throw new BizException(MessageConstants.DICT_DATA_MSG_1000, requestDto.getValue());
+        }
     }
 }
