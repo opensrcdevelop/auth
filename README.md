@@ -109,17 +109,20 @@
 
 ### 演示截图
 
-登录
+- 登录
+
 
 ![](./docs/img/login.png)
 
-MFA
+- MFA
+
 
 ![](./docs/img/mfa.png)
 
 ![](./docs/img/mfa-valid.png)
 
-客户端
+- 客户端
+
 
 ![](./docs/img/client-list.png)
 
@@ -127,7 +130,8 @@ MFA
 
 ![](./docs/img/client-oidc.png)
 
-用户管理
+- 用户管理
+
 
 ![](./docs/img/user-list.png)
 
@@ -137,7 +141,8 @@ MFA
 
 ![](./docs/img/user-permissions.png)
 
-用户组管理
+- 用户组管理
+
 
 ![](./docs/img/usergroup-list.png)
 
@@ -145,15 +150,18 @@ MFA
 
 ![](./docs/img/usergroup-permissions.png)
 
-字段管理
+- 字段管理
+
 
 ![](./docs/img/usercolumn-list.png)
 
-资源组管理
+- 资源组管理
+
 
 ![](./docs/img/resourcegroup-info.png)
 
-资源权限
+- 资源权限
+
 
 ![](./docs/img/resourcepermission-list.png)
 
@@ -165,14 +173,23 @@ MFA
 
 ![](./docs/img/authorize.png)
 
-角色管理
+- 角色管理
+
 
 ![](./docs/img/role-info.png)
 
-限制条件
+- 限制条件
+
 
 ![](./docs/img/condition-info.png)
 
-多租户
+- 多租户
+
 
 ![](./docs/img/tenant-info.png)
+
+- 数据字典
+
+![](./docs/img/dict-list.png)
+
+![](./docs/img/dictdata-list.png)
