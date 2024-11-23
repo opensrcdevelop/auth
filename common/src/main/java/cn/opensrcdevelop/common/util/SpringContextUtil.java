@@ -28,14 +28,12 @@ public class SpringContextUtil implements ApplicationContextAware {
         return (T) context.getBean(name);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> T getBean(Class<?> clazz) {
-        return (T) context.getBean(clazz);
+    public static <T> T getBean(Class<T> clazz) {
+        return context.getBean(clazz);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <T> T getBean(String name, Class<?> clazz) {
-        return (T) context.getBean(name, clazz);
+    public static <T> T getBean(String name, Class<T> clazz) {
+        return context.getBean(name, clazz);
     }
 
     public static String getProperty(String name) {

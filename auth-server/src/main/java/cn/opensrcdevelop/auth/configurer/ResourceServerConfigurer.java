@@ -15,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
@@ -89,6 +90,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        http.authenticationProvider(new EmailCodeAuthenticationProvider(SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
+        http.authenticationProvider(new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
     }
 }

@@ -19,10 +19,12 @@ public class UserRequestDto {
 
     @Schema(description = "用户名")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String username;
 
     @Schema(description = "密码")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String password;
 
     @Schema(description = "手机号码")

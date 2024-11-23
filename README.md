@@ -25,6 +25,7 @@
 - 权限管理
 - 多租户
 - 个人中心
+- 数据字典
 
 ### 功能概述
 
@@ -51,7 +52,7 @@
   - 禁用 / 解禁用户
   - 关闭 / 启用 MFA
   - 连续登录失败超过设置次数禁用账号
-  - 自定义扩展用户字段，支持的数据类型：字符串、布尔值、数字、日期时间
+  - 自定义扩展用户字段，支持的数据类型：字符串、布尔值、数字、日期、日期时间、字典
   - 自定义筛选条件，筛选用户
   - 用户分组，统一授权管理
 
@@ -81,6 +82,13 @@
 - 个人中心
 
   支持用户更新可见的个人信息、账号绑定、修改密码。
+  
+- 数据字典
+
+  集中同类型数据元素，提供统一管理。字典与扩展用户字段关联，提供字段值选项。
+
+  - 创建字典及字典内数据元素
+  - 配置数据元素显示顺序及启用状态
 
 ### 持续集成（CI）
 
@@ -94,28 +102,27 @@
 
 集成 [**Elastic APM**](https://www.elastic.co/cn/observability/application-performance-monitoring) 实现程序性能监控。
 
-### 前端工程
-
-**[Auth Server Console](https://github.com/opensrcdevelop/auth-server-front)**
-
 ### 演示地址
 
-- URL：[https://tm5wt3mp.console.opensrcdevelop.cn](https://tm5wt3mp.console.opensrcdevelop.cn/)
+- URL：[https://tm5wt3mp.auth.opensrcdevelop.cn](https://tm5wt3mp.auth.opensrcdevelop.cn/)
 - 账号 / 密码：preview / preview
 
 ### 演示截图
 
-登录
+- 登录
+
 
 ![](./docs/img/login.png)
 
-MFA
+- MFA
+
 
 ![](./docs/img/mfa.png)
 
 ![](./docs/img/mfa-valid.png)
 
-客户端
+- 客户端
+
 
 ![](./docs/img/client-list.png)
 
@@ -123,7 +130,8 @@ MFA
 
 ![](./docs/img/client-oidc.png)
 
-用户管理
+- 用户管理
+
 
 ![](./docs/img/user-list.png)
 
@@ -133,7 +141,8 @@ MFA
 
 ![](./docs/img/user-permissions.png)
 
-用户组管理
+- 用户组管理
+
 
 ![](./docs/img/usergroup-list.png)
 
@@ -141,15 +150,18 @@ MFA
 
 ![](./docs/img/usergroup-permissions.png)
 
-字段管理
+- 字段管理
+
 
 ![](./docs/img/usercolumn-list.png)
 
-资源组管理
+- 资源组管理
+
 
 ![](./docs/img/resourcegroup-info.png)
 
-资源权限
+- 资源权限
+
 
 ![](./docs/img/resourcepermission-list.png)
 
@@ -161,14 +173,23 @@ MFA
 
 ![](./docs/img/authorize.png)
 
-角色管理
+- 角色管理
+
 
 ![](./docs/img/role-info.png)
 
-限制条件
+- 限制条件
+
 
 ![](./docs/img/condition-info.png)
 
-多租户
+- 多租户
+
 
 ![](./docs/img/tenant-info.png)
+
+- 数据字典
+
+![](./docs/img/dict-list.png)
+
+![](./docs/img/dictdata-list.png)

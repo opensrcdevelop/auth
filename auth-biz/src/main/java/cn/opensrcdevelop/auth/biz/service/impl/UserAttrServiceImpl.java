@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
+import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.SetUserAttrDisplaySeqRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrRequestDto;
@@ -11,6 +13,7 @@ import cn.opensrcdevelop.auth.biz.mapper.UserAttrMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.UserAttrRepository;
 import cn.opensrcdevelop.auth.biz.service.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.batch.MybatisBatch;
@@ -42,7 +45,12 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     @Transactional
     @Override
     public void createUserAttr(UserAttrRequestDto requestDto) {
-        // 1. 属性编辑
+        // 1. 检查属性 Key 是否存在
+        if (Objects.nonNull(super.getOne(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrKey, requestDto.getKey())))) {
+            throw new BizException(MessageConstants.USER_ATTR_MSG_1000, requestDto.getKey());
+        }
+
+        // 2. 属性编辑
         UserAttr userAttr = new UserAttr();
         userAttr.setAttrId(CommonUtil.getUUIDString());
         userAttr.setAttrKey(requestDto.getKey());
@@ -55,12 +63,17 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         userAttr.setUserLstDisplay(display);
         CommonUtil.callSetWithCheck(Objects::nonNull, userAttr::setDisplayWidth, requestDto::getDisplayWidth);
 
-        // 1.1 若在用户列表显示，则获取最大显示顺序
+        // 2.1 若在用户列表显示，则获取最大显示顺序
         if (Boolean.TRUE.equals(display)) {
             userAttr.setDisplaySeq(userAttrRepository.getMaxDisplaySeq());
         }
 
-        // 2. 数据库操作
+        // 2.2 属性数据类型为 DICT，设置字典ID
+        if (StringUtils.equals(UserAttrDataTypeEnum.DICT.getType(), requestDto.getDataType()) && StringUtils.isNotEmpty(requestDto.getDictId())) {
+            userAttr.setDictId(requestDto.getDictId());
+        }
+
+        // 3. 数据库操作
         super.save(userAttr);
     }
 
@@ -94,7 +107,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      * @return 用户的属性
      */
     @Override
-    public List<UserAttr> getUserAttrs(String userId) {
+    public List<UserAttr>  getUserAttrs(String userId) {
         return userAttrRepository.searchUserAttrs(userId);
     }
 
@@ -139,6 +152,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             userAttrResponse.setUserLstDisplay(userAttr.getUserLstDisplay());
             userAttrResponse.setDisplaySeq(userAttr.getDisplaySeq());
             userAttrResponse.setDisplayWidth(userAttr.getDisplayWidth());
+            userAttrResponse.setDictId(userAttr.getDictId());
 
             return userAttrResponse;
         }).toList();
@@ -228,16 +242,19 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         updateUserAttr.setAttrName(requestDto.getName());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserVisible, requestDto::getUserVisible);
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserEditable, requestDto::getUserEditable);
-        updateUserAttr.setDisplayWidth(requestDto.getDisplayWidth());
-        Boolean display = requestDto.getUserLstDisplay();
-        updateUserAttr.setUserLstDisplay(display);
+        CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserLstDisplay, requestDto::getUserLstDisplay);
+        CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setDisplayWidth, requestDto::getDisplayWidth);
 
         // 1.1 设置显示顺序
-        if (Boolean.TRUE.equals(display)) {
+        if (Boolean.TRUE.equals(requestDto.getUserLstDisplay())) {
             updateUserAttr.setDisplaySeq(userAttrRepository.getMaxDisplaySeq());
-        } else {
-            updateUserAttr.setDisplaySeq(null);
         }
+        // 1.2 保留原显示顺序
+        if (Objects.nonNull(requestDto.getDisplayWidth())) {
+            UserAttr rawUserAttr = super.getById(requestDto.getId());
+            updateUserAttr.setDisplaySeq(rawUserAttr.getDisplaySeq());
+        }
+        // 1.3 显示顺序为null，则不显示
 
         // 2. 数据库操作
         super.updateById(updateUserAttr);
@@ -296,6 +313,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         userAttrResponse.setDisplayWidth(userAttr.getDisplayWidth());
         userAttrResponse.setUserVisible(userAttr.getUserVisible());
         userAttrResponse.setUserEditable(userAttr.getUserEditable());
+        userAttrResponse.setDictId(userAttr.getDictId());
 
         return userAttrResponse;
     }
@@ -334,6 +352,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             userAttrResponse.setDataType(userAttr.getAttrDataType());
             userAttrResponse.setExtFlg(userAttr.getExtAttrFlg());
             userAttrResponse.setUserEditable(userAttr.getUserEditable());
+            userAttrResponse.setDictId(userAttr.getDictId());
 
             return userAttrResponse;
         }).toList();

@@ -19,13 +19,13 @@ public class PermissionRequestDto {
     @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String name;
 
-    @Schema(description = "权限码")
+    @Schema(description = "权限标识")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
     @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String code;
 
     @Schema(description = "资源ID")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlank
     private String resourceId;
 
     @Schema(description = "描述")

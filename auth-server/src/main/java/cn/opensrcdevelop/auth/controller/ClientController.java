@@ -3,7 +3,7 @@ package cn.opensrcdevelop.auth.controller;
 import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
-import cn.opensrcdevelop.auth.biz.service.impl.ClientServiceImpl;
+import cn.opensrcdevelop.auth.biz.service.ClientService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ClientController {
 
-    private final ClientServiceImpl clientService;
+    private final ClientService clientService;
 
     @Operation(summary = "创建客户端", description = "创建客户端")
     @PostMapping

@@ -1,8 +1,10 @@
 package cn.opensrcdevelop.tenant.service.impl;
 
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.tenant.constants.MessageConstants;
 import cn.opensrcdevelop.tenant.dto.CheckTenantResponseDto;
 import cn.opensrcdevelop.tenant.dto.TenantRequestDto;
 import cn.opensrcdevelop.tenant.dto.TenantResponseDto;
@@ -35,6 +37,9 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
+        // 1. 检查租户标识是否存在
+        checkTenantCode(requestDto);
+
         // 1. 创建租户数据库
         TenantHelper.createTenantDatabase(requestDto.getCode());
 
@@ -194,6 +199,12 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             return checkTenantResponse;
         } catch (Exception e) {
             throw new ServerException(e);
+        }
+    }
+
+    private void checkTenantCode(TenantRequestDto requestDto) {
+        if (Objects.nonNull(super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, requestDto.getCode())))) {
+            throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
         }
     }
 }

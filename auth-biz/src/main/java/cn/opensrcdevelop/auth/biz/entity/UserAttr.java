@@ -46,6 +46,9 @@ public class UserAttr implements Serializable {
     /** 用户可编辑 */
     private Boolean userEditable;
 
+    /** 字典ID */
+    private String dictId;
+
     @TableField(exist = false)
     private String attrValue;
 }

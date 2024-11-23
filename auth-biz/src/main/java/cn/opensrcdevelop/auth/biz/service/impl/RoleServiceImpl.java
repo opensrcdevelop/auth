@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.entity.*;
@@ -10,6 +11,7 @@ import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.RoleMappingService;
 import cn.opensrcdevelop.auth.biz.service.RoleService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -46,14 +48,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     @Transactional
     @Override
     public void createRole(RoleRequestDto requestDto) {
-        // 1. 设置属性
+        // 1. 检查角色标识是否存在
+        checkRoleCode(requestDto, null);
+
+        // 2. 设置属性
         Role role = new Role();
         role.setRoleId(CommonUtil.getUUIDString());
         role.setRoleName(requestDto.getName());
         role.setRoleCode(requestDto.getCode());
         role.setDescription(requestDto.getDesc());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(role);
     }
 
@@ -241,7 +246,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             return;
         }
 
-        // 2. 属性编辑
+        // 2. 检查角色标识是否存在
+        checkRoleCode(requestDto, rawRole);
+
+        // 3. 属性编辑
         Role updateRole = new Role();
         updateRole.setRoleId(requestDto.getId());
         updateRole.setRoleName(requestDto.getName());
@@ -249,7 +257,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         updateRole.setDescription(requestDto.getDesc());
         updateRole.setVersion(rawRole.getVersion());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updateRole);
     }
 
@@ -368,5 +376,15 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         }
 
         return Tuple.of(null, null, null, null);
+    }
+
+    private void checkRoleCode(RoleRequestDto requestDto, Role rawRole) {
+        if (Objects.nonNull(rawRole) && StringUtils.equals(requestDto.getCode(), rawRole.getRoleCode())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<Role>lambdaQuery().eq(Role::getRoleCode, requestDto.getCode())))) {
+            throw new BizException(MessageConstants.ROLE_MSG_1000, requestDto.getCode());
+        }
     }
 }

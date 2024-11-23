@@ -16,7 +16,7 @@ public class DataFilterRequestDto {
 
     @Schema(description = "属性数据类型")
     @NotBlank
-    @EnumValue({ "STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE" })
+    @EnumValue({ "STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE", "DICT" })
     private String dataType;
 
     @Schema(description = "属性值")

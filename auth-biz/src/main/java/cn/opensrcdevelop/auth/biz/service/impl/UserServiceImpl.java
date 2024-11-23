@@ -80,7 +80,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     @Override
     public void createUser(UserRequestDto requestDto) {
-        // 1. 属性设置
+        // 1. 检查用户名是否存在
+        checkUsername(requestDto, null);
+
+        // 2. 检查邮箱地址是否存在
+        checkEmailAddress(requestDto, null);
+
+        // 3. 检查手机号码是否存在
+        checkPhoneNumber(requestDto, null);
+
+        // 4. 属性设置
         String userId = CommonUtil.getUUIDString();
         User user = new User();
         user.setUserId(userId);
@@ -90,13 +99,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setEmailAddress(requestDto.getEmailAddress());
         user.setNeedChangePwd(requestDto.getNeedChangePwd());
 
-        // 2. 插入数据库
+        // 5. 插入数据库
         super.save(user);
 
-        // 3. 设置用户扩展属性
+        // 6. 设置用户扩展属性
         userAttrService.createUserAttrMapping(userId, requestDto.getAttributes());
 
-        // 4. 发送通知邮件
+        // 7. 发送通知邮件
         if (Boolean.TRUE.equals(requestDto.getSendEmail()) && StringUtils.isNotBlank(requestDto.getEmailAddress())) {
             emailService.sendCreateUserNotice(requestDto.getEmailAddress(), requestDto.getUsername(), requestDto.getPassword());
         }
@@ -146,7 +155,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(CommonUtil.extractFileNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterRequestDto filter : filters) {
-                queryWrapper = AuthUtil.editQuery(queryWrapper, filter);
+                AuthUtil.editQuery(queryWrapper, filter);
             }
             userRepository.searchUsers(pageRequest, queryWrapper);
         } else {
@@ -185,7 +194,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return;
         }
 
-        // 2. 更新普通属性
+        // 2. 检查用户名是否存在
+        checkUsername(requestDto, rawUser);
+
+        // 3. 检查邮箱地址是否存在
+        checkEmailAddress(requestDto, rawUser);
+
+        // 4. 检查手机号码是否存在
+        checkPhoneNumber(requestDto, rawUser);
+
+        // 5. 更新普通属性
         User updateUser = new User();
         updateUser.setUserId(userId);
         updateUser.setEnableMfa(requestDto.getEnableMfa());
@@ -203,12 +221,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         super.updateById(updateUser);
 
-        // 3. 更新扩展属性
+        // 6. 更新扩展属性
         userAttrService.updateUserUserAttrMapping(userId, requestDto.getAttributes());
 
-        // 4. 发送重置密码通知邮件
+        // 7. 发送重置密码通知邮件
         if (StringUtils.isNotBlank(password) && Boolean.TRUE.equals(requestDto.getSendEmail())) {
-            // 4.1 获取用户信息
+            // 7.1 获取用户信息
             User user = super.getById(userId);
             String email = user.getEmailAddress() != null ? user.getEmailAddress() : requestDto.getEmailAddress();
             if (StringUtils.isNotBlank(email)) {
@@ -216,7 +234,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
         }
 
-        // 5. 删除 Token（禁用账号的场合 or 关闭控制台访问的场合）
+        // 8. 删除 Token（禁用账号的场合 or 关闭控制台访问的场合）
         if (Boolean.TRUE.equals(requestDto.getLocked()) || Boolean.FALSE.equals(requestDto.getConsoleAccess())) {
             ((UserService) AopContext.currentProxy()).clearAuthorizedTokens(userId);
         }
@@ -339,7 +357,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 return Collections.emptyMap();
             }
 
-            var userMap = AuthUtil.convertUserMap(queryRes.get(0));
+            var userMap = AuthUtil.convertUserMap(queryRes.get(0), true, true);
             // 2.1 获取可见的用户属性
             var visibleUserAttrs = userAttrService.getVisibleUserAttrs();
             // 2.2 删除不可见的用户信息
@@ -597,7 +615,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
             userAttrResponse.setId(attr.getAttrId());
             userAttrResponse.setKey(attr.getAttrKey());
-            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr.getAttrValue(), UserAttrDataTypeEnum.valueOf(attr.getAttrDataType())));
+            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr.getAttrValue(), UserAttrDataTypeEnum.valueOf(attr.getAttrDataType()), true, true));
             userAttrResponse.setDataType(attr.getAttrDataType());
             userAttrResponse.setExtFlg(attr.getExtAttrFlg());
             return userAttrResponse;
@@ -684,5 +702,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             updateUser.setEmailAddress(isBinding ? email : "");
             super.updateById(updateUser);
         });
+    }
+
+    private void checkUsername(UserRequestDto requestDto, User rawUser) {
+        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getUsername(), rawUser.getUsername())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<User>lambdaQuery().eq(User::getUsername, requestDto.getUsername())))) {
+            throw new BizException(MessageConstants.USER_MSG_1000, requestDto.getUsername());
+        }
+    }
+
+    private void checkEmailAddress(UserRequestDto requestDto, User rawUser) {
+        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getEmailAddress(), rawUser.getEmailAddress())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<User>lambdaQuery().eq(User::getEmailAddress, requestDto.getEmailAddress())))) {
+            throw new BizException(MessageConstants.USER_MSG_1001, requestDto.getEmailAddress());
+        }
+    }
+
+    private void checkPhoneNumber(UserRequestDto requestDto, User rawUser) {
+        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getPhoneNumber(), rawUser.getPhoneNumber())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<User>lambdaQuery().eq(User::getPhoneNumber, requestDto.getPhoneNumber())))) {
+            throw new BizException(MessageConstants.USER_MSG_1002, requestDto.getPhoneNumber());
+        }
     }
 }

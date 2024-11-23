@@ -27,8 +27,7 @@ public class ResourceRequestDto {
     private String code;
 
     @Schema(description = "资源组ID")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank
     private String resourceGroupId;
 
     @Schema(description = "API URL 标识")

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.User;
@@ -9,6 +10,7 @@ import cn.opensrcdevelop.auth.biz.mapper.UserGroupMapper;
 import cn.opensrcdevelop.auth.biz.mapper.UserGroupMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.UserGroupRepository;
 import cn.opensrcdevelop.auth.biz.service.*;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -44,14 +46,17 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     @Transactional
     @Override
     public void createUserGroup(UserGroupRequestDto requestDto) {
-        // 1. 属性设置
+        // 1. 检查用户标识是否存在
+        checkUserGroupCode(requestDto, null);
+
+        // 2. 属性设置
         UserGroup userGroup = new UserGroup();
         userGroup.setUserGroupId(CommonUtil.getUUIDString());
         userGroup.setUserGroupName(requestDto.getName());
         userGroup.setUserGroupCode(requestDto.getCode());
         userGroup.setDescription(requestDto.getDesc());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.save(userGroup);
     }
 
@@ -233,7 +238,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             return;
         }
 
-        // 2. 属性编辑
+        // 2. 检查用户标识是否存在
+        checkUserGroupCode(requestDto, rawUserGroup);
+
+        // 3. 属性编辑
         UserGroup updateUserGroup = new UserGroup();
         updateUserGroup.setUserGroupId(requestDto.getId());
         updateUserGroup.setUserGroupName(requestDto.getName());
@@ -241,7 +249,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         updateUserGroup.setDescription(requestDto.getDesc());
         updateUserGroup.setVersion(rawUserGroup.getVersion());
 
-        // 3. 数据库操作
+        // 4. 数据库操作
         super.updateById(updateUserGroup);
     }
 
@@ -336,5 +344,15 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             }));
         }
         return mappings;
+    }
+
+    private void checkUserGroupCode(UserGroupRequestDto requestDto, UserGroup rawUserGroup) {
+        if (Objects.nonNull(rawUserGroup) && StringUtils.equals(requestDto.getCode(), rawUserGroup.getUserGroupCode())) {
+            return;
+        }
+
+        if (Objects.nonNull(super.getOne(Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupCode, requestDto.getCode())))) {
+            throw new BizException(MessageConstants.USER_GROUP_MSG_1000, requestDto.getCode());
+        }
     }
 }

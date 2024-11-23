@@ -27,6 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
@@ -50,7 +54,8 @@ public class CommonUtil {
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    private CommonUtil() {}
+    private CommonUtil() {
+    }
 
     /**
      * JDK序列化对象
@@ -78,7 +83,7 @@ public class CommonUtil {
     public static <T> T javaDeserialize(String base64Str) {
         return Try.of(() -> {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(Base64.decodeBase64(base64Str));
-            try(ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream)) {
+            try (ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream)) {
                 return (T) objectInputStream.readObject();
             }
         }).getOrElseThrow(ServerException::new);
@@ -177,8 +182,8 @@ public class CommonUtil {
      * 流判空处理
      *
      * @param collection 集合
+     * @param <T>        T
      * @return 流
-     * @param <T> T
      */
     public static <T> Stream<T> stream(Collection<T> collection) {
         if (CollectionUtils.isNotEmpty(collection)) {
@@ -190,9 +195,9 @@ public class CommonUtil {
     /**
      * 生成二维码（PNG）
      *
-     * @param width 宽
+     * @param width  宽
      * @param height 高
-     * @param data 数据
+     * @param data   数据
      * @return 二维码（PNG）
      */
     public static byte[] generatePngQrCode(int width, int height, String data) {
@@ -214,9 +219,9 @@ public class CommonUtil {
     /**
      * 生成二维码（PNG）
      *
-     * @param width 宽
+     * @param width  宽
      * @param height 高
-     * @param data 数据
+     * @param data   数据
      * @return 二维码（PNG）
      */
     public static String getBase64PngQrCode(int width, int height, String data) {
@@ -229,8 +234,8 @@ public class CommonUtil {
      *
      * @param predicate 检查方法
      * @param setMethod set 方法
-     * @param supplier 目标对象
-     * @param <T> T
+     * @param supplier  目标对象
+     * @param <T>       T
      */
     public static <T> void callSetWithCheck(Predicate<T> predicate, Consumer<T> setMethod, Supplier<T> supplier) {
         if (predicate.test(supplier.get())) {
@@ -242,9 +247,9 @@ public class CommonUtil {
      * 从 Getter 方法引用提取字段名
      *
      * @param getter Getter 方法
+     * @param <T>    T
+     * @param <R>    R
      * @return 字段名
-     * @param <T> T
-     * @param <R> R
      */
     public static <T, R> String extractFileNameFromGetter(Getter<T, R> getter) {
         try {
@@ -256,9 +261,9 @@ public class CommonUtil {
             String methodName = serializedLambda.getImplMethodName();
 
             if (methodName.startsWith("is")) {
-                return StringUtils.uncapitalize( methodName.substring(2));
+                return StringUtils.uncapitalize(methodName.substring(2));
             } else if (methodName.startsWith("get")) {
-                return StringUtils.uncapitalize( methodName.substring(3));
+                return StringUtils.uncapitalize(methodName.substring(3));
             } else {
                 throw new IllegalArgumentException("method name should start with 'is' or 'get'");
             }
@@ -278,11 +283,21 @@ public class CommonUtil {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
             keyPair = keyPairGenerator.generateKeyPair();
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
         return keyPair;
+    }
+
+    /**
+     * 将时间戳转换为指定格式的字符串
+     *
+     * @param timestamp 时间戳
+     * @param format    格式
+     * @return 字符串
+     */
+    public static String convertTimestamp2String(long timestamp, String format) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(format));
     }
 
     @FunctionalInterface
