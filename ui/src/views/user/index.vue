@@ -63,6 +63,7 @@ export default userTs;
                             v-for="column in allUserColumnsForFilter"
                             :key="column.key"
                             :value="column.key"
+                            :disabled="userListFilters.filters.some((item) => item.key === column.key)"
                           >
                             {{ column.name }}</a-option
                           >

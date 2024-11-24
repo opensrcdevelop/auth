@@ -115,6 +115,7 @@ export default homeTs;
                             v-if="attr.dataType === 'DICT'"
                             v-model="userInfo[attr.key]"
                             allowClear
+                            :disabled="!attr.userEditable"
                             :placeholder="`请选择${attr.name}`"
                           >
                             <a-option

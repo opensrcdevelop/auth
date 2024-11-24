@@ -94,7 +94,7 @@ const handleGetAllUserColumnsForFilter = () => {
         allUserColumnsForFilter.length = 0;
         allUserColumnsForFilter.push(...data.list);
 
-        selectableColumns.forEach((item: any) => {
+        allUserColumnsForFilter.forEach((item: any) => {
           if (item.dataType === "DICT" && item.dictId) {
             allDictDatas[item.key] = [];
             handleGetEnabledDictData(item.key, item.dictId);
@@ -327,6 +327,7 @@ const handleResetFilterUser = () => {
     },
   ];
   handleFilterUser();
+  handleGetAllUserColumnsForFilter();
 };
 
 /**
