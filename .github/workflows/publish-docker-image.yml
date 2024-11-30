@@ -91,7 +91,7 @@ jobs:
           if [ ${{ inputs.registry }} == 'ccr.ccs.tencentyun.com/opensrcdevelop/auth-server' ]; then
             echo "Login CCR"
             docker login -u ${{ secrets.CCR_USERNAME }} -p '${{ secrets.CCR_PASSWORD }}' ${{ inputs.registry }}
-          elif [ ${{ inputs.registry }} == 'registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server' ]; then
+          elif [ ${{ inputs.registry }} == 'registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server' ] || [ ${{ inputs.registry }} == 'registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server-quickstart' ]; then
             echo "Login ACR"
             docker login -u ${{ secrets.ACR_USERNAME }} -p '${{ secrets.ACR_PASSWORD }}' ${{ inputs.registry }}
           fi
