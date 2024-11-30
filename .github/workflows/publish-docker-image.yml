@@ -42,10 +42,12 @@ jobs:
 
       - name: Set Vite Env
         run: |
-          if [ ! -z ${{ inputs.viteDefaultOauthIssuer }} ]; then
+          viteDefaultOauthIssuer=${{ inputs.viteDefaultOauthIssuer }}
+          viteDefaultConsoleUrl=${{ inputs.viteDefaultConsoleUrl }}
+          if [ ! -z "$viteDefaultOauthIssuer" ]; then
             sed -i 's/VITE_DEFAULT_OAUTH_ISSUER=.*/VITE_DEFAULT_OAUTH_ISSUER=${{ inputs.viteDefaultOauthIssuer }}/g' ./ui/.env.production
           fi
-          if [ ! -z ${{ inputs.viteDefaultConsoleUrl }} ]; then
+          if [ ! -z "$viteDefaultConsoleUrl" ]; then
             sed -i 's/VITE_DEFAULT_CONSOLE_URL=.*/VITE_DEFAULT_CONSOLE_URL=${{ inputs.viteDefaultConsoleUrl }}/g' ./ui/.env.production
           fi
 
