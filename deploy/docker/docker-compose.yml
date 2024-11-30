@@ -1,0 +1,70 @@
+version: "1.0"
+
+services:
+  postgre:
+    image: bitnami/postgresql
+    container_name: auth-server-db-postgresql
+    environment:
+      POSTGRES_PASSWORD: password@123
+      POSTGRESQL_DATABASE: auth_server_master
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/5432" ]
+      interval: 5s
+      timeout: 60s
+      retries: 120
+    networks:
+      network-auth-server:
+        aliases:
+          - postgre_db
+  redis:
+    image: redis
+    container_name: auth-server-cache-redis
+    command: bash -c "redis-server --requirepass password@123"
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/6379" ]
+      interval: 5s
+      timeout: 60s
+      retries: 120
+    networks:
+      network-auth-server:
+        aliases:
+          - redis_cache
+
+  auth-server:
+    depends_on:
+      postgre:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    image: registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server-quickstart:latest
+    container_name: auth-server-quickstart
+    ports:
+      - "6543:6543"
+    environment:
+      SERVER_PORT: 6543
+      REDIS_HOST: redis_cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: password@123
+      MAIL_HOST: smtp.qq.com
+      MAIL_USERNAME: example@qq.com
+      MAIL_PASSWORD: password
+      MAIL_PORT: 587
+      API_DOC_ENABLED: false
+      SWAGGER_UI_ENABLED: false
+      AUTH_SERVER_CONSOLE_CLIENT_ID: 52cb8d26-a352-4e5c-99a7-d52b8afff3b1
+      AUTH_SERVER_CONSOLE_CLIENT_SECRET: E26DBW3LH7C5O4OHNEUDOQU722LVQ2K5EHUQ7LFMCEYDZWHTJUB2ST4N6U2PNPVH
+      DEFAULT_ISSUER: http://localhost:6543
+      DEFAULT_CONSOLE_URL: http://localhost:6543
+      JWS256: zhgOF6ep9P5IiwhHazF26abb1WHbPPlrJDTvxhapoi7vIaP6LLQpDEunVHNCvKjn5pEreyoTuUc1PYyE5rdrfczG5AHvZZN9jPF3
+      LOGIN_PAGE_URL: http://localhost:6543/ui/login
+      DB_BASE_URL: jdbc:postgresql://postgre_db:5432/
+      DB_USERNAME: postgres
+      DB_PASSWORD: password@123
+      DB_PREFIX: auth_server_
+      DEFAULT_TENANT: master
+    networks:
+      - network-auth-server
+
+networks:
+  network-auth-server:
+    driver: bridge

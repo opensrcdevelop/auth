@@ -3,6 +3,7 @@
     <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight([%-5level]) [%-35.35(%thread)] [%X{TraceId:-TraceId}] [%X{RemoteIP:-RemoteIP}] [%X{TenantCode:-TenantCode}] [%X{username:-username}] --- %highlight(%-50.50(%logger{50})#%M\(%F:%L\)): %msg%n" />
     <property name="log.home" value="/app/logs" />
     <property name="log.fileName" value="auth-server" />
+    <springProperty name="loki.enabled" source="loki.enabled" />
     <springProperty name="loki.url" source="loki.url" />
     <springProperty name="loki.jobName" source="spring.application.name" />
     <springProperty name="loki.env" source="loki.env" />
@@ -96,7 +97,11 @@
         <root level="info">
             <appender-ref ref="console" />
             <appender-ref ref="file" />
-            <appender-ref ref="async-loki" />
+            <if condition='property("loki.enabled").equals("true")'>
+                <then>
+                    <appender-ref ref="async-loki" />
+                </then>
+            </if>
         </root>
     </springProfile>
 

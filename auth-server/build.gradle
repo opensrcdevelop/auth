@@ -33,5 +33,6 @@ dependencies {
     implementation "com.github.loki4j:loki-logback-appender:${rootProject.lokiVer}"
     implementation "org.apache.httpcomponents:httpclient:${rootProject.httpClient4Ver}"
     implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
+    implementation 'org.codehaus.janino:janino'
     runtimeOnly 'org.postgresql:postgresql'
 }

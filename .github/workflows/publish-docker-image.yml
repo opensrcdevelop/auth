@@ -15,6 +15,15 @@ on:
         options:
           - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
           - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
+          - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server-quickstart
+      viteDefaultOauthIssuer:
+        description: 'vite env: VITE_DEFAULT_OAUTH_ISSUER'
+        type: string
+        required: false
+      viteDefaultConsoleUrl:
+        description: 'vite env: VITE_DEFAULT_CONSOLE_URL'
+        type: string
+        required: false
       createGitTag:
         description: 'create git tag'
         type: boolean
@@ -31,6 +40,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Vite Env
+        run: |
+          if [ ! -z ${{ inputs.viteDefaultOauthIssuer }} ]; then
+            sed -i 's/VITE_DEFAULT_OAUTH_ISSUER=.*/VITE_DEFAULT_OAUTH_ISSUER=${{ inputs.viteDefaultOauthIssuer }}/g' ./ui/.env.production
+          fi
+          if [ ! -z ${{ inputs.viteDefaultConsoleUrl }} ]; then
+            sed -i 's/VITE_DEFAULT_CONSOLE_URL=.*/VITE_DEFAULT_CONSOLE_URL=${{ inputs.viteDefaultConsoleUrl }}/g' ./ui/.env.production
+          fi
+
       - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
@@ -45,7 +63,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew -x test build
 
-      - name: Upload build artifacts
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Auth-Server Artifacts
@@ -59,12 +77,12 @@ jobs:
     needs: build-jar
     runs-on: ubuntu-latest
     steps:
-      - name: Download build artifacts
+      - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
           name: Auth-Server Artifacts
 
-      - name: Build Docker image
+      - name: Build Docker Image
         run: |
           docker build -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
 
@@ -78,7 +96,7 @@ jobs:
             docker login -u ${{ secrets.ACR_USERNAME }} -p '${{ secrets.ACR_PASSWORD }}' ${{ inputs.registry }}
           fi
 
-      - name: Push Docker image
+      - name: Push Docker Image
         run: |
           docker push ${{ inputs.registry }}:${{ inputs.imageTag }}
 
