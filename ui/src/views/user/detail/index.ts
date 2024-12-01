@@ -419,7 +419,8 @@ const handleUserInfoFormSubmit = (formData: any) => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
-        getUserDetail(userId.value);
+        handleGetUserDetail(userId.value);
+        handleGetUserExtAttrs();
       });
     })
     .catch((err: any) => {
@@ -445,7 +446,8 @@ const handleUserAttrsSubmit = () => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
-        getUserDetail(userId.value);
+        handleGetUserDetail(userId.value);
+        handleGetUserExtAttrs();
       });
     })
     .catch((err: any) => {
@@ -459,6 +461,7 @@ const handleUserAttrsSubmit = () => {
 const handleResetUserInfoForm = () => {
   userInfoFormRef.value.resetFields();
   handleGetUserDetail(userId.value);
+  handleGetUserExtAttrs();
 };
 
 /**
@@ -466,6 +469,7 @@ const handleResetUserInfoForm = () => {
  */
 const handleResetUserAttrs = () => {
   handleGetUserDetail(userId.value);
+  handleGetUserExtAttrs();
 };
 
 /**

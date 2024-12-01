@@ -107,6 +107,22 @@
 - URL：[https://tm5wt3mp.auth.opensrcdevelop.cn](https://tm5wt3mp.auth.opensrcdevelop.cn/)
 - 账号 / 密码：preview / preview
 
+### 快速开始
+
+#### 使用 Docker
+
+- 执行以下命令，下载  `docker-compose.yml` 文件
+
+  ```bash
+  wget https://githubraw.com/opensrcdevelop/auth/main/deploy/docker/docker-compose.yml -O docker-compose.yaml
+  ```
+
+- 执行以下 `docker-compose`  命令
+
+  ```bash
+  docker-compose -f docker-compose.yaml up
+  ```
+
 ### 演示截图
 
 - 登录

@@ -6,11 +6,13 @@ import cn.opensrcdevelop.auth.biz.dto.SetUserAttrDisplaySeqRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.UserAttrResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.DictData;
 import cn.opensrcdevelop.auth.biz.entity.UserAttr;
 import cn.opensrcdevelop.auth.biz.entity.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.mapper.UserAttrMapper;
 import cn.opensrcdevelop.auth.biz.mapper.UserAttrMappingMapper;
 import cn.opensrcdevelop.auth.biz.repository.UserAttrRepository;
+import cn.opensrcdevelop.auth.biz.service.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.common.exception.BizException;
@@ -36,6 +38,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
 
     private final UserAttrMappingService userAttrMappingService;
     private final UserAttrRepository userAttrRepository;
+    private final DictDataService dictDataService;
 
     /**
      * 创建用户属性
@@ -87,7 +90,10 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     @Transactional
     @Override
     public void createUserAttrMapping(String userId, List<UserAttrMappingRequestDto> attributes) {
-        // 1. 属性编辑
+        // 1. 检查用户属性数据类型为 DICT 的请求是否有效
+        checkAttrValueForDict(attributes);
+
+        // 2. 属性编辑
         var mappings = CommonUtil.stream(attributes).map(attribute -> {
             UserAttrMapping mapping = new UserAttrMapping();
             mapping.setUserId(userId);
@@ -96,7 +102,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             return mapping;
         }).toList();
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         userAttrMappingService.saveBatch(mappings);
     }
 
@@ -192,39 +198,43 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
 
         // 2. 值非空：更新用户和用户属性的映射关系
         if (!attributes.isEmpty()) {
-            String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrId));
-            String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getUserId));
-            String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrValue));
+            // 2.1 检查用户属性数据类型为 DICT 的请求是否有效
+            checkAttrValueForDict(attributes);
+            if (!attributes.isEmpty()) {
+                String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrId));
+                String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getUserId));
+                String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrValue));
 
-            // 2.1 获取已存在的映射关系
-            var existingMappings = userAttrMappingService.list(Wrappers.<UserAttrMapping>lambdaQuery()
-                    .in(UserAttrMapping::getAttrId, attributes.stream().map(UserAttrMappingRequestDto::getAttrId).toList())
-                    .eq(UserAttrMapping::getUserId, userId));
+                // 2.2 获取已存在的映射关系
+                var existingMappings = userAttrMappingService.list(Wrappers.<UserAttrMapping>lambdaQuery()
+                        .in(UserAttrMapping::getAttrId, attributes.stream().map(UserAttrMappingRequestDto::getAttrId).toList())
+                        .eq(UserAttrMapping::getUserId, userId));
 
-            // 2.2 向数据库中插入不存在的映射关系
-            var notExistsAttributes = getNotExistAttributes(attributes, existingMappings);
-            if (CollectionUtils.isNotEmpty(notExistsAttributes)) {
-                var mappings = notExistsAttributes.stream().map(a -> {
-                    UserAttrMapping mapping = new UserAttrMapping();
-                    mapping.setUserId(userId);
-                    mapping.setAttrId(a.getAttrId());
-                    mapping.setAttrValue(a.getAttrValue());
-                    return mapping;
-                }).toList();
-                userAttrMappingService.saveBatch(mappings);
+                // 2.3 向数据库中插入不存在的映射关系
+                var notExistsAttributes = getNotExistAttributes(attributes, existingMappings);
+                if (CollectionUtils.isNotEmpty(notExistsAttributes)) {
+                    var mappings = notExistsAttributes.stream().map(a -> {
+                        UserAttrMapping mapping = new UserAttrMapping();
+                        mapping.setUserId(userId);
+                        mapping.setAttrId(a.getAttrId());
+                        mapping.setAttrValue(a.getAttrValue());
+                        return mapping;
+                    }).toList();
+                    userAttrMappingService.saveBatch(mappings);
+                }
+
+                // 2.4 更新数据库中已存在的映射关系
+                var notExistsAttrIds = notExistsAttributes.stream().map(UserAttrMappingRequestDto::getAttrId).toList();
+                attributes.removeIf(a -> notExistsAttrIds.contains(a.getAttrId()));
+                MybatisBatch<UserAttrMappingRequestDto> mybatisBatch = new MybatisBatch<>(getSqlSessionFactory(), attributes);
+                MybatisBatch.Method<UserAttrMapping> method = new MybatisBatch.Method<>(UserAttrMappingMapper.class);
+                mybatisBatch.execute(method.update(a -> Wrappers.<UserAttrMapping>update()
+                                .set(attrValueColumn, a.getAttrValue())
+                                .eq(userIdColumn, userId)
+                                .and(o -> o.eq(attrIdColumn, a.getAttrId()))
+                        )
+                );
             }
-
-            // 2.3 更新数据库中已存在的映射关系
-            var notExistsAttrIds = notExistsAttributes.stream().map(UserAttrMappingRequestDto::getAttrId).toList();
-            attributes.removeIf(a -> notExistsAttrIds.contains(a.getAttrId()));
-            MybatisBatch<UserAttrMappingRequestDto> mybatisBatch = new MybatisBatch<>(getSqlSessionFactory(), attributes);
-            MybatisBatch.Method<UserAttrMapping> method = new MybatisBatch.Method<>(UserAttrMappingMapper.class);
-            mybatisBatch.execute(method.update(a -> Wrappers.<UserAttrMapping>update()
-                    .set(attrValueColumn, a.getAttrValue())
-                    .eq(userIdColumn, userId)
-                    .and(o -> o.eq(attrIdColumn, a.getAttrId()))
-                    )
-            );
         }
     }
 
@@ -365,5 +375,30 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         return attributes.stream()
                 .filter(a -> mappings.stream().noneMatch(m -> StringUtils.equals(a.getAttrId(), m.getAttrId())))
                 .toList();
+    }
+
+    private void checkAttrValueForDict(List<UserAttrMappingRequestDto> attributes) {
+        if (CollectionUtils.isEmpty(attributes)) {
+            return;
+        }
+
+        // 1. 获取用户属性数据类型为 DICT 的属性 ID 集合
+        var userAttrIds = CommonUtil.stream(super.list(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrDataType, UserAttrDataTypeEnum.DICT.getType())))
+                        .map(UserAttr::getAttrId).toList();
+        // 1.1 无 DICT 类型的用户属性
+        if (CollectionUtils.isEmpty(userAttrIds)) {
+            return;
+        }
+
+        // 2. 判断 DICT 类型的用户属性值是否有效
+        // 2.1 获取 DICT 类型的用户属性值
+        var dictUserAttrValues = attributes.stream().filter(a -> userAttrIds.contains(a.getAttrId())).map(UserAttrMappingRequestDto::getAttrValue).toList();
+        if (CollectionUtils.isNotEmpty(dictUserAttrValues)) {
+            // 2.2 获取启用的字典数据ID集合
+            var enabledDictDataIds = CommonUtil.stream(dictDataService.list(Wrappers.<DictData>lambdaQuery().in(DictData::getDictId, dictUserAttrValues).and(q -> q.eq(DictData::getEnable, true))))
+                    .map(DictData::getDataId).toList();
+            // 2.3 删除无效的用户和用户属性的映射关系请求
+            attributes.removeIf(a -> dictUserAttrValues.contains(a.getAttrValue()) && !enabledDictDataIds.contains(a.getAttrValue()));
+        }
     }
 }

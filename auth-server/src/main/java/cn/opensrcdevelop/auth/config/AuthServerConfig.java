@@ -86,6 +86,7 @@ public class AuthServerConfig {
         excludePathPatterns.add("/logout");
         excludePathPatterns.add("/login");
         excludePathPatterns.add("/login/email");
+        excludePathPatterns.add("/ui/**");
         excludePathPatterns.add(controllerPathPrefix + "/docs/**");
         excludePathPatterns.add(controllerPathPrefix + "/totp/check");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");
@@ -109,6 +110,7 @@ public class AuthServerConfig {
         excludePathPatterns.add("/login");
         excludePathPatterns.add("/login/email");
         excludePathPatterns.add("/swagger-ui/**");
+        excludePathPatterns.add("/ui/**");
         excludePathPatterns.add(controllerPathPrefix + "/docs/**");
         excludePathPatterns.add(controllerPathPrefix + "/user/me/password/change");
         excludePathPatterns.add(controllerPathPrefix + "/code/email/*");

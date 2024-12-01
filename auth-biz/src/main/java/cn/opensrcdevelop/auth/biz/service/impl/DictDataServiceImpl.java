@@ -98,6 +98,10 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         updateDictData.setDataValue(requestDto.getValue());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateDictData::setEnable, requestDto::getEnable);
         setDictDataDisplaySeq(updateDictData, requestDto.getDisplaySeq(), requestDto.getDictId());
+        // 3.1 禁用字典数据的场合下删除关联的用户属性值
+        if (Boolean.FALSE.equals(requestDto.getEnable())) {
+            userAttrMappingService.remove(Wrappers.<UserAttrMapping>lambdaQuery().eq(UserAttrMapping::getAttrValue, requestDto.getId()));
+        }
 
         // 4. 数据库操作
         super.updateById(updateDictData);

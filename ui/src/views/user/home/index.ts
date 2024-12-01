@@ -187,6 +187,8 @@ const handleUpdateMyUserInfo = () => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
+        handleGetUserAttrs();
+        handleGetUserInfo();
       });
     })
     .catch((err: any) => {
