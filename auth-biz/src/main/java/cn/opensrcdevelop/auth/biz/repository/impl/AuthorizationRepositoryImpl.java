@@ -40,12 +40,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public Authorization findByAuthorizationCodeValue(String token) {
-        List<Authorization> authorizationList = mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationCodeValue, token));
-        // 授权码已使用
-        if (authorizationList.size() > 1) {
-            return null;
-        }
-        return authorizationList.get(0);
+        return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationCodeValue, token));
     }
 
     @Override
@@ -55,11 +50,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public Authorization findByRefreshTokenValue(String token) {
-        List<Authorization> authorizationList = mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRefreshTokenValue, token).orderByDesc(Authorization::getId));
-        if (CollectionUtils.isNotEmpty(authorizationList)) {
-            return authorizationList.get(0);
-        }
-        return null;
+        return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRefreshTokenValue, token).orderByDesc(Authorization::getId));
     }
 
     @Override
@@ -104,6 +95,21 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public void deleteByIds(List<Long> ids) {
-        mapper.deleteBatchIds(ids);
+        mapper.deleteByIds(ids);
+    }
+
+    @Override
+    public void deleteByLoginId(String loginId) {
+        mapper.delete(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getLoginId, loginId));
+    }
+
+    @Override
+    public List<Authorization> findRefreshTokensByPrincipalName(String principalName) {
+        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getPrincipalName, principalName).and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
+    }
+
+    @Override
+    public List<Authorization> findRefreshTokensByLoginId(String loginId) {
+        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getLoginId, loginId).and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
     }
 }

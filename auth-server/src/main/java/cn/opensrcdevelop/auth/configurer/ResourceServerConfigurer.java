@@ -61,8 +61,9 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 登出处理
         http.logout(x -> {
-            x.logoutSuccessHandler(new AuthLogoutSuccessHandler());
+            x.addLogoutHandler(new ClearTokenLogoutHandler());
             x.deleteCookies(AuthConstants.COOKIE_SESSION);
+            x.logoutSuccessHandler(new AuthLogoutSuccessHandler());
             x.invalidateHttpSession(true);
         });
 

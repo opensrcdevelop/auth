@@ -5,7 +5,9 @@ import cn.opensrcdevelop.auth.biz.dto.LoginResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
+import cn.opensrcdevelop.auth.biz.service.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -21,7 +23,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 /**
  * 认证成功处理
@@ -29,6 +30,8 @@ import java.time.LocalDateTime;
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
+    private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
+    private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -99,22 +102,13 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
      * @param userId 用户 ID
      */
     private void setUserLoginInfo(String userId) {
-        // 1. 属性编辑
+        // 1. 保存登录日志
+        loginLogService.saveLoginLog(userId, authorizationServerProperties.getMaxLoginLogNum());
+
+        // 2. 重置最近登录失败次数
         User updateUser = new User();
         updateUser.setUserId(userId);
-
-        // 1.1 最后登录时间
-        updateUser.setLastLoginTime(LocalDateTime.now());
-        // 1.2 最后登录 IP
-        updateUser.setLastLoginIp(WebUtil.getRemoteIP());
-        // 1.3 最后登录设备类型
-        updateUser.setLastLoginDeviceType(WebUtil.getDeviceType());
-        // 1.4 最后登录设备操作系统
-        updateUser.setLastLoginDeviceOs(WebUtil.getDeviceOs());
-        // 1.5 重置最近登录失败次数
         updateUser.setLoginFailedCnt(0);
-
-        // 2. 数据库操作
         userService.updateById(updateUser);
     }
 }

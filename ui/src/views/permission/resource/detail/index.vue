@@ -98,6 +98,7 @@ export default detailTs;
         </a-tab-pane>
         <a-tab-pane key="permission_list" title="权限列表">
           <div class="tab-container">
+            <div class="info-title">权限列表</div>
             <a-input-search
               :style="{ width: '320px' }"
               placeholder="输入权限名称或标识进行搜索"

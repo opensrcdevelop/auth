@@ -75,6 +75,7 @@ export default detailTs;
         </a-tab-pane>
         <a-tab-pane key="redource_list" title="资源列表">
           <div class="tab-container">
+            <div class="info-title">资源列表</div>
             <a-input-search
               :style="{ width: '320px' }"
               placeholder="输入资源名称或标识进行搜索"

@@ -11,13 +11,6 @@ import router from "@/router";
 import { base64Str, getOAuthIssuer } from "./tool";
 import { Notification } from "@arco-design/web-vue";
 
-type Result<T> = {
-  success: boolean;
-  code: number;
-  message: string;
-  data: T;
-};
-
 const globalVariables = useGlobalVariablesStore(pinia);
 
 export class Request {

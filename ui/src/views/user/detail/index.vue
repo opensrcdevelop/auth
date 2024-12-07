@@ -540,7 +540,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserPermissions(1, 15)"
+                        @click="handleGetUserPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -563,7 +563,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserPermissions(1, 15)"
+                        @click="handleGetUserPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -584,7 +584,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserPermissions(1, 15)"
+                        @click="handleGetUserPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -605,7 +605,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserPermissions(1, 15)"
+                        @click="handleGetUserPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -616,6 +616,77 @@ export default detailTs;
                     </a-space>
                   </div>
                 </div>
+              </template>
+            </a-table>
+          </div>
+        </a-tab-pane>
+        <a-tab-pane key="login_logs" title="登录日志">
+          <div class="tab-container">
+            <div class="info-title">登录日志</div>
+            <a-table
+              :data="loginLogs"
+              :bordered="false"
+              :pagination="loginLogsPagination"
+              @page-change="handleLoginLogsPageChange"
+              @page-size-change="handleLoginLogsPageSizeChange"
+            >
+              <template #columns>
+                <a-table-column title="客户端">
+                  <template #cell="{ record }">
+                    <a-tooltip :content="`ID:${record.clientId}`">
+                      <span>{{
+                        record.clientName ? record.clientName : "-"
+                      }}</span>
+                    </a-tooltip>
+                  </template>
+                </a-table-column>
+                <a-table-column title="登录 IP">
+                  <template #cell="{ record }">
+                    {{ record.loginIp ? record.loginIp : "-" }}
+                  </template>
+                </a-table-column>
+                <a-table-column title="设备类型">
+                  <template #cell="{ record }">
+                    {{ record.deviceType ? record.deviceType : "-" }}
+                  </template>
+                </a-table-column>
+                <a-table-column title="设备 OS">
+                  <template #cell="{ record }">
+                    {{ record.deviceOs ? record.deviceOs : "-" }}
+                  </template>
+                </a-table-column>
+                <a-table-column title="浏览器类型">
+                  <template #cell="{ record }">
+                    {{ record.browserType ? record.browserType : "-" }}
+                  </template>
+                </a-table-column>
+                <a-table-column title="登录时间">
+                  <template #cell="{ record }">
+                    {{ record.loginTime ? record.loginTime : "-" }}
+                  </template>
+                </a-table-column>
+                <a-table-column title="操作">
+                  <template #cell="{ record }">
+                    <a-dropdown>
+                      <a-button type="text">
+                        <template #icon>
+                          <icon-more />
+                        </template>
+                      </a-button>
+                      <template #content>
+                        <a-doption
+                          style="color: #e8353e"
+                          @click="handleClearAuthorizedTokensByLoginId(record)"
+                        >
+                          <template #icon>
+                            <icon-eraser />
+                          </template>
+                          清除本次登录授权的 Token</a-doption
+                        >
+                      </template>
+                    </a-dropdown>
+                  </template>
+                </a-table-column>
               </template>
             </a-table>
           </div>
