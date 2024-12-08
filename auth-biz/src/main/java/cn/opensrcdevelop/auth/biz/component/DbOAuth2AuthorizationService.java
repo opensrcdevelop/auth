@@ -156,7 +156,13 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
                     "",
                     Duration.between(authorization.getRefreshTokenIssuedAt(), authorization.getRefreshTokenExpiresAt()).getSeconds(), TimeUnit.SECONDS));
 
-        // 3. 数据库操作
+        // 3. 删除关联的 session
+        LoginLog loginLog = loginLogService.getById(loginId);
+        if (Objects.nonNull(loginLog) && StringUtils.hasText(loginLog.getSessionId())) {
+            WebUtil.removeSession(loginLog.getSessionId());
+        }
+
+        // 4. 数据库操作
         authorizationRepository.deleteByLoginId(loginId);
     }
 

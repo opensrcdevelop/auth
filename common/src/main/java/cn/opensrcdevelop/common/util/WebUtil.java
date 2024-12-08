@@ -12,12 +12,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.session.SessionRepository;
+import org.springframework.session.web.http.SessionRepositoryFilter;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -31,6 +34,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -249,6 +253,27 @@ public class WebUtil {
             log.warn("无法获取 IP 地址：{} 的属地", ipAddress);
             return CommonConstants.UNKNOWN;
         }
+    }
+
+    /**
+     * 删除 session
+     *
+     * @param sessionId session ID
+     */
+    public static void removeSession(String sessionId) {
+        getRequest().ifPresent(request -> {
+            HttpSession session = request.getSession();
+            if (Objects.nonNull(session)) {
+                if (StringUtils.equals(sessionId, session.getId())) {
+                    session.invalidate();
+                } else {
+                    SessionRepository<?> sessionRepository = (SessionRepository<?>) request.getAttribute(SessionRepositoryFilter.SESSION_REPOSITORY_ATTR);
+                    if (Objects.nonNull(sessionRepository)) {
+                        sessionRepository.deleteById(sessionId);
+                    }
+                }
+            }
+        });
     }
 
     private static Capabilities getUserAgent() {
