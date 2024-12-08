@@ -23,6 +23,9 @@ public class LoginLogResponseDto {
     @Schema(description = "登录IP")
     private String loginIp;
 
+    @Schema(description = "登录IP属地")
+    private String loginIpRegion;
+
     @Schema(description = "设备类型")
     private String deviceType;
 

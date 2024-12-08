@@ -19,7 +19,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
-    implementation "eu.bitwalker:UserAgentUtils:${rootProject.userAgentUtilVer}"
+    implementation "com.blueconic:browscap-java:${rootProject.browscapJavaVer}"
     implementation "com.google.zxing:core:${rootProject.zxingVer}"
     implementation "com.google.zxing:javase:${rootProject.zxingVer}"
     implementation 'org.springframework.boot:spring-boot-starter-freemarker'
@@ -29,6 +29,9 @@ dependencies {
     // https://nimbusds.com/products/nimbus-jose-jwt/examples/jwt-with-hmac
     implementation "com.nimbusds:nimbus-jose-jwt:${rootProject.joseJwtVer}"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation "org.lionsoul:ip2region:${rootProject.ip2RegionVer}"
+
+
 }
 
 publishing {

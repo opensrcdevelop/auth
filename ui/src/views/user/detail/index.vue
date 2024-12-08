@@ -645,6 +645,11 @@ export default detailTs;
                     {{ record.loginIp ? record.loginIp : "-" }}
                   </template>
                 </a-table-column>
+                <a-table-column title="属地">
+                  <template #cell="{ record }">
+                    {{ record.loginIpRegion ? record.loginIpRegion : "-" }}
+                  </template>
+                </a-table-column>
                 <a-table-column title="设备类型">
                   <template #cell="{ record }">
                     {{ record.deviceType ? record.deviceType : "-" }}

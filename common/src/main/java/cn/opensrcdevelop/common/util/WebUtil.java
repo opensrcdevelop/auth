@@ -2,16 +2,20 @@ package cn.opensrcdevelop.common.util;
 
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
+import com.blueconic.browscap.Capabilities;
+import com.blueconic.browscap.UserAgentParser;
+import com.blueconic.browscap.UserAgentService;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import eu.bitwalker.useragentutils.UserAgent;
 import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.lionsoul.ip2region.xdb.Searcher;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
@@ -20,18 +24,41 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @SuppressWarnings("unused")
 public class WebUtil {
 
+    private static final String REQ_HEADER_USER_AGENT = "User-Agent";
+    private static final String IP_REGION_COUNTRY_CHAIN = "中国";
+    private static final String IP_REGION_ISP_INTERNAL = "内网IP";
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final UserAgentParser USER_AGENT_PARSER = Try
+            .of(() -> new UserAgentService().loadParser())
+            .getOrElseThrow(e -> {
+                log.error("Failed to init UserAgentParser", e);
+                return new IllegalStateException("Failed to init UserAgentParser");
+            });
+    private static final Searcher IP_REGION_SEARCHER = Try
+            .of(() -> {
+                try (InputStream inputStream = new ClassPathResource("/ipdb/ip2region.xdb").getInputStream()) {
+                    return Searcher.newWithBuffer(inputStream.readAllBytes());
+                }
+            }).getOrElseThrow(e -> {
+                log.error("Failed to load ip region db into memory");
+                return new IllegalStateException("Failed to load ip region db into memory");
+            });
 
     static {
         OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -139,9 +166,9 @@ public class WebUtil {
      * @return 设备类型
      */
     public static String getDeviceType() {
-        UserAgent userAgent = getUserAgent();
+        Capabilities userAgent = getUserAgent();
         if (userAgent != null) {
-            return userAgent.getOperatingSystem().getDeviceType().getName();
+            return userAgent.getDeviceType();
         }
         return CommonConstants.UNKNOWN;
     }
@@ -152,9 +179,9 @@ public class WebUtil {
      * @return 设备操作系统
      */
     public static String getDeviceOs() {
-        UserAgent userAgent = getUserAgent();
+        Capabilities userAgent = getUserAgent();
         if (userAgent != null) {
-            return userAgent.getOperatingSystem().getName();
+            return userAgent.getPlatform() + "/" + userAgent.getPlatformVersion();
         }
         return CommonConstants.UNKNOWN;
     }
@@ -165,9 +192,9 @@ public class WebUtil {
      * @return 浏览器类型
      */
     public static String getBrowserType() {
-        UserAgent userAgent = getUserAgent();
+        Capabilities userAgent = getUserAgent();
         if (userAgent != null) {
-            return userAgent.getBrowser().getName();
+            return userAgent.getBrowser() + "/" + userAgent.getBrowserMajorVersion();
         }
         return CommonConstants.UNKNOWN;
     }
@@ -180,15 +207,56 @@ public class WebUtil {
     public static String getRootUrl() {
         if (getRequest().isPresent()) {
             return Try.of(() -> {
-                URL url = new URL(getRequest().get().getRequestURL().toString());
+                URL url = new URI(getRequest().get().getRequestURL().toString()).toURL();
                 return String.format(CommonConstants.URL_FORMAT, url.getProtocol(), url.getAuthority());
             }).getOrElseThrow(ServerException::new);
         }
         return StringUtils.EMPTY;
     }
 
-    private static UserAgent getUserAgent() {
+    /**
+     * 获取 IP 属地
+     *
+     * @param ipAddress IP 地址
+     * @return IP 属地
+     */
+    public static String getIpRegion(String ipAddress) {
+        try {
+            // 数据格式： 国家|区域|省份|城市|ISP
+            String searchRes = IP_REGION_SEARCHER.search(ipAddress);
+            if (StringUtils.isNotEmpty(searchRes)) {
+                String[] searchResParts = searchRes.split("\\|");
+                if (searchResParts.length > 0) {
+                    if (IP_REGION_COUNTRY_CHAIN.equals(searchResParts[0])) {
+                        // 国内属地：省份-城市-提供商
+                        searchResParts[0] = "0";
+                        return concatIpRegion(searchResParts);
+                    } else if ("0".equals(searchResParts[0])) {
+                        // 内网IP
+                        if (IP_REGION_ISP_INTERNAL.equals(searchResParts[4])) {
+                            return searchResParts[4];
+                        } else {
+                            return CommonConstants.UNKNOWN;
+                        }
+                    } else {
+                        // 国外属地：国家
+                        return searchResParts[0];
+                    }
+                }
+            }
+            return CommonConstants.UNKNOWN;
+        } catch (Exception e) {
+            log.warn("无法获取 IP 地址：{} 的属地", ipAddress);
+            return CommonConstants.UNKNOWN;
+        }
+    }
+
+    private static Capabilities getUserAgent() {
         Optional<HttpServletRequest> request = getRequest();
-        return request.map(httpServletRequest -> UserAgent.parseUserAgentString(httpServletRequest.getHeader("User-Agent"))).orElse(null);
+        return request.map(httpServletRequest -> USER_AGENT_PARSER.parse(httpServletRequest.getHeader(REQ_HEADER_USER_AGENT))).orElse(null);
+    }
+
+    private static String concatIpRegion(String[] ipRegionParts) {
+        return Stream.of(ipRegionParts).filter(ipRegionPart -> !"0".equals(ipRegionPart)).collect(Collectors.joining("-"));
     }
 }

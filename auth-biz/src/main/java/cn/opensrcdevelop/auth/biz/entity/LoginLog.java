@@ -32,6 +32,9 @@ public class LoginLog implements Serializable {
     /** 登录IP */
     private String loginIp;
 
+    /** 登录IP属地 */
+    private String loginIpRegion;
+
     /** 设备类型 */
     private String deviceType;
 

@@ -54,7 +54,9 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
                 session.setAttribute(AuthConstants.SESSION_LOGIN_ID, loginLogId);
             }
         });
-        loginLog.setLoginIp(WebUtil.getRemoteIP());
+        String ipAddress = WebUtil.getRemoteIP();
+        loginLog.setLoginIp(ipAddress);
+        loginLog.setLoginIpRegion(WebUtil.getIpRegion(ipAddress));
         loginLog.setDeviceType(WebUtil.getDeviceType());
         loginLog.setDeviceOs(WebUtil.getDeviceOs());
         loginLog.setBrowserType(WebUtil.getBrowserType());
@@ -112,6 +114,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
             LoginLogResponseDto loginLogResponse = new LoginLogResponseDto();
             loginLogResponse.setLoginId(loginLog.getLoginId());
             loginLogResponse.setLoginIp(loginLog.getLoginIp());
+            loginLogResponse.setLoginIpRegion(loginLog.getLoginIpRegion());
             loginLogResponse.setDeviceType(loginLog.getDeviceType());
             loginLogResponse.setDeviceOs(loginLog.getDeviceOs());
             loginLogResponse.setBrowserType(loginLog.getBrowserType());
