@@ -33,4 +33,10 @@ public interface AuthorizationRepository {
     List<Authorization> getAuthorizationsByClientId(String clientId);
 
     void deleteByIds(List<Long> ids);
+
+    void deleteByLoginId(String loginId);
+
+    List<Authorization> findRefreshTokensByPrincipalName(String principalName);
+
+    List<Authorization> findRefreshTokensByLoginId(String loginId);
 }

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
+import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
@@ -7,7 +8,6 @@ import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.entity.*;
 import cn.opensrcdevelop.auth.biz.mapper.UserMapper;
-import cn.opensrcdevelop.auth.biz.repository.AuthorizationRepository;
 import cn.opensrcdevelop.auth.biz.repository.RoleRepository;
 import cn.opensrcdevelop.auth.biz.repository.UserRepository;
 import cn.opensrcdevelop.auth.biz.service.*;
@@ -63,8 +63,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RoleRepository roleRepository;
     private final EmailService emailService;
     private final AuthorizeService authorizeService;
-    private final AuthorizationRepository authorizationRepository;
+    private final DbOAuth2AuthorizationService dbOAuth2AuthorizationService;
     private final VerificationCodeService verificationCodeService;
+    private final LoginLogService loginLogService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -410,7 +411,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 删除 Token
-        authorizationRepository.deleteUserTokens(user.getUsername());
+        dbOAuth2AuthorizationService.removeUserTokens(user.getUsername());
     }
 
     /**
@@ -561,6 +562,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return pageData;
     }
 
+    /**
+     * 根据登录ID清除授权的 Token
+     *
+     * @param loginId 登录ID
+     */
+    @Override
+    public void clearAuthorizedTokensByLoginId(String loginId) {
+        dbOAuth2AuthorizationService.removeByLoginId(loginId);
+    }
+
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -605,11 +616,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userResponse.setCreateTime(user.getCreateTime());
         userResponse.setLocked(BooleanUtils.isTrue(user.getLocked()));
         userResponse.setConsoleAccess(BooleanUtils.isTrue(user.getConsoleAccess()));
-        userResponse.setLastLoginTime(user.getLastLoginTime());
-        userResponse.setLastLoginIp(user.getLastLoginIp());
-        userResponse.setLastLoginDeviceType(user.getLastLoginDeviceType());
-        userResponse.setLastLoginDeviceOs(user.getLastLoginDeviceOs());
-
         // 2. 扩展信息
         var attributes = CommonUtil.stream(userAttrService.getUserAttrs(user.getUserId())).map(attr -> {
             UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
@@ -648,6 +654,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return userGroupResponse;
         }).toList();
         userResponse.setUserGroups(userGroups);
+
+        // 5. 最后一次登录信息
+        var lastLoginInfo = loginLogService.getLastLoginInfo(user.getUserId());
+        userResponse.setLastLoginIp(lastLoginInfo._1);
+        userResponse.setLastLoginDeviceType(lastLoginInfo._2);
+        userResponse.setLastLoginDeviceOs(lastLoginInfo._3);
+        userResponse.setLastLoginTime(lastLoginInfo._4);
     }
 
     private void convertUserInfo(Map<String, Object> userInfo, List<UserAttrResponseDto> editableUserAttrs, User updateUser, List<UserAttrMappingRequestDto> attributes) {

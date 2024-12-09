@@ -71,6 +71,7 @@ export default detailTs;
         </a-tab-pane>
         <a-tab-pane key="authorization_management" title="授权管理">
           <div class="tab-container">
+            <div class="info-title">授权管理</div>
             <a-input-search
               :style="{ width: '320px' }"
               placeholder="搜索主体"

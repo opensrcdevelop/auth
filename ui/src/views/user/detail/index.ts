@@ -7,6 +7,8 @@ import {
   getUserDetail,
   rebindMfaDevice,
   updateUser,
+  getUserLoginLogs,
+  clearAuthorizedTokensByLoginId,
 } from "@/api/user";
 import {
   generateRandomString,
@@ -48,6 +50,14 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+
+  if (tabKey === "permission_management") {
+    handleGetUserPermissions();
+  }
+
+  if (tabKey === "login_logs") {
+    handleGetUserLoginLogs();
+  }
 };
 
 const userId = ref("");
@@ -134,8 +144,6 @@ const handleGetUserDetail = (id: string) => {
         enableMfa.value = data.enableMfa;
 
         consoleAccess.value = data.consoleAccess;
-
-        handleGetUserPermissions();
       });
     })
     .catch((err: any) => {
@@ -204,8 +212,12 @@ const permissionCodeFilter = {
 /**
  * 获取用户权限
  */
-const handleGetUserPermissions = (page: number = 1, size: number = 15) => {
-  getUserPermissions(userId.value, {
+const handleGetUserPermissions = (
+  id: string = userId.value,
+  page: number = 1,
+  size: number = 15
+) => {
+  getUserPermissions(id, {
     page,
     size,
     resourceGroupNameSearchKeyword: authorizeSearchKeywords.resourceGroupName,
@@ -234,7 +246,7 @@ const handleGetUserPermissions = (page: number = 1, size: number = 15) => {
  */
 const handlePermissionsPageChange = (page: number) => {
   permissionsPagination.current = page;
-  handleGetUserPermissions(page, permissionsPagination.pageSize);
+  handleGetUserPermissions(userId.value, page, permissionsPagination.pageSize);
 };
 
 /**
@@ -244,7 +256,7 @@ const handlePermissionsPageChange = (page: number) => {
  */
 const handlePermissionsPageSizeChange = (size: number) => {
   permissionsPagination.pageSize = size;
-  handleGetUserPermissions(1, size);
+  handleGetUserPermissions(userId.value, 1, size);
 };
 
 /**
@@ -401,11 +413,11 @@ const handleClearAuthorizedTokens = () => {
   clearAuthorizedTokens(userId.value)
     .then((result: any) => {
       handleApiSuccess(result, () => {
-        Notification.success("清除授权成功");
+        Notification.success("清除授权的 Token 成功");
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "清除授权");
+      handleApiError(err, "清除授权的 Token");
     });
 };
 
@@ -940,6 +952,80 @@ const handleToPermissionDetail = (id: string) => {
   });
 };
 
+/** 登录日志 */
+const loginLogs = reactive([]);
+const loginLogsPagination = reactive({
+  total: 0,
+  current: 1,
+  pageSize: 15,
+  showPageSize: true,
+  showTotal: true,
+  pageSizeOptions: [15, 25, 50],
+});
+
+/**
+ * 获取用户登录日志
+ */
+const handleGetUserLoginLogs = (
+  id: string = userId.value,
+  page: number = 1,
+  size: number = 15
+) => {
+  getUserLoginLogs(id, {
+    page,
+    size,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        loginLogs.length = 0;
+        loginLogs.push(...data.list);
+
+        loginLogsPagination.total = data.total;
+        loginLogsPagination.current = data.current;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取用户登录日志");
+    });
+};
+
+/**
+ * 用户登录日志页数变化
+ *
+ * @param page 页数
+ */
+const handleLoginLogsPageChange = (page: number) => {
+  loginLogsPagination.current = page;
+  handleGetUserLoginLogs(userId.value, page, permissionsPagination.pageSize);
+};
+
+/**
+ * 用户登录日志分页大小变化
+ *
+ * @param page 分页大小
+ */
+const handleLoginLogsPageSizeChange = (size: number) => {
+  loginLogsPagination.pageSize = size;
+  handleGetUserLoginLogs(userId.value, 1, size);
+};
+
+/**
+ * 清除登录 ID 关联的 Token
+ */
+const handleClearAuthorizedTokensByLoginId = (loginLog: any) => {
+  clearAuthorizedTokensByLoginId(loginLog.loginId)
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("清除本次登录授权的 Token 成功");
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "清除本次登录授权的 Token");
+    });
+};
+
+
+
 export default defineComponent({
   setup() {
     onMounted(() => {
@@ -950,6 +1036,14 @@ export default defineComponent({
       const userId = route.query.id as string;
       handleGetUserDetail(userId);
       handleGetUserExtAttrs();
+
+      if (activeTab.value === "permission_management") {
+        handleGetUserPermissions(userId);
+      }
+
+      if (activeTab.value === "login_logs") {
+        handleGetUserLoginLogs(userId);
+      }
     });
 
     return {
@@ -1031,7 +1125,12 @@ export default defineComponent({
       permissionNameFilter,
       permissionCodeFilter,
       handleResetPermissionFilter,
-      allDictDatas
+      allDictDatas,
+      loginLogs,
+      loginLogsPagination,
+      handleLoginLogsPageChange,
+      handleLoginLogsPageSizeChange,
+      handleClearAuthorizedTokensByLoginId
     };
   },
 });

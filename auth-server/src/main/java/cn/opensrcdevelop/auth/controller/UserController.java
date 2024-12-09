@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.service.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.UserService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
@@ -32,6 +33,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserAttrService userAttrService;
+    private final LoginLogService loginLogService;
 
     @Operation(summary = "创建用户", description = "创建用户")
     @PostMapping
@@ -158,7 +160,7 @@ public class UserController {
     })
     @DeleteMapping("/{id}/token")
     @Authorize({ "allUserPermissions", "clearTokens" })
-    public void clearAuthorizedToken(@PathVariable @NotBlank String id) {
+    public void clearAuthorizedTokens(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokens(id);
     }
 
@@ -210,5 +212,27 @@ public class UserController {
                                                           @RequestParam(required = false) String permissionNameSearchKeyword,
                                                           @RequestParam(required = false) String permissionCodeSearchKeyword) {
         return userService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+    }
+
+    @Operation(summary = "获取用户登录日志", description = "获取用户登录日志")
+    @Parameters({
+            @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
+    })
+    @GetMapping("/{id}/loginLogs")
+    @Authorize({ "allUserPermissions", "getUserLoginLogs" })
+    public PageData<LoginLogResponseDto> getUserLoginLogs(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id) {
+        return loginLogService.getUserLoginLogs(page, size, id);
+    }
+
+    @Operation(summary = "根据登录ID清空授权的 Token", description = "根据登录ID清空授权的 Token")
+    @Parameters({
+            @Parameter(name = "id", description = "登录ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/login/{id}/token")
+    @Authorize({ "allUserPermissions", "clearTokensByLoginId" })
+    public void clearAuthorizedTokensByLoginId(@PathVariable @NotBlank String id) {
+        userService.clearAuthorizedTokensByLoginId(id);
     }
 }

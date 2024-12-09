@@ -1,7 +1,10 @@
 package cn.opensrcdevelop.auth.biz.entity;
 
 import cn.opensrcdevelop.common.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
@@ -12,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -51,14 +53,6 @@ public class User extends BaseEntity implements UserDetails, Serializable {
     private Boolean locked;
 
     private Boolean consoleAccess;
-
-    private LocalDateTime lastLoginTime;
-
-    private String lastLoginIp;
-
-    private String lastLoginDeviceType;
-
-    private String lastLoginDeviceOs;
 
     private Integer loginFailedCnt;
 

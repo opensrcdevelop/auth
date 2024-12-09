@@ -274,3 +274,29 @@ export function getUserPermissions(id: string, params: any) {
     params,
   });
 }
+
+/**
+ * 获取用户登录日志
+ *
+ * @param id 用户 ID
+ * @param params 请求参数
+ * @returns
+ */
+export function getUserLoginLogs(id: string, params: any) {
+  return apiRequest.get({
+    url: `/user/${id}/loginLogs`,
+    params,
+  });
+}
+
+/**
+ * 清空登录 ID 关联的 Token
+ *
+ * @param id 登录 ID
+ * @returns 调用结果
+ */
+export function clearAuthorizedTokensByLoginId(id: string) {
+  return apiRequest.delete({
+    url: `/user/login/${id}/token`,
+  });
+}

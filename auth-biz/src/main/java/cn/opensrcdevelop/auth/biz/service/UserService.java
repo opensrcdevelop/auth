@@ -40,4 +40,6 @@ public interface UserService extends IService<User> {
     void unbindEmail(BindOrUnbindEmailRequestDto requestDto);
 
     PageData<PermissionResponseDto> getPermissions(int page, int size, String userId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+
+    void clearAuthorizedTokensByLoginId(String loginId);
 }

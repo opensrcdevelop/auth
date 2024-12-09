@@ -24,6 +24,8 @@ public class Authorization implements Serializable {
 
     private String registeredClientId;
 
+    private String loginId;
+
     private String principalName;
     private String authorizationGrantType;
     private String authorizedScopes;
