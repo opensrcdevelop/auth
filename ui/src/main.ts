@@ -16,6 +16,7 @@ import CopyText from "@/components/CopyText.vue";
 import InputText from "@/components/InputText.vue";
 import Authorize from "@/components/Authorize.vue";
 import Verify from "@/components/verifition/Verify.vue";
+import MonacoEditor from "./components/MonacoEditor.vue";
 
 const app = createApp(App);
 
@@ -34,5 +35,6 @@ app.component("copy-text", CopyText);
 app.component("input-text", InputText);
 app.component("authorize", Authorize);
 app.component("verify", Verify);
+app.component("monaco-editor", MonacoEditor);
 
 app.mount("#app");

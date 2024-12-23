@@ -150,4 +150,11 @@ public class PermissionController {
     public  void removePermissionExpression(@PathVariable @NotBlank String id) {
         permissionExpService.removePermissionExp(id);
     }
+
+    @Operation(summary = "调试权限表达式", description = "调试权限表达式")
+    @PostMapping("/exp/debug")
+    @Authorize({ "allPermissionExpPermissions", "debugPermissionExp" })
+    public DebugPermissionExpResponseDto debugPermissionExpression(@RequestBody DebugPermissionExpRequestDto requestDto) {
+        return permissionExpService.debugPermissionExp(requestDto);
+    }
 }

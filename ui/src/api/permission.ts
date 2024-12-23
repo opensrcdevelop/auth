@@ -165,3 +165,16 @@ export function authorize(data: any) {
     data,
   });
 }
+
+/**
+ * 调试权限表达式
+ * 
+ * @param data 调试权限表达式表单
+ * @returns 调用结果
+ */
+export function debugPermissionExp(data: any) {
+  return apiRequest.post({
+    url: "/permission/exp/debug",
+    data,
+  })
+}
