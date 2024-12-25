@@ -3,7 +3,7 @@ import router from "@/router";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal } from "@arco-design/web-vue";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import { defineComponent, h, onMounted, reactive, ref } from "vue";
 
 /**
  * 返回上一级
@@ -76,20 +76,35 @@ const showDebugResult = (result: any) => {
   if (!result.isSuccess) {
     Modal.error({
       title: "调试运行失败",
-      content: `错误消息：${result.executeRes}`,
+      content: () => {
+        return h("div", [
+          "错误消息：",
+          h("span", { style: { color: "rgb(var(--red-6))" } }, result.executeRes),
+        ]);
+      },
     });
   } else {
-    if (result.executeRes) {
-      Modal.success({
-        title: "调试运行成功",
-        content: `限制条件【${permissionExp.name}】通过`,
-      });
-    } else {
-      Modal.warning({
-        title: "调试运行成功",
-        content: `限制条件【${permissionExp.name}】未通过`,
-      });
-    }
+    Modal.success({
+      title: "调试运行成功",
+      content: () => {
+        return h("div", [
+          `限制条件【${permissionExp.name}】`,
+          h(
+            "span",
+            {
+              style: {
+                color: result.executeRes
+                  ? "rgb(var(--green-6))"
+                  : "rgb(var(--orange-6))",
+                fontWeight: "bold",
+                fontSize: "16px",
+              },
+            },
+            result.executeRes ? "通过" : "未通过"
+          ),
+        ]);
+      },
+    });
   }
 };
 

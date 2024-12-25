@@ -8,6 +8,7 @@ import {
 import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { useRoute } from "vue-router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { useGlobalVariablesStore } from "@/store/globalVariables";
 
 /**
  * 返回上一级
@@ -222,6 +223,22 @@ const handleToPermissionDetail = (id: string) => {
   });
 };
 
+/**
+ * 跳转调试权限表达式
+ */
+const handleToDebugPermissionExp = () => {
+  const globalVariables = useGlobalVariablesStore();
+  globalVariables.permissionExp = {
+    id: permissionExpId.value,
+    name: permissionExpName.value,
+    expression: permissionExpInfoForm.expression,
+  };
+  globalVariables.saveData();
+  router.push({
+    path: "/permission/expression/debug",
+  });
+}
+
 export default defineComponent({
   setup() {
     onMounted(() => {
@@ -250,6 +267,7 @@ export default defineComponent({
       handleRemoveAuthorizeCondition,
       handlePermissionExpInfoFormSubmit,
       handleResetPermissionExpInfoForm,
+      handleToDebugPermissionExp
     };
   },
 });

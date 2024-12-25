@@ -19,6 +19,16 @@
     color: #86909c;
     user-select: none;
   }
+
+  .debug {
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s linear;
+  }
+
+  .debug:hover {
+    color: #215ae5;
+  }
 }
 
 .tab-container {

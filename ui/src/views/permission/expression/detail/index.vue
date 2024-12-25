@@ -13,6 +13,9 @@ export default detailTs;
       <div class="detail-header">
         <div>
           <span class="title">{{ permissionExpName }}</span>
+          <a-tooltip content="去调试">
+            <icon-bug class="debug" @click="handleToDebugPermissionExp" />
+          </a-tooltip>
           <div class="id">
             <span>ID:</span>
             <copy-text :text="permissionExpId" textColor="#86909c" />
