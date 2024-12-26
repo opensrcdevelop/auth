@@ -1,7 +1,7 @@
 # Docker image for springboot file run
 # Docker Docs: https://docs.docker.com/
 
-FROM bellsoft/liberica-openjre-debian:21-cds
+FROM bellsoft/liberica-openjre-alpine:21-cds
 COPY ./build/libs/auth-server-*.jar /app/application.jar
 COPY ./elastic-apm/elastic-apm-agent-*.jar /app/elastic-apm/elastic-apm-agent.jar
 ENV LANG C.UTF-8
