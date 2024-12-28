@@ -395,7 +395,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         var dictUserAttrValues = attributes.stream().filter(a -> userAttrIds.contains(a.getAttrId())).map(UserAttrMappingRequestDto::getAttrValue).toList();
         if (CollectionUtils.isNotEmpty(dictUserAttrValues)) {
             // 2.2 获取启用的字典数据ID集合
-            var enabledDictDataIds = CommonUtil.stream(dictDataService.list(Wrappers.<DictData>lambdaQuery().in(DictData::getDictId, dictUserAttrValues).and(q -> q.eq(DictData::getEnable, true))))
+            var enabledDictDataIds = CommonUtil.stream(dictDataService.list(Wrappers.<DictData>lambdaQuery().in(DictData::getDataId, dictUserAttrValues).and(q -> q.eq(DictData::getEnable, true))))
                     .map(DictData::getDataId).toList();
             // 2.3 删除无效的用户和用户属性的映射关系请求
             attributes.removeIf(a -> dictUserAttrValues.contains(a.getAttrValue()) && !enabledDictDataIds.contains(a.getAttrValue()));
