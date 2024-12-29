@@ -29,15 +29,14 @@ export default indexTs;
         @submit-success="handleDebugPermissionExpFormSubmit"
       >
         <a-form-item field="context" label="上下文">
-          <div class="json-editor">
-            <monaco-editor
-              v-model="debugPermissionExpForm.context"
-              language="json"
-              :editorOption="{
-                contextmenu: false,
-              }"
-            />
-          </div>
+          <monaco-editor
+            v-model="debugPermissionExpForm.context"
+            language="json"
+            :editorOption="{
+              contextmenu: false,
+            }"
+            height="280px"
+          />
           <template #extra>
             <div>
               上下文为 JSON 对象格式，请确保输入的上下文符合 JSON 格式要求。

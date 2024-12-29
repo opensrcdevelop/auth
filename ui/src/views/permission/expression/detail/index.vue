@@ -40,9 +40,13 @@ export default detailTs;
                 />
               </a-form-item>
               <a-form-item field="expression" label="SpringEL 表达式">
-                <a-textarea
+                <monaco-editor
                   v-model="permissionExpInfoForm.expression"
-                  placeholder="请输入 SpringEL 表达式"
+                  language="plaintext"
+                  :editorOption="{
+                    contextmenu: false,
+                  }"
+                  height="280px"
                 />
               </a-form-item>
               <a-form-item field="desc" label="限制条件描述">

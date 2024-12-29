@@ -31,6 +31,7 @@ const monacoEditorStyle = computed(() => {
   return {
     width: typeof props.width === "string" ? props.width : props.width + "px",
     height: typeof props.height === "string" ? props.height : props.height + "px",
+    border: "1px solid var(--color-neutral-2)"
   };
 });
 
