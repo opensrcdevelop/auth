@@ -123,6 +123,9 @@
   docker-compose -f docker-compose.yaml up
   ```
   
+
+- 访问地址：http://localhost:6543
+
 - 初始账号 / 密码：admin / 123456
 
 ### 演示截图
