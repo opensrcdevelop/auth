@@ -309,6 +309,14 @@ const pageRoutes: RouteRecordRaw[] = [
       title: "创建字典数据",
     },
   },
+  {
+    path: "/permission/expression/debug",
+    component: () => import("@/views/permission/expression/debug/index.vue"),
+    meta: {
+      parent: "/permission/expression",
+      title: "调试限制条件",
+    },
+  },
 ];
 
 export const routes: RouteRecordRaw[] = [

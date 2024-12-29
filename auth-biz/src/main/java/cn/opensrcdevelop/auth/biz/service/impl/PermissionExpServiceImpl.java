@@ -1,15 +1,15 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.PermissionExpRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.*;
 import cn.opensrcdevelop.auth.biz.entity.*;
 import cn.opensrcdevelop.auth.biz.mapper.PermissionExpressionMapper;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeConditionService;
 import cn.opensrcdevelop.auth.biz.service.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -20,6 +20,9 @@ import io.vavr.Tuple4;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -179,6 +182,37 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
 
         // 2. 删除关联的全部的授权记录
         authorizeConditionService.remove(Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, permissionExpId));
+    }
+
+    /**
+     * 调试权限表达式
+     *
+     * @param requestDto 请求
+     * @return 响应
+     */
+    @Override
+    public DebugPermissionExpResponseDto debugPermissionExp(DebugPermissionExpRequestDto requestDto) {
+        // 1. 获取权限表达式
+        PermissionExp permissionExp = super.getById(requestDto.getExpressionId());
+        if (Objects.isNull(permissionExp)) {
+            throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1000, requestDto.getExpressionId());
+        }
+        String expression = permissionExp.getExpression();
+
+        // 2. 执行表达式
+        DebugPermissionExpResponseDto responseDto = new DebugPermissionExpResponseDto();
+        try {
+            SpelExpressionParser spelExpressionParser = new SpelExpressionParser();
+            StandardEvaluationContext standardEvaluationContext = new StandardEvaluationContext(requestDto.getContext());
+            standardEvaluationContext.addPropertyAccessor(new MapAccessor());
+            Boolean res = spelExpressionParser.parseExpression(expression).getValue(standardEvaluationContext, Boolean.class);
+            responseDto.setIsSuccess(Boolean.TRUE);
+            responseDto.setExecuteRes(res);
+        } catch (Exception e) {
+            responseDto.setIsSuccess(Boolean.FALSE);
+            responseDto.setExecuteRes(e.getMessage());
+        }
+        return responseDto;
     }
 
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {

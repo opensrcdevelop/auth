@@ -3,6 +3,7 @@ import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { useGlobalVariablesStore } from "@/store/globalVariables";
 
 /** 权限表达式列表 */
 const permissionExpList = reactive([]);
@@ -109,6 +110,18 @@ const handleToCreatePermssionExp = () => {
   });
 };
 
+/**
+ * 跳转调试限制条件
+ */
+const handleToDebugPermissionExp = (permissionExp: any) => {
+  const globalVariables = useGlobalVariablesStore();
+  globalVariables.permissionExp = permissionExp;
+  globalVariables.saveData();
+  router.push({
+    path: "/permission/expression/debug",
+  });
+}
+
 export default defineComponent({
   setup() {
     onMounted(() => {
@@ -125,6 +138,7 @@ export default defineComponent({
       handleToPermissionExpDetail,
       handleDeletePermissionExp,
       handleToCreatePermssionExp,
+      handleToDebugPermissionExp
     };
   },
 });

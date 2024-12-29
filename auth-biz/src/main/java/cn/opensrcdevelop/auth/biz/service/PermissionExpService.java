@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
+import cn.opensrcdevelop.auth.biz.dto.DebugPermissionExpRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.DebugPermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.PermissionExpRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.PermissionExp;
@@ -17,4 +19,6 @@ public interface PermissionExpService extends IService<PermissionExp> {
     void updatePermissionExp(PermissionExpRequestDto requestDto);
 
     void removePermissionExp(String permissionExpId);
+
+    DebugPermissionExpResponseDto debugPermissionExp(DebugPermissionExpRequestDto requestDto);
 }

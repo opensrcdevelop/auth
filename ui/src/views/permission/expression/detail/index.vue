@@ -13,6 +13,9 @@ export default detailTs;
       <div class="detail-header">
         <div>
           <span class="title">{{ permissionExpName }}</span>
+          <a-tooltip content="去调试">
+            <icon-bug class="debug" @click="handleToDebugPermissionExp" />
+          </a-tooltip>
           <div class="id">
             <span>ID:</span>
             <copy-text :text="permissionExpId" textColor="#86909c" />
@@ -37,9 +40,13 @@ export default detailTs;
                 />
               </a-form-item>
               <a-form-item field="expression" label="SpringEL 表达式">
-                <a-textarea
+                <monaco-editor
                   v-model="permissionExpInfoForm.expression"
-                  placeholder="请输入 SpringEL 表达式"
+                  language="plaintext"
+                  :editorOption="{
+                    contextmenu: false,
+                  }"
+                  height="280px"
                 />
               </a-form-item>
               <a-form-item field="desc" label="限制条件描述">
