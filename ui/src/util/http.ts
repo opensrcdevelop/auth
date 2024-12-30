@@ -1,15 +1,11 @@
+import type {AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig,} from "axios";
 import axios from "axios";
-import type {
-  AxiosInstance,
-  AxiosRequestConfig,
-  InternalAxiosRequestConfig,
-  AxiosResponse,
-} from "axios";
 import pinia from "@/store";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 import router from "@/router";
-import { base64Str, getOAuthIssuer } from "./tool";
-import { Notification } from "@arco-design/web-vue";
+import {base64Str, decodeBase64Str, getOAuthIssuer} from "./tool";
+import {Notification} from "@arco-design/web-vue";
+import {AUTH_TOKENS, REDIRECT_PATH, REDIRECT_QUERY, REFRESH_TOKEN,} from "./constants";
 
 const globalVariables = useGlobalVariablesStore(pinia);
 
@@ -28,12 +24,18 @@ export class Request {
     this.instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         globalVariables.apiLoading = true;
-        config.baseURL = prefix ? `${getOAuthIssuer()}${prefix}` : getOAuthIssuer();
+        config.baseURL = prefix
+          ? `${getOAuthIssuer()}${prefix}`
+          : getOAuthIssuer();
 
-        const accessToken = localStorage.getItem("accessToken");
-        if (accessToken) {
-          const token: any = JSON.parse(accessToken);
-          if (token && config.url !== "/oauth2/token" && !config.url.startsWith("/tenant/check/")) {
+        const authTokens = localStorage.getItem(AUTH_TOKENS);
+        if (authTokens) {
+          const token: any = JSON.parse(decodeBase64Str(authTokens));
+          if (
+            token &&
+            config.url !== "/oauth2/token" &&
+            !config.url.startsWith("/tenant/check/")
+          ) {
             config.headers!.Authorization = `${token.token_type} ${token.access_token}`;
           }
         }
@@ -52,55 +54,53 @@ export class Request {
       },
       (err: any) => {
         globalVariables.apiLoading = false;
-
-        if (err.code === "ERR_NETWORK") {
-          return Promise.reject(err);
-        }
-        let messageText = "";
-        switch (err.response.status) {
-          case 400:
-            messageText = "请求错误(400)";
-            break;
-          case 401:
-            messageText = "未授权，请重新登录(401)";
-            if (err.config.url !== "/oauth2/token" && hanlde401(this.instance)) {
-              // 重新请求
-              return this.instance.request(err.config);
-            } else {
+        if (err.response) {
+          let messageText = "";
+          switch (err.response.status) {
+            case 400:
+              messageText = "请求错误(400)";
               break;
-            }
-          case 403:
-            messageText = "拒绝访问(403)";
-            break;
-          case 404:
-            messageText = "请求路径出错(404)";
-            break;
-          case 408:
-            messageText = "请求超时(408)";
-            break;
-          case 500:
-            messageText = "服务器错误(500)";
-            break;
-          case 501:
-            messageText = "服务未实现(501)";
-            break;
-          case 502:
-            messageText = "网络错误(502)";
-            break;
-          case 503:
-            messageText = "服务不可用(503)";
-            break;
-          case 504:
-            messageText = "网络超时(504)";
-            break;
-          case 505:
-            messageText = "HTTP版本不受支持(505)";
-            break;
-          default:
-            messageText = `连接出错(${err.response.status})!`;
+            case 401:
+              messageText = "未授权，请重新登录(401)";
+              if (err.config.url !== "/oauth2/token") {
+                return refreshingToken(this.instance, err.config);
+              }
+              break;
+            case 403:
+              messageText = "拒绝访问(403)";
+              break;
+            case 404:
+              messageText = "请求路径出错(404)";
+              break;
+            case 408:
+              messageText = "请求超时(408)";
+              break;
+            case 500:
+              messageText = "服务器错误(500)";
+              break;
+            case 501:
+              messageText = "服务未实现(501)";
+              break;
+            case 502:
+              messageText = "网络错误(502)";
+              break;
+            case 503:
+              messageText = "服务不可用(503)";
+              break;
+            case 504:
+              messageText = "网络超时(504)";
+              break;
+            case 505:
+              messageText = "HTTP版本不受支持(505)";
+              break;
+            default:
+              messageText = `连接出错(${err.response.status})!`;
+          }
+          err.response.statusText = messageText;
+          return Promise.reject(err.response);
         }
-        err.response.statusText = messageText;
-        return Promise.reject(err.response);
+
+        return Promise.reject(err);
       }
     );
   }
@@ -131,46 +131,94 @@ export class Request {
   }
 }
 
+// 是否正在刷新标记
+let isRefreshing = false;
+// 重试队列
+let retryRequests = [];
+
 /**
- * 处理 401
+ * 刷新 token
  */
-async function hanlde401(axios: AxiosInstance) {
-  // 使用 refresh_token 重新获取 access_token
-  const accessToken = localStorage.getItem("accessToken");
-  if (accessToken) {
-    const accessTokenJson = JSON.parse(accessToken);
-    if (accessTokenJson.refresh_token) {
-      try {
-        const res = await axios.request({
-          baseURL: getOAuthIssuer(),
-          url: "/oauth2/token",
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${base64Str(
-              `${import.meta.env.VITE_OAUTH_CLIENT_ID}:${
-                import.meta.env.VITE_OAUTH_CLIENT_SECRET
-              }`
-            )}`,
-          },
-          data: {
-            grant_type: "refresh_token",
-            refresh_token: accessTokenJson.refresh_token,
-          },
-        });
-        localStorage.setItem("accessToken", JSON.stringify(res));
-        return true;
-      } catch (err) {
-        Notification.error("刷新 token 失败")
-        // 如果获取失败，则跳转到登录页面
-        router.push({
-          path: "/oauth2/redirect",
-        });
-        localStorage.removeItem("accessToken");
-        return false;
+async function refreshingToken(
+  axios: AxiosInstance,
+  requestConfig: AxiosRequestConfig
+) {
+  if (!isRefreshing) {
+    // 使用 refresh_token 重新获取 access_token
+    const authTokens = localStorage.getItem(AUTH_TOKENS);
+    if (authTokens) {
+      const authTokensJson = JSON.parse(decodeBase64Str(authTokens));
+      if (authTokensJson.refresh_token) {
+        isRefreshing = true;
+        try {
+          const res: any = await axios.request({
+            baseURL: getOAuthIssuer(),
+            url: "/oauth2/token",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Basic ${base64Str(
+                `${import.meta.env.VITE_OAUTH_CLIENT_ID}:${
+                  import.meta.env.VITE_OAUTH_CLIENT_SECRET
+                }`
+              )}`,
+            },
+            data: {
+              grant_type: REFRESH_TOKEN,
+              refresh_token: authTokensJson.refresh_token,
+            },
+          });
+          localStorage.setItem(AUTH_TOKENS, base64Str(JSON.stringify(res)));
+          // 重试刷新 token 间的所有请求
+          retryRequests.forEach((cb) => cb(res));
+          isRefreshing = false;
+          retryRequests = [];
+
+          // 重试当前请求
+          resetToken(res, requestConfig);
+          return axios(requestConfig);
+        } catch (err) {
+          Notification.error("刷新 token 失败");
+          isRefreshing = false;
+          retryRequests = [];
+          localStorage.removeItem(AUTH_TOKENS);
+          handleRelogin();
+        }
       }
     }
+  } else {
+    return new Promise((resolve) => {
+      // 等待刷新 token 完成后执行
+      retryRequests.push((token) => {
+        resetToken(token, requestConfig);
+        resolve(axios(requestConfig));
+      });
+    });
   }
+}
+
+/**
+ * 重新登录
+ */
+function handleRelogin() {
+  // 存储当前页面路径及 query，方便登录后跳转
+  const currentRoute = router.currentRoute.value;
+  if (currentRoute && !localStorage.getItem(REDIRECT_PATH)) {
+    localStorage.setItem(REDIRECT_PATH, currentRoute.path);
+    if (currentRoute.query && !localStorage.getItem(REDIRECT_QUERY)) {
+      localStorage.setItem(REDIRECT_QUERY, JSON.stringify(currentRoute.query));
+    }
+  }
+  router.push({
+    path: "/oauth2/redirect",
+  });
+}
+
+/**
+ * 重新设置token
+ */
+function resetToken(token: any, requestConfig: AxiosRequestConfig) {
+  requestConfig.headers!.Authorization = `${token.token_type} ${token.access_token}`;
 }
 
 // 默认导出Request实例

@@ -1,16 +1,10 @@
-import { Notification } from "@arco-design/web-vue";
-import { reactive, ref, defineComponent, onMounted } from "vue";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import {
-  loginSubmit,
-  totpValidSubmit,
-  sendEmailCodeSubmit,
-  emailLoginSubmit,
-  checkCode,
-  resetPwd,
-} from "@/api/login";
-import { logoutSubmit } from "@/api/logout";
+import {Notification} from "@arco-design/web-vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {checkCode, emailLoginSubmit, loginSubmit, resetPwd, sendEmailCodeSubmit, totpValidSubmit,} from "@/api/login";
+import {logoutSubmit} from "@/api/logout";
 import router from "@/router";
+import {TENANT_NAME} from "@/util/constants";
 
 /** 租户名称 */
 const tenantName = ref(undefined);
@@ -407,7 +401,7 @@ const handleBackToForgotPwd = () => {
 export default defineComponent({
   setup() {
     onMounted(() => {
-      tenantName.value = localStorage.getItem("tenantName");
+      tenantName.value = localStorage.getItem(TENANT_NAME);
     });
 
     return {

@@ -1,20 +1,30 @@
 <script setup lang="ts">
 import {
-  generateRandomString,
-  getQueryString,
+  base64Str,
   generateCodeChallenge,
-  getOAuthIssuer,
+  generateRandomString,
   getConsoleUrl,
-  handleApiSuccess,
+  getOAuthIssuer,
+  getQueryString,
   handleApiError,
+  handleApiSuccess,
 } from "@/util/tool";
-import { getToken } from "@/api/login";
+import {getToken} from "@/api/login";
 import router from "@/router";
-import { ref } from "vue";
-import { logoutSubmit } from "@/api/logout";
+import {ref} from "vue";
+import {logoutSubmit} from "@/api/logout";
+import {
+  AUTH_TOKENS,
+  AUTHORIZAION_CODE,
+  CODE,
+  CODE_VERIFIER,
+  REDIRECT_PATH,
+  REDIRECT_QUERY,
+  STATE
+} from "@/util/constants";
 
 // 获取地址栏授权码
-const code = getQueryString("code");
+const code = getQueryString(CODE);
 
 const loading = ref(true);
 const hasError = ref(false);
@@ -22,27 +32,45 @@ const errorText = ref("");
 
 if (code) {
   // 校验 state，防止 CSRF
-  const state = localStorage.getItem("state");
-  const urlState = getQueryString("state");
+  const state = localStorage.getItem(STATE);
+  const urlState = getQueryString(STATE);
   if (urlState !== state) {
     hasError.value = true;
     errorText.value = "state 不匹配，可能存在 CSRF 攻击";
   } else {
     // 获取 token
     getToken({
-      grant_type: "authorization_code",
+      grant_type: AUTHORIZAION_CODE,
       client_id: import.meta.env.VITE_OAUTH_CLIENT_ID,
       client_secret: import.meta.env.VITE_OAUTH_CLIENT_SECRET,
       redirect_uri: `${getConsoleUrl()}${import.meta.env.VITE_UI_BASE_PATH || ''}/oauth2/redirect`,
       code,
-      code_verifier: localStorage.getItem("codeVerifier"),
+      code_verifier: localStorage.getItem(CODE_VERIFIER),
       state,
     })
       .then((res: any) => {
-        localStorage.setItem("accessToken", JSON.stringify(res));
-        localStorage.removeItem("state");
-        localStorage.removeItem("codeVerifier");
-        router.push({ path: "/" });
+        localStorage.setItem(AUTH_TOKENS, base64Str(JSON.stringify(res)));
+        localStorage.removeItem(STATE);
+        localStorage.removeItem(CODE_VERIFIER);
+
+        const redirectPath = localStorage.getItem(REDIRECT_PATH);
+        const redirectQuery = localStorage.getItem(REDIRECT_QUERY);
+        // 跳转到目标路径
+        if (localStorage.getItem(REDIRECT_PATH)) {
+          if (redirectQuery) {
+            router.push({
+              path: redirectPath,
+              query: JSON.parse(redirectQuery),
+            })
+          } else {
+            router.push({ path: redirectPath })
+          }
+          localStorage.removeItem(REDIRECT_PATH);
+          localStorage.removeItem(REDIRECT_QUERY);
+        } else {
+          // 跳转到首页
+          router.push({ path: "/" });
+        }
       })
       .catch((err: any) => {
         hasError.value = true;
@@ -58,8 +86,8 @@ if (code) {
   let codeChallenge: string = generateCodeChallenge(codeVerifier);
 
   // 缓存 state 和 codeVerifier
-  localStorage.setItem("state", state);
-  localStorage.setItem("codeVerifier", codeVerifier);
+  localStorage.setItem(STATE, state);
+  localStorage.setItem(CODE_VERIFIER, codeVerifier);
 
   // 获取授权码
   window.location.href = `${getOAuthIssuer()}/oauth2/authorize?client_id=${

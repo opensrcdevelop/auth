@@ -1,0 +1,12 @@
+export const CODE = "code";
+export const STATE = "state";
+export const AUTHORIZAION_CODE = "authorization_code"
+export const CODE_VERIFIER = "code_verifier";
+export const AUTH_TOKENS = "auth_tokens";
+export const ACCESS_TOKEN = "access_token";
+export const REFRESH_TOKEN = "refresh_token"
+export const TENANT_CODE = "tenant_code";
+export const TENANT_NAME = "tenant_name";
+export const OAUTH_ISSUER = "oauth_issuer";
+export const REDIRECT_PATH = "redirect_path";
+export const REDIRECT_QUERY = "redirect_query";

@@ -1,7 +1,8 @@
-import { checkTenant } from "@/api/tenant";
-import { getSubDomain, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Notification } from "@arco-design/web-vue";
-import { RouteRecordRaw, createRouter, createWebHistory } from "vue-router";
+import {checkTenant} from "@/api/tenant";
+import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME} from "@/util/constants";
+import {getSubDomain} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
+import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
 
 /** 菜单路由 */
 export const menuRoutes: RouteRecordRaw[] = [
@@ -369,7 +370,7 @@ router.beforeEach((to, from, next) => {
     ? (`Auth Server - ${to.meta.title}` as string)
     : "Auth Server";
   handleCheckTenant(to).then(() => {
-    if (!localStorage.getItem("accessToken")) {
+    if (!localStorage.getItem(AUTH_TOKENS)) {
       if (
         to.path === "/oauth2/redirect" ||
         to.path === "/login" ||
@@ -402,14 +403,14 @@ async function handleCheckTenant(to: any) {
       const checkRes = await checkTenant(tenantCode);
       const data = checkRes.data as any;
       if (data.exists) {
-        localStorage.setItem("OAuthIssuer", data.issuer);
-        localStorage.setItem("tenantCode", tenantCode);
-        localStorage.setItem("tenantName", data.tenantName);
+        localStorage.setItem(OAUTH_ISSUER, data.issuer);
+        localStorage.setItem(TENANT_CODE, tenantCode);
+        localStorage.setItem(TENANT_NAME, data.tenantName);
       } else {
         // 租户不存在
-        localStorage.removeItem("OAuthIssuer");
-        localStorage.removeItem("tenantCode");
-        localStorage.removeItem("tenantName");
+        localStorage.removeItem(OAUTH_ISSUER);
+        localStorage.removeItem(TENANT_CODE);
+        localStorage.removeItem(TENANT_NAME);
         router.push({
           path: "/404",
         });
