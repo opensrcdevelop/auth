@@ -12,7 +12,7 @@ bootJar.enabled = false
 
 ext {
     // dependencies version
-    commonsLang3Ver = '3.14.0'
+    commonsLang3Ver = '3.17.0'
     springCloudVer = '2023.0.4'
     mybatisVer = '3.0.4'
     zxingVer = '3.5.3'
