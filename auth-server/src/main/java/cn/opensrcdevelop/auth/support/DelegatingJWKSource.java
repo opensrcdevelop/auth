@@ -19,11 +19,8 @@ import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class DelegatingJWKSource implements JWKSource<SecurityContext> {
-
-    private final ReentrantLock lock = new ReentrantLock();
 
     @Override
     public List<JWK> get(JWKSelector jwkSelector, SecurityContext context) throws KeySourceException {
@@ -31,27 +28,22 @@ public class DelegatingJWKSource implements JWKSource<SecurityContext> {
     }
 
     private JWKSet getJwkSet() {
-        lock.lock();
-        try {
-            String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
-            String jwkSourceStr = RedisUtil.get(AuthConstants.JWK_REDIS_KEY + tenantCode, String.class);
-            JWKSet jwkSet;
-            if (StringUtils.isNotEmpty(jwkSourceStr)) {
-                jwkSet = Try.of(() -> JWKSet.parse(jwkSourceStr)).getOrElseThrow(ServerException::new);
-            } else {
-                KeyPair keyPair = CommonUtil.generateRsaKey();
-                RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-                RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-                RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                        .privateKey(privateKey)
-                        .keyID(CommonUtil.getBase64StringKey(32))
-                        .build();
-                jwkSet = new JWKSet(rsaKey);
-                RedisUtil.set(AuthConstants.JWK_REDIS_KEY + tenantCode, jwkSet.toString(false));
-            }
-            return jwkSet;
-        } finally {
-            lock.unlock();
+        String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
+        String jwkSourceStr = RedisUtil.get(AuthConstants.JWK_REDIS_KEY + tenantCode, String.class);
+        JWKSet jwkSet;
+        if (StringUtils.isNotEmpty(jwkSourceStr)) {
+            jwkSet = Try.of(() -> JWKSet.parse(jwkSourceStr)).getOrElseThrow(ServerException::new);
+        } else {
+            KeyPair keyPair = CommonUtil.generateRsaKey();
+            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+            RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyID(CommonUtil.getBase64StringKey(32))
+                    .build();
+            jwkSet = new JWKSet(rsaKey);
+            RedisUtil.set(AuthConstants.JWK_REDIS_KEY + tenantCode, jwkSet.toString(false));
         }
+        return jwkSet;
     }
 }

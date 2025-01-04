@@ -35,42 +35,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class HttpUtil {
 
     private HttpUtil() {}
 
-    private static final ReentrantLock REST_CLIENT_LOCK = new ReentrantLock();
-    private static final ReentrantLock REST_TEMPLATE_LOCK = new ReentrantLock();
     private static RestClient restClient;
     private static RestTemplate restTemplate;
 
-    public static RestClient getRestClient() {
-        REST_CLIENT_LOCK.lock();
-        try {
-            if (restClient == null) {
-                restClient = RestClient.builder(getRestTemplate()).build();
-            }
-            return restClient;
-        } finally {
-            REST_CLIENT_LOCK.unlock();
+    public static synchronized RestClient getRestClient() {
+        if (restClient == null) {
+            restClient = RestClient.builder(getRestTemplate()).build();
         }
+        return restClient;
     }
 
-    public static RestTemplate getRestTemplate() {
-        REST_TEMPLATE_LOCK.lock();
-        try {
-            if (restTemplate == null) {
-                restTemplate = new RestTemplateBuilder()
-                        .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(getHttpClient()))
-                        .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor())
-                        .build();
-            }
-            return restTemplate;
-        } finally {
-            REST_TEMPLATE_LOCK.lock();
+    public static synchronized RestTemplate getRestTemplate() {
+        if (restTemplate == null) {
+            restTemplate = new RestTemplateBuilder()
+                    .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(getHttpClient()))
+                    .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor())
+                    .build();
         }
+        return restTemplate;
     }
 
     @SuppressWarnings("unchecked")
