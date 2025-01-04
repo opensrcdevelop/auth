@@ -8,14 +8,14 @@ import {
   removeRoleMapping,
   updateRole,
 } from "@/api/role";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { searchUser } from "@/api/user";
 import { getUserGroupList } from "@/api/userGroup";
 import { cancelAuthorization } from "@/api/permission";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -39,6 +39,9 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  if (activeTab.value === "permission_management") {
+    handleGetRolePermissions();
+  }
 };
 
 const roleId = ref("");
@@ -84,8 +87,6 @@ const handleGetRoleDetail = (id: string) => {
         roleInfoForm.name = data.name;
         roleInfoForm.code = data.code;
         roleInfoForm.desc = data.desc;
-
-        handleGetRolePermissions();
       });
     })
     .catch((err: any) => {
@@ -95,14 +96,7 @@ const handleGetRoleDetail = (id: string) => {
 
 /** 角色权限 */
 const permissions = reactive([]);
-const permissionsPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let permissionsPagination;
 const authorizeSearchKeywords = reactive({
   // 资源组名称检索关键字
   resourceGroupName: undefined,
@@ -154,8 +148,12 @@ const permissionCodeFilter = {
 /**
  * 获取用户组权限
  */
-const handleGetRolePermissions = (page: number = 1, size: number = 15) => {
-  getRolePermissions(roleId.value, {
+const handleGetRolePermissions = (
+  id: string = roleId.value,
+  page: number = 1,
+  size: number = 15
+) => {
+  getRolePermissions(id, {
     page,
     size,
     resourceGroupNameSearchKeyword: authorizeSearchKeywords.resourceGroupName,
@@ -167,34 +165,17 @@ const handleGetRolePermissions = (page: number = 1, size: number = 15) => {
       handleApiSuccess(result, (data: any) => {
         permissions.length = 0;
         permissions.push(...data.list);
-        
-        permissionsPagination.total = data.total;
-        permissionsPagination.current = data.current;
+
+        permissionsPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取角色权限");
     });
-};
-
-/**
- * 角色权限页数变化
- *
- * @param page 页数
- */
-const handlePermissionsPageChange = (page: number) => {
-  permissionsPagination.current = page;
-  handleGetRolePermissions(page, permissionsPagination.pageSize);
-};
-
-/**
- * 角色权限分页大小变化
- *
- * @param page 分页大小
- */
-const handlePermissionsPageSizeChange = (size: number) => {
-  permissionsPagination.pageSize = size;
-  handleGetRolePermissions(1, size);
 };
 
 /**
@@ -231,14 +212,9 @@ const handleResetRoleInfoForm = () => {
 
 /** 角色主体 */
 const rolePrincipals = reactive([]);
-const rolePrincipalsPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let rolePrincipalsPagination;
+/** 检索角色主体关键字 */
+const searchRolePrincipalKeyword = ref("");
 
 /**
  * 获取角色主体
@@ -249,23 +225,25 @@ const rolePrincipalsPagination = reactive({
  * @param keyword 用户名 / 用户组名检索关键字
  */
 const handleGetRolePrincipals = (
-  id: string,
+  id: string = roleId.value,
   page: number = 1,
-  size: number = 15,
-  keyword: string = ""
+  size: number = 15
 ) => {
   getRolePrincipals(id, {
     page,
     size,
-    keyword,
+    keyword: searchRolePrincipalKeyword.value,
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         rolePrincipals.length = 0;
         rolePrincipals.push(...data.list);
 
-        rolePrincipalsPagination.total = data.total;
-        rolePrincipalsPagination.current = data.current;
+        rolePrincipalsPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -274,44 +252,10 @@ const handleGetRolePrincipals = (
 };
 
 /**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  rolePrincipalsPagination.pageSize = size;
-  handleGetRolePrincipals(
-    roleId.value,
-    1,
-    size,
-    searchRolePrincipalKeyword.value
-  );
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  rolePrincipalsPagination.current = page;
-  handleGetRolePrincipals(
-    roleId.value,
-    page,
-    rolePrincipalsPagination.pageSize,
-    searchRolePrincipalKeyword.value
-  );
-};
-
-/** 检索角色主体关键字 */
-const searchRolePrincipalKeyword = ref("");
-
-/**
  * 检索角色主体
  */
 const handleSearchRolePrincipal = () => {
-  handleGetRolePrincipals(
-    roleId.value,
-    1,
-    15,
-    searchRolePrincipalKeyword.value
-  );
+  handleGetRolePrincipals();
 };
 
 /** 添加角色主体对话框 */
@@ -729,6 +673,7 @@ const hantoToUserGroupDetail = (id: string) => {
     path: "/user/group/detail",
     query: {
       id,
+      active_tab: "user_group_info",
     },
   });
 };
@@ -743,6 +688,7 @@ const handleToUserDetail = (id: string) => {
     path: "/user/detail",
     query: {
       id,
+      active_tab: "user_info",
     },
   });
 };
@@ -770,6 +716,7 @@ const handleToResourceGroupDetail = (id: string) => {
     path: "/resource/group/detail",
     query: {
       id,
+      active_tab: "resource_group_info",
     },
   });
 };
@@ -782,6 +729,7 @@ const handleToResourceDetail = (id: string) => {
     path: "/permission/resource/detail",
     query: {
       id,
+      active_tab: "resource_info",
     },
   });
 };
@@ -794,21 +742,35 @@ const handleToPermissionDetail = (id: string) => {
     path: "/permission/detail",
     query: {
       id,
+      active_tab: "permission_info",
     },
   });
 };
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const roleId = getQueryString("id");
+    const tab = getQueryString("active_tab");
+    rolePrincipalsPagination = usePagination(
+      `${roleId}_rolePrincipals`,
+      ({ page, size }) => {
+        if (tab === "role_info") {
+          handleGetRolePrincipals(roleId, page, size);
+        }
       }
-      const roleId = route.query.id as string;
+    );
+    permissionsPagination = usePagination(
+      `${roleId}_rolePermissions`,
+      ({ page, size }) => {
+        if (tab === "permission_management") {
+          handleGetRolePermissions(roleId, page, size);
+        }
+      }
+    );
 
+    onMounted(() => {
+      activeTab.value = tab || "role_info";
       handleGetRoleDetail(roleId);
-      handleGetRolePrincipals(roleId);
     });
 
     return {
@@ -824,8 +786,6 @@ export default defineComponent({
       handleResetRoleInfoForm,
       rolePrincipals,
       rolePrincipalsPagination,
-      handlePageSizeChange,
-      handlePageChange,
       searchRolePrincipalKeyword,
       handleSearchRolePrincipal,
       addRolePrincipalModelVisible,
@@ -868,8 +828,6 @@ export default defineComponent({
       permissionsPagination,
       authorizeSearchKeywords,
       handleGetRolePermissions,
-      handlePermissionsPageChange,
-      handlePermissionsPageSizeChange,
       resourceGroupNameFilter,
       resourceNameFilter,
       permissionNameFilter,

@@ -3,18 +3,12 @@ import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { usePagination } from "@/hooks/usePagination";
 
 /** 用户字段列表 */
 const userColumnList = reactive([]);
 const userColumnSearchKeyword = ref("");
-const userColumnListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let userColumnListPagination;
 
 /**
  * 获取用户字段列表
@@ -33,29 +27,16 @@ const handleGetUserColumnList = (page: number = 1, size: number = 15) => {
         userColumnList.length = 0;
         userColumnList.push(...data.list);
 
-        userColumnListPagination.current = data.current;
-        userColumnListPagination.total = data.total;
+        userColumnListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取用户字段列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  userColumnListPagination.current = page;
-  handleGetUserColumnList(page, userColumnListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  userColumnListPagination.pageSize = size;
-  handleGetUserColumnList(1, size);
 };
 
 /**
@@ -75,6 +56,7 @@ const handleToUserColumnDetail = (userColumn: any) => {
     path: "/user/attr/detail",
     query: {
       id: userColumn.id,
+      active_tab: "user_column_info",
     },
   });
 };
@@ -107,20 +89,21 @@ const handleDeleteUserColumn = (userColumn: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetUserColumnList();
-    });
+    userColumnListPagination = usePagination(
+      "userColumnList",
+      ({ page, size }) => {
+        handleGetUserColumnList(page, size);
+      }
+    );
 
     return {
       userColumnList,
       userColumnSearchKeyword,
       userColumnListPagination,
       handleGetUserColumnList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToCreateUserColumn,
       handleToUserColumnDetail,
-      handleDeleteUserColumn
+      handleDeleteUserColumn,
     };
   },
 });

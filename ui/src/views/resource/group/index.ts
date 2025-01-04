@@ -3,18 +3,12 @@ import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { usePagination } from "@/hooks/usePagination";
 
 /** 资源列表 */
 const resourceGroupList = reactive([]);
 const resourceGroupSearchKeyword = ref(null);
-const resourceGroupListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let resourceGroupListPagination;
 
 /**
  * 获取资源组列表
@@ -33,29 +27,16 @@ const handleGetResourceGroupList = (page: number = 1, size: number = 15) => {
         resourceGroupList.length = 0;
         resourceGroupList.push(...data.list);
 
-        resourceGroupListPagination.current = data.current;
-        resourceGroupListPagination.total = data.total;
+        resourceGroupListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取资源列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  resourceGroupListPagination.current = page;
-  handleGetResourceGroupList(page, resourceGroupListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  resourceGroupListPagination.pageSize = size;
-  handleGetResourceGroupList(1, size);
 };
 
 /**
@@ -66,6 +47,7 @@ const handleToResourceGroupDetail = (resourceGroup: any) => {
     path: "/resource/group/detail",
     query: {
       id: resourceGroup.id,
+      active_tab: "resource_group_info",
     },
   });
 };
@@ -104,12 +86,22 @@ const handleToCreateResourceGroup = () => {
   router.push({
     path: "/resource/group/create",
   });
-}
+};
 
 export default defineComponent({
   setup() {
+    resourceGroupListPagination = usePagination(
+      "resourceGroupList",
+      ({ page, size }) => {
+        handleGetResourceGroupList(page, size);
+      }
+    );
+
     onMounted(() => {
-      handleGetResourceGroupList();
+      handleGetResourceGroupList(
+        resourceGroupListPagination.pagination.current,
+        resourceGroupListPagination.pagination.pageSize
+      );
     });
 
     return {
@@ -117,11 +109,9 @@ export default defineComponent({
       resourceGroupSearchKeyword,
       resourceGroupListPagination,
       handleGetResourceGroupList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToResourceGroupDetail,
       handleDeleteResourceGroup,
-      handleToCreateResourceGroup
+      handleToCreateResourceGroup,
     };
   },
 });

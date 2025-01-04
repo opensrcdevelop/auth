@@ -10,3 +10,4 @@ export const TENANT_NAME = "tenant_name";
 export const OAUTH_ISSUER = "oauth_issuer";
 export const REDIRECT_PATH = "redirect_path";
 export const REDIRECT_QUERY = "redirect_query";
+export const PERSISTENT_PAGE_INFO = "persistent_page_info";

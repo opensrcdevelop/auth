@@ -112,10 +112,10 @@ export default detailTs;
               <a-table
                 :data="permissions"
                 :bordered="false"
-                :pagination="permissionsPagination"
+                :pagination="permissionsPagination.pagination"
                 :scroll="{ y: '100%' }"
-                @pageChange="handlePageChange"
-                @pageSizeChange="handlePageSizeChange"
+                @pageChange="permissionsPagination.handlePageChange"
+                @pageSizeChange="permissionsPagination.handlePageSizeChange"
               >
                 <template #columns>
                   <a-table-column

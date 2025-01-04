@@ -77,18 +77,18 @@ export default indexTs;
               :style="{ width: '320px' }"
               placeholder="输入数据标签或值进行搜索"
               allow-clear
-              @search="handleGetDictDataList(1, 15)"
-              @keyup.enter.native="handleGetDictDataList(1, 15)"
-              @clear="handleGetDictDataList(1, 15)"
+              @search="handleGetDictDataList()"
+              @keyup.enter.native="handleGetDictDataList()"
+              @clear="handleGetDictDataList()"
             />
             <div class="dict-data-list">
               <a-table
                 :data="dictDataList"
                 :bordered="false"
                 :scroll="{ y: '100%' }"
-                :pagination="dictDataPagination"
-                @page-change="handlePageChange"
-                @page-size-change="handlePageSizeChange"
+                :pagination="dictDataPagination.pagination"
+                @page-change="dictDataPagination.handlePageChange"
+                @page-size-change="dictDataPagination.handlePageSizeChange"
               >
                 <template #columns>
                   <a-table-column

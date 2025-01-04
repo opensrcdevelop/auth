@@ -4,18 +4,12 @@ import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
+import { usePagination } from "@/hooks/usePagination";
 
 /** 资源列表 */
 const resourceList = reactive([]);
 const resourceSearchKeyword = ref(null);
-const resourceListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let resourceListPagination;
 
 /**
  * 获取资源列表
@@ -34,29 +28,16 @@ const handleGetResourceList = (page: number = 1, size: number = 15) => {
         resourceList.length = 0;
         resourceList.push(...data.list);
 
-        resourceListPagination.current = data.current;
-        resourceListPagination.total = data.total;
+        resourceListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取资源列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  resourceListPagination.current = page;
-  handleGetResourceList(page, resourceListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  resourceListPagination.pageSize = size;
-  handleGetResourceList(1, size);
 };
 
 /**
@@ -69,6 +50,7 @@ const handleToResourceDetail = (resource: any) => {
     path: "/permission/resource/detail",
     query: {
       id: resource.id,
+      active_tab: "resource_info",
     },
   });
 };
@@ -111,7 +93,6 @@ const handleDeleteResource = (resource: any) => {
   });
 };
 
-
 /** 授权对话框 */
 const authorizeVisible = ref(false);
 
@@ -120,17 +101,17 @@ const authorizeVisible = ref(false);
  */
 const handleAuthorize = () => {
   const globalVariables = useGlobalVariablesStore();
-  globalVariables.authorizeOptions.principal = undefined
-  globalVariables.authorizeOptions.principalId = undefined
-  globalVariables.authorizeOptions.principalType = undefined
+  globalVariables.authorizeOptions.principal = undefined;
+  globalVariables.authorizeOptions.principalId = undefined;
+  globalVariables.authorizeOptions.principalType = undefined;
 
   authorizeVisible.value = true;
-}
+};
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetResourceList();
+    resourceListPagination = usePagination("resourceList", ({ page, size }) => {
+      handleGetResourceList(page, size);
     });
 
     return {
@@ -138,8 +119,6 @@ export default defineComponent({
       resourceSearchKeyword,
       resourceListPagination,
       handleGetResourceList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToResourceDetail,
       handleToCreateResource,
       handleDeleteResource,

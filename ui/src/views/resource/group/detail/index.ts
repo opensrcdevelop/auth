@@ -5,10 +5,10 @@ import {
   getResourceGroupDetail,
   updateResourceGroup,
 } from "@/api/resourceGroup";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -32,6 +32,9 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  if (activeTab.value === "resource_list") {
+    handleGetGroupResourceList();
+  }
 };
 
 const resourceGroupId = ref("");
@@ -87,14 +90,7 @@ const handleGetResourceGroupDetail = (id: string) => {
 /** 组内资源列表 */
 const resourceList = reactive([]);
 const resourceSearchKeyword = ref("");
-const resoueceListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let resoueceListPagination;
 
 /**
  * 获取组内资源列表
@@ -104,7 +100,7 @@ const resoueceListPagination = reactive({
  * @param size 条数
  */
 const handleGetGroupResourceList = (
-  id: string,
+  id: string = resourceGroupId.value,
   page: number = 1,
   size: number = 15
 ) => {
@@ -118,8 +114,11 @@ const handleGetGroupResourceList = (
         resourceList.length = 0;
         resourceList.push(...data.list);
 
-        resoueceListPagination.current = data.current;
-        resoueceListPagination.total = data.total;
+        resoueceListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -131,7 +130,7 @@ const handleGetGroupResourceList = (
  * 提交资源组信息表单
  */
 const handleResourceGroupInfoFormSubmit = (formData: any) => {
-  delete formData.code
+  delete formData.code;
   updateResourceGroup(formData)
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -156,23 +155,7 @@ const handleResetResourceGroupInfoForm = () => {
  * 搜索组内资源
  */
 const handleSearchResource = () => {
-  handleGetGroupResourceList(resourceGroupId.value);
-}
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  resoueceListPagination.current = page;
-  handleGetGroupResourceList(resourceGroupId.value, page, resoueceListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  resoueceListPagination.pageSize = size;
-  handleGetGroupResourceList(resourceGroupId.value, 1, size);
+  handleGetGroupResourceList();
 };
 
 /**
@@ -183,9 +166,10 @@ const handleToResourceDetail = (resource: any) => {
     path: "/permission/resource/detail/",
     query: {
       id: resource.id,
-    }
-  })
-}
+      active_tab: "resource_info",
+    },
+  });
+};
 
 /**
  * 跳转创建资源
@@ -195,20 +179,25 @@ const handleToCreateResource = () => {
   globalVariables.resourceGroupId = resourceGroupId.value;
   globalVariables.saveData();
   router.push({
-    path: "/permission/resource/create/"
-  })
-}
+    path: "/permission/resource/create/",
+  });
+};
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const resourceGroupId = getQueryString("id");
+    resoueceListPagination = usePagination(
+      `${resourceGroupId}_resourceList`,
+      ({ page, size }) => {
+        if (getQueryString("active_tab") === "resource_list") {
+          handleGetGroupResourceList(resourceGroupId, page, size);
+        }
       }
-      const resourceGroupId = route.query.id as string;
+    );
+
+    onMounted(() => {
+      activeTab.value = getQueryString("active_tab") || "resource_group_info";
       handleGetResourceGroupDetail(resourceGroupId);
-      handleGetGroupResourceList(resourceGroupId);
     });
 
     return {
@@ -226,10 +215,8 @@ export default defineComponent({
       resourceList,
       resoueceListPagination,
       handleSearchResource,
-      handlePageChange,
-      handlePageSizeChange,
       handleToResourceDetail,
-      handleToCreateResource
+      handleToCreateResource,
     };
   },
 });

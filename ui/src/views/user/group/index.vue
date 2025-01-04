@@ -31,9 +31,9 @@ export default userGroupTs;
       <a-table
         :bordered="false"
         :data="userGroupList"
-        :pagination="userGroupListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="userGroupListPagination.pagination"
+        @page-change="userGroupListPagination.handlePageChange"
+        @page-size-change="userGroupListPagination.handlePageSizeChange"
         :scroll="{ y: '100%' }"
       >
         <template #columns>

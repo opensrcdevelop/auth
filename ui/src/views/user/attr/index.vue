@@ -32,9 +32,9 @@ export default userAttrTs;
         :data="userColumnList"
         :bordered="false"
         :scroll="{ y: '100%' }"
-        :pagination="userColumnListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="userColumnListPagination.pagination"
+        @page-change="userColumnListPagination.handlePageChange"
+        @page-size-change="userColumnListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column

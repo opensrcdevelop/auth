@@ -1,15 +1,15 @@
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
-import { useRoute } from "vue-router";
 import {
   getResourceDetail,
   getResourcePermissions,
   updateResource,
 } from "@/api/resource";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 import { deletePermission } from "@/api/permission";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -33,6 +33,9 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  if (activeTab.value === "permission_list") {
+    handleGetResourcePermissions();
+  }
 };
 
 const resourceId = ref("");
@@ -127,14 +130,7 @@ const handleResetResourceInfoForm = () => {
 /** 权限信息  */
 const permissions = reactive([]);
 const permissionSearchKeyword = ref(null);
-const permissionsPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let permissionsPagination;
 
 /**
  * 获取资源内权限
@@ -144,7 +140,7 @@ const permissionsPagination = reactive({
  * @param size 条数
  */
 const handleGetResourcePermissions = (
-  id: string,
+  id: string = resourceId.value,
   page: number = 1,
   size: number = 15
 ) => {
@@ -158,8 +154,11 @@ const handleGetResourcePermissions = (
         permissions.length = 0;
         permissions.push(...data.list);
 
-        permissionsPagination.total = data.total;
-        permissionsPagination.current = data.current;
+        permissionsPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -179,26 +178,6 @@ const handleSearchResourcePermissions = () => {
 };
 
 /**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  permissionsPagination.current = page;
-  handleGetResourcePermissions(
-    resourceId.value,
-    page,
-    permissionsPagination.pageSize
-  );
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  permissionsPagination.pageSize = size;
-  handleGetResourcePermissions(resourceId.value, 1, size);
-};
-
-/**
  * 跳转到权限详情
  */
 const handleToPermissionDetail = (permission: any) => {
@@ -206,6 +185,7 @@ const handleToPermissionDetail = (permission: any) => {
     path: "/permission/detail",
     query: {
       id: permission.permissionId,
+      active_tab: "permission_info",
     },
   });
 };
@@ -249,14 +229,19 @@ const handleDeletePermission = (permission: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const resourceId = getQueryString("id");
+    permissionsPagination = usePagination(
+      `${resourceId}_resourcePermissions`,
+      ({ page, size }) => {
+        if (getQueryString("active_tab") === "permission_list") {
+          handleGetResourcePermissions(resourceId, page, size);
+        }
       }
-      const resourceId = route.query.id as string;
+    );
+
+    onMounted(() => {
+      activeTab.value = getQueryString("active_tab") || "resource_info";
       handleGetResourceDetail(resourceId);
-      handleGetResourcePermissions(resourceId);
     });
 
     return {
@@ -273,13 +258,11 @@ export default defineComponent({
       permissionsPagination,
       permissionSearchKeyword,
       handleSearchResourcePermissions,
-      handlePageChange,
-      handlePageSizeChange,
       handleToPermissionDetail,
       handleResourceInfoFormSubmit,
       handleResetResourceInfoForm,
       handleToCreatePermission,
-      handleDeletePermission
+      handleDeletePermission,
     };
   },
 });

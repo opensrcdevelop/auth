@@ -6,10 +6,10 @@ import {
   getDictDetail,
   updateDict,
 } from "@/api/dict";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -33,6 +33,9 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  if (activeTab.value === "dict_data") {
+    handleGetDictDataList();
+  }
 };
 
 /** 字典信息表单 */
@@ -67,8 +70,6 @@ const handleGetDictDetail = (id: string) => {
         dictInfoForm.name = data.name;
         dictInfoForm.code = data.code;
         dictInfoForm.desc = data.desc;
-
-        handleGetDictDataList();
       });
     })
     .catch((err: any) => {
@@ -105,14 +106,7 @@ const handleDictInfoFormSubmit = (formData: any) => {
 /** 字典数据列表 */
 const dictDataSerachKeyword = ref(null);
 const dictDataList = reactive([]);
-const dictDataPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let dictDataPagination;
 
 /**
  * 获取字典数据列表
@@ -120,8 +114,12 @@ const dictDataPagination = reactive({
  * @param page 页数
  * @param size 条数
  */
-const handleGetDictDataList = (page: number = 1, size: number = 15) => {
-  getDictDataList(dictId.value, {
+const handleGetDictDataList = (
+  id: string = dictId.value,
+  page: number = 1,
+  size: number = 15
+) => {
+  getDictDataList(id, {
     page,
     size,
     keyword: dictDataSerachKeyword.value,
@@ -131,29 +129,16 @@ const handleGetDictDataList = (page: number = 1, size: number = 15) => {
         dictDataList.length = 0;
         dictDataList.push(...data.list);
 
-        dictDataPagination.current = data.current;
-        dictDataPagination.total = data.total;
+        dictDataPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取字典数据列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  dictDataPagination.current = page;
-  handleGetDictDataList(page, dictDataPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  dictDataPagination.pageSize = size;
-  handleGetDictDataList(1, size);
 };
 
 /**
@@ -166,6 +151,7 @@ const handleToDictDataDetail = (dictData: any) => {
     path: "/dict/data/detail",
     query: {
       id: dictData.id,
+      active_tab: "dict_data_info",
     },
   });
 };
@@ -210,12 +196,19 @@ const handleDeleteDictData = (dicData: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const dictId = getQueryString("id");
+    const tab = getQueryString("active_tab");
+    dictDataPagination = usePagination(
+      `${dictId}_dictDataList`,
+      ({ page, size }) => {
+        if (tab === "dict_data") {
+          handleGetDictDataList(dictId, page, size);
+        }
       }
-      const dictId = route.query.id as string;
+    );
+
+    onMounted(() => {
+      activeTab.value = tab || "dict_info";
       handleGetDictDetail(dictId);
     });
 
@@ -234,8 +227,6 @@ export default defineComponent({
       dictDataList,
       dictDataPagination,
       handleGetDictDataList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToDictDataDetail,
       handleToCreateDictData,
       handleDeleteDictData,

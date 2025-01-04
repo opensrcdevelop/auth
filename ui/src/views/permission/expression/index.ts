@@ -4,18 +4,12 @@ import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
+import { usePagination } from "@/hooks/usePagination";
 
 /** 权限表达式列表 */
 const permissionExpList = reactive([]);
 const permissionExpSearchKeyword = ref(null);
-const permissionExpListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let permissionExpListPagination;
 
 /**
  * 获取权限表达式列表
@@ -34,29 +28,16 @@ const handleGetPermissionExpList = (page: number = 1, size: number = 15) => {
         permissionExpList.length = 0;
         permissionExpList.push(...data.list);
 
-        permissionExpListPagination.current = data.current;
-        permissionExpListPagination.total = data.total;
+        permissionExpListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取权限表达式列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  permissionExpListPagination.current = page;
-  handleGetPermissionExpList(page, permissionExpListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  permissionExpListPagination.pageSize = size;
-  handleGetPermissionExpList(1, size);
 };
 
 /**
@@ -69,6 +50,7 @@ const handleToPermissionExpDetail = (permissionExp: any) => {
     path: "/permission/expression/detail",
     query: {
       id: permissionExp.id,
+      active_tab: "condition_info",
     },
   });
 };
@@ -120,25 +102,26 @@ const handleToDebugPermissionExp = (permissionExp: any) => {
   router.push({
     path: "/permission/expression/debug",
   });
-}
+};
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetPermissionExpList();
-    });
+    permissionExpListPagination = usePagination(
+      "permissionExpList",
+      ({ page, size }) => {
+        handleGetPermissionExpList(page, size);
+      }
+    );
 
     return {
       permissionExpList,
       permissionExpListPagination,
       permissionExpSearchKeyword,
       handleGetPermissionExpList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToPermissionExpDetail,
       handleDeletePermissionExp,
       handleToCreatePermssionExp,
-      handleToDebugPermissionExp
+      handleToDebugPermissionExp,
     };
   },
 });

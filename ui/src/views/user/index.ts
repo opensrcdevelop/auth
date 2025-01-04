@@ -11,6 +11,7 @@ import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { getEnabledDictData } from "@/api/dict";
+import { usePagination } from "@/hooks/usePagination";
 
 const tableColumns = reactive([]);
 const sortableColumns = reactive([]);
@@ -30,6 +31,9 @@ const allUserColumnsForFilter = reactive([]);
 
 /** 字典数据值 */
 const allDictDatas = reactive({});
+
+// 用户列表分页
+let userListPagination;
 
 /**
  * 获取用户属性
@@ -334,6 +338,11 @@ const handleResetFilterUser = () => {
  * 获取用户列表
  */
 const handleGetUserList = (page: number = 1, size: number = 15) => {
+  if (userSerachKeyword.value) {
+    handleSearchUser(userSerachKeyword.value, page, size);
+    return;
+  }
+
   const filters = userListFilters.filters.filter(
     (item) => item.key && item.filterType
   );
@@ -350,8 +359,11 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
         userList.length = 0;
         userList.push(...data.list);
 
-        userListPagination.current = data.current;
-        userListPagination.total = data.total;
+        userListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -359,55 +371,33 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
     });
 };
 
-const userListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
-
-/**
- * 页数变化
- *
- * @param page 页数
- */
-const handlePageChange = (page: number) => {
-  userListPagination.current = page;
-  handleGetUserList(page, userListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- *
- * @param page 分页大小
- */
-const handlePageSizeChange = (size: number) => {
-  userListPagination.pageSize = size;
-  handleGetUserList(1, size);
-};
-
 /** 用户检索关键字 */
-const userSerachKeyword = ref("");
+const userSerachKeyword = ref(null);
 
 /**
  * 搜索用户
  *
  * @param username 用户名
  */
-const handleSearchUser = (username: string) => {
+const handleSearchUser = (
+  username: string,
+  page: number = 1,
+  size: number = 15
+) => {
   searchUser(username, {
-    page: 1,
-    size: 15,
+    page,
+    size,
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         userList.length = 0;
         userList.push(...data.list);
 
-        userListPagination.current = data.current;
-        userListPagination.total = data.total;
+        userListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -432,6 +422,7 @@ const handleToUserDetail = (user: any) => {
     path: "/user/detail",
     query: {
       id: user.userId,
+      "active_tab": "user_info",
     },
   });
 };
@@ -487,20 +478,23 @@ const handleUserColumnResize = (dataIndex: string, width: number) => {
     if (column) {
       updateUserAttr({
         id: column.id,
-        displayWidth: width
+        displayWidth: width,
       }).catch((err: any) => {
         handleApiError(err, "更新用户字段");
-      })
+      });
     }
   }, 800);
-}
+};
 
 export default defineComponent({
   setup() {
+    userListPagination = usePagination("userList", ({ page, size }) => {
+      handleGetUserList(page, size);
+    });
+
     onMounted(() => {
       handlGetUserAttrs();
       handleGetAllUserAttrs();
-      handleGetUserList();
       handleGetAllUserColumnsForFilter();
     });
 
@@ -513,15 +507,13 @@ export default defineComponent({
       handleDragEnd,
       userList,
       userListPagination,
-      handlePageChange,
-      handlePageSizeChange,
       handleUnDisplayUserAttr,
       selectableColumns,
       handleDisplayUserAttr,
       sortableColumnsLoading,
       selectableColumnsLoading,
       userSerachKeyword,
-      handleSearchUser,
+      handleGetUserList,
       handleSearchUserClear,
       handleToUserDetail,
       handleToCreateUser,
@@ -539,7 +531,7 @@ export default defineComponent({
       handleResetFilterUser,
       allUserColumnsForFilter,
       allDictDatas,
-      handleUserColumnResize
+      handleUserColumnResize,
     };
   },
 });

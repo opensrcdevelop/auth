@@ -84,11 +84,11 @@ export default detailTs;
             </div>
             <a-table
               :data="rolePrincipals"
-              :pagination="rolePrincipalsPagination"
+              :pagination="rolePrincipalsPagination.pagination"
               :bordered="false"
               :scroll="{ y: '100%' }"
-              @page-size-change="handlePageSizeChange"
-              @page-change="handlePageChange"
+              @page-size-change="rolePrincipalsPagination.handlePageSizeChange"
+              @page-change="rolePrincipalsPagination.handlePageChange"
             >
               <template #columns>
                 <a-table-column title="主体名称">
@@ -145,11 +145,11 @@ export default detailTs;
             <a-table
               :data="permissions"
               :bordered="false"
-              :pagination="permissionsPagination"
-              @page-change="handlePermissionsPageChange"
-              @page-size-change="handlePermissionsPageSizeChange"
+              :pagination="permissionsPagination.pagination"
+              @page-change="permissionsPagination.handlePageChange"
+              @page-size-change="permissionsPagination.handlePageSizeChange"
               :expandable="{ width: 30 }"
-              row-key="permissionId"
+              row-key="authorizeId"
             >
               <template #columns>
                 <a-table-column

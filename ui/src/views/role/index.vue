@@ -31,10 +31,10 @@ export default roleTs;
       <a-table
         :data="roleList"
         :bordered="false"
-        :pagination="roleListPagination"
+        :pagination="roleListPagination.pagination"
         :scroll="{ y: '100%' }"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        @page-change="roleListPagination.handlePageChange"
+        @page-size-change="roleListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column

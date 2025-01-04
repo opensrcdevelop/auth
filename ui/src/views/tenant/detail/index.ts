@@ -1,9 +1,8 @@
 import { getTenantDetail, updateTenant } from "@/api/tenant";
 import router from "@/router";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Notification } from "@arco-design/web-vue";
 import { defineComponent, onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
 
 /**
  * 返回上一级
@@ -50,7 +49,7 @@ const tenantInfoFormFormRules = {
 const endpointInfo = reactive({
   issuer: undefined,
   consoleUrl: undefined,
-})
+});
 
 /**
  * 获取租户详情
@@ -112,12 +111,8 @@ const handleTenantInfoFormSubmit = (formData: any) => {
 export default defineComponent({
   setup() {
     onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
-      }
-      const tenantId = route.query.id as string;
-      handleGetTenantDetail(tenantId);
+      activeTab.value = getQueryString("active_tab") || "tanant_info";
+      handleGetTenantDetail(getQueryString("id"));
     });
 
     return {
@@ -131,7 +126,7 @@ export default defineComponent({
       tenantInfoFormRef,
       handleTenantInfoFormSubmit,
       handleResetTenantInfoForm,
-      endpointInfo
+      endpointInfo,
     };
   },
 });

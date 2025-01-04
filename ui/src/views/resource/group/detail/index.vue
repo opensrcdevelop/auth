@@ -73,7 +73,7 @@ export default detailTs;
             </a-form>
           </div>
         </a-tab-pane>
-        <a-tab-pane key="redource_list" title="资源列表">
+        <a-tab-pane key="resource_list" title="资源列表">
           <div class="tab-container">
             <div class="info-title">资源列表</div>
             <a-input-search
@@ -88,11 +88,11 @@ export default detailTs;
             <a-table
               class="resource-list"
               :data="resourceList"
-              :pagination="resoueceListPagination"
+              :pagination="resoueceListPagination.pagination"
               :bordered="false"
               :scroll="{ y: '100%' }"
-              @page-size-change="handlePageSizeChange"
-              @page-change="handlePageChange"
+              @page-size-change="resoueceListPagination.handlePageSizeChange"
+              @page-change="resoueceListPagination.handlePageChange"
             >
               <template #columns>
                 <a-table-column
