@@ -5,12 +5,14 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # UI
+  - package-ecosystem: "npm"
+    directory: "/ui"
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "gradle" # See documentation for possible values
-    directory: "/" # Location of package manifests
+      interval: "daily"
+    target-branch: "develop"
+  - package-ecosystem: "gradle"
+    directory: "/"
     schedule:
-      interval: "weekly"
-      
+      interval: "daily"
+    target-branch: "develop"
