@@ -8,13 +8,13 @@ import {
   removeUserGroupMapping,
   updateUserGroup,
 } from "@/api/userGroup";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { searchUser } from "@/api/user";
 import { cancelAuthorization } from "@/api/permission";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -38,6 +38,10 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+
+  if (tabKey === "permission_management") {
+    handleGetUserGroupPermissions();
+  }
 };
 
 const userGroupName = ref("");
@@ -83,8 +87,6 @@ const handleGetUserGroupDetail = (id: string) => {
         userGroupInfoForm.name = data.name;
         userGroupInfoForm.code = data.code;
         userGroupInfoForm.desc = data.desc;
-
-        handleGetUserGroupPermissions();
       });
     })
     .catch((err: any) => {
@@ -94,14 +96,7 @@ const handleGetUserGroupDetail = (id: string) => {
 
 /** 用户组权限 */
 const permissions = reactive([]);
-const permissionsPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let permissionsPagination;
 const authorizeSearchKeywords = reactive({
   // 资源组名称检索关键字
   resourceGroupName: undefined,
@@ -153,8 +148,12 @@ const permissionCodeFilter = {
 /**
  * 获取用户组权限
  */
-const handleGetUserGroupPermissions = (page: number = 1, size: number = 15) => {
-  getUserGroupPermissions(userGroupId.value, {
+const handleGetUserGroupPermissions = (
+  id: string = userGroupId.value,
+  page: number = 1,
+  size: number = 15
+) => {
+  getUserGroupPermissions(id, {
     page,
     size,
     resourceGroupNameSearchKeyword: authorizeSearchKeywords.resourceGroupName,
@@ -166,34 +165,17 @@ const handleGetUserGroupPermissions = (page: number = 1, size: number = 15) => {
       handleApiSuccess(result, (data: any) => {
         permissions.length = 0;
         permissions.push(...data.list);
-        
-        permissionsPagination.total = data.total;
-        permissionsPagination.current = data.current;
+
+        permissionsPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取用户组权限");
     });
-};
-
-/**
- * 用户组权限页数变化
- *
- * @param page 页数
- */
-const handlePermissionsPageChange = (page: number) => {
-  permissionsPagination.current = page;
-  handleGetUserGroupPermissions(page, permissionsPagination.pageSize);
-};
-
-/**
- * 用户组权限分页大小变化
- *
- * @param page 分页大小
- */
-const handlePermissionsPageSizeChange = (size: number) => {
-  permissionsPagination.pageSize = size;
-  handleGetUserGroupPermissions(1, size);
 };
 
 /**
@@ -205,14 +187,7 @@ const handleResetPermissionFilter = (keyword: string) => {
 };
 
 const groupUsers = reactive([]);
-const groupUsersPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let groupUsersPagination;
 
 /**
  * 获取组内用户
@@ -238,8 +213,11 @@ const handleGetGroupUsers = (
         groupUsers.length = 0;
         groupUsers.push(...data.list);
 
-        groupUsersPagination.current = data.current;
-        groupUsersPagination.total = data.total;
+        groupUsersPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
@@ -271,27 +249,6 @@ const handleUserGroupInfoFormSubmit = (formData: any) => {
 const handleResetUserGroupInfoForm = () => {
   handleGetUserGroupDetail(userGroupId.value);
   userGroupInfoFormRef.value.resetFields();
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  groupUsersPagination.pageSize = size;
-  handleGetGroupUsers(userGroupId.value, 1, size, searchGroupUserKeyword.value);
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  groupUsersPagination.current = page;
-  handleGetGroupUsers(
-    userGroupId.value,
-    page,
-    groupUsersPagination.pageSize,
-    searchGroupUserKeyword.value
-  );
 };
 
 /** 用户组成员搜索关键字 */
@@ -567,6 +524,7 @@ const handleToUserDetail = (user: any) => {
     path: "/user/detail",
     query: {
       id: user.id,
+      active_tab: "user_info",
     },
   });
 };
@@ -624,14 +582,25 @@ const handleToPermissionDetail = (id: string) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const userGroupId = getQueryString("id");
+    groupUsersPagination = usePagination(
+      `${userGroupId}_groupUsers`,
+      ({ page, size }) => {
+        handleGetGroupUsers(userGroupId, page, size);
       }
-      const userGroupId = route.query.id as string;
-      handleGetUserGroupDetail(userGroupId);
-      handleGetGroupUsers(userGroupId);
+    );
+    permissionsPagination = usePagination(
+      `${userGroupId}_userGroupPermissions`,
+      ({ page, size }) => {
+        if (getQueryString("active_tab") === "permission_management") {
+          handleGetUserGroupPermissions(userGroupId, page, size);
+        }
+      }
+    );
+
+    onMounted(() => {
+      activeTab.value = getQueryString("active_tab") || "user_group_info";
+      handleGetUserGroupDetail(getQueryString("id"));
     });
 
     return {
@@ -649,8 +618,6 @@ export default defineComponent({
       handleResetUserGroupInfoForm,
       searchGroupUserKeyword,
       handleSearchGroupUser,
-      handlePageSizeChange,
-      handlePageChange,
       addGroupUserModalVisible,
       handleOpenAddGroupUserModal,
       handleCloseAddGroupUserModal,
@@ -682,8 +649,6 @@ export default defineComponent({
       permissionsPagination,
       authorizeSearchKeywords,
       handleGetUserGroupPermissions,
-      handlePermissionsPageChange,
-      handlePermissionsPageSizeChange,
       resourceGroupNameFilter,
       resourceNameFilter,
       permissionNameFilter,

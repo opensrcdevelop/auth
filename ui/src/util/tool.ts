@@ -1,5 +1,6 @@
-import { Notification } from "@arco-design/web-vue";
+import {Notification} from "@arco-design/web-vue";
 import CryptoJS from "crypto-js";
+import {OAUTH_ISSUER, TENANT_CODE} from "./constants";
 
 /**
  * 获取 Query 参数
@@ -80,6 +81,16 @@ export const base64Str = (str: string) => {
 };
 
 /**
+ * 解析 base64 字符串
+ * 
+ * @param str base64 字符串
+ * @returns 原字符串
+ */
+export const decodeBase64Str = (str: string) => {
+  return CryptoJS.enc.Base64.parse(str).toString(CryptoJS.enc.Utf8);
+}
+
+/**
  * codeVerifier 转 codeChallenge
  *
  * @param codeVerifier codeVerifier
@@ -114,8 +125,8 @@ export const getSubDomain = () => {
  * @returns
  */
 export const getOAuthIssuer = () => {
-  if (localStorage.getItem("OAuthIssuer")) {
-    return localStorage.getItem("OAuthIssuer");
+  if (localStorage.getItem(OAUTH_ISSUER)) {
+    return localStorage.getItem(OAUTH_ISSUER);
   }
   return import.meta.env.VITE_DEFAULT_OAUTH_ISSUER;
 };
@@ -126,9 +137,9 @@ export const getOAuthIssuer = () => {
  * @returns Console Url
  */
 export const getConsoleUrl = () => {
-  if (localStorage.getItem("tenantCode")) {
+  if (localStorage.getItem(TENANT_CODE)) {
     const tmpUrl = new URL(import.meta.env.VITE_DEFAULT_CONSOLE_URL);
-    return `${tmpUrl.protocol}//${localStorage.getItem("tenantCode")}.${
+    return `${tmpUrl.protocol}//${localStorage.getItem(TENANT_CODE)}.${
       tmpUrl.hostname
     }${tmpUrl.port ? `:${tmpUrl.port}` : ""}`;
   } else {

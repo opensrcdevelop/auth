@@ -34,9 +34,9 @@ export default expressionTs;
         :data="permissionExpList"
         :bordered="false"
         :scroll="{ y: '100%' }"
-        :pagination="permissionExpListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="permissionExpListPagination.pagination"
+        @page-change="permissionExpListPagination.handlePageChange"
+        @page-size-change="permissionExpListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column

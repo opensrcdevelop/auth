@@ -1,20 +1,14 @@
 import { deleteDict, getDictList } from "@/api/dict";
+import { usePagination } from "@/hooks/usePagination";
 import router from "@/router";
 import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import { defineComponent, reactive, ref } from "vue";
 
 /** 字典列表 */
 const dictList = reactive([]);
 const dictSerachKeyword = ref(null);
-const dictPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let dictPagination;
 
 /**
  * 获取字典列表
@@ -33,29 +27,12 @@ const handleGetDictList = (page: number = 1, size: number = 15) => {
         dictList.length = 0;
         dictList.push(...data.list);
 
-        dictPagination.current = data.current;
-        dictPagination.total = data.total;
+        dictPagination.updatePagination(data.current, data.total, data.size);
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取字典列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  dictPagination.current = page;
-  handleGetDictList(page, dictPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  dictPagination.pageSize = size;
-  handleGetDictList(1, size);
 };
 
 /**
@@ -68,6 +45,7 @@ const handleToDictDetail = (dict: any) => {
     path: "/dict/detail",
     query: {
       id: dict.id,
+      active_tab: "dict_info",
     },
   });
 };
@@ -110,8 +88,8 @@ const handleDeleteDict = (dict: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetDictList();
+    dictPagination = usePagination("dictList", ({ page, size }) => {
+      handleGetDictList(page, size);
     });
 
     return {
@@ -119,8 +97,6 @@ export default defineComponent({
       dictSerachKeyword,
       dictPagination,
       handleGetDictList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToDictDetail,
       handleToCreateDict,
       handleDeleteDict,

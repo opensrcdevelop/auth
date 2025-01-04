@@ -1,4 +1,5 @@
 import { deleteTenant, getTenantList } from "@/api/tenant";
+import { usePagination } from "@/hooks/usePagination";
 import router from "@/router";
 import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
@@ -7,14 +8,7 @@ import { defineComponent, onMounted, reactive, ref } from "vue";
 /** 租户列表 */
 const tenantList = reactive([]);
 const tenantSerachKeyword = ref(null);
-const tenantPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let tenantPagination;
 
 /**
  * 获取租户列表
@@ -33,29 +27,12 @@ const handleGetTenantList = (page: number = 1, size: number = 15) => {
         tenantList.length = 0;
         tenantList.push(...data.list);
 
-        tenantPagination.current = data.current;
-        tenantPagination.total = data.total;
+        tenantPagination.updatePagination(data.current, data.total, data.size);
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取租户列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  tenantPagination.current = page;
-  handleGetTenantList(page, tenantPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  tenantPagination.pageSize = size;
-  handleGetTenantList(1, size);
 };
 
 /**
@@ -68,6 +45,7 @@ const handleToTenantDetail = (tenant: any) => {
     path: "/tenant/detail",
     query: {
       id: tenant.id,
+      active_tab: "tanant_info",
     },
   });
 };
@@ -111,8 +89,8 @@ const handleDeleteTenant = (tenant: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetTenantList();
+    tenantPagination = usePagination("tenantList", ({ page, size }) => {
+      handleGetTenantList(page, size);
     });
 
     return {
@@ -120,11 +98,9 @@ export default defineComponent({
       tenantSerachKeyword,
       tenantPagination,
       handleGetTenantList,
-      handlePageChange,
-      handlePageSizeChange,
       handleToTenantDetail,
       handleToCreateTenant,
-      handleDeleteTenant
+      handleDeleteTenant,
     };
   },
 });

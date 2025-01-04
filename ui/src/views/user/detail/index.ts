@@ -12,10 +12,10 @@ import {
 } from "@/api/user";
 import {
   generateRandomString,
+  getQueryString,
   handleApiError,
   handleApiSuccess,
 } from "@/util/tool";
-import { useRoute } from "vue-router";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { addRoleMapping, getRoleList, removeRoleMapping } from "@/api/role";
 import {
@@ -27,6 +27,7 @@ import { cancelAuthorization } from "@/api/permission";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
 import { getEnabledDictData } from "@/api/dict";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -152,15 +153,8 @@ const handleGetUserDetail = (id: string) => {
 };
 
 /** 用户权限 */
+let permissionsPagination;
 const permissions = reactive([]);
-const permissionsPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
 const authorizeSearchKeywords = reactive({
   // 资源组名称检索关键字
   resourceGroupName: undefined,
@@ -230,33 +224,12 @@ const handleGetUserPermissions = (
         permissions.length = 0;
         permissions.push(...data.list);
 
-        permissionsPagination.total = data.total;
-        permissionsPagination.current = data.current;
+        permissionsPagination.updatePagination(data.current, data.total, data.size);
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取用户权限");
     });
-};
-
-/**
- * 用户权限页数变化
- *
- * @param page 页数
- */
-const handlePermissionsPageChange = (page: number) => {
-  permissionsPagination.current = page;
-  handleGetUserPermissions(userId.value, page, permissionsPagination.pageSize);
-};
-
-/**
- * 用户权限分页大小变化
- *
- * @param page 分页大小
- */
-const handlePermissionsPageSizeChange = (size: number) => {
-  permissionsPagination.pageSize = size;
-  handleGetUserPermissions(userId.value, 1, size);
 };
 
 /**
@@ -1024,23 +997,22 @@ const handleClearAuthorizedTokensByLoginId = (loginLog: any) => {
     });
 };
 
-
-
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
+    const userId = getQueryString("id");
+    permissionsPagination = usePagination(
+      `${userId}_userPermissions`,
+      ({ page, size }) => {
+        if (getQueryString("active_tab") === "permission_management") {
+          handleGetUserPermissions(userId, page, size);
+        }
       }
-      const userId = route.query.id as string;
+    );
+
+    onMounted(() => {
+      activeTab.value = getQueryString("active_tab") || "user_info";
       handleGetUserDetail(userId);
       handleGetUserExtAttrs();
-
-      if (activeTab.value === "permission_management") {
-        handleGetUserPermissions(userId);
-      }
-
       if (activeTab.value === "login_logs") {
         handleGetUserLoginLogs(userId);
       }
@@ -1118,8 +1090,6 @@ export default defineComponent({
       permissionsPagination,
       authorizeSearchKeywords,
       handleGetUserPermissions,
-      handlePermissionsPageChange,
-      handlePermissionsPageSizeChange,
       resourceGroupNameFilter,
       resourceNameFilter,
       permissionNameFilter,
@@ -1130,7 +1100,7 @@ export default defineComponent({
       loginLogsPagination,
       handleLoginLogsPageChange,
       handleLoginLogsPageSizeChange,
-      handleClearAuthorizedTokensByLoginId
+      handleClearAuthorizedTokensByLoginId,
     };
   },
 });

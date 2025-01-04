@@ -3,17 +3,11 @@ import { handleApiError, handleApiSuccess } from "@/util/tool";
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { usePagination } from "@/hooks/usePagination";
 
 const roleList = reactive([]);
 const searchKeyword = ref("");
-const roleListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let roleListPagination;
 
 /**
  * 获取角色列表
@@ -29,29 +23,16 @@ const handleGetRoleList = (page: number = 1, size: number = 15) => {
         roleList.length = 0;
         roleList.push(...data.list);
 
-        roleListPagination.current = data.current;
-        roleListPagination.total = data.total;
+        roleListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取角色列表");
     });
-};
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  roleListPagination.current = page;
-  handleGetRoleList(page, roleListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  roleListPagination.pageSize = size;
-  handleGetRoleList(1, size);
 };
 
 /**
@@ -64,6 +45,7 @@ const handleToRoleDetail = (role: any) => {
     path: "/role/detail",
     query: {
       id: role.id,
+      active_tab: "role_info",
     },
   });
 };
@@ -103,8 +85,8 @@ const handleDeleteRole = (role: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetRoleList(null);
+    roleListPagination = usePagination("roleList", ({ page, size }) => {
+      handleGetRoleList(page, size);
     });
 
     return {
@@ -115,8 +97,6 @@ export default defineComponent({
       handleToCreateRole,
       handleDeleteRole,
       roleListPagination,
-      handlePageChange,
-      handlePageSizeChange,
     };
   },
 });

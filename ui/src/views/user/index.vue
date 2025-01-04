@@ -24,8 +24,8 @@ export default userTs;
             placeholder="输入用户名进行搜索"
             allow-clear
             v-model="userSerachKeyword"
-            @search="handleSearchUser(userSerachKeyword)"
-            @keyup.enter.native="handleSearchUser(userSerachKeyword)"
+            @search="handleGetUserList(1, 15)"
+            @keyup.enter.native="handleGetUserList(1, 15)"
             @clear="handleSearchUserClear"
           />
           <a-trigger trigger="click" :popup-offset="8">
@@ -70,7 +70,7 @@ export default userTs;
                         </a-select>
                       </a-form-item>
                     </a-col>
-                    <a-col :span="8">
+                    <a-col :span="6">
                       <a-form-item
                         :field="`filters[${index}].filterType`"
                         hide-label
@@ -139,7 +139,7 @@ export default userTs;
                         </a-select>
                       </a-form-item>
                     </a-col>
-                    <a-col :span="8">
+                    <a-col :span="10">
                       <a-form-item
                         :field="`filters[${index}].value`"
                         hide-label
@@ -318,9 +318,9 @@ export default userTs;
       <a-table
         :bordered="false"
         :data="userList"
-        :pagination="userListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="userListPagination.pagination"
+        @page-change="userListPagination.handlePageChange"
+        @page-size-change="userListPagination.handlePageSizeChange"
         :scroll="{ y: '100%' }"
         style="margin-bottom: 32px"
         column-resizable

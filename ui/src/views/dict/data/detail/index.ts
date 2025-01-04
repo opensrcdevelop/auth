@@ -1,9 +1,8 @@
 import { getDictDataDetail, updateDictData } from "@/api/dict";
 import router from "@/router";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Notification } from "@arco-design/web-vue";
 import { defineComponent, onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
 
 /**
  * 返回上一级
@@ -102,12 +101,8 @@ const handleDictDataInfoFormSubmit = (formData: any) => {
 export default defineComponent({
   setup() {
     onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
-      }
-      const dictDataId = route.query.id as string;
-      handleGetDictDatatDetail(dictDataId);
+      activeTab.value = getQueryString("active_tab") || "dict_data_info";
+      handleGetDictDatatDetail(getQueryString("id"));
     })
 
     return {

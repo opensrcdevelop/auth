@@ -37,9 +37,9 @@ export default resourceTs;
         :data="resourceList"
         :bordered="false"
         :scroll="{ y: '100%' }"
-        :pagination="resourceListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="resourceListPagination.pagination"
+        @page-change="resourceListPagination.handlePageChange"
+        @page-size-change="resourceListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column

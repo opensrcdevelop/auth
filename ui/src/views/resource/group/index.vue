@@ -32,9 +32,9 @@ export default resourceGroupTs;
         :data="resourceGroupList"
         :bordered="false"
         :scroll="{ y: '100%' }"
-        :pagination="resourceGroupListPagination"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        :pagination="resourceGroupListPagination.pagination"
+        @page-change="resourceGroupListPagination.handlePageChange"
+        @page-size-change="resourceGroupListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column

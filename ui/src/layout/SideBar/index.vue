@@ -30,12 +30,13 @@
 
 <script setup lang="ts">
 import Menu from "./components/Menu.vue";
-import { computed, onMounted, reactive } from "vue";
-import { getCurrentUser } from "@/api/user";
-import { handleApiSuccess, handleApiError } from "@/util/tool";
-import { logoutSubmit } from "@/api/logout";
-import { Modal, Notification } from "@arco-design/web-vue";
+import {onMounted, reactive} from "vue";
+import {getCurrentUser} from "@/api/user";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {logoutSubmit} from "@/api/logout";
+import {Modal, Notification} from "@arco-design/web-vue";
 import router from "@/router";
+import {AUTH_TOKENS} from "@/util/constants";
 
 /** 当前用户信息 */
 const currentUser = reactive({
@@ -79,7 +80,7 @@ const handleLogout = () => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("退出成功");
-            localStorage.removeItem("accessToken");
+            localStorage.removeItem(AUTH_TOKENS);
 
             // 跳转到登录页
             router.push({

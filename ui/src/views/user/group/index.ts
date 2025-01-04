@@ -1,19 +1,13 @@
 import { deleteUserGroup, getUserGroupList } from "@/api/userGroup";
 import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import { defineComponent, reactive, ref } from "vue";
 import router from "@/router";
 import { Modal, Notification } from "@arco-design/web-vue";
+import { usePagination } from "@/hooks/usePagination";
 
 const userGroupList = reactive([]);
 const searchKeyword = ref("");
-const userGroupListPagination = reactive({
-  total: 0,
-  current: 1,
-  pageSize: 15,
-  showPageSize: true,
-  showTotal: true,
-  pageSizeOptions: [15, 25, 50],
-});
+let userGroupListPagination;
 
 /**
  * 获取用户组列表
@@ -29,31 +23,13 @@ const handleGetUserGroupList = (page: number = 1, size: number = 15) => {
         userGroupList.length = 0;
         userGroupList.push(...data.list);
 
-        userGroupListPagination.current = data.current;
-        userGroupListPagination.total = data.total;
+        userGroupListPagination.updatePagination(data.current, data.total, data.size);
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取用户组列表");
     });
 };
-
-/**
- * 页数变化
- */
-const handlePageChange = (page: number) => {
-  userGroupListPagination.current = page;
-  handleGetUserGroupList(page, userGroupListPagination.pageSize);
-};
-
-/**
- * 分页大小变化
- */
-const handlePageSizeChange = (size: number) => {
-  userGroupListPagination.pageSize = size;
-  handleGetUserGroupList(1, size);
-};
-
 
 /**
  * 跳转用户组详情
@@ -65,6 +41,7 @@ const hantoToUserGroupDetail = (userGroup: any) => {
     path: "/user/group/detail",
     query: {
       id: userGroup.id,
+      "active_tab": "user_group_info"
     },
   });
 };
@@ -106,8 +83,8 @@ const handleDeleteUserGroup = (userGroup: any) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
-      handleGetUserGroupList(null);
+    userGroupListPagination = usePagination("userGroupList", ({page, size}) => {
+      handleGetUserGroupList(page, size);
     });
 
     return {
@@ -118,8 +95,6 @@ export default defineComponent({
       handleToCreateUserGroup,
       handleDeleteUserGroup,
       userGroupListPagination,
-      handlePageChange,
-      handlePageSizeChange,
     };
   },
 });

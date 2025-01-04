@@ -1,8 +1,7 @@
 import { defineComponent, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import { getUserAttrDetail, updateUserAttr } from "@/api/user";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Notification } from "@arco-design/web-vue";
 import { getDictList } from "@/api/dict";
 
@@ -132,13 +131,8 @@ const handleUserColumnInfoFormSubmit = () => {
 export default defineComponent({
   setup() {
     onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
-      }
-      const userColumnId = route.query.id as string;
-
-      handleGetUserColumnDetail(userColumnId);
+      activeTab.value = getQueryString("active_tab") || "user_column_info";
+      handleGetUserColumnDetail(getQueryString("id"));
     });
 
     return {

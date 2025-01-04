@@ -396,9 +396,9 @@ export default detailTs;
             <a-table
               :data="permissions"
               :bordered="false"
-              :pagination="permissionsPagination"
-              @page-change="handlePermissionsPageChange"
-              @page-size-change="handlePermissionsPageSizeChange"
+              :pagination="permissionsPagination.pagination"
+              @page-change="permissionsPagination.handlePageChange"
+              @page-size-change="permissionsPagination.handlePageSizeChange"
               :expandable="{ width: 30 }"
               row-key="authorizeId"
             >

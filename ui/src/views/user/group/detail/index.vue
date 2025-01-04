@@ -85,11 +85,11 @@ export default detailTs;
             </div>
             <a-table
               :data="groupUsers"
-              :pagination="groupUsersPagination"
+              :pagination="groupUsersPagination.pagination"
               :bordered="false"
               :scroll="{ y: '100%' }"
-              @page-size-change="handlePageSizeChange"
-              @page-change="handlePageChange"
+              @page-size-change="groupUsersPagination.handlePageSizeChange"
+              @page-change="groupUsersPagination.handlePageChange"
             >
               <template #columns>
                 <a-table-column title="用户名">
@@ -151,11 +151,11 @@ export default detailTs;
             <a-table
               :data="permissions"
               :bordered="false"
-              :pagination="permissionsPagination"
-              @page-change="handlePermissionsPageChange"
-              @page-size-change="handlePermissionsPageSizeChange"
+              :pagination="permissionsPagination.pagination"
+              @page-change="permissionsPagination.handlePageChange"
+              @page-size-change="permissionsPagination.handlePageSizeChange"
               :expandable="{ width: 30 }"
-              row-key="permissionId"
+              row-key="authorizeId"
             >
               <template #columns>
                 <a-table-column
@@ -297,7 +297,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserGroupPermissions(1, 15)"
+                        @click="handleGetUserGroupPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -318,7 +318,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserGroupPermissions(1, 15)"
+                        @click="handleGetUserGroupPermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -339,7 +339,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserGroupPermissions(1, 15)"
+                        @click="handleGetUserGroupPermissions()"
                         type="primary"
                         >确认</a-button
                       >

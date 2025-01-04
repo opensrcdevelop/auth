@@ -5,8 +5,7 @@ import {
   removeAuthorizeCondition,
   updatePermissionExp,
 } from "@/api/permission";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { useRoute } from "vue-router";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
 import { Modal, Notification } from "@arco-design/web-vue";
 import { useGlobalVariablesStore } from "@/store/globalVariables";
 
@@ -159,6 +158,7 @@ const hantoToUserGroupDetail = (id: string) => {
     path: "/user/group/detail",
     query: {
       id,
+      active_tab: "user_group_info"
     },
   });
 };
@@ -171,6 +171,7 @@ const handleToUserDetail = (id: string) => {
     path: "/user/detail",
     query: {
       id,
+      active_tab: "user_info"
     },
   });
 };
@@ -183,6 +184,7 @@ const handleToRoleDetail = (id: string) => {
     path: "/role/detail",
     query: {
       id,
+      active_tab: "role_info"
     },
   });
 };
@@ -195,6 +197,7 @@ const handleToResourceGroupDetail = (id: string) => {
     path: "/resource/group/detail",
     query: {
       id,
+      active_tab: "resource_group_info"
     },
   });
 };
@@ -207,6 +210,7 @@ const handleToResourceDetail = (id: string) => {
     path: "/permission/resource/detail",
     query: {
       id,
+      active_tab: "resource_info"
     },
   });
 };
@@ -219,6 +223,7 @@ const handleToPermissionDetail = (id: string) => {
     path: "/permission/detail",
     query: {
       id,
+      active_tab: "permission_info"
     },
   });
 };
@@ -242,12 +247,8 @@ const handleToDebugPermissionExp = () => {
 export default defineComponent({
   setup() {
     onMounted(() => {
-      const route = useRoute();
-      if (route.query.active_tab) {
-        activeTab.value = route.query.active_tab as string;
-      }
-      const permissionExpId = route.query.id as string;
-      handleGetPermissionExpDetail(permissionExpId);
+      activeTab.value = getQueryString("activeTab") || "condition_info";
+      handleGetPermissionExpDetail(getQueryString("id"));
     });
 
     return {
