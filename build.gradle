@@ -20,7 +20,7 @@ ext {
     vavrVer = '0.10.4'
     mybatisPlusVer = '3.5.9'
     commonsPool2Ver = '2.12.0'
-    springDocVer = '2.5.0'
+    springDocVer = '2.8.0'
     commonsCollections4Ver = '4.5.0-M1'
     browscapJavaVer = '1.4.4'
     commonsIoVer = '2.16.1'
