@@ -23,7 +23,7 @@ ext {
     springDocVer = '2.5.0'
     commonsCollections4Ver = '4.5.0-M1'
     browscapJavaVer = '1.4.4'
-    commonsIoVer = '2.16.1'
+    commonsIoVer = '2.18.0'
     joseJwtVer = '9.40'
     ttlVer = '2.14.5'
     dynamicDsVer = '4.3.1'
