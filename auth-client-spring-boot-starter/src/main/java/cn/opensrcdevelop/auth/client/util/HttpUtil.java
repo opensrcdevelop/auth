@@ -39,7 +39,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class HttpUtil {
 
-    private HttpUtil() {}
+    private HttpUtil() {
+    }
 
     private static final ReentrantLock REST_CLIENT_LOCK = new ReentrantLock();
     private static final ReentrantLock REST_TEMPLATE_LOCK = new ReentrantLock();
@@ -47,29 +48,37 @@ public class HttpUtil {
     private static RestTemplate restTemplate;
 
     public static RestClient getRestClient() {
-        REST_CLIENT_LOCK.lock();
-        try {
-            if (restClient == null) {
-                restClient = RestClient.builder(getRestTemplate()).build();
-            }
+        if (restClient != null) {
             return restClient;
-        } finally {
-            REST_CLIENT_LOCK.unlock();
+        } else {
+            REST_CLIENT_LOCK.lock();
+            try {
+                if (restClient == null) {
+                    restClient = RestClient.builder(getRestTemplate()).build();
+                }
+                return restClient;
+            } finally {
+                REST_CLIENT_LOCK.unlock();
+            }
         }
     }
 
     public static RestTemplate getRestTemplate() {
-        REST_TEMPLATE_LOCK.lock();
-        try {
-            if (restTemplate == null) {
-                restTemplate = new RestTemplateBuilder()
-                        .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(getHttpClient()))
-                        .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor())
-                        .build();
-            }
+        if (restTemplate != null) {
             return restTemplate;
-        } finally {
+        } else {
             REST_TEMPLATE_LOCK.lock();
+            try {
+                if (restTemplate == null) {
+                    restTemplate = new RestTemplateBuilder()
+                            .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(getHttpClient()))
+                            .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor())
+                            .build();
+                }
+                return restTemplate;
+            } finally {
+                REST_TEMPLATE_LOCK.unlock();
+            }
         }
     }
 
@@ -133,7 +142,7 @@ public class HttpUtil {
         }
     }
 
-    static class BufferingClientHttpResponseWrapper implements  ClientHttpResponse {
+    static class BufferingClientHttpResponseWrapper implements ClientHttpResponse {
 
         private final ClientHttpResponse response;
         private byte[] body;
