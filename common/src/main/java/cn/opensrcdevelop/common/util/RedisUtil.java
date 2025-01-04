@@ -9,6 +9,7 @@ import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 @SuppressWarnings("unused")
 public class RedisUtil {
@@ -16,11 +17,17 @@ public class RedisUtil {
     private RedisUtil() {}
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ReentrantLock LOCK = new ReentrantLock();
     private static StringRedisTemplate redisTemplate;
 
-    public static synchronized void setRedisTemplate(StringRedisTemplate stringRedisTemplate) {
-        if (redisTemplate == null) {
-            RedisUtil.redisTemplate = stringRedisTemplate;
+    public static void setRedisTemplate(StringRedisTemplate stringRedisTemplate) {
+        LOCK.lock();
+        try {
+            if (redisTemplate == null) {
+                redisTemplate = stringRedisTemplate;
+            }
+        } finally {
+            LOCK.unlock();
         }
     }
 
