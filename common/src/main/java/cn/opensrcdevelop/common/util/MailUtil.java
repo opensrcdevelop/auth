@@ -17,6 +17,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @SuppressWarnings("unused")
@@ -24,11 +25,17 @@ public class MailUtil {
 
     private MailUtil() {}
 
+    private static final ReentrantLock LOCK = new ReentrantLock();
     private static JavaMailSender javaMailSender;
 
-    public static synchronized void setJavaMailSender(JavaMailSender mailSender) {
-        if (javaMailSender == null) {
-            MailUtil.javaMailSender = mailSender;
+    public static void setJavaMailSender(JavaMailSender mailSender) {
+        LOCK.lock();
+        try {
+            if (javaMailSender == null) {
+                javaMailSender = mailSender;
+            }
+        } finally {
+            LOCK.unlock();
         }
     }
 
