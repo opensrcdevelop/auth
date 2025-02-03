@@ -16,7 +16,7 @@ ext {
     springCloudVer = '2023.0.4'
     mybatisVer = '3.0.4'
     zxingVer = '3.5.3'
-    commonsCodecVer = '1.17.0'
+    commonsCodecVer = '1.18.0'
     vavrVer = '0.10.4'
     mybatisPlusVer = '3.5.9'
     commonsPool2Ver = '2.12.0'
