@@ -28,3 +28,17 @@
     }
   }
 }
+
+@media (max-width: 460px) {
+  
+  .change-pwd-container {
+    display: flex;
+    align-items: flex-start;
+
+    .form-container {
+      height: 100%;
+      max-height: none;
+      box-shadow: none;
+    }
+  }
+}

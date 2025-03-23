@@ -289,7 +289,7 @@ INSERT INTO "t_mail_template" ("template_id", "template_code", "template_name", 
     "code": "验证码",
     "code_live": "验证码有效时间",
     "sender": "发件人"
-}', '您正在登录，请查收验证码。', 'Auth Server<${sender}>', '当用户进行邮箱验证时，会发送此电子邮件。', '2025-03-22 22:18:12', 'admin', NULL, NULL, 1, 'f');
+}', '您正在进行邮箱验证，请查收验证码。', 'Auth Server<${sender}>', '当用户进行邮箱验证时，会发送此电子邮件。', '2025-03-22 22:18:12', 'admin', NULL, NULL, 1, 'f');
 
 INSERT INTO "t_mail_template" ("template_id", "template_code", "template_name", "template_content", "template_parameters", "subject", "sender", "description", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('8a5fd063-e8ea-478c-98da-0e8eed303067', 'reset_password', '重置密码', '<!DOCTYPE html>
 <html lang="en">

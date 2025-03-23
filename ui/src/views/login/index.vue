@@ -1,5 +1,6 @@
 <script lang="ts">
 import loginTs from "./index";
+
 export default loginTs;
 </script>
 
@@ -86,13 +87,15 @@ export default loginTs;
                   </a-input>
                 </a-col>
                 <a-col :span="8">
-                  <a-button
-                    style="width: 110px; margin-left: 20px"
-                    type="outline"
-                    :disabled="sendEmailCodeDisable"
-                    @click="handleSendEmailCode"
-                    >{{ sendEmailCodeBtnText }}</a-button
-                  >
+                  <div class="send-code-btn-container">
+                    <a-button
+                      style="width: 100%"
+                      type="outline"
+                      :disabled="sendEmailCodeDisable"
+                      @click="handleSendEmailCode"
+                      >{{ sendEmailCodeBtnText }}</a-button
+                    >
+                  </div>
                 </a-col>
               </a-row>
             </a-form-item>
@@ -208,13 +211,15 @@ export default loginTs;
                 </a-input>
               </a-col>
               <a-col :span="8">
-                <a-button
-                  style="width: 110px; margin-left: 20px"
-                  type="outline"
-                  :disabled="sendForgotPwdEmailCodeDisable"
-                  @click="handleSendForgotPwdEmailCode"
-                  >{{ sendForgotPwdEmailCodeBtnText }}</a-button
-                >
+                <div class="send-code-btn-container">
+                  <a-button
+                    style="width: 100%"
+                    type="outline"
+                    :disabled="sendForgotPwdEmailCodeDisable"
+                    @click="handleSendForgotPwdEmailCode"
+                    >{{ sendForgotPwdEmailCodeBtnText }}</a-button
+                  >
+                </div>
               </a-col>
             </a-row>
           </a-form-item>
@@ -231,7 +236,7 @@ export default loginTs;
       <div class="forgot-pwd-container" v-if="toResetPwd">
         <div class="forgot-pwd-title">重置密码</div>
         <div class="forgot-pwd-info">
-          {{ `你正在重试 ${resetPwdForm.username} 的密码。` }}
+          {{ `你正在重置 ${resetPwdForm.username} 的密码。` }}
         </div>
         <a-form
           ref="resetPwdFormRef"
