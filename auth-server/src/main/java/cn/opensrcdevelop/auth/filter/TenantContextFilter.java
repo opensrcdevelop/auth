@@ -21,6 +21,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 
 @Slf4j
@@ -32,8 +33,8 @@ public class TenantContextFilter extends RestFilter {
     protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             // 1. 根据域名获取租户标识
-            URL baseUrl = new URL(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER));
-            URL requestUrl = new URL(request.getRequestURL().toString());
+            URL baseUrl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER)).toURL();
+            URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
             // 1.1 默认租户
             if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
                 // 1.1.1 设置租户线程上下文
