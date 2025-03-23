@@ -61,7 +61,7 @@ public class RestExceptionHandler {
     public R<ValidationErrorResponse> exception(HandlerMethodValidationException e) {
         log.debug(e.getMessage(), e);
         ValidationErrorResponse response = new ValidationErrorResponse();
-        response.setErrors(e.getAllValidationResults().stream().map(o -> {
+        response.setErrors(e.getParameterValidationResults().stream().map(o -> {
             String paramName = o.getMethodParameter().getParameterName();
             return o.getResolvableErrors().stream().map(x -> {
                 var error = new ValidationErrorResponse.ValidationError();
