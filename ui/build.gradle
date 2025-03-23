@@ -3,7 +3,7 @@ plugins {
 }
 
 frontend {
-    nodeVersion = '20.18.0'
+    nodeVersion = '22.14.0'
     installScript = 'install'
     assembleScript = 'run build'
     maxDownloadAttempts = 5
