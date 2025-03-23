@@ -304,6 +304,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             // 2.1 权限响应属性
             var permission = authorizeRecord.getPermission();
             permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+            permissionResponse.setPriority(authorizeRecord.getPriority());
             permissionResponse.setPermissionId(permission.getPermissionId());
             permissionResponse.setPermissionName(permission.getPermissionName());
             permissionResponse.setPermissionCode(permission.getPermissionCode());

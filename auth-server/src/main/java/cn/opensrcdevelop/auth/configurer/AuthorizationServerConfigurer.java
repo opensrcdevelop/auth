@@ -21,8 +21,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.authorization.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.web.authentication.AuthenticationConverter;
+import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -43,28 +43,16 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     private final CaptchaVerificationCheckFilter captchaVerificationCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OidcUserInfoService oidcUserInfoService = new OidcUserInfoService(SpringContextUtil.getBean(UserService.class));
+    private final OAuth2AuthorizationServerConfigurer oauth2AuthorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
     @Override
     public void init(HttpSecurity http) throws Exception {
         // 拦截授权服务器相关端点
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
-        RequestMatcher endpointsMatcher = authorizationServerConfigurer
+        RequestMatcher endpointsMatcher = oauth2AuthorizationServerConfigurer
                 .getEndpointsMatcher();
         http
                 .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(x -> x.anyRequest().authenticated());
-
-        // 授权服务器自定义配置
-        http
-                .with(authorizationServerConfigurer, configurer ->  configurer
-                        .authorizationEndpoint(x -> x.consentPage(authorizationServerProperties.getConsentPageUrl()))
-                        .tokenEndpoint(x -> x.accessTokenRequestConverter(getCustomAccessTokenRequestConverter()))
-                        .authorizationServerMetadataEndpoint(x -> x.authorizationServerMetadataCustomizer(c -> c.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
-                        .oidc(x -> x
-                                .providerConfigurationEndpoint(c -> c.providerConfigurationCustomizer(p -> p.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
-                                .userInfoEndpoint(userinfo -> userinfo.userInfoMapper(oidcUserInfoService::convert))
-                        )
-                );
 
         // 登录表单处理
         http.formLogin(x -> {
@@ -105,6 +93,19 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
         http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService, authenticationManager, tokenGenerator));
+    }
+
+    public OAuth2AuthorizationServerConfigurer getCustomAuthorizationServerConfigurer() {
+        // 授权服务器自定义配置
+        oauth2AuthorizationServerConfigurer
+                .authorizationEndpoint(x -> x.consentPage(authorizationServerProperties.getConsentPageUrl()))
+                .tokenEndpoint(x -> x.accessTokenRequestConverter(getCustomAccessTokenRequestConverter()))
+                .authorizationServerMetadataEndpoint(x -> x.authorizationServerMetadataCustomizer(c -> c.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
+                .oidc(x -> x
+                        .providerConfigurationEndpoint(c -> c.providerConfigurationCustomizer(p -> p.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
+                        .userInfoEndpoint(userinfo -> userinfo.userInfoMapper(oidcUserInfoService::convert))
+                );
+        return oauth2AuthorizationServerConfigurer;
     }
 
     /**

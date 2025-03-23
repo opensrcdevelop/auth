@@ -61,7 +61,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final UserRepository userRepository;
     private final UserGroupService userGroupService;
     private final RoleRepository roleRepository;
-    private final EmailService emailService;
+    private final MailService mailService;
     private final AuthorizeService authorizeService;
     private final DbOAuth2AuthorizationService dbOAuth2AuthorizationService;
     private final VerificationCodeService verificationCodeService;
@@ -108,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 7. 发送通知邮件
         if (Boolean.TRUE.equals(requestDto.getSendEmail()) && StringUtils.isNotBlank(requestDto.getEmailAddress())) {
-            emailService.sendCreateUserNotice(requestDto.getEmailAddress(), requestDto.getUsername(), requestDto.getPassword());
+            mailService.sendCreateUserNotice(requestDto.getEmailAddress(), requestDto.getUsername(), requestDto.getPassword());
         }
     }
 
@@ -231,7 +231,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             User user = super.getById(userId);
             String email = user.getEmailAddress() != null ? user.getEmailAddress() : requestDto.getEmailAddress();
             if (StringUtils.isNotBlank(email)) {
-                emailService.sendResetPwdNotice(email, user.getUsername(), password);
+                mailService.sendResetPwdNotice(email, user.getUsername(), password);
             }
         }
 
@@ -530,6 +530,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             // 2.1 权限响应属性
             permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+            permissionResponse.setPriority(authorizeRecord.getPriority());
             permissionResponse.setPermissionId(permission.getPermissionId());
             permissionResponse.setPermissionName(permission.getPermissionName());
             permissionResponse.setPermissionCode(permission.getPermissionCode());

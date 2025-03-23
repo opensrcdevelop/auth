@@ -59,4 +59,7 @@ public class PermissionResponseDto {
 
     @Schema(description = "授权记录")
     private List<AuthorizeRecordResponseDto> authorizeRecords;
+
+    @Schema(description = "优先级")
+    private Integer priority;
 }

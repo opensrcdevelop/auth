@@ -1,5 +1,6 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
@@ -112,6 +113,35 @@ export default detailTs;
                   >
                     <template #cell="{ record }">
                       {{ record.principalTypeDisplayName }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column
+                    title="优先级"
+                    :sortable="{
+                      sortDirections: ['ascend', 'descend'],
+                    }"
+                    :width="220"
+                  >
+                    <template #cell="{ record }">
+                      <a-input-group>
+                        <a-select
+                          placeholder="请选择优先级"
+                          :default-value="0"
+                          v-model="record.priority"
+                          style="width: 180px"
+                        >
+                          <a-option :value="-1">最低</a-option>
+                          <a-option :value="0">低</a-option>
+                          <a-option :value="1">中</a-option>
+                          <a-option :value="2">高</a-option>
+                          <a-option :value="3">最高</a-option>
+                        </a-select>
+                        <a-button
+                          @click="handleUpdateAuthorizePriority(record)"
+                        >
+                          保存
+                        </a-button>
+                      </a-input-group>
                     </template>
                   </a-table-column>
                   <a-table-column

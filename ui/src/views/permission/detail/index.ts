@@ -1,16 +1,16 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { useRoute } from "vue-router";
 import {
   addAuthorizeCondition,
   cancelAuthorization,
   getPermissionDetail,
   getPermissionExpList,
   removeAuthorizeCondition,
+  updateAuthorizePriority,
   updatePermission,
 } from "@/api/permission";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
 
 /**
  * 返回上一级
@@ -352,6 +352,51 @@ const handleCancelAuthorization = (principalId: string) => {
   });
 };
 
+/**
+ * 更新授权优先级
+ */
+const handleUpdateAuthorizePriority = (record: any) => {
+  let priorityText = "";
+  switch (record.priority) {
+    case -1:
+      priorityText = "最低";
+      break;
+    case 0:
+      priorityText = "低";
+      break;
+    case 1:
+      priorityText = "中";
+      break;
+    case 2:
+      priorityText = "高";
+      break;
+    case 3:
+      priorityText = "最高";
+      break;
+  }
+
+  Modal.warning({
+    title: `确定将授权优先级调整为「${priorityText}」吗？`,
+    content: "此操作不可恢复，请谨慎操作。",
+    hideCancel: false,
+    okButtonProps: {
+      status: "warning",
+    },
+    onOk: () => {
+      updateAuthorizePriority(record.authorizeId, record.priority)
+        .then((result: any) => {
+          handleApiSuccess(result, () => {
+            Notification.success("更新授权优先级成功");
+            handleGetPermissionDetail(permissionId.value);
+          });
+        })
+        .catch((err: any) => {
+          handleApiError(err, "更新授权优先级");
+        });
+    },
+  });
+};
+
 export default defineComponent({
   setup() {
     onMounted(() => {
@@ -390,6 +435,7 @@ export default defineComponent({
       handleAddAuthorizeConditionFormSubmit,
       handleRemoveAuthorizeCondition,
       handleCancelAuthorization,
+      handleUpdateAuthorizePriority,
     };
   },
 });

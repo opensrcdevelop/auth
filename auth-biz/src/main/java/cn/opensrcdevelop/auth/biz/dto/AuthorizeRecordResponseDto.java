@@ -33,4 +33,7 @@ public class AuthorizeRecordResponseDto {
 
     @Schema(description = "限定条件集合")
     private List<PermissionExpResponseDto> conditions;
+
+    @Schema(description = "优先级")
+    private Integer priority;
 }

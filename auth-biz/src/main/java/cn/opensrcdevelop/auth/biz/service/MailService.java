@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-public interface EmailService {
+public interface MailService {
 
-    void sendEmailCode(String to);
+    void sendMailCode(String to);
 
     void sendCreateUserNotice(String to, String username, String password);
 

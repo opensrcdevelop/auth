@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.dto;
 
+import cn.opensrcdevelop.common.validation.constraints.EnumValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
@@ -28,4 +29,8 @@ public class AuthorizeRequestDto {
 
     @Schema(description = "限定条件集合")
     private List<String> expressionIds;
+
+    @Schema(description = "优先级")
+    @EnumValue({ "-1", "0", "1", "2", "3" })
+    private  Integer priority;
 }

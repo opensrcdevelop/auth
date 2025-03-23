@@ -203,10 +203,10 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     @Override
     public List<DictDataResponseDto> getEnabledDictData(String dictId) {
         // 1. 查询数据库
-        var dictDatas = super.list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId).eq(DictData::getEnable, true).orderByAsc(DictData::getDisplaySeq));
+        var dictData = super.list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId).eq(DictData::getEnable, true).orderByAsc(DictData::getDisplaySeq));
 
         // 2. 属性编辑
-        return CommonUtil.stream(dictDatas).map(this::convertDictData2RepDto).toList();
+        return CommonUtil.stream(dictData).map(this::convertDictData2RepDto).toList();
     }
 
     /**

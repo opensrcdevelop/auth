@@ -168,9 +168,9 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         super.removeById(dictId);
 
         // 2. 删除关联的字典数据
-        List<DictData> dictDatas = dictDataService.list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId));
-        if (CollectionUtils.isNotEmpty(dictDatas)) {
-            dictDataService.removeDictData(CommonUtil.stream(dictDatas).map(DictData::getDataId).toList());
+        List<DictData> dictData = dictDataService.list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId));
+        if (CollectionUtils.isNotEmpty(dictData)) {
+            dictDataService.removeDictData(CommonUtil.stream(dictData).map(DictData::getDataId).toList());
         }
 
         // 3. 删除关联的用户属性

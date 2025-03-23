@@ -1,5 +1,6 @@
 <script lang="ts">
 import authorizeTs from "./index";
+
 export default authorizeTs;
 </script>
 
@@ -188,6 +189,17 @@ export default authorizeTs;
                 >
                   {{ permission.name }}
                 </a-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item field="priority" label="优先级">
+              <a-select placeholder="请选择优先级" :default-value="0">
+                <a-option :value="-1">最低</a-option>
+                <a-option :value="0">低</a-option>
+                <a-option :value="1">中</a-option>
+                <a-option :value="2">高</a-option>
+                <a-option :value="3">最高</a-option>
               </a-select>
             </a-form-item>
           </a-col>

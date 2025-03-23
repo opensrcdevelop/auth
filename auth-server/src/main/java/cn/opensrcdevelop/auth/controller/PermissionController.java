@@ -8,6 +8,7 @@ import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
+import cn.opensrcdevelop.common.validation.constraints.EnumValue;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -156,5 +157,16 @@ public class PermissionController {
     @Authorize({ "allPermissionExpPermissions", "debugPermissionExp" })
     public DebugPermissionExpResponseDto debugPermissionExpression(@RequestBody DebugPermissionExpRequestDto requestDto) {
         return permissionExpService.debugPermissionExp(requestDto);
+    }
+
+    @Operation(summary = "更新授权优先级", description = "更新授权优先级")
+    @Parameters({
+            @Parameter(name = "id", description = "授权ID", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "priority", description = "优先级", in = ParameterIn.PATH, required = true),
+    })
+    @PutMapping("/authorize/{id}/{priority}")
+    @Authorize({ "allPermPermissions", "updateAuthorizePriority" })
+    public void updateAuthorizePriority(@PathVariable @NotBlank String id, @PathVariable @EnumValue({ "-1", "0", "1", "2", "3" }) Integer priority) {
+        authorizeService.updateAuthorizePriority(id, priority);
     }
 }

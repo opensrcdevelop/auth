@@ -37,6 +37,9 @@ public class AuthorizeRecord implements Serializable {
     /** 权限ID */
     private String permissionId;
 
+    /** 优先级 */
+    private Integer priority;
+
     /** 授权时间 */
     private LocalDateTime authorizeTime;
 

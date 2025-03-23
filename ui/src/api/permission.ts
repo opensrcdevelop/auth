@@ -178,3 +178,16 @@ export function debugPermissionExp(data: any) {
     data,
   })
 }
+
+/**
+ * 更新授权优先级
+ * 
+ * @param id 授权ID
+ * @param priority 优先级
+ * @returns 调用结果
+ */
+export function updateAuthorizePriority(id: String, priority: Number){
+  return apiRequest.put({
+    url: `/permission/authorize/${id}/${priority}`
+  })
+}

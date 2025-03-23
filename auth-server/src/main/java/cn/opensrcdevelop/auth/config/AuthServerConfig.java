@@ -54,7 +54,9 @@ public class AuthServerConfig {
 
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties) throws Exception {
-        http.with(new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties), x-> {});
+        AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties);
+        http.with(authorizationServerConfigurer, x-> {});
+        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> {});
         return http.build();
     }
 

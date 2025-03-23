@@ -91,9 +91,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
             // 2. 数据库操作
             Page<AuthorizeRecord> pageRequest = new Page<>(1, -1);
-            getUserPermissions(pageRequest, userId, aud.get(0), null, null, null, null);
+            getUserPermissions(pageRequest, userId, aud.getFirst(), null, null, null, null);
             List<AuthorizeRecord> authorizeRecords = pageRequest.getRecords();
-            // 2.1 过滤重复的权限（按授权先后顺序）
+            // 2.1 过滤重复的权限（先按优先级再按授权时间排序）
             var records = CommonUtil.stream(authorizeRecords).collect(Collectors
                     .collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(r -> {
                         Permission permission = r.getPermission();
@@ -232,6 +232,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             AuthorizeRecordResponseDto authorizeRecordResponse = new AuthorizeRecordResponseDto();
             authorizeRecordResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
             authorizeRecordResponse.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
+            authorizeRecordResponse.setPriority(authorizeRecord.getPriority());
 
             // 3.1 授权条件
             var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
@@ -365,7 +366,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
         List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
         Objects.requireNonNull(aud);
-        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId + ":" + aud.get(0);
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId + ":" + aud.getFirst();
     }
 
     /**

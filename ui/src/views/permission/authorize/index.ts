@@ -1,14 +1,14 @@
-import { defineComponent, onMounted, onUpdated, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { getGroupResources } from "@/api/resourceGroup";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { getResourcePermissions } from "@/api/resource";
-import { authorize, getPermissionExpList } from "@/api/permission";
-import { Notification } from "@arco-design/web-vue";
-import { searchUser } from "@/api/user";
-import { getUserGroupList } from "@/api/userGroup";
-import { getRoleList } from "@/api/role";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {getGroupResources} from "@/api/resourceGroup";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {getResourcePermissions} from "@/api/resource";
+import {authorize, getPermissionExpList} from "@/api/permission";
+import {Notification} from "@arco-design/web-vue";
+import {searchUser} from "@/api/user";
+import {getUserGroupList} from "@/api/userGroup";
+import {getRoleList} from "@/api/role";
 
 /**
  * 返回上一级
@@ -32,6 +32,7 @@ const authorizeForm = reactive({
   permissionIds: [],
   expressionIds: [],
   resourceId: undefined,
+  priority: undefined,
 });
 const authorizeFormRules = {
   resourceId: [{ required: true, message: "请选择资源" }],
@@ -450,6 +451,7 @@ const handleResetAuthorizeForm = () => {
 
   authorizeFormRef.value.clearValidate();
   authorizeForm.resourceId = undefined;
+  authorizeForm.priority = undefined;
   authorizeForm.expressionIds = [];
   authorizeForm.permissionIds = [];
   handleGetResourceList();

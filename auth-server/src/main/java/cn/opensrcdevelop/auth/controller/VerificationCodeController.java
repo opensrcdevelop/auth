@@ -2,7 +2,7 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.auth.biz.dto.CheckCodeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.CheckCodeResponseDto;
-import cn.opensrcdevelop.auth.biz.service.EmailService;
+import cn.opensrcdevelop.auth.biz.service.MailService;
 import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class VerificationCodeController {
 
-    private final EmailService emailService;
+    private final MailService mailService;
     private final VerificationCodeService verificationCodeService;
 
     @Operation(summary = "发送邮箱验证码", description = "发送邮箱验证码")
     @PostMapping("/email/{to}")
-    public void sendEmailCode(@PathVariable @Email String to) {
-        emailService.sendEmailCode(to);
+    public void sendMailCode(@PathVariable @Email String to) {
+        mailService.sendMailCode(to);
     }
 
 
@@ -38,6 +38,6 @@ public class VerificationCodeController {
     @Operation(summary = "发送绑定邮箱验证码", description = "发送绑定邮箱验证码")
     @PostMapping("/email/bind/{to}")
     public void sendBindEmailCode(@PathVariable @Email String to) {
-        emailService.sendBindEmailCode(to);
+        mailService.sendBindEmailCode(to);
     }
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-import { h } from "vue";
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
@@ -479,6 +479,16 @@ export default detailTs;
                 >
                   <template #cell="{ record }">
                     {{ record.permissionCode }}
+                  </template>
+                </a-table-column>
+                <a-table-column
+                  title="优先级"
+                  :sortable="{
+                    sortDirections: ['ascend', 'descend'],
+                  }"
+                >
+                  <template #cell="{ record }">
+                    <priority-tag :priority="record.priority" />
                   </template>
                 </a-table-column>
                 <a-table-column title="操作">

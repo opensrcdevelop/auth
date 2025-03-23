@@ -46,6 +46,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         var roleIds = requestDto.getRoleIds();
         var permissionIds = requestDto.getPermissionIds();
         var expressionIds = requestDto.getExpressionIds();
+        Integer priority = requestDto.getPriority();
 
         List<AuthorizeRecord> authorizeRecords = new ArrayList<>();
         var authorizeTime = LocalDateTime.now();
@@ -57,6 +58,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setUserId(userId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
+                authorizeRecord.setPriority(priority);
                 authorizeRecords.add(authorizeRecord);
             }));
         }
@@ -69,6 +71,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setUserGroupId(userGroupId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
+                authorizeRecord.setPriority(priority);
                 authorizeRecords.add(authorizeRecord);
             }));
         }
@@ -81,6 +84,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setRoleId(roleId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
+                authorizeRecord.setPriority(priority);
                 authorizeRecords.add(authorizeRecord);
             }));
         }
@@ -241,6 +245,23 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 mapper.delete(Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getAuthorizeId,
                         authorizeCondition.getAuthorizeId()).and(o -> o.eq(AuthorizeCondition::getPermissionExpId, authorizeCondition.getPermissionExpId())));
             }));
+        }
+    }
+
+    /**
+     * 更新授权优先级
+     *
+     * @param authorizeId 授权ID
+     * @param priority 优先级
+     */
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
+    @Override
+    public void updateAuthorizePriority(String authorizeId, Integer priority) {
+        if (Objects.nonNull(priority)) {
+            // 1. 数据库操作
+            super.update(Wrappers.<AuthorizeRecord>lambdaUpdate()
+                    .set(AuthorizeRecord::getPriority, priority)
+                    .eq(AuthorizeRecord::getAuthorizeId, authorizeId));
         }
     }
 

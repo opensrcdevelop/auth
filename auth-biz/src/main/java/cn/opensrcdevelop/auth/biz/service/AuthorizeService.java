@@ -20,4 +20,6 @@ public interface AuthorizeService extends IService<AuthorizeRecord> {
     void createAuthorizeCondition(AuthorizeConditionRequestDto requestDto);
 
     void removeAuthorizeCondition(AuthorizeConditionRequestDto requestDto);
+
+    void updateAuthorizePriority(String authorizeId, Integer priority);
 }

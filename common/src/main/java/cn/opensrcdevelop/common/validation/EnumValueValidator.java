@@ -37,6 +37,12 @@ public class EnumValueValidator implements ConstraintValidator<EnumValue, Object
         if (value instanceof String strValue) {
             return stringValues.contains(strValue);
         }
+
+        // 数值类型
+        if (value instanceof Number numberValue) {
+            return stringValues.contains(numberValue.toString());
+        }
+
         return true;
     }
 }

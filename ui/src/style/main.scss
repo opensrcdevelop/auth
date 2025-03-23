@@ -29,3 +29,16 @@ a:focus {
 .arco-dropdown-option-content {
   width: 100%;
 }
+
+.arco-trigger-menu {
+  padding: 4px !important;
+  min-width: 120px;
+
+  .arco-trigger-menu-icon {
+    display: none !important;
+  }
+
+  .arco-trigger-menu-item {
+    border-radius: 4px;
+  }
+}

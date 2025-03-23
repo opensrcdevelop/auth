@@ -206,6 +206,8 @@ public class TenantHelper {
                 .locations(multiTenantProperties.getFlywayLocation())
                 .baselineOnMigrate(true)
                 .cleanDisabled(true)
+                .placeholderPrefix("$${")
+                .placeholderPrefix("}$$")
                 .placeholders(placeHolders)
                 .load();
         flyway.migrate();

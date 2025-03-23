@@ -106,6 +106,14 @@ export const menuRoutes: RouteRecordRaw[] = [
       icon: "icon-dict",
     },
   },
+  {
+    path: "/system",
+    component: () => import("@/views/setting/index.vue"),
+    meta: {
+      title: "系统设置",
+      icon: "icon-system",
+    },
+  },
 ];
 
 /** 页面路由 */
