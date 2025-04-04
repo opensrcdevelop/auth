@@ -1,6 +1,10 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.*;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.SetUserAttrDisplaySeqRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.service.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.UserService;
@@ -59,7 +63,7 @@ public class UserController {
     @GetMapping("/attr/list")
     @Authorize({ "allUserAttrPermissions", "listUserAttr" })
     public PageData<UserAttrResponseDto> listUserAttrs(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
-                                                   @RequestParam(required = false, defaultValue = "false") Boolean onlyDisplay, @RequestParam(required = false) String keyword) {
+                                                       @RequestParam(required = false, defaultValue = "false") Boolean onlyDisplay, @RequestParam(required = false) String keyword) {
         return userAttrService.listUserAttrs(page, size, onlyDisplay, keyword);
     }
 

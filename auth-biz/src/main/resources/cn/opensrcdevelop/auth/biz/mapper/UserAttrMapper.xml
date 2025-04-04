@@ -22,6 +22,6 @@
             COALESCE
             ( MAX ( display_seq ) + 1, 1 )
         FROM
-            t_user_attr t1
+            t_user_attr
     </select>
 </mapper>

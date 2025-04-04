@@ -1,5 +1,5 @@
 import {checkTenant} from "@/api/tenant";
-import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME} from "@/util/constants";
+import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
 import {getSubDomain} from "@/util/tool";
 import {Notification} from "@arco-design/web-vue";
 import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
@@ -107,12 +107,27 @@ export const menuRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/system",
-    component: () => import("@/views/setting/index.vue"),
+    path: "/system_setting",
     meta: {
       title: "系统设置",
       icon: "icon-system",
     },
+    children: [
+      {
+        path: "/system_setting/message",
+        component: () => import("@/views/setting/message/index.vue"),
+        meta: {
+          title: "消息设置",
+        },
+      },
+      {
+        path: "/system_setting/password",
+        component: () => import("@/views/setting/password/index.vue"),
+        meta: {
+          title: "密码安全",
+        },
+      },
+    ],
   },
 ];
 
@@ -326,6 +341,22 @@ const pageRoutes: RouteRecordRaw[] = [
       title: "调试限制条件",
     },
   },
+  {
+    path: "/system_setting/password/create",
+    component: () => import("@/views/setting/password/create/index.vue"),
+    meta: {
+      parent: "/system_setting/password",
+      title: "创建密码策略",
+    },
+  },
+  {
+    path: "/system_setting/password/detail",
+    component: () => import("@/views/setting/password/detail/index.vue"),
+    meta: {
+      parent: "/system_setting/password",
+      title: "密码策略详情",
+    }
+  }
 ];
 
 export const routes: RouteRecordRaw[] = [

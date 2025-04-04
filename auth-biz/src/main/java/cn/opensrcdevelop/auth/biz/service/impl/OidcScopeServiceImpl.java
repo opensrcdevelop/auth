@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
-import cn.opensrcdevelop.auth.biz.dto.OidcClaimScopeMappingRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimScopeMappingRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.OidcClaimScopeMapping;
 import cn.opensrcdevelop.auth.biz.entity.OidcScope;
 import cn.opensrcdevelop.auth.biz.mapper.OidcScopeMapper;

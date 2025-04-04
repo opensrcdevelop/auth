@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
-import cn.opensrcdevelop.auth.biz.dto.MailMessageConfigDto;
-import cn.opensrcdevelop.auth.biz.dto.MailServiceConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailMessageConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailServiceConfigDto;
 import cn.opensrcdevelop.auth.biz.entity.SystemSetting;
 import cn.opensrcdevelop.auth.biz.mapper.SystemSettingMapper;
 import cn.opensrcdevelop.auth.biz.service.SystemSettingService;

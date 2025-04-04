@@ -2,7 +2,7 @@ package cn.opensrcdevelop.auth.biz.util;
 
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.DataFilterRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.DataFilterRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.Role;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.service.DictDataService;

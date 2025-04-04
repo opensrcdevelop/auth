@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.ResourceGroupRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.ResourceGroup;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;

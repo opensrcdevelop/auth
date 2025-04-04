@@ -1,10 +1,10 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.ResourceRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.Permission;
 import cn.opensrcdevelop.auth.biz.entity.Resource;
 import cn.opensrcdevelop.auth.biz.entity.ResourceGroup;

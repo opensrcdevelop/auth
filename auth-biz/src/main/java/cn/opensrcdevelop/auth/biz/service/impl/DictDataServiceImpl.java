@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.dto.DictDataRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.DictDataResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.DictData;
 import cn.opensrcdevelop.auth.biz.entity.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.mapper.DictDataMapper;

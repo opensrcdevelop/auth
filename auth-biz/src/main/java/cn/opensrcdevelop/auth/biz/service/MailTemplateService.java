@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.MailTemplateRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.MailTemplateResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.MailTemplate;
 import com.baomidou.mybatisplus.extension.service.IService;
 

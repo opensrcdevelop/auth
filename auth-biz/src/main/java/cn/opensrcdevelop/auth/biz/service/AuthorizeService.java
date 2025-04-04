@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.AuthorizeConditionRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.AuthorizeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import com.baomidou.mybatisplus.extension.service.IService;
 

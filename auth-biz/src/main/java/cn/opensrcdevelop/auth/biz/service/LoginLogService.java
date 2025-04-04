@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.LoginLogResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.LoginLogResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.LoginLog;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;

@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.DebugPermissionExpRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.DebugPermissionExpResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.PermissionExpRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.PermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.DebugPermissionExpRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.DebugPermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.PermissionExp;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;

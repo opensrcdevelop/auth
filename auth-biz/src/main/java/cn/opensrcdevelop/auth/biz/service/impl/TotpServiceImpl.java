@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.dto.TotpCodeCheckRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.TotpCodeCheckResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;

@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeResponseDto;
 import cn.opensrcdevelop.auth.biz.service.MailService;
 import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import cn.opensrcdevelop.common.annoation.RestResponse;

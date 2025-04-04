@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
-import cn.opensrcdevelop.auth.biz.dto.MailTemplateParamResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.MailTemplateRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.MailTemplateResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateParamResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.MailTemplate;
 import cn.opensrcdevelop.auth.biz.mapper.MailTemplateMapper;
 import cn.opensrcdevelop.auth.biz.service.MailTemplateService;

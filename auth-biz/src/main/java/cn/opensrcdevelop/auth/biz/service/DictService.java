@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.DictRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.DictResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.Dict;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;

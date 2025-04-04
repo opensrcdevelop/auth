@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.MailMessageConfigDto;
-import cn.opensrcdevelop.auth.biz.dto.MailServiceConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailMessageConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.system.mail.MailServiceConfigDto;
 import cn.opensrcdevelop.auth.biz.entity.SystemSetting;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.mail.javamail.JavaMailSender;

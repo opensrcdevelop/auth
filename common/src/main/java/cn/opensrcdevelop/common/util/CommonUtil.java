@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.common.util;
 
 import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.exception.ValidationException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,6 +14,8 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import io.vavr.control.Try;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
@@ -31,10 +34,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -298,6 +298,20 @@ public class CommonUtil {
      */
     public static String convertTimestamp2String(long timestamp, String format) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(format));
+    }
+
+    /**
+     * 校验 Bean
+     *
+     * @param bean bean
+     * @param groups 分组
+     */
+    public static void validateBean(Object bean, Class<?>... groups) {
+        Validator validator = SpringContextUtil.getBean(Validator.class);
+        Set<ConstraintViolation<Object>> constraintViolations = validator.validate(bean, groups);
+        if (CollectionUtils.isNotEmpty(constraintViolations)) {
+            throw new ValidationException(constraintViolations);
+        }
     }
 
     @FunctionalInterface

@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.ResourceResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.ResourceRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.service.ResourceService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;

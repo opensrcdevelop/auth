@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.handler;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.dto.LoginResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;

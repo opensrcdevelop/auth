@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeResponseDto;
 
 import java.time.temporal.ChronoUnit;
 

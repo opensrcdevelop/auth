@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.PermissionRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.Permission;
 import com.baomidou.mybatisplus.core.metadata.IPage;

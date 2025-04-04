@@ -16,14 +16,20 @@ export class Request {
   baseConfig: AxiosRequestConfig = {};
   // 前缀
   prefix: string = "";
+  // 是否开启全局 Loading
+  showGlobalLoading: boolean = true;
 
-  constructor(config: AxiosRequestConfig, prefix: string = "") {
+  constructor(config: AxiosRequestConfig, prefix: string = "", showGlobalLoading: boolean = true) {
     this.instance = axios.create(Object.assign(this.baseConfig, config));
     this.prefix = prefix;
+    this.showGlobalLoading = showGlobalLoading;
 
     this.instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        globalVariables.apiLoading = true;
+        if (this.showGlobalLoading) {
+          globalVariables.apiLoading = true;
+        }
+
         config.baseURL = prefix
           ? `${getOAuthIssuer()}${prefix}`
           : getOAuthIssuer();
@@ -48,12 +54,17 @@ export class Request {
 
     this.instance.interceptors.response.use(
       (res: AxiosResponse) => {
-        globalVariables.apiLoading = false;
+        if (this.showGlobalLoading) {
+          globalVariables.apiLoading = false;
+        }
 
         return res.data;
       },
       (err: any) => {
-        globalVariables.apiLoading = false;
+        if (this.showGlobalLoading) {
+          globalVariables.apiLoading = false;
+        }
+
         if (err.response) {
           let messageText = "";
           switch (err.response.status) {

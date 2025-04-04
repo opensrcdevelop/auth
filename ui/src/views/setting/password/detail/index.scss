@@ -1,0 +1,89 @@
+.detail-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d2129;
+  margin-bottom: 16px;
+  user-select: none;
+}
+
+.info-title {
+  font-weight: 500;
+  font-size: 20px;
+  color: #1d2129;
+  margin-bottom: 16px;
+}
+
+.password-strength-label {
+  display: flex;
+  align-items: center;
+
+  .password-strength-tag {
+    margin-left: 8px;
+  }
+}
+
+.select-char-type-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  .chat-type-count-select {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+  }
+}
+
+.prohibit-password-type-container {
+  display: flex;
+  flex-direction: column;
+
+  .prohibit-password-type-checkbox {
+    margin-bottom: 20px;
+  }
+}
+
+.edit-specific-password-container {
+  background-color: rgb(247, 248, 250);
+  border-radius: 4px;
+
+  .list-container {
+    padding: 24px;
+    max-height: 321px;
+    overflow-y: auto;
+
+    .input-container {
+      background-color: #fff;
+      border-radius: 4px;
+      padding: 12px;
+
+      .input-item {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .input-item:last-child {
+        margin-bottom: 0px;
+      }
+    }
+  }
+
+  .add-btn-container {
+    cursor: pointer;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid rgb(229, 230, 235);
+    user-select: none;
+    transition: all 0.3s;
+    border-radius: 0px 0px 4px 4px;
+    color: rgb(33, 90, 229);
+  }
+
+  .add-btn-container:hover {
+    background-color: rgb(229, 230, 235);
+  }
+}

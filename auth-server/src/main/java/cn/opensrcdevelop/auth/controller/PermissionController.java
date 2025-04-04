@@ -1,6 +1,8 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.*;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.PermissionService;

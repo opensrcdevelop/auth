@@ -3,7 +3,7 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.*;
+import cn.opensrcdevelop.auth.biz.dto.permission.*;
 import cn.opensrcdevelop.auth.biz.entity.*;
 import cn.opensrcdevelop.auth.biz.mapper.PermissionExpressionMapper;
 import cn.opensrcdevelop.auth.biz.service.AuthorizeConditionService;

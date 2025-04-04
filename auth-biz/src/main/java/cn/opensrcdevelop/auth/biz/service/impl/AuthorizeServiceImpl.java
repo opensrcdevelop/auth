@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
-import cn.opensrcdevelop.auth.biz.dto.AuthorizeConditionRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.AuthorizeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeCondition;
 import cn.opensrcdevelop.auth.biz.entity.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.mapper.AuthorizeConditionMapper;

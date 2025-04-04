@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.TotpCodeCheckRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.TotpCodeCheckResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckResponseDto;
 import cn.opensrcdevelop.auth.biz.service.TotpService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;

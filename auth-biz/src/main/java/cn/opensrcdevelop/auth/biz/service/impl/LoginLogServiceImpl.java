@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.dto.LoginLogResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.LoginLogResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.Client;
 import cn.opensrcdevelop.auth.biz.entity.LoginLog;
 import cn.opensrcdevelop.auth.biz.mapper.LoginLogMapper;

@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.CheckCodeResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.VerificationCode;
 import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
 import cn.opensrcdevelop.common.exception.BizException;

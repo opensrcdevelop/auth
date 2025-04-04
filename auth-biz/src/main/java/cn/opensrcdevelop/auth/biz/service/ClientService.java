@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.ClientRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.ClientResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.CreateOrUpdateSecretClientResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.Client;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;

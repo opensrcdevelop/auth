@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.OidcClaimScopeMappingRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimScopeMappingRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.OidcScope;
 import com.baomidou.mybatisplus.extension.service.IService;
 

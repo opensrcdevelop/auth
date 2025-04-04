@@ -18,6 +18,7 @@ import Authorize from "@/components/Authorize.vue";
 import Verify from "@/components/verifition/Verify.vue";
 import MonacoEditor from "@/components/MonacoEditor.vue";
 import PriorityTag from "@/components/PriorityTag.vue";
+import PasswordChecker from "@/components/PasswordChecker.vue";
 
 const app = createApp(App);
 
@@ -38,5 +39,6 @@ app.component("authorize", Authorize);
 app.component("verify", Verify);
 app.component("monaco-editor", MonacoEditor);
 app.component("priority-tag", PriorityTag);
+app.component("password-checker", PasswordChecker);
 
 app.mount("#app");

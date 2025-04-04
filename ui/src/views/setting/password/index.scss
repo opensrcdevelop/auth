@@ -1,0 +1,40 @@
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  user-select: none;
+
+  .left {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-right: 40px;
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1d2129;
+      padding-bottom: 8px;
+    }
+
+    .info {
+      font-size: 14px;
+      font-weight: 400;
+      color: #86909c;
+    }
+  }
+}
+
+.tab-container {
+  padding: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+.table-column-policyname {
+  cursor: pointer;
+  color: #215ae5;
+}

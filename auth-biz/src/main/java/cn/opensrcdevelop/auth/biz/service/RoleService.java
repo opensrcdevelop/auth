@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service;
 
-import cn.opensrcdevelop.auth.biz.dto.PermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.RoleMappingRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.RoleRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.RoleResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.role.RoleMappingRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.role.RoleRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.Role;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
