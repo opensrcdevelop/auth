@@ -10,6 +10,9 @@ public class LoginResponseDto {
     @Schema(description = "是否需要变更密码")
     private Boolean needChangePwd;
 
+    @Schema(description = "变更密码类型")
+    private Integer changePwdType;
+
     @Schema(description = "是否启用多因素认证")
     private Boolean enableMfa;
 

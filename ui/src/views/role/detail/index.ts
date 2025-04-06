@@ -1,4 +1,4 @@
-import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
+import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
   addRoleMapping,
@@ -8,14 +8,14 @@ import {
   removeRoleMapping,
   updateRole,
 } from "@/api/role";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { searchUser } from "@/api/user";
-import { getUserGroupList } from "@/api/userGroup";
-import { cancelAuthorization } from "@/api/permission";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {searchUser} from "@/api/user";
+import {getUserGroupList} from "@/api/userGroup";
+import {cancelAuthorization} from "@/api/permission";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
-import { usePagination } from "@/hooks/usePagination";
+import {usePagination} from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -146,7 +146,7 @@ const permissionCodeFilter = {
 };
 
 /**
- * 获取用户组权限
+ * 获取角色权限
  */
 const handleGetRolePermissions = (
   id: string = roleId.value,

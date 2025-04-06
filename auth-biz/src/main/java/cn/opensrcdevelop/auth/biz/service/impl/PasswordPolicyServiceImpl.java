@@ -4,10 +4,13 @@ import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.system.password.*;
 import cn.opensrcdevelop.auth.biz.entity.PasswordPolicy;
 import cn.opensrcdevelop.auth.biz.entity.PasswordPolicyMapping;
+import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.mapper.PasswordPolicyMapper;
 import cn.opensrcdevelop.auth.biz.repository.PasswordPolicyRepository;
 import cn.opensrcdevelop.auth.biz.service.PasswordPolicyMappingService;
 import cn.opensrcdevelop.auth.biz.service.PasswordPolicyService;
+import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.security.password.PasswordComplexityConfig;
 import cn.opensrcdevelop.common.security.password.PasswordStrength;
@@ -16,9 +19,15 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +43,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
 
     private final PasswordPolicyMappingService passwordPolicyMappingService;
     private final PasswordPolicyRepository passwordPolicyRepository;
+
+    @Resource
+    @Lazy
+    private UserService userService;
 
     /**
      *  获取密码策略列表
@@ -332,10 +345,23 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     @Override
     public CheckPasswordStrengthResponseDto checkPasswordStrength(CheckPasswordStrengthRequestDto requestDto) {
         String password = requestDto.getPassword();
+        String identity = requestDto.getIdentity();
         // 1. 获取用户匹配的密码策略
-        PasswordPolicy passwordPolicy = passwordPolicyRepository.getMatchedPasswordPolicy(requestDto.getUserId());
+        // 1.1 未指定用户标识
+        if (StringUtils.isEmpty(identity)) {
+            // 1.1.1 从 SecurityContext 中获取
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication instanceof UsernamePasswordAuthenticationToken) {
+                identity = ((User) authentication.getPrincipal()).getUserId();
+            } else {
+                // 1.1.2 从 access_token 中获取
+                identity = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+            }
+        }
+        // 1.2 获取密码策略
+        PasswordPolicy passwordPolicy = passwordPolicyRepository.getMatchedPasswordPolicy(getUserIdByIdentity(identity));
         if (Objects.isNull(passwordPolicy)) {
-            // 1.1 获取默认密码策略
+            // 1.3 获取默认密码策略
             passwordPolicy = getDefaultPasswordPolicy();
         }
 
@@ -361,6 +387,50 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
                     .valid(result)
                     .errorMessage(passwordStrengthChecker.errorMessage())
                     .build();
+        }
+    }
+
+    /**
+     * 检查登录密码强度是否满足要求
+     *
+     * @param userId 用户 ID
+     * @param password 密码
+     * @return 是否满足要求
+     */
+    @Override
+    public boolean checkLoginPasswordStrength(String userId, String password) {
+        // 1. 获取用户匹配的密码策略
+        PasswordPolicy passwordPolicy = passwordPolicyRepository.getMatchedPasswordPolicy(userId);
+        if (Objects.isNull(passwordPolicy)) {
+            // 1.1 获取默认密码策略
+            passwordPolicy = getDefaultPasswordPolicy();
+        }
+
+        // 2. 检查密码强度
+        // 2.1 未开启登录密码检查
+        if (!Boolean.TRUE.equals(passwordPolicy.getEnablePasswordDetection())) {
+            return true;
+        }
+        PasswordStrength passwordStrength = PasswordStrength.fromOrdinal(passwordPolicy.getPasswordStrength());
+        // 2.2 自定义密码强度
+        if (PasswordStrength.CUSTOM.equals(passwordStrength)) {
+            return getPasswordStrengthChecker(passwordStrength, CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class)).validate(password);
+        } else {
+            // 2.3 其他密码强度
+            return getPasswordStrengthChecker(passwordStrength, null).validate(password);
+        }
+    }
+
+    /**
+     * 检查密码强度
+     *
+     * @param userId 用户ID
+     * @param password 密码
+     */
+    @Override
+    public void checkPasswordStrength(String userId, String password) {
+        if (!checkLoginPasswordStrength(userId, password)) {
+            throw new BizException(MessageConstants.PWD_POLICY_MSG_1011);
         }
     }
 
@@ -491,7 +561,7 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      *
      * @return 默认密码策略
      */
-    private PasswordPolicy getDefaultPasswordPolicy() {
+    public PasswordPolicy getDefaultPasswordPolicy() {
         return super.getOne(Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, DEFAULT_POLICY_NAME));
     }
 
@@ -526,4 +596,17 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         };
     }
 
+    private String getUserIdByIdentity(String identity) {
+        User user =  userService.getOne(Wrappers.<User>lambdaQuery()
+                .eq(User::getUserId, identity).or()
+                .eq(User::getPhoneNumber, identity).or()
+                .eq(User::getEmailAddress, identity).or()
+                .eq(User::getUsername, identity));
+
+        if (Objects.isNull(user)) {
+            throw new BizException(MessageConstants.PWD_POLICY_MSG_1010);
+        }
+
+        return user.getUserId();
+    }
 }

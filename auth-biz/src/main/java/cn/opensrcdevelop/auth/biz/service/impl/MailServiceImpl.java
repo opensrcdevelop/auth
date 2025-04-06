@@ -2,6 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.entity.MailTemplate;
+import cn.opensrcdevelop.auth.biz.entity.PasswordPolicy;
+import cn.opensrcdevelop.auth.biz.entity.UpdatePasswordRemindLog;
 import cn.opensrcdevelop.auth.biz.entity.User;
 import cn.opensrcdevelop.auth.biz.service.*;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -19,6 +21,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +38,7 @@ public class MailServiceImpl implements MailService {
     private static final String CREATE_USER_NOTICE_TEMPLATE = "create_user";
     private static final String RESET_PWD_NOTICE_TEMPLATE = "reset_password";
     private static final String BIND_EMAIL_TEMPLATE = "bind_email";
+    private static final String REMIND_UPDATE_PWD_TEMPLATE = "remind_update_password";
 
 
     @Resource
@@ -43,6 +48,7 @@ public class MailServiceImpl implements MailService {
     private final VerificationCodeService verificationCodeService;
     private final MailTemplateService mailTemplateService;
     private final SystemSettingService systemSettingService;
+    private final UpdatePasswordRemindLogService updatePasswordRemindLogService;
 
     /**
      * 发送邮箱验证码
@@ -183,5 +189,47 @@ public class MailServiceImpl implements MailService {
         mailInfo.setSubject(mailTemplate.getSubject());
         mailInfo.setContent(mailTemplate.getTemplateContent());
         CompletableFuture.runAsync(() -> MailUtil.sendHtmlTemplateEmail(mailInfo, parameters));
+    }
+
+    /**
+     * 发送修改密码提醒邮件
+     *
+     * @param user 用户
+     * @param expireTime 过期时间
+     * @param executeTime 执行时间
+     */
+    @Override
+    public void sendRemindUpdatePwd(User user, PasswordPolicy passwordPolicy, LocalDateTime expireTime, LocalDateTime executeTime) {
+        // 1. 发送邮件
+        // 1.1 获取邮件模版
+        MailTemplate mailTemplate = mailTemplateService.getByCode(REMIND_UPDATE_PWD_TEMPLATE);
+
+        // 1.2 参数设置
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put(CommonConstants.USERNAME, user.getUsername());
+        parameters.put("expire_time", expireTime.format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
+
+        // 1.3 设置 JavaMailSender
+        MailUtil.setJavaMailSender(systemSettingService.buildJavaMailSender());
+
+        // 1.4 发送邮件
+        MailInfo mailInfo = new MailInfo();
+        mailInfo.setFrom(mailTemplate.getSender());
+        mailInfo.setTo(List.of(user.getEmailAddress()));
+        mailInfo.setSubject(mailTemplate.getSubject());
+        mailInfo.setContent(mailTemplate.getTemplateContent());
+        CompletableFuture.runAsync(() -> MailUtil.sendHtmlTemplateEmail(mailInfo, parameters))
+                .whenComplete((result, ex) -> {
+                    // 1.5 记录日志
+                    boolean success = ex == null;
+                    UpdatePasswordRemindLog remindLog = new UpdatePasswordRemindLog();
+                    remindLog.setUserId(user.getUserId());
+                    remindLog.setPolicyId(passwordPolicy.getPolicyId());
+                    remindLog.setRemindTime(executeTime);
+                    remindLog.setRemindMethod("MAIL");
+                    remindLog.setSuccess(success);
+
+                    updatePasswordRemindLogService.save(remindLog);
+                });
     }
 }

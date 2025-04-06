@@ -281,7 +281,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -304,7 +304,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -325,7 +325,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -346,7 +346,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >

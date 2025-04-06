@@ -161,7 +161,7 @@ export function getPasswordPolicyDdetail(id: string) {
 
 /**
  * 检查密码
- * 
+ *
  * @param data 请求数据
  * @returns 响应结果
  */
@@ -169,5 +169,31 @@ export function checkPassword(data: any) {
   return noneLoadingApiRequest.post({
     url: "/setting/passwordPolicy/check",
     data,
+  });
+}
+
+/**
+ *  检查密码（不直接使用密码策略）
+ *
+ * @param data 请求数据
+ * @returns 响应结果
+ */
+export function checkPasswordWithoutPolicy(data: any) {
+  return noneLoadingApiRequest.post({
+    url: "/setting/passwordPolicy/checkWithoutPolicy",
+    data,
+  });
+}
+
+/**
+ * 获取密码策略提醒日志列表
+ *
+ * @param params 请求参数
+ * @returns 密码策略提醒日志列表
+ */
+export function getUpdatePasswordRemindLogList(params: any) {
+  return apiRequest.get({
+    url: "/setting/passwordPolicy/remindLog/list",
+    params,
   });
 }

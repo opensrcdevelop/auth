@@ -42,7 +42,7 @@ export default indexTs;
                   <template #cell="{ record }">
                     <span
                       class="table-column-policyname"
-                      @click="handleToPasswordPolicyDetail(record)"
+                      @click="handleToPasswordPolicyDetail(record.id)"
                     >
                       {{ record.name }}
                     </span>
@@ -74,7 +74,10 @@ export default indexTs;
                         </template>
                       </a-button>
                       <template #content>
-                        <a-doption style="color: #e8353e" @click="handleDeletePasswordPolicy(record)">
+                        <a-doption
+                          style="color: #e8353e"
+                          @click="handleDeletePasswordPolicy(record)"
+                        >
                           <template #icon>
                             <icon-delete />
                           </template>
@@ -82,6 +85,62 @@ export default indexTs;
                         >
                       </template>
                     </a-dropdown>
+                  </template>
+                </a-table-column>
+              </template>
+            </a-table>
+          </div>
+        </a-tab-pane>
+        <a-tab-pane key="remind_logs" title="密码到期提醒记录">
+          <div class="tab-container">
+            <a-input-search
+              :style="{ width: '320px', marginBottom: '16px' }"
+              placeholder="输入用户名或策略名称进行搜索"
+              allow-clear
+              v-model="remindLogSearchKeyword"
+              @search="handleGetRemindLogList(1, 15)"
+              @keyup.enter.native="handleGetRemindLogList(1, 15)"
+              @clear="handleGetRemindLogList(1, 15)"
+            />
+            <a-table
+              :data="remindLogList"
+              :bordered="false"
+              :scroll="{ y: '100%' }"
+              :pagination="remindLogListPagination.pagination"
+              @page-change="remindLogListPagination.handlePageChange"
+              @page-size-change="remindLogListPagination.handlePageSizeChange"
+            >
+              <template #columns>
+                <a-table-column title="用户">
+                  <template #cell="{ record }">
+                    <span class="table-column-username" @click="handleToUserDetail(record.userId)">
+                      {{ record.username }}
+                    </span>
+                  </template>
+                </a-table-column>
+                <a-table-column title="密码策略">
+                  <template #cell="{ record }">
+                    <span class="table-column-policyname" @click="handleToPasswordPolicyDetail(record.policyId)">
+                      {{ record.policyName }}
+                    </span>
+                  </template>
+                </a-table-column>
+                <a-table-column title="提醒时间">
+                  <template #cell="{ record }">
+                    <span>
+                      {{ record.remindTime }}
+                    </span>
+                  </template>
+                </a-table-column>
+                <a-table-column title="提醒方式">
+                  <template #cell="{ record }">
+                    <span v-if="record.remindMethod === 'MAIL'"> 邮件 </span>
+                  </template>
+                </a-table-column>
+                <a-table-column title="结果">
+                  <template #cell="{ record }">
+                    <a-tag color="green" v-if="record.success">成功</a-tag>
+                    <a-tag color="red" v-else>失败</a-tag>
                   </template>
                 </a-table-column>
               </template>

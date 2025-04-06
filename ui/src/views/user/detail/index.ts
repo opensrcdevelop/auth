@@ -1,33 +1,25 @@
-import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
+import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
   clearAuthorizedTokens,
-  getUserPermissions,
+  clearAuthorizedTokensByLoginId,
   getUserAttrs,
   getUserDetail,
+  getUserLoginLogs,
+  getUserPermissions,
   rebindMfaDevice,
   updateUser,
-  getUserLoginLogs,
-  clearAuthorizedTokensByLoginId,
 } from "@/api/user";
-import {
-  generateRandomString,
-  getQueryString,
-  handleApiError,
-  handleApiSuccess,
-} from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { addRoleMapping, getRoleList, removeRoleMapping } from "@/api/role";
-import {
-  addUserGroupMapping,
-  getUserGroupList,
-  removeUserGroupMapping,
-} from "@/api/userGroup";
-import { cancelAuthorization } from "@/api/permission";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
+import {generateRandomString, getQueryString, handleApiError, handleApiSuccess,} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {addRoleMapping, getRoleList, removeRoleMapping} from "@/api/role";
+import {addUserGroupMapping, getUserGroupList, removeUserGroupMapping,} from "@/api/userGroup";
+import {cancelAuthorization} from "@/api/permission";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
-import { getEnabledDictData } from "@/api/dict";
-import { usePagination } from "@/hooks/usePagination";
+import {getEnabledDictData} from "@/api/dict";
+import {usePagination} from "@/hooks/usePagination";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
 
 /**
  * 返回上一级
@@ -788,24 +780,29 @@ const handleCloseResetPwdModal = () => {
  * 生成随机密码
  */
 const handleGeneratePassword = () => {
-  resetPwdForm.password = generateRandomString(12);
+  passwordCheckerRef.value.setPassword(generateRandomString(12));
 };
 
 /**
  * 提交重置密码表单
  */
 const handleResetPwdFormSubmit = () => {
+  if (!checkPasswordRes.valid) {
+    return;
+  }
+
   if (resetPwdForm.rawEmail && !resetPwdForm.emailAddress) {
     resetPwdForm.emailAddress = resetPwdForm.rawEmail;
   }
 
-  delete resetPwdForm.rawEmail;
-  if (!resetPwdForm.sendEmail) {
-    delete resetPwdForm.emailAddress;
-  }
-
   resetPwdFormSubmitLoading.value = true;
-  updateUser(resetPwdForm)
+  updateUser({
+    userId: resetPwdForm.userId,
+    password: resetPwdForm.password,
+    emailAddress: resetPwdForm.emailAddress,
+    needChangePwd: resetPwdForm.needChangePwd,
+    sendEmail: resetPwdForm.sendEmail,
+  })
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("重置密码成功");
@@ -819,6 +816,42 @@ const handleResetPwdFormSubmit = () => {
       resetPwdFormSubmitLoading.value = false;
     });
 };
+
+/**
+ * 密码检查
+ */
+const passwordCheckerRef = ref(null);
+const checkPasswordLoading = ref(false);
+const checkPasswordRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkPasswordLoading.value = true;
+  resetPwdForm.password = password;
+  checkPasswordWithoutPolicy({
+    identity: resetPwdForm.userId,
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkPasswordRes.valid = data.valid;
+        checkPasswordRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkPasswordRes.ruleResults = data.ruleResults;
+        } else {
+          checkPasswordRes.ruleResults = [];
+        }
+        checkPasswordLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkPasswordLoading.value = false;
+    });
+};
+
 
 /**
  * 取消授权
@@ -1101,6 +1134,10 @@ export default defineComponent({
       handleLoginLogsPageChange,
       handleLoginLogsPageSizeChange,
       handleClearAuthorizedTokensByLoginId,
+      passwordCheckerRef,
+      checkPasswordLoading,
+      checkPasswordRes,
+      handleCheckPassword
     };
   },
 });

@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -55,6 +56,8 @@ public class User extends BaseEntity implements UserDetails, Serializable {
     private Boolean consoleAccess;
 
     private Integer loginFailedCnt;
+
+    private LocalDateTime lastUpdatePasswordTime;
 
     @TableField(exist = false)
     private Collection<GrantedAuthority> authorities;

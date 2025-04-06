@@ -246,24 +246,19 @@ export default loginTs;
           @submit-success="handleResetPwdFormSubmit"
         >
           <a-form-item field="newPwd" label="新密码" hide-label>
-            <a-input-password
-              v-model="resetPwdForm.newPwd"
+            <password-checker
+              type="password"
               placeholder="请输入新密码"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
+              :loading="checkLoading"
+              @check="handleCheckPassword"
+              :checkRes="checkRes"
+            />
           </a-form-item>
           <a-form-item field="confirmPwd" label="确认密码" hide-label>
             <a-input-password
               v-model="resetPwdForm.confirmPwd"
               placeholder="请确认密码"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
+            />
           </a-form-item>
           <a-form-item hide-label>
             <a-button html-type="submit" type="primary" class="login-btn"

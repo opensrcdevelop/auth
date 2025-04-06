@@ -51,6 +51,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,6 +73,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final DbOAuth2AuthorizationService dbOAuth2AuthorizationService;
     private final VerificationCodeService verificationCodeService;
     private final LoginLogService loginLogService;
+    private final PasswordPolicyService passwordPolicyService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -105,6 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setPhoneNumber(requestDto.getPhoneNumber());
         user.setEmailAddress(requestDto.getEmailAddress());
         user.setNeedChangePwd(requestDto.getNeedChangePwd());
+        user.setLastUpdatePasswordTime(LocalDateTime.now());
 
         // 5. 插入数据库
         super.save(user);
@@ -224,7 +227,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         String password = requestDto.getPassword();
         if (StringUtils.isNotBlank(password)) {
+            // 检查密码强度
+            passwordPolicyService.checkPasswordStrength(userId, password);
             updateUser.setPassword(passwordEncoder.encode(password));
+            updateUser.setLastUpdatePasswordTime(LocalDateTime.now());
         }
         super.updateById(updateUser);
 
@@ -303,15 +309,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BizException(MessageConstants.LOGIN_MSG_1002);
         }
 
-        // 3. 更新密码
+        // 3. 检查密码强度
+        passwordPolicyService.checkPasswordStrength(user.getUserId(), newPwd);
+
+        // 4. 更新密码
         User updateUser = new User();
         updateUser.setUserId(user.getUserId());
         updateUser.setPassword(passwordEncoder.encode(newPwd));
         updateUser.setNeedChangePwd(false);
+        updateUser.setLastUpdatePasswordTime(LocalDateTime.now());
         updateUser.setVersion(user.getVersion());
         super.updateById(updateUser);
 
-        // 4. 移除 SESSION 变更密码标记
+        // 5. 移除 SESSION 变更密码标记
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.removeAttribute(AuthConstants.SESSION_CHANGED_PWD);
@@ -441,10 +451,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BizException(MessageConstants.RESET_PWD_MSG_1000);
         }
 
-        // 3. 更新密码
+        // 3. 检查密码强度
+        passwordPolicyService.checkPasswordStrength(user.getUserId(), requestDto.getNewPwd());
+
+        // 4. 更新密码
         User updateUser = new User();
         updateUser.setUserId(user.getUserId());
         updateUser.setPassword(passwordEncoder.encode(requestDto.getNewPwd()));
+        updateUser.setLastUpdatePasswordTime(LocalDateTime.now());
         updateUser.setVersion(user.getVersion());
         super.updateById(updateUser);
     }

@@ -1,9 +1,12 @@
-import { changePwd } from "@/api/login";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { defineComponent, reactive } from "vue";
+import {changePwd} from "@/api/login";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { Notification } from "@arco-design/web-vue";
-import { logoutSubmit } from "@/api/logout";
+import {Notification} from "@arco-design/web-vue";
+import {logoutSubmit} from "@/api/logout";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
+
+const type = ref("0");
 
 const changePwdForm = reactive({
   rawPwd: "",
@@ -34,6 +37,10 @@ const changePwdFormRules = {
  * @param formData 变更密码表单
  */
 const handleChangePwdFormSubmit = (formData: any) => {
+  if (!checkRes.valid) {
+    return;
+  }
+
   changePwd({
     rawPwd: formData.rawPwd,
     newPwd: formData.newPwd,
@@ -63,12 +70,53 @@ const handleChangePwdFormSubmit = (formData: any) => {
     });
 };
 
+/**
+ * 密码检查
+ */
+const checkLoading = ref(false);
+const checkRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkLoading.value = true;
+  changePwdForm.newPwd = password;
+  checkPasswordWithoutPolicy({
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkRes.valid = data.valid;
+        checkRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkRes.ruleResults = data.ruleResults;
+        } else {
+          checkRes.ruleResults = [];
+        }
+        checkLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkLoading.value = false;
+    });
+};
+
 export default defineComponent({
   setup() {
+    onMounted(() => {
+      type.value = getQueryString("type") || "0";
+    })
+
     return {
+      type,
       changePwdForm,
       changePwdFormRules,
       handleChangePwdFormSubmit,
+      checkLoading,
+      checkRes,
+      handleCheckPassword,
     };
   },
 });

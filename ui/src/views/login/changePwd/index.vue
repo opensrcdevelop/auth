@@ -1,5 +1,6 @@
 <script lang="ts">
 import changePwdTs from "./index";
+
 export default changePwdTs;
 </script>
 
@@ -11,7 +12,13 @@ export default changePwdTs;
   <div class="change-pwd-container">
     <div class="form-container">
       <div class="tip-info-container">
-        <a-alert center>请修改密码。</a-alert>
+        <div class="change-pwd-title">修改密码</div>
+        <div class="change-pwd-info" v-if="type === '0'">
+          请修改您的账户密码，以继续使用。
+        </div>
+        <div class="change-pwd-info" v-if="type === '1'">
+          您的账户密码不满足管理员设置的密码策略要求，请修改您的账户密码，以继续使用。
+        </div>
       </div>
       <a-form
         :model="changePwdForm"
@@ -26,9 +33,12 @@ export default changePwdTs;
           />
         </a-form-item>
         <a-form-item field="newPwd" label="新密码">
-          <a-input-password
-            v-model="changePwdForm.newPwd"
+          <password-checker
+            type="password"
             placeholder="请输入新密码"
+            :loading="checkLoading"
+            @check="handleCheckPassword"
+            :checkRes="checkRes"
           />
         </a-form-item>
         <a-form-item field="confirmPwd" label="确认密码">

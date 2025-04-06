@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.auth.biz.dto.system.password;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -13,7 +12,6 @@ public class CheckPasswordStrengthRequestDto {
     @NotNull
     private String password;
 
-    @Schema(description = "用户ID")
-    @NotBlank
-    private String userId;
+    @Schema(description = "用户ID / 用户名 / 手机号码 / 邮箱")
+    private String identity;
 }

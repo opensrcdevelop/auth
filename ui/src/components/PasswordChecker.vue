@@ -3,25 +3,30 @@
     <a-input-password
       v-if="type === 'password'"
       v-model="password"
+      :placeholder="props.placeholder"
       :error="isError"
       @input="doCheck"
     >
       <template #suffix>
-        <div class="icon" v-if="loading">
+        <div class="icon" v-if="loading" style="margin-left: 4px;">
           <icon-loading />
         </div>
-        <div class="icon" v-else>
+        <div class="icon" v-else style="margin-left: 4px;">
           <icon-check-circle
-            v-if="!isError"
+            v-if="!isError && password"
             style="color: rgb(var(--green-6))"
           />
-          <icon-close-circle v-else style="color: rgb(var(--red-6))" />
+          <icon-close-circle
+            v-if="isError && password"
+            style="color: rgb(var(--red-6))"
+          />
         </div>
       </template>
     </a-input-password>
     <a-input
       v-if="type === 'text'"
       v-model="password"
+      :placeholder="props.placeholder"
       :error="isError"
       @input="doCheck"
     >
@@ -34,25 +39,30 @@
             v-if="!isError && password"
             style="color: rgb(var(--green-6))"
           />
-          <icon-close-circle v-if="isError && password" style="color: rgb(var(--red-6))" />
+          <icon-close-circle
+            v-if="isError && password"
+            style="color: rgb(var(--red-6))"
+          />
         </div>
       </template>
     </a-input>
-    <div class="error-text" v-if="isError && !hasRuleResults">{{ errorText }}</div>
+    <div class="error-text" v-if="isError && !hasRuleResults">
+      {{ errorText }}
+    </div>
     <transition name="slide-down">
-        <div class="rule-result" v-if="isError && hasRuleResults">
+      <div class="rule-result" v-if="isError && hasRuleResults">
         <div class="rule-text">你的密码需要满足如下要求</div>
         <div v-for="rule in props.checkRes?.ruleResults" :key="rule.rule">
-            <div class="rule-text" v-if="rule.valid">
-                <icon-check-circle style="color: rgb(var(--green-6))" />
-                {{ rule.rule }}
-            </div>
-            <div class="rule-text" v-else>
-                <icon-close-circle style="color: rgb(var(--red-6))" />
-                {{ rule.rule }}
-            </div>
+          <div class="rule-text" v-if="rule.valid">
+            <icon-check-circle style="color: rgb(var(--green-6))" />
+            {{ rule.rule }}
+          </div>
+          <div class="rule-text" v-else>
+            <icon-close-circle style="color: rgb(var(--red-6))" />
+            {{ rule.rule }}
+          </div>
         </div>
-    </div>
+      </div>
     </transition>
   </div>
 </template>
@@ -72,7 +82,11 @@ const props = defineProps({
   checkRes: {
     type: Object as () => CheckResult,
     required: false,
-  }
+  },
+  placeholder: {
+    type: String,
+    required: false,
+  },
 });
 
 interface RuleResult {
@@ -93,11 +107,11 @@ const emits = defineEmits<{
 const password = ref("");
 
 const isError = computed(() => {
-    if (password.value.length === 0) {
-        return false;
-    }
-    return props.checkRes?.valid === false;
-})
+  if (password.value.length === 0) {
+    return false;
+  }
+  return props.checkRes?.valid === false;
+});
 
 const errorText = computed(() => {
   if (props.checkRes?.errorMessage) {
@@ -111,13 +125,22 @@ const hasRuleResults = computed(() => {
     return props.checkRes.ruleResults.length > 0;
   }
   return false;
-})
+});
 
 const doCheck = () => {
   if (password.value) {
     emits("check", password.value);
   }
 };
+
+const setPassword = (value: string) => {
+  password.value = value;
+  doCheck();
+}
+
+defineExpose({
+  setPassword,
+})
 </script>
 
 <style scoped lang="scss">
@@ -125,7 +148,6 @@ const doCheck = () => {
   width: 100%;
 
   .icon {
-    margin-left: 8px;
     color: rgb(var(--arcoblue-6));
   }
 }
@@ -137,16 +159,16 @@ const doCheck = () => {
 }
 
 .rule-result {
-    margin-top: 12px;
-    color: var(--color-text-2);
-    padding: 12px;
-    border-radius: 4px;
-    border: 1px solid #eeeff1;
-    transition: all 0.3s;
+  margin-top: 12px;
+  color: var(--color-text-2);
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #eeeff1;
+  transition: all 0.3s;
 
-    .rule-text {
-        line-height: 24px;
-    }
+  .rule-text {
+    line-height: 24px;
+  }
 }
 
 .slide-down-enter-active,

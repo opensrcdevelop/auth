@@ -23,4 +23,8 @@ public interface PasswordPolicyService extends IService<PasswordPolicy> {
     CheckPasswordStrengthResponseDto checkPasswordStrength(CheckPasswordStrengthWithPolicyRequestDto requestDto);
 
     CheckPasswordStrengthResponseDto checkPasswordStrength(CheckPasswordStrengthRequestDto requestDto);
+
+    boolean checkLoginPasswordStrength(String userId, String password);
+
+    void checkPasswordStrength(String userId, String password);
 }

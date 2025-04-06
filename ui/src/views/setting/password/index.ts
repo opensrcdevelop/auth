@@ -1,11 +1,13 @@
 import {
-    deletePasswordPolicy,
-    getPasswordPolicyList,
-    updatePasswordPolicy,
-    updatePasswordPolicyPriority,
+  deletePasswordPolicy,
+  getPasswordPolicyList,
+  getUpdatePasswordRemindLogList,
+  updatePasswordPolicy,
+  updatePasswordPolicyPriority,
 } from "@/api/setting";
+import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
-import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 
@@ -24,6 +26,18 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  handleTabInit(activeTab.value);
+};
+
+const handleTabInit = (key: string) => {
+  switch (key) {
+    case "password_policy":
+      handleGetPasswordPolicyList();
+      break;
+    case "remind_logs":
+      handleGetRemindLogList();
+      break;
+  }
 };
 
 /**
@@ -123,17 +137,17 @@ const handleUpdatePasswordPolicyState = (data: any) => {
 /**
  * 跳转密码策略详情
  */
-const handleToPasswordPolicyDetail = (passwordPolicy: any) => {
+const handleToPasswordPolicyDetail = (id: string) => {
   router.push({
     path: "/system_setting/password/detail",
     query: {
-      id: passwordPolicy.id,
+      id
     },
   });
 };
 
 /**
- * 删除角色
+ * 删除密码策略
  */
 const handleDeletePasswordPolicy = (passwordPolicy: any) => {
   Modal.warning({
@@ -156,10 +170,71 @@ const handleDeletePasswordPolicy = (passwordPolicy: any) => {
   });
 };
 
+/**
+ * 密码到期提醒记录列表
+ */
+const remindLogList = reactive([]);
+const remindLogSearchKeyword = ref(null);
+let remindLogListPagination;
+
+/**
+ * 获取密码到期提醒记录列表
+ *
+ * @param page 页数
+ * @param size 条数
+ */
+const handleGetRemindLogList = (page: number = 1, size: number = 15) => {
+  getUpdatePasswordRemindLogList({
+    page,
+    size,
+    keyword: remindLogSearchKeyword.value,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        remindLogList.length = 0;
+        remindLogList.push(...data.list);
+
+        remindLogListPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取资源列表");
+    });
+};
+
+/**
+ * 跳转用户详情
+ *
+ * @param user 用户信息
+ */
+const handleToUserDetail = (id: string) => {
+  router.push({
+    path: "/user/detail",
+    query: {
+      id,
+      active_tab: "user_info",
+    },
+  });
+};
+
+
 export default defineComponent({
   setup() {
+    const tab = getQueryString("active_tab");
+    remindLogListPagination = usePagination(
+      "remindLogList",
+      ({ page, size }) => {
+        handleGetRemindLogList(page, size);
+      }
+    );
+
     onMounted(() => {
-      handleGetPasswordPolicyList();
+      activeTab.value = tab || "password_policy";
+      handleTabInit(activeTab.value);
     });
 
     return {
@@ -172,6 +247,11 @@ export default defineComponent({
       handleUpdatePasswordPolicyState,
       handleToPasswordPolicyDetail,
       handleDeletePasswordPolicy,
+      remindLogList,
+      remindLogSearchKeyword,
+      remindLogListPagination,
+      handleGetRemindLogList,
+      handleToUserDetail,
     };
   },
 });

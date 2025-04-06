@@ -23,8 +23,24 @@
     }
 
     .tip-info-container {
-      height: 38px;
-      margin-bottom: 16px;
+      .change-pwd-title {
+        color: #282d3c;
+        font-size: 24px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 34px;
+        margin-bottom: 4px;
+      }
+
+      .change-pwd-info {
+        color: #545968;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 20px;
+        margin-bottom: 16px;
+      }
     }
   }
 }

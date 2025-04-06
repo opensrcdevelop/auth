@@ -1,12 +1,9 @@
-import { defineComponent, reactive, ref } from "vue";
+import {defineComponent, reactive, ref} from "vue";
 import router from "@/router";
-import {
-  generateRandomString,
-  handleApiError,
-  handleApiSuccess,
-} from "@/util/tool";
-import { createUser } from "@/api/user";
-import { Notification } from "@arco-design/web-vue";
+import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
+import {createUser} from "@/api/user";
+import {Notification} from "@arco-design/web-vue";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
 
 /**
  * 返回上一级
@@ -58,13 +55,17 @@ const createUserFormRules = {
  * 生成随机密码
  */
 const handleGeneratePassword = () => {
-  createUserForm.password = generateRandomString(12);
+  passwordCheckerRef.value.setPassword(generateRandomString(12));
 };
 
 /**
  * 提交创建用户表单
  */
 const handleCreateUserFormSubmit = () => {
+  if (!checkPasswordRes.valid) {
+    return;
+  }
+
   createUser(createUserForm)
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -82,7 +83,42 @@ const handleCreateUserFormSubmit = () => {
  */
 const handleResetCreateUserForm = () => {
   createUserFormRef.value.resetFields();
-}
+};
+
+/**
+ * 密码检查
+ */
+const passwordCheckerRef = ref(null);
+const checkPasswordLoading = ref(false);
+const checkPasswordRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkPasswordLoading.value = true;
+  createUserForm.password = password;
+  checkPasswordWithoutPolicy({
+    identity: createUserForm.username,
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkPasswordRes.valid = data.valid;
+        checkPasswordRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkPasswordRes.ruleResults = data.ruleResults;
+        } else {
+          checkPasswordRes.ruleResults = [];
+        }
+        checkPasswordLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkPasswordLoading.value = false;
+    });
+};
 
 export default defineComponent({
   setup() {
@@ -93,7 +129,11 @@ export default defineComponent({
       createUserFormRef,
       handleGeneratePassword,
       handleCreateUserFormSubmit,
-      handleResetCreateUserForm
+      handleResetCreateUserForm,
+      passwordCheckerRef,
+      checkPasswordLoading,
+      checkPasswordRes,
+      handleCheckPassword,
     };
   },
 });

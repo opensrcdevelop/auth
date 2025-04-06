@@ -5,6 +5,7 @@ import {checkCode, emailLoginSubmit, loginSubmit, resetPwd, sendEmailCodeSubmit,
 import {logoutSubmit} from "@/api/logout";
 import router from "@/router";
 import {TENANT_NAME} from "@/util/constants";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
 
 /** 租户名称 */
 const tenantName = ref(undefined);
@@ -12,7 +13,7 @@ const tenantName = ref(undefined);
 const passwordLoginForm = reactive({
   username: undefined,
   password: undefined,
-  captchaVerification: undefined
+  captchaVerification: undefined,
 });
 
 const passwordLoginRules = {
@@ -66,7 +67,7 @@ const backToLogin = () => {
  */
 const openCaptchaVerify = () => {
   captchaVerifyRef.value.show();
-}
+};
 
 /**
  * 提交密码登录表单
@@ -75,7 +76,8 @@ const openCaptchaVerify = () => {
  */
 const handlePasswordLoginFromSubmit = (captchaVerification) => {
   loginLoading.value = true;
-  passwordLoginForm.captchaVerification = captchaVerification.captchaVerification;
+  passwordLoginForm.captchaVerification =
+    captchaVerification.captchaVerification;
   loginSubmit(passwordLoginForm)
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -218,6 +220,9 @@ const handleLoginResult = (result: any, loginType: string) => {
   if (result.needChangePwd) {
     router.push({
       path: "/login/changePwd",
+      query: {
+        type: result.changePwdType || "0",
+      },
     });
     return;
   }
@@ -369,6 +374,10 @@ const resetPwdFormRules = {
  * 提交重置密码表单
  */
 const handleResetPwdFormSubmit = (formData: any) => {
+  if (!checkRes.valid) {
+    return;
+  }
+
   delete formData.confirmPwd;
   delete formData.username;
 
@@ -396,6 +405,40 @@ const handleBackToForgotPwd = () => {
   resetPwdFormRef.value.resetFields();
   toResetPwd.value = false;
   toCheckForgotPwdCode.value = true;
+};
+
+/**
+ * 密码检查
+ */
+const checkLoading = ref(false);
+const checkRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkLoading.value = true;
+  resetPwdForm.newPwd = password;
+  checkPasswordWithoutPolicy({
+    identity: resetPwdForm.username,
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkRes.valid = data.valid;
+        checkRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkRes.ruleResults = data.ruleResults;
+        } else {
+          checkRes.ruleResults = [];
+        }
+        checkLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkLoading.value = false;
+    });
 };
 
 export default defineComponent({
@@ -443,6 +486,9 @@ export default defineComponent({
       handleResetPwdFormSubmit,
       handleBackToForgotPwd,
       mfaValidLoading,
+      checkLoading,
+      checkRes,
+      handleCheckPassword,
     };
   },
 });
