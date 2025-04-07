@@ -1,6 +1,7 @@
-import { getEnabledDictData } from "@/api/dict";
-import { changePwd, sendEmailCodeSubmit } from "@/api/login";
-import { logoutSubmit } from "@/api/logout";
+import {getEnabledDictData} from "@/api/dict";
+import {changePwd, sendEmailCodeSubmit} from "@/api/login";
+import {logoutSubmit} from "@/api/logout";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
 import {
   bindEmail,
   getCurrentUser,
@@ -10,10 +11,10 @@ import {
   updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Message, Modal, Notification } from "@arco-design/web-vue";
-import { defineComponent, onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Message, Modal, Notification} from "@arco-design/web-vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
+import {useRoute} from "vue-router";
 
 const activeTab = ref("user_info");
 
@@ -246,6 +247,10 @@ const handleCloseChangePwdModal = () => {
  * @param formData 修改密码表单
  */
 const handleSubmitChangePwdForm = (formData: any) => {
+  if (!checkPasswordRes.valid) {
+    return;
+  }
+
   changePwdFormSubmitLoading.value = true;
   changePwd(formData)
     .then((result: any) => {
@@ -259,6 +264,39 @@ const handleSubmitChangePwdForm = (formData: any) => {
     })
     .finally(() => {
       changePwdFormSubmitLoading.value = false;
+    });
+};
+
+/**
+ * 密码检查
+ */
+const checkPasswordLoading = ref(false);
+const checkPasswordRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkPasswordLoading.value = true;
+  changePwdForm.newPwd = password;
+  checkPasswordWithoutPolicy({
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkPasswordRes.valid = data.valid;
+        checkPasswordRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkPasswordRes.ruleResults = data.ruleResults;
+        } else {
+          checkPasswordRes.ruleResults = [];
+        }
+        checkPasswordLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkPasswordLoading.value = false;
     });
 };
 
@@ -417,6 +455,9 @@ export default defineComponent({
       sendEmailCodeBtnText,
       handleSendEmailCode,
       allDictDatas,
+      checkPasswordLoading,
+      checkPasswordRes,
+      handleCheckPassword,
     };
   },
 });

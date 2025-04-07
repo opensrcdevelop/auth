@@ -1,5 +1,6 @@
 <script lang="ts">
 import homeTs from "./index";
+
 export default homeTs;
 </script>
 
@@ -200,9 +201,12 @@ export default homeTs;
         />
       </a-form-item>
       <a-form-item field="newPwd" label="新密码">
-        <a-input-password
-          v-model="changePwdForm.newPwd"
+        <password-checker
+          type="password"
           placeholder="请输入新密码"
+          :loading="checkPasswordLoading"
+          @check="handleCheckPassword"
+          :checkRes="checkPasswordRes"
         />
       </a-form-item>
       <a-form-item field="confirmPwd" label="确认密码">

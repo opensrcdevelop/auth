@@ -98,6 +98,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(controllerPathPrefix + "/tenant/check/*");
         excludePathPatterns.add(controllerPathPrefix + "/captcha/get");
         excludePathPatterns.add(controllerPathPrefix + "/captcha/check");
+        excludePathPatterns.add(controllerPathPrefix + "/setting/passwordPolicy/checkWithoutPolicy");
 
         totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return totpValidFilter;
