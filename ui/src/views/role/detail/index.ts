@@ -750,11 +750,10 @@ const handleToPermissionDetail = (id: string) => {
 export default defineComponent({
   setup() {
     const roleId = getQueryString("id");
-    const tab = getQueryString("active_tab");
     rolePrincipalsPagination = usePagination(
       `${roleId}_rolePrincipals`,
       ({ page, size }) => {
-        if (tab === "role_info") {
+        if (getQueryString("active_tab") === "role_info") {
           handleGetRolePrincipals(roleId, page, size);
         }
       }
@@ -762,14 +761,14 @@ export default defineComponent({
     permissionsPagination = usePagination(
       `${roleId}_rolePermissions`,
       ({ page, size }) => {
-        if (tab === "permission_management") {
+        if (getQueryString("active_tab") === "permission_management") {
           handleGetRolePermissions(roleId, page, size);
         }
       }
     );
 
     onMounted(() => {
-      activeTab.value = tab || "role_info";
+      activeTab.value = getQueryString("active_tab") || "role_info";
       handleGetRoleDetail(roleId);
     });
 
