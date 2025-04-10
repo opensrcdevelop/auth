@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.resource.ResourceMapper">
+
+    <resultMap id="resourceResultMap" type="cn.opensrcdevelop.auth.biz.entity.resource.Resource">
+        <id column="resource_id" property="resourceId" />
+        <result column="resource_name" property="resourceName" />
+        <result column="resource_code" property="resourceCode" />
+        <result column="api_identifier" property="apiIdentifier" />
+        <association property="resourceGroup" javaType="cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup">
+            <id column="resource_group_id" property="resourceGroupId" />
+            <result column="resource_group_code" property="resourceGroupCode" />
+            <result column="resource_group_name" property="resourceGroupName" />
+        </association>
+    </resultMap>
+
+    <select id="searchResources" resultMap="resourceResultMap">
+        SELECT
+            t1.resource_id,
+            t1.resource_name,
+            t1.resource_code,
+            t1.api_identifier,
+            t2.resource_group_id,
+            t2.resource_group_code,
+            t2.resource_group_name
+        FROM
+            t_resource t1
+            LEFT JOIN t_resource_group t2 ON t2.resource_group_id = t1.resource_group_id
+        WHERE
+            t1.deleted = false
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    t1.resource_name LIKE CONCAT( '%', #{keyword}, '%' )
+                    OR t1.resource_code LIKE CONCAT( '%', #{keyword}, '%' )
+                )
+        </if>
+        ORDER BY t2.resource_group_code, t1.resource_code
+    </select>
+</mapper>

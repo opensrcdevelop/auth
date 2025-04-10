@@ -1,8 +1,17 @@
 package cn.opensrcdevelop.auth.biz.task;
 
-import cn.opensrcdevelop.auth.biz.entity.*;
-import cn.opensrcdevelop.auth.biz.service.*;
-import cn.opensrcdevelop.auth.biz.service.impl.PasswordPolicyServiceImpl;
+import cn.opensrcdevelop.auth.biz.entity.system.password.PasswordPolicy;
+import cn.opensrcdevelop.auth.biz.entity.system.password.PasswordPolicyMapping;
+import cn.opensrcdevelop.auth.biz.entity.system.password.UpdatePasswordRemindLog;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
+import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
+import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyMappingService;
+import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
+import cn.opensrcdevelop.auth.biz.service.system.password.UpdatePasswordRemindLogService;
+import cn.opensrcdevelop.auth.biz.service.system.password.impl.PasswordPolicyServiceImpl;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupMappingService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -23,7 +32,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -183,24 +191,9 @@ public class UpdatePasswordRemindTask {
         }
 
         // 1. 添加密码周期
-        LocalDateTime passwordExpirationTime = lastPasswordUpdateTime.plus(passwordPolicy.getForcedCycle(), convert2ChronoUnit(passwordPolicy.getForcedCycleUnit()));
+        LocalDateTime passwordExpirationTime = lastPasswordUpdateTime.plus(passwordPolicy.getForcedCycle(), CommonUtil.convertDBTimeUnit2ChronoUnit(passwordPolicy.getForcedCycleUnit()));
         // 2. 判断密码是否过期
         return !executeTime.isBefore(passwordExpirationTime);
-    }
-
-    /**
-     * 转换时间单位
-     *
-     * @param unit 时间单位
-     * @return 转换后的时间单位
-     */
-    private ChronoUnit convert2ChronoUnit(String unit) {
-        return switch (unit) {
-            case "DAY" -> ChronoUnit.DAYS;
-            case "MONTH" -> ChronoUnit.MONTHS;
-            case "YEAR" -> ChronoUnit.YEARS;
-            default -> throw new IllegalArgumentException("不支持的时间单位: " + unit);
-        };
     }
 
     /**
@@ -236,10 +229,10 @@ public class UpdatePasswordRemindTask {
         }
 
         // 1. 获取密码过期时间
-        LocalDateTime passwordExpirationTime = lastPasswordUpdateTime.plus(passwordPolicy.getForcedCycle(), convert2ChronoUnit(passwordPolicy.getForcedCycleUnit()));
+        LocalDateTime passwordExpirationTime = lastPasswordUpdateTime.plus(passwordPolicy.getForcedCycle(), CommonUtil.convertDBTimeUnit2ChronoUnit(passwordPolicy.getForcedCycleUnit()));
 
         // 2. 减去密码提醒周期（提醒开始时间）
-        LocalDateTime passwordRemindTime = passwordExpirationTime.minus(passwordPolicy.getRemindCycle(), convert2ChronoUnit(passwordPolicy.getRemindCycleUnit()));
+        LocalDateTime passwordRemindTime = passwordExpirationTime.minus(passwordPolicy.getRemindCycle(), CommonUtil.convertDBTimeUnit2ChronoUnit(passwordPolicy.getRemindCycleUnit()));
 
         // 3. 判断密码是否即将过期
         return !executeTime.isBefore(passwordRemindTime) && executeTime.isBefore(passwordExpirationTime);
@@ -272,7 +265,7 @@ public class UpdatePasswordRemindTask {
                 log.info("用户: [{}] 未绑定邮箱，无法发送修改密码提醒邮件", user.getUserId());
                 return;
             }
-            mailService.sendRemindUpdatePwd(user, passwordPolicy, user.getLastUpdatePasswordTime().plus(passwordPolicy.getRemindCycle(), convert2ChronoUnit(passwordPolicy.getRemindCycleUnit())), executeTime);
+            mailService.sendRemindUpdatePwd(user, passwordPolicy, user.getLastUpdatePasswordTime().plus(passwordPolicy.getRemindCycle(), CommonUtil.convertDBTimeUnit2ChronoUnit(passwordPolicy.getRemindCycleUnit())), executeTime);
         }
     }
 }

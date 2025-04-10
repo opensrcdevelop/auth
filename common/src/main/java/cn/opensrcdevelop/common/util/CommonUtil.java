@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -312,6 +313,21 @@ public class CommonUtil {
         if (CollectionUtils.isNotEmpty(constraintViolations)) {
             throw new ValidationException(constraintViolations);
         }
+    }
+
+    /**
+     * 时间单位转换
+     *
+     * @param unit 时间单位
+     * @return ChronoUnit
+     */
+    public static ChronoUnit convertDBTimeUnit2ChronoUnit(String unit) {
+        return switch (unit) {
+            case "DAY" -> ChronoUnit.DAYS;
+            case "MONTH" -> ChronoUnit.MONTHS;
+            case "YEAR" -> ChronoUnit.YEARS;
+            default -> throw new IllegalArgumentException("不支持的时间单位: " + unit);
+        };
     }
 
     @FunctionalInterface

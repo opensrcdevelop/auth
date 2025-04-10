@@ -18,4 +18,5 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
 }

@@ -1,14 +1,16 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.dto.system.jwt.JwtSecretInfoDto;
+import cn.opensrcdevelop.auth.biz.dto.system.jwt.JwtSecretRotationConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailMessageConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailServiceConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.system.password.*;
-import cn.opensrcdevelop.auth.biz.service.MailTemplateService;
-import cn.opensrcdevelop.auth.biz.service.PasswordPolicyService;
-import cn.opensrcdevelop.auth.biz.service.SystemSettingService;
-import cn.opensrcdevelop.auth.biz.service.UpdatePasswordRemindLogService;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import cn.opensrcdevelop.auth.biz.service.system.mail.MailTemplateService;
+import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
+import cn.opensrcdevelop.auth.biz.service.system.password.UpdatePasswordRemindLogService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -40,7 +42,7 @@ public class SystemSettingController {
     private final UpdatePasswordRemindLogService updatePasswordRemindLogService;
 
     @Operation(summary = "获取邮件模版列表", description = "获取邮件模版列表")
-    @GetMapping("/mailTemplate/list")
+    @GetMapping("/message/mail/template/list")
     @Authorize({ "allMessageSettingPermissions", "getMailTemplateList" })
     public List<MailTemplateResponseDto> mailTemplateList() {
         return mailTemplateService.templateList();
@@ -50,42 +52,42 @@ public class SystemSettingController {
     @Parameters({
             @Parameter(name = "id", description = "邮件模版ID", in = ParameterIn.PATH, required = true)
     })
-    @GetMapping("/mailTemplate/{id}")
+    @GetMapping("/message/mail/template/{id}")
     @Authorize({ "allMessageSettingPermissions", "getMailTemplateDetail" })
     public MailTemplateResponseDto mailTemplateDetail(@PathVariable @NotBlank String id) {
         return mailTemplateService.detail(id);
     }
 
     @Operation(summary = "更新邮件模版", description = "更新邮件模版")
-    @PutMapping("/mailTemplate")
+    @PutMapping("/message/mail/template")
     @Authorize({ "allMessageSettingPermissions", "updateMailTemplate" })
     public void updateMailTemplate(@RequestBody @Valid MailTemplateRequestDto requestDto) {
         mailTemplateService.update(requestDto);
     }
 
     @Operation(summary = "获取邮件服务配置", description = "获取邮件服务配置")
-    @GetMapping("/mailService")
+    @GetMapping("/message/mail/service")
     @Authorize({ "allMessageSettingPermissions", "getMailServiceConfig" })
     public MailServiceConfigDto getMailServiceConfig() {
         return systemSettingService.getMailServerConfig();
     }
 
     @Operation(summary = "保存邮件服务配置", description = "保存邮件服务配置")
-    @PostMapping("/mailService")
+    @PostMapping("/message/mail/service")
     @Authorize({ "allMessageSettingPermissions", "saveMailServiceConfig" })
     public void saveMailServiceConfig(@RequestBody @Valid MailServiceConfigDto requestDto) {
         systemSettingService.saveMailServerConfig(requestDto);
     }
 
     @Operation(summary = "获取邮件消息配置", description = "获取邮件消息配置")
-    @GetMapping("/mailMessage")
+    @GetMapping("/message/mail/config")
     @Authorize({ "allMessageSettingPermissions", "getMailMessageConfig" })
     public MailMessageConfigDto getMailMessageConfig() {
         return systemSettingService.getMailMessageConfig();
     }
 
     @Operation(summary = "保存邮件消息配置", description = "保存邮件消息配置")
-    @PostMapping("/mailMessage")
+    @PostMapping("/message/mail/config")
     @Authorize({ "allMessageSettingPermissions", "saveMailMessageConfig" })
     public void saveMailMessageConfig(@RequestBody @Valid MailMessageConfigDto requestDto) {
         systemSettingService.saveMailMessageConfig(requestDto);
@@ -159,5 +161,29 @@ public class SystemSettingController {
     @Authorize({ "allPwdPolicyPermissions", "listUpdatePwdRemindLog" })
     public PageData<UpdatePasswordRemindLogResponseDto> getUpdatePasswordRemindLogList(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return updatePasswordRemindLogService.list(page, size, keyword);
+    }
+
+    @Operation(summary = "获取 JWT 密钥信息", description = "获取 JWT 密钥信息")
+    @GetMapping("/jwt/secret/info")
+    public JwtSecretInfoDto getJwtSecretInfo() {
+        return systemSettingService.getJwtSecretInfo();
+    }
+
+    @Operation(summary = "获取 JWT 密钥轮换配置", description = "获取 JWT 密钥轮换配置")
+    @GetMapping("/jwt/secret/rotation/config")
+    public JwtSecretRotationConfigDto getJwtSecretRotationConfig() {
+        return systemSettingService.getJwtSecretRotationConfig();
+    }
+
+    @Operation(summary = "保存 JWT 密钥轮换配置", description = "保存 JWT 密钥轮换配置")
+    @PostMapping("/jwt/secret/rotation/config")
+    public void setJwtSecretRotationConfig(@RequestBody @Valid JwtSecretRotationConfigDto requestDto) {
+        systemSettingService.setJwtSecretRotationConfig(requestDto);
+    }
+
+    @Operation(summary = "轮换 JWT 密钥", description = "轮换 JWT 密钥")
+    @PostMapping("/jwt/secret/rotation")
+    public void rotateJwtSecret() {
+        systemSettingService.rotateJwtSecret();
     }
 }

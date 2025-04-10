@@ -5,7 +5,7 @@ import cn.opensrcdevelop.auth.biz.dto.user.UserResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupResponseDto;
-import cn.opensrcdevelop.auth.biz.service.UserGroupService;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;

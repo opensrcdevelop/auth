@@ -31,6 +31,7 @@ dependencies {
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "org.lionsoul:ip2region:${rootProject.ip2RegionVer}"
     implementation 'org.springframework.session:spring-session-core'
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
 }
 
 publishing {

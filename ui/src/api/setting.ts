@@ -8,7 +8,7 @@ import noneLoadingApiRequest from "@/util/noneApiLoadingRequest";
  */
 export function getMailTemplateList() {
   return apiRequest.get({
-    url: "/setting/mailTemplate/list",
+    url: "/setting/message/mail/template/list",
   });
 }
 
@@ -20,7 +20,7 @@ export function getMailTemplateList() {
  */
 export function getMailTemplateDetail(id: string) {
   return apiRequest.get({
-    url: `setting/mailTemplate/${id}`,
+    url: `/setting/message/mail/template/${id}`,
   });
 }
 
@@ -32,7 +32,7 @@ export function getMailTemplateDetail(id: string) {
  */
 export function updateMailTemplate(data: any) {
   return apiRequest.put({
-    url: "/setting/mailTemplate",
+    url: "/setting/message/mail/template",
     data,
   });
 }
@@ -44,7 +44,7 @@ export function updateMailTemplate(data: any) {
  */
 export function getMailServiceConfig() {
   return apiRequest.get({
-    url: "/setting/mailService",
+    url: "/setting/message/mail/service",
   });
 }
 
@@ -56,7 +56,7 @@ export function getMailServiceConfig() {
  */
 export function saveMailServiceConfig(data: any) {
   return apiRequest.post({
-    url: "/setting/mailService",
+    url: "/setting/message/mail/service",
     data,
   });
 }
@@ -68,7 +68,7 @@ export function saveMailServiceConfig(data: any) {
  */
 export function getMailMessageConfig() {
   return apiRequest.get({
-    url: "/setting/mailMessage",
+    url: "/setting/message/mail/config",
   });
 }
 
@@ -80,7 +80,7 @@ export function getMailMessageConfig() {
  */
 export function saveMailMessageConfig(data: any) {
   return apiRequest.post({
-    url: "/setting/mailMessage",
+    url: "/setting/message/mail/config",
     data,
   });
 }
@@ -195,5 +195,51 @@ export function getUpdatePasswordRemindLogList(params: any) {
   return apiRequest.get({
     url: "/setting/passwordPolicy/remindLog/list",
     params,
+  });
+}
+
+/**
+ * 获取 JWT 密钥信息
+ * 
+ * @returns JWT 密钥信息
+ */
+export function getJwtSecretInfo() {
+  return apiRequest.get({
+    url: "/setting/jwt/secret/info",
+  });
+}
+
+/**
+ * 获取 JWT 密钥轮换配置
+ * 
+ * @returns JWT 密钥轮换配置
+ */
+export function getJwtSecretRotationConfig() {
+  return apiRequest.get({
+    url: "/setting/jwt/secret/rotation/config",
+  });
+}
+
+/**
+ * 保存 JWT 密钥轮换配置
+ * 
+ * @param data JWT 密钥轮换配置
+ * @returns 响应结果
+ */
+export function saveJwtSecretRotationConfig(data: any) {
+  return apiRequest.post({
+    url: "/setting/jwt/secret/rotation/config",
+    data,
+  });
+}
+
+/**
+ * 轮换 JWT 密钥
+ * 
+ * @returns 响应结果
+ */
+export function rotateJwtSecret() {
+  return apiRequest.post({
+    url: "/setting/jwt/secret/rotation",
   });
 }

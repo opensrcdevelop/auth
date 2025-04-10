@@ -35,5 +35,6 @@ dependencies {
     implementation "org.apache.httpcomponents:httpclient:${rootProject.httpClient4Ver}"
     implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
     implementation 'org.codehaus.janino:janino'
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     runtimeOnly 'org.postgresql:postgresql'
 }

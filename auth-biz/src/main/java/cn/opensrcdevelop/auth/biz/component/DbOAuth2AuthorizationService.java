@@ -1,11 +1,11 @@
 package cn.opensrcdevelop.auth.biz.component;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.entity.Authorization;
-import cn.opensrcdevelop.auth.biz.entity.LoginLog;
+import cn.opensrcdevelop.auth.biz.entity.auth.Authorization;
+import cn.opensrcdevelop.auth.biz.entity.user.LoginLog;
 import cn.opensrcdevelop.auth.biz.event.ClearExpiredTokensEvent;
-import cn.opensrcdevelop.auth.biz.repository.AuthorizationRepository;
-import cn.opensrcdevelop.auth.biz.service.LoginLogService;
+import cn.opensrcdevelop.auth.biz.repository.auth.AuthorizationRepository;
+import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;

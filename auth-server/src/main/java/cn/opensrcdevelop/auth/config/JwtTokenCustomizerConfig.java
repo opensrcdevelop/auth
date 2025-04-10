@@ -1,10 +1,10 @@
 package cn.opensrcdevelop.auth.config;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.entity.OidcScope;
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.OidcScopeService;
-import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.entity.client.oidc.OidcScope;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.client.oidc.OidcScopeService;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;

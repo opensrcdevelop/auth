@@ -4,7 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
-import cn.opensrcdevelop.auth.biz.service.RoleService;
+import cn.opensrcdevelop.auth.biz.service.role.RoleService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;

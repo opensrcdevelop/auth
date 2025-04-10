@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeResponseDto;
-import cn.opensrcdevelop.auth.biz.service.MailService;
-import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -20,8 +20,6 @@ public class CommonConstants {
     public static final String VERSION = "version";
     public static final String ROLES = "roles";
     public static final String COMMA = ",";
-    public static final String REQ_HEADER_AUTHORIZATION = "Authorization";
-    public static final String BEARER  ="Bearer ";
     public static final String USERNAME  ="username";
     public static final String MDC_TRACE_ID = "TraceId";
     public static final String MDC_REMOTE_IP = "RemoteIP";
@@ -29,5 +27,4 @@ public class CommonConstants {
     public static final String MDC_USERNAME = "username";
     public static final String REP_HEADER_X_REQUEST_ID = "X-Request-Id";
     public static final String URL_FORMAT = "%s://%s";
-
 }

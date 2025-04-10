@@ -2,12 +2,12 @@ package cn.opensrcdevelop.auth.handler;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
-import cn.opensrcdevelop.auth.biz.entity.User;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
-import cn.opensrcdevelop.auth.biz.service.LoginLogService;
-import cn.opensrcdevelop.auth.biz.service.PasswordPolicyService;
-import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
+import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.CommonUtil;

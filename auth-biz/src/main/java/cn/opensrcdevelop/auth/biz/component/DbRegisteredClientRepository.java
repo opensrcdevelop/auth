@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.biz.component;
 
-import cn.opensrcdevelop.auth.biz.entity.Client;
-import cn.opensrcdevelop.auth.biz.service.ClientService;
+import cn.opensrcdevelop.auth.biz.entity.client.Client;
+import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;

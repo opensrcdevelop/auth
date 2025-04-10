@@ -1,7 +1,8 @@
 package cn.opensrcdevelop.auth.config;
 
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
@@ -20,6 +21,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +50,7 @@ public class AuthServerConfig {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final OpaqueTokenIntrospector tokenIntrospector;
+    private final RedissonClient redissonClient;
 
     @Value("${spring.controller.path-prefix}")
     private String controllerPathPrefix;
@@ -137,8 +140,8 @@ public class AuthServerConfig {
      * An instance of com.nimbusds.jose.jwk.source.JWKSource for signing access tokens.
      */
     @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        return new DelegatingJWKSource();
+    public JWKSource<SecurityContext> jwkSource(SystemSettingService systemSettingService) {
+        return new DelegatingJWKSource(systemSettingService);
     }
 
     /**
@@ -189,5 +192,6 @@ public class AuthServerConfig {
     @PostConstruct
     public void init() {
         RedisUtil.setRedisTemplate(stringRedisTemplate);
+        RedisUtil.setRedissonClient(redissonClient);
     }
 }

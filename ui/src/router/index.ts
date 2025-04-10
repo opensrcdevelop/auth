@@ -127,6 +127,13 @@ export const menuRoutes: RouteRecordRaw[] = [
           title: "密码安全",
         },
       },
+      {
+        path: "/system_setting/jwt",
+        component: () => import("@/views/setting/jwt/index.vue"),
+        meta: {
+          title: "JWT 设置",
+        },
+      },
     ],
   },
 ];
