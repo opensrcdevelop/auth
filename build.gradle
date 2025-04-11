@@ -13,18 +13,18 @@ bootJar.enabled = false
 ext {
     // dependencies version
     commonsLang3Ver = '3.14.0'
-    springCloudVer = '2023.0.4'
+    springCloudVer = '2024.0.1'
     mybatisVer = '3.0.4'
     zxingVer = '3.5.3'
     commonsCodecVer = '1.18.0'
     vavrVer = '0.10.6'
-    mybatisPlusVer = '3.5.10.1'
+    mybatisPlusVer = '3.5.11'
     commonsPool2Ver = '2.12.0'
-    springDocVer = '2.8.5'
+    springDocVer = '2.8.6'
     commonsCollections4Ver = '4.5.0-M1'
-    browscapJavaVer = '1.4.4'
+    browscapJavaVer = '1.4.5'
     commonsIoVer = '2.18.0'
-    joseJwtVer = '9.40'
+    joseJwtVer = '10.1'
     ttlVer = '2.14.5'
     dynamicDsVer = '4.3.1'
     lokiVer = "1.6.0-m1"
