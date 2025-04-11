@@ -165,24 +165,28 @@ public class SystemSettingController {
 
     @Operation(summary = "获取 JWT 密钥信息", description = "获取 JWT 密钥信息")
     @GetMapping("/jwt/secret/info")
+    @Authorize({ "allJwtSettingPermissions", "getJwtSecretInfo" })
     public JwtSecretInfoDto getJwtSecretInfo() {
         return systemSettingService.getJwtSecretInfo();
     }
 
     @Operation(summary = "获取 JWT 密钥轮换配置", description = "获取 JWT 密钥轮换配置")
     @GetMapping("/jwt/secret/rotation/config")
+    @Authorize({ "allJwtSettingPermissions", "getJwtRotationConfig" })
     public JwtSecretRotationConfigDto getJwtSecretRotationConfig() {
         return systemSettingService.getJwtSecretRotationConfig();
     }
 
-    @Operation(summary = "保存 JWT 密钥轮换配置", description = "保存 JWT 密钥轮换配置")
+    @Operation(summary = "更新 JWT 密钥轮换配置", description = "更新 JWT 密钥轮换配置")
     @PostMapping("/jwt/secret/rotation/config")
+    @Authorize({ "allJwtSettingPermissions", "updateJwtRotationConfig" })
     public void setJwtSecretRotationConfig(@RequestBody @Valid JwtSecretRotationConfigDto requestDto) {
         systemSettingService.setJwtSecretRotationConfig(requestDto);
     }
 
     @Operation(summary = "轮换 JWT 密钥", description = "轮换 JWT 密钥")
     @PostMapping("/jwt/secret/rotation")
+    @Authorize({ "allJwtSettingPermissions", "rotateJwtSecret" })
     public void rotateJwtSecret() {
         systemSettingService.rotateJwtSecret();
     }
