@@ -361,10 +361,19 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         }
         // 1.2 获取密码策略
         User targetUser = getUserByIdentity(identity);
-        PasswordPolicy passwordPolicy = passwordPolicyRepository.getMatchedPasswordPolicy(targetUser.getUserId());
-        if (Objects.isNull(passwordPolicy)) {
-            // 1.3 获取默认密码策略
+        PasswordPolicy passwordPolicy;
+        // 1.2.1 用户不存在（创建用户时）
+        if (Objects.isNull(targetUser)) {
+            // 1.2.1.1 获取默认密码策略
             passwordPolicy = getDefaultPasswordPolicy();
+        } else {
+            // 1.2.2 用户存在（获取用户匹配的密码策略）
+            passwordPolicy = passwordPolicyRepository.getMatchedPasswordPolicy(targetUser.getUserId());
+            // 1.2.2.1 无匹配的密码策略
+            if (Objects.isNull(passwordPolicy)) {
+                // 1.2.2.2 获取默认密码策略
+                passwordPolicy = getDefaultPasswordPolicy();
+            }
         }
 
         // 2. 检查密码强度
@@ -373,7 +382,7 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         if (PasswordStrength.CUSTOM.equals(passwordStrength)) {
             PasswordComplexityConfig complexityConfig = CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
             CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(passwordStrength, complexityConfig);
-            if (Boolean.TRUE.equals(complexityConfig.isProhibitUserInfo())) {
+            if (Boolean.TRUE.equals(complexityConfig.isProhibitUserInfo()) && Objects.nonNull(targetUser)) {
                 // 2.1.1 添加当前用户信息
                 Optional.ofNullable(targetUser.getUsername()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
                 Optional.ofNullable(targetUser.getEmailAddress()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
@@ -619,16 +628,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     }
 
     private User getUserByIdentity(String identity) {
-        User user =  userService.getOne(Wrappers.<User>lambdaQuery()
+        return  userService.getOne(Wrappers.<User>lambdaQuery()
                 .eq(User::getUserId, identity).or()
                 .eq(User::getPhoneNumber, identity).or()
                 .eq(User::getEmailAddress, identity).or()
                 .eq(User::getUsername, identity));
-
-        if (Objects.isNull(user)) {
-            throw new BizException(MessageConstants.PWD_POLICY_MSG_1010);
-        }
-
-        return user;
     }
 }
