@@ -25,6 +25,8 @@ import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -84,6 +86,8 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
+        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+
         // 添加跨域过滤器
         http.addFilter(corsFilter);
         // 添加变更密码检查过滤器
@@ -92,10 +96,11 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
+        // 调整记住我过滤器顺序
+        http.addFilterAfter(new RememberMeAuthenticationFilter(authenticationManager, rememberMeServices), SecurityContextHolderFilter.class);
 
         // 自定义授权类型认证提供
         OAuth2TokenGenerator<?> tokenGenerator =  http.getSharedObject(OAuth2TokenGenerator.class);
-        AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
         http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService, authenticationManager, tokenGenerator));
     }
