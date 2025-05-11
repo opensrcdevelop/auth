@@ -10,11 +10,13 @@ import {checkPasswordWithoutPolicy} from "@/api/setting";
 /** 租户名称 */
 const tenantName = ref(undefined);
 
+/** 记住我 */
+const rememberMe = ref(false);
+
 const passwordLoginForm = reactive({
   username: undefined,
   password: undefined,
-  captchaVerification: undefined,
-  rememberMe: false
+  captchaVerification: undefined
 });
 
 const passwordLoginRules = {
@@ -79,7 +81,10 @@ const handlePasswordLoginFromSubmit = (captchaVerification) => {
   loginLoading.value = true;
   passwordLoginForm.captchaVerification =
     captchaVerification.captchaVerification;
-  loginSubmit(passwordLoginForm)
+  loginSubmit({
+    ...passwordLoginForm,
+    rememberMe: rememberMe.value,
+  })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         handleLoginResult(data, "password");
@@ -198,7 +203,10 @@ const handleSendEmailCode = () => {
  */
 const handleEmailLoginFormSubmit = (formData) => {
   loginLoading.value = true;
-  emailLoginSubmit(formData)
+  emailLoginSubmit({
+    ...formData,
+    rememberMe: rememberMe.value,
+  })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         handleLoginResult(data, "email");
@@ -491,6 +499,7 @@ export default defineComponent({
       checkLoading,
       checkRes,
       handleCheckPassword,
+      rememberMe
     };
   },
 });

@@ -64,7 +64,7 @@ export default loginTs;
               align-items: center;
             "
           >
-            <a-checkbox v-model="passwordLoginForm.rememberMe">
+            <a-checkbox v-model="rememberMe">
               <span style="color: var(--color-text-2)"> 记住我 </span>
             </a-checkbox>
             <a-link @click="handleToForgotPwd">忘记密码</a-link>
@@ -116,17 +116,9 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <a-checkbox v-model="emailLoginForm.rememberMe">
+          <a-checkbox v-model="rememberMe" style="height: 24px;">
               <span style="color: var(--color-text-2)"> 记住我 </span>
-            </a-checkbox>
-          </div>
+          </a-checkbox>
         </a-tab-pane>
       </a-tabs>
     </div>
