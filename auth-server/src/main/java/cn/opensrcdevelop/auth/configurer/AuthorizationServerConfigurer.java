@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -44,6 +45,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OidcUserInfoService oidcUserInfoService = new OidcUserInfoService(SpringContextUtil.getBean(UserService.class));
     private final OAuth2AuthorizationServerConfigurer oauth2AuthorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
+    private final RememberMeServices rememberMeServices;
 
     @Override
     public void init(HttpSecurity http) throws Exception {
@@ -71,6 +73,9 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
                         new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
                     )
         );
+
+        // RememberMe 配置
+        http.rememberMe(x -> x.rememberMeServices(rememberMeServices));
 
         // 禁用 csrf 和 cors
         http.csrf(AbstractHttpConfigurer::disable);

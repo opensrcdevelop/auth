@@ -57,7 +57,18 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
-          <a-link @click="handleToForgotPwd">忘记密码</a-link>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <a-checkbox v-model="passwordLoginForm.rememberMe">
+              <span style="color: var(--color-text-2)"> 记住我 </span>
+            </a-checkbox>
+            <a-link @click="handleToForgotPwd">忘记密码</a-link>
+          </div>
         </a-tab-pane>
         <a-tab-pane key="2" title="邮箱登录">
           <a-form
@@ -105,6 +116,17 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <a-checkbox v-model="emailLoginForm.rememberMe">
+              <span style="color: var(--color-text-2)"> 记住我 </span>
+            </a-checkbox>
+          </div>
         </a-tab-pane>
       </a-tabs>
     </div>

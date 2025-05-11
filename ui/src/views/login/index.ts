@@ -14,6 +14,7 @@ const passwordLoginForm = reactive({
   username: undefined,
   password: undefined,
   captchaVerification: undefined,
+  rememberMe: false
 });
 
 const passwordLoginRules = {
@@ -135,6 +136,7 @@ const emailLoginFormRef = ref();
 const emailLoginForm = reactive({
   email: undefined,
   code: undefined,
+  rememberMe: false
 });
 const emailLoginFormRules = reactive({
   email: [

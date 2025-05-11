@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -26,11 +27,12 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
     private static final String PARAMETER_CODE = "code";
     private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/login/email", "POST");
 
-    public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager, RememberMeServices rememberMeServices) {
         super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
         super.setAuthenticationSuccessHandler(new LoginSuccessHandler());
         super.setAuthenticationFailureHandler(new LoginFailureHandler());
         super.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
+        super.setRememberMeServices(rememberMeServices);
     }
 
     @Override

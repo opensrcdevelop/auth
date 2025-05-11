@@ -36,4 +36,10 @@ public class AuthorizationServerProperties {
 
     /** 最大登录日志数 */
     private Integer maxLoginLogNum = -1;
+
+    /** RememberMe 有效时间（默认 14 天） */
+    private Integer rememberMeSeconds = 1209600;
+
+    /** RememberMe Token Secret */
+    private String rememberMeTokenSecret;
 }

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.config;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
@@ -12,6 +13,7 @@ import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
+import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
@@ -28,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -36,6 +39,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -56,16 +61,16 @@ public class AuthServerConfig {
     private String controllerPathPrefix;
 
     @Bean
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties) throws Exception {
-        AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties);
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties, RememberMeServices rememberMeServices) throws Exception {
+        AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties, rememberMeServices);
         http.with(authorizationServerConfigurer, x-> {});
         http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> {});
         return http.build();
     }
 
     @Bean
-    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties) throws Exception {
-        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector), x -> {});
+    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties, RememberMeServices rememberMeServices) throws Exception {
+        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector, rememberMeServices), x -> {});
         return http.build();
     }
 
@@ -187,6 +192,19 @@ public class AuthServerConfig {
                 oAuth2Attributes.setAttribute("browser", WebUtil.getBrowserType());
             }
         };
+    }
+
+    @Bean
+    public RememberMeServices rememberMeServices(UserDetailsService userDetailsService, AuthorizationServerProperties authorizationServerProperties) {
+        String secret = authorizationServerProperties.getRememberMeTokenSecret();
+        if (StringUtils.isEmpty(secret)) {
+            secret = CommonUtil.getUUIDString();
+        }
+        TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(secret , userDetailsService);
+        rememberMeServices.setTokenValiditySeconds(authorizationServerProperties.getRememberMeSeconds());
+        rememberMeServices.setParameter(AuthConstants.REMEMBER_ME);
+
+        return rememberMeServices;
     }
 
     @PostConstruct
