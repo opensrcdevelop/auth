@@ -19,7 +19,7 @@ export default homeTs;
         <span class="title">个人中心</span>
       </div>
       <div class="right">
-        <div class="console" @click="handleToConsole">
+        <div v-if="consoleAccess" class="console" @click="handleToConsole">
           <icon-desktop style="margin-right: 6px; font-size: 14px" />
           <span>控制台</span>
         </div>

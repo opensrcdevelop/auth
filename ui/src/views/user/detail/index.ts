@@ -793,6 +793,8 @@ const handleResetPwdFormSubmit = () => {
 
   if (resetPwdForm.rawEmail && !resetPwdForm.emailAddress) {
     resetPwdForm.emailAddress = resetPwdForm.rawEmail;
+  } else {
+    resetPwdForm.emailAddress = undefined;
   }
 
   resetPwdFormSubmitLoading.value = true;

@@ -33,6 +33,9 @@ const handleTabChange = (tabKey: string) => {
   activeTab.value = tabKey;
 };
 
+// 控制台访问权限
+const consoleAccess = ref(false);
+
 /**
  * 跳转到控制台
  */
@@ -93,6 +96,7 @@ const handleGetUserInfo = () => {
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         username.value = data.username;
+        consoleAccess.value = data.consoleAccess;
 
         Object.assign(userInfo, data);
       });
@@ -458,6 +462,7 @@ export default defineComponent({
       checkPasswordLoading,
       checkPasswordRes,
       handleCheckPassword,
+      consoleAccess
     };
   },
 });

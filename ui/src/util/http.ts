@@ -40,7 +40,8 @@ export class Request {
           if (
             token &&
             config.url !== "/oauth2/token" &&
-            !config.url.startsWith("/tenant/check/")
+            !config.url.startsWith("/tenant/check/") &&
+            !config.url.startsWith("/captcha")
           ) {
             config.headers!.Authorization = `${token.token_type} ${token.access_token}`;
           }
