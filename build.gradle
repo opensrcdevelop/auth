@@ -24,7 +24,7 @@ ext {
     commonsCollections4Ver = '4.5.0-M1'
     browscapJavaVer = '1.4.5'
     commonsIoVer = '2.18.0'
-    joseJwtVer = '10.1'
+    joseJwtVer = '10.3'
     ttlVer = '2.14.5'
     dynamicDsVer = '4.3.1'
     lokiVer = "1.6.0-m1"
