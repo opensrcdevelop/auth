@@ -491,11 +491,13 @@ const handleSetPasswordStrength = () => {
  */
 const handleResetUpdatePasswordPolicyForm = () => {
   handleGetPasswordPolicyDetail(passwordPoliyId.value);
+  passwordCheckerRef.value.setPassword("");
 };
 
 /**
  * 密码检查
  */
+const passwordCheckerRef = ref(null);
 const checkLoading = ref(false);
 const checkRes = reactive({
   valid: false,
@@ -577,6 +579,7 @@ export default defineComponent({
       handleDeleteSpecificPasswordInputItem,
       handleUpdatePasswordPolicyFormSubmit,
       handleResetUpdatePasswordPolicyForm,
+      passwordCheckerRef,
       checkLoading,
       checkRes,
       handleCheckPassword,

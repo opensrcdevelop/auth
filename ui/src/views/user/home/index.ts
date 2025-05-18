@@ -3,12 +3,12 @@ import {changePwd, sendEmailCodeSubmit} from "@/api/login";
 import {logoutSubmit} from "@/api/logout";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
 import {
-  bindEmail,
-  getCurrentUser,
-  getVisibleUserAttrs,
-  sendBindEmailCode,
-  unbindEmail,
-  updateMyUserInfo,
+    bindEmail,
+    getCurrentUser,
+    getVisibleUserAttrs,
+    sendBindEmailCode,
+    unbindEmail,
+    updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
@@ -243,6 +243,7 @@ const handleOpenChangePwdModal = () => {
 const handleCloseChangePwdModal = () => {
   changePwdModalVisivle.value = false;
   changePwdFormRef.value.resetFields();
+  passwordCheckerRef.value.setPassword("");
 };
 
 /**
@@ -274,6 +275,7 @@ const handleSubmitChangePwdForm = (formData: any) => {
 /**
  * 密码检查
  */
+const passwordCheckerRef = ref(null);
 const checkPasswordLoading = ref(false);
 const checkPasswordRes = reactive({
   valid: false,
@@ -459,6 +461,7 @@ export default defineComponent({
       sendEmailCodeBtnText,
       handleSendEmailCode,
       allDictDatas,
+      passwordCheckerRef,
       checkPasswordLoading,
       checkPasswordRes,
       handleCheckPassword,

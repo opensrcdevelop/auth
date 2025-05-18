@@ -202,6 +202,7 @@ export default homeTs;
       </a-form-item>
       <a-form-item field="newPwd" label="新密码">
         <password-checker
+          ref="passwordCheckerRef"
           type="password"
           placeholder="请输入新密码"
           :loading="checkPasswordLoading"

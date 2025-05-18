@@ -1,14 +1,14 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  clearAuthorizedTokens,
-  clearAuthorizedTokensByLoginId,
-  getUserAttrs,
-  getUserDetail,
-  getUserLoginLogs,
-  getUserPermissions,
-  rebindMfaDevice,
-  updateUser,
+    clearAuthorizedTokens,
+    clearAuthorizedTokensByLoginId,
+    getUserAttrs,
+    getUserDetail,
+    getUserLoginLogs,
+    getUserPermissions,
+    rebindMfaDevice,
+    updateUser,
 } from "@/api/user";
 import {generateRandomString, getQueryString, handleApiError, handleApiSuccess,} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -773,6 +773,7 @@ const handleOpenResetPwdModal = () => {
 /** 关闭重置密码对话框 */
 const handleCloseResetPwdModal = () => {
   resetPwdFormRef.value.resetFields();
+  passwordCheckerRef.value.setPassword("");
   resetPwdModalVisible.value = false;
 };
 

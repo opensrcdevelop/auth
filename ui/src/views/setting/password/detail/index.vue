@@ -285,6 +285,7 @@ export default indexTs;
         </div>
         <a-form-item label="检查密码">
           <password-checker
+            ref="passwordCheckerRef"
             type="text"
             :loading="checkLoading"
             @check="handleCheckPassword"

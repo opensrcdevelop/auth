@@ -70,7 +70,7 @@ const handleCreateUserFormSubmit = () => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("创建成功");
-        createUserFormRef.value.resetFields();
+        handleResetCreateUserForm();
       });
     })
     .catch((err: any) => {
@@ -83,6 +83,7 @@ const handleCreateUserFormSubmit = () => {
  */
 const handleResetCreateUserForm = () => {
   createUserFormRef.value.resetFields();
+  passwordCheckerRef.value.setPassword("");
 };
 
 /**

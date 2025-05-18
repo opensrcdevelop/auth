@@ -409,11 +409,13 @@ const handleResetCreatePasswordPolicyForm = () => {
   policyPrincipalFormRef.value.resetFields();
   passwordStrengthFormRef.value.resetFields();
   forceChangePasswordFormRef.value.resetFields();
+  passwordCheckerRef.value.setPassword("");
 };
 
 /**
  * 密码检查
  */
+const passwordCheckerRef = ref(null);
 const checkLoading = ref(false);
 const checkRes = reactive({
   valid: false,
@@ -481,6 +483,7 @@ export default defineComponent({
       principalSelectChange,
       handleCreatePasswordPolicyFormSubmit,
       handleResetCreatePasswordPolicyForm,
+      passwordCheckerRef,
       checkRes,
       checkLoading,
       handleCheckPassword,
