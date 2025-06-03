@@ -171,7 +171,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters) {
         // 1. 查询数据库
-        Page<User> pageRequest = new Page<>(page, size);
+        List<User> queryRes;
 
         // 1.1 编辑查询条件
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -180,20 +180,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             for (DataFilterRequestDto filter : filters) {
                 AuthUtil.editQuery(queryWrapper, filter);
             }
-            userRepository.searchUsers(pageRequest, queryWrapper);
+            queryRes = userRepository.searchUsers(queryWrapper);
         } else {
-            userRepository.searchUsers(pageRequest, queryWrapper);
+            queryRes = userRepository.searchUsers(queryWrapper);
         }
 
-        // 2. 属性编辑
+        // 2. 逻辑分页
         PageData<Map<String, Object>> pageData = new PageData<>();
-        pageData.setCurrent(pageRequest.getCurrent());
-        pageData.setTotal(pageRequest.getTotal());
-        pageData.setPages(pageRequest.getPages());
-        pageData.setSize(pageRequest.getSize());
-        List<Map<String, Object>> userResponses = CommonUtil.stream(pageRequest.getRecords()).map(r -> {
+        List<User> records = queryRes;
+        if (page > 0 && size > 0) {
+            // 2.1 计算分页参数
+            long total = queryRes.size();
+            long pages = (long) Math.ceil((double) total / size);
+            if (page > pages) {
+                page = 1;
+            }
+            pageData.setTotal(total);
+            pageData.setPages(pages);
+            pageData.setSize((long) size);
+            pageData.setCurrent((long) page);
+
+            // 2.2 内存分页
+            records = CommonUtil.stream(queryRes)
+                    .skip((long) (page - 1) * size)
+                    .limit(size)
+                    .toList();
+        }
+
+        // 3. 属性编辑
+        List<Map<String, Object>> userResponses = CommonUtil.stream(records).map(r -> {
             var userMap = AuthUtil.convertUserMap(r);
-            // 2.1 移除用户 Map 中角色信息
+            // 3.1 移除用户 Map 中角色信息
             userMap.remove(CommonConstants.ROLES);
             return userMap;
         }).toList();
@@ -380,21 +397,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 获取当前用户信息
         if (StringUtils.isNotEmpty(userId)) {
-            Page<User> pageRequest = new Page<>(1, -1);
-            userRepository.searchUsers(pageRequest, Wrappers.<User>query().eq("t1.user_id", userId).eq("deleted", false));
-            List<User> queryRes = pageRequest.getRecords();
+            List<User> queryRes = userRepository.searchUsers(Wrappers.<User>query().eq("t1.user_id", userId).eq("deleted", false));
             if (CollectionUtils.isEmpty(queryRes)) {
                 return Collections.emptyMap();
             }
 
-            var userMap = AuthUtil.convertUserMap(queryRes.get(0), true, true);
+            var userMap = AuthUtil.convertUserMap(queryRes.getFirst(), true, true);
             // 2.1 获取可见的用户属性
             var visibleUserAttrs = userAttrService.getVisibleUserAttrs();
             // 2.2 删除不可见的用户信息
             var unVisibleUserMapKeys = userMap.keySet().stream().filter(k -> CommonUtil.stream(visibleUserAttrs).noneMatch(attr -> StringUtils.equals(attr.getKey(), k))).collect(Collectors.toSet());
             CommonUtil.stream(unVisibleUserMapKeys).forEach(userMap::remove);
             // 2.3 添加控制台访问权限
-            userMap.put(AuthConstants.CONSOLE_ACCESS, queryRes.get(0).getConsoleAccess());
+            userMap.put(AuthConstants.CONSOLE_ACCESS, queryRes.getFirst().getConsoleAccess());
             return userMap;
         }
         return Collections.emptyMap();

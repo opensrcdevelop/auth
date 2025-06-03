@@ -1,9 +1,9 @@
 import {
-  deletePasswordPolicy,
-  getPasswordPolicyList,
-  getUpdatePasswordRemindLogList,
-  updatePasswordPolicy,
-  updatePasswordPolicyPriority,
+    deletePasswordPolicy,
+    getPasswordPolicyList,
+    getUpdatePasswordRemindLogList,
+    updatePasswordPolicy,
+    updatePasswordPolicyPriority,
 } from "@/api/setting";
 import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
@@ -202,7 +202,7 @@ const handleGetRemindLogList = (page: number = 1, size: number = 15) => {
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "获取资源列表");
+      handleApiError(err, "获取密码到期提醒记录列表");
     });
 };
 

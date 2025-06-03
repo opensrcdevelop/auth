@@ -91,6 +91,29 @@ export const menuRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: "/identitySource",
+    meta: {
+      title: "身份源管理",
+      icon: "icon-identitySource",
+    },
+    children: [
+      {
+        path: "/identitySource/provider/list",
+        component: () => import("@/views/identitySource/provider/index.vue"),
+        meta: {
+          title: "提供商管理",
+        },
+      },
+      {
+        path: "/identitySource/list",
+        component: () => import("@/views/identitySource/index.vue"),
+        meta: {
+          title: "身份源列表",
+        },
+      },
+    ],
+  },
+  {
     path: "/tenant",
     component: () => import("@/views/tenant/index.vue"),
     meta: {
@@ -362,8 +385,40 @@ const pageRoutes: RouteRecordRaw[] = [
     meta: {
       parent: "/system_setting/password",
       title: "密码策略详情",
-    }
-  }
+    },
+  },
+  {
+    path: "/identitySource/provider/detail",
+    component: () => import("@/views/identitySource/provider/detail/index.vue"),
+    meta: {
+      parent: "/identitySource/provider/list",
+      title: "身份源提供商详情",
+    },
+  },
+  {
+    path: "/identitySource/provider/create",
+    component: () => import("@/views/identitySource/provider/create/index.vue"),
+    meta: {
+      parent: "/identitySource/provider/list",
+      title: "创建身份源提供商",
+    },
+  },
+  {
+    path: "/identitySource/detail",
+    component: () => import("@/views/identitySource/detail/index.vue"),
+    meta: {
+      parent: "/identitySource/list",
+      title: "身份源详情",
+    },
+  },
+  {
+    path: "/identitySource/create",
+    component: () => import("@/views/identitySource/create/index.vue"),
+    meta: {
+      parent: "/identitySource/list",
+      title: "创建身份源",
+    },
+  },
 ];
 
 export const routes: RouteRecordRaw[] = [

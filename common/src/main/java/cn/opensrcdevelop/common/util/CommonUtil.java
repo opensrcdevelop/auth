@@ -13,6 +13,9 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateExceptionHandler;
 import io.vavr.control.Try;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -328,6 +331,65 @@ public class CommonUtil {
             case "YEAR" -> ChronoUnit.YEARS;
             default -> throw new IllegalArgumentException("不支持的时间单位: " + unit);
         };
+    }
+
+    /**
+     * 生成随机字符串
+     *
+     * @param length 字符串长度
+     * @return 随机字符串
+     */
+    public static String generateRandomString(int length) {
+        if (length <= 0) {
+            throw new IllegalArgumentException("length must be greater than 0");
+        }
+
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = upper.toLowerCase();
+        String digits = "0123456789";
+        String allChars = upper + lower + digits;
+
+        StringBuilder sb = new StringBuilder(length);
+
+        for (int i = 0; i < length; i++) {
+            int index = SECURE_RANDOM.nextInt(allChars.length());
+            sb.append(allChars.charAt(index));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 获取格式化后的 JSON 字符串
+     *
+     * @param obj 对象
+     * @return 格式化后的 JSON 字符串
+     */
+    public static String formatJson(Object obj) {
+        try {
+            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new ServerException("Failed to format JSON string", e);
+        }
+    }
+
+    /**
+     * 填充模版
+     *
+     * @param template 模版
+     * @param context 上下文
+     * @return 填充后的模版
+     */
+    public static String fillTemplate(String template , Map<String, Object> context) {
+        try (StringReader reader = new StringReader(template);
+             StringWriter writer = new StringWriter()) {
+            Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
+            cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
+            Template processor = new Template(CommonUtil.getUUIDString(), reader, cfg, StandardCharsets.UTF_8.name());
+            processor.process(context, writer);
+            return writer.toString();
+        } catch (Exception ex) {
+            throw new ServerException(ex.getMessage(), ex);
+        }
     }
 
     @FunctionalInterface

@@ -1,13 +1,16 @@
 package cn.opensrcdevelop.auth.config;
 
+import cn.opensrcdevelop.auth.biz.component.CustomOAuth2UserService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.configurer.AuthorizationServerConfigurer;
+import cn.opensrcdevelop.auth.configurer.OAuth2LoginConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
@@ -33,6 +36,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
@@ -61,17 +65,32 @@ public class AuthServerConfig {
     private String controllerPathPrefix;
 
     @Bean
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties, RememberMeServices rememberMeServices) throws Exception {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+                                                                      AuthorizationServerProperties authorizationServerProperties,
+                                                                      RememberMeServices rememberMeServices,
+                                                                      OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
         AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties, rememberMeServices);
         http.with(authorizationServerConfigurer, x-> {});
         http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> {});
+        http.with(auth2LoginConfigurer, x -> {});
         return http.build();
     }
 
     @Bean
-    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http, AuthorizationServerProperties authorizationServerProperties, RememberMeServices rememberMeServices) throws Exception {
+    public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http,
+                                                                 AuthorizationServerProperties authorizationServerProperties,
+                                                                 RememberMeServices rememberMeServices,
+                                                                 OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
         http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector, rememberMeServices), x -> {});
+        http.with(auth2LoginConfigurer, x -> {});
         return http.build();
+    }
+
+    @Bean
+    public OAuth2LoginConfigurer auth2LoginConfigurer(ClientRegistrationRepository clientRegistrationRepository,
+                                                      CustomOAuth2UserService customOAuth2UserService,
+                                                      IdentitySourceRegistrationService identitySourceRegistrationService) {
+        return new OAuth2LoginConfigurer(clientRegistrationRepository, customOAuth2UserService, identitySourceRegistrationService);
     }
 
     @Bean

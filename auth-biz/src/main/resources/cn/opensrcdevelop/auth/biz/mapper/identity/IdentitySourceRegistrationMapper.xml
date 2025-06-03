@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.identity.IdentitySourceRegistrationMapper">
+
+    <resultMap id="identitySourceRegistrationResultMap" type="cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration">
+        <id column="registration_id" property="registrationId" />
+        <result column="registration_name" property="registrationName" />
+        <result column="registration_code" property="registrationCode" />
+        <result column="client_id" property="clientId" />
+        <result column="client_secret" property="clientSecret" />
+        <result column="client_authentication_method" property="clientAuthenticationMethod" />
+        <result column="authorization_grant_type" property="authorizationGrantType" />
+        <result column="enabled" property="enabled" />
+        <result column="additional_params" property="additionalParams" />
+        <association property="identitySourceProvider" javaType="cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider">
+            <id column="provider_id" property="providerId" />
+            <result column="provider_name" property="providerName" />
+            <result column="provider_code" property="providerCode" />
+            <result column="provider_logo" property="providerLogo" />
+            <result column="authorization_uri" property="authorizationUri" />
+            <result column="token_uri" property="tokenUri" />
+            <result column="user_info_uris" property="userInfoUris" />
+            <result column="user_info_authentication_method" property="userInfoAuthenticationMethod" />
+            <result column="username_attribute" property="usernameAttribute" />
+            <result column="user_match_attribute" property="userMatchAttribute" />
+            <result column="jwk_set_uri" property="jwkSetUri" />
+            <result column="issuer_uri" property="issuerUri" />
+            <result column="scopes" property="scopes" />
+            <result column="meta_data" property="metaData" />
+            <result column="enable_custom_authz_req" property="enableCustomAuthzReq" />
+            <result column="authz_req_cfg" property="authzReqCfg" />
+            <result column="enable_custom_token_req" property="enableCustomTokenReq" />
+            <result column="token_req_cfg" property="tokenReqCfg" />
+            <result column="enable_custom_user_info_req" property="enableCustomUserInfoReq" />
+            <result column="user_info_req_cfg" property="userInfoReqCfg" />
+        </association>
+    </resultMap>
+
+    <select id="getRegistrationByCode" resultMap="identitySourceRegistrationResultMap">
+        SELECT
+            t1.registration_id,
+            t1.registration_name,
+            t1.registration_code,
+            t1.client_id,
+            t1.client_secret,
+            t1.client_authentication_method,
+            t1.authorization_grant_type,
+            t1.enabled,
+            t1.additional_params,
+            t2.provider_id,
+            t2.provider_logo,
+            t2.authorization_uri,
+            t2.token_uri,
+            t2.user_info_uris,
+            t2.user_info_authentication_method,
+            t2.username_attribute,
+            t2.user_match_attribute,
+            t2.jwk_set_uri,
+            t2.issuer_uri,
+            t2.scopes,
+            t2.meta_data,
+            t2.enable_custom_authz_req,
+            t2.authz_req_cfg,
+            t2.enable_custom_token_req,
+            t2.token_req_cfg,
+            t2.enable_custom_user_info_req,
+            t2.user_info_req_cfg
+        FROM
+            t_identity_source_registration t1
+            LEFT JOIN t_identity_source_provider t2 ON t1.provider_id = t2.provider_id
+        WHERE
+            registration_code = #{code}
+    </select>
+
+    <select id="getEnabledRegistrations" resultMap="identitySourceRegistrationResultMap">
+        SELECT
+            t1.registration_id,
+            t1.registration_name,
+            t1.registration_code,
+            t1.provider_id,
+            t2.provider_logo
+        FROM
+            t_identity_source_registration t1
+            LEFT JOIN t_identity_source_provider t2 ON t1.provider_id = t2.provider_id
+        WHERE
+            t1.deleted = false
+            AND t1.enabled = true
+        ORDER BY t1.registration_code
+    </select>
+
+    <select id="searchRegistrations" resultMap="identitySourceRegistrationResultMap">
+        SELECT
+            t1.registration_id,
+            t1.registration_name,
+            t1.registration_code,
+            t1.provider_id,
+            t1.enabled,
+            t2.provider_code,
+            t2.provider_name
+        FROM
+            t_identity_source_registration t1
+            LEFT JOIN t_identity_source_provider t2 ON t1.provider_id = t2.provider_id
+        WHERE
+            t1.deleted = false
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    t1.registration_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t1.registration_code LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        ORDER BY t2.provider_code, t1.registration_code
+    </select>
+</mapper>

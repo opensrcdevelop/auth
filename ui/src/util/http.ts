@@ -41,7 +41,8 @@ export class Request {
             token &&
             config.url !== "/oauth2/token" &&
             !config.url.startsWith("/tenant/check/") &&
-            !config.url.startsWith("/captcha")
+            !config.url.startsWith("/captcha") &&
+            !config.url.startsWith("/identitySource/enabled")
           ) {
             config.headers!.Authorization = `${token.token_type} ${token.access_token}`;
           }

@@ -247,4 +247,22 @@ public class TenantHelper {
             return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
         }).getOrElseThrow(ServerException::new);
     }
+
+    /**
+     * 获取租户控制台 URL
+     *
+     * @return 租户控制台 URL
+     */
+    public static String getTenantConsoleUrl() {
+        TenantContext tenantContext =  TenantContextHolder.getTenantContext();
+        if (tenantContext.isDefaultTenant()) {
+            return SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL);
+        } else {
+            return Try.of(() -> {
+                // 添加租户子域名
+                URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL)).toURL();
+                return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantContext.getTenantCode() + "." + tmpurl.getAuthority());
+            }).getOrElseThrow(ServerException::new);
+        }
+    }
 }

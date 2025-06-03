@@ -6,6 +6,7 @@ import {logoutSubmit} from "@/api/logout";
 import router from "@/router";
 import {TENANT_NAME} from "@/util/constants";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
+import FederationLogin from "./components/FederationLogin.vue";
 
 /** 租户名称 */
 const tenantName = ref(undefined);
@@ -452,6 +453,9 @@ const handleCheckPassword = (password: string) => {
 };
 
 export default defineComponent({
+  components: {
+    FederationLogin
+  },
   setup() {
     onMounted(() => {
       tenantName.value = localStorage.getItem(TENANT_NAME);

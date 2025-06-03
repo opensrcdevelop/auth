@@ -16,12 +16,15 @@ import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户实体
@@ -30,7 +33,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_user")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class User extends BaseEntity implements UserDetails, Serializable {
+public class User extends BaseEntity implements UserDetails, OAuth2User, Serializable {
 
     @Serial
     private static final long serialVersionUID = -37127788129570340L;
@@ -79,6 +82,12 @@ public class User extends BaseEntity implements UserDetails, Serializable {
     private List<UserAttr> userAttrs;
 
     @Override
+    @JsonIgnore
+    public Map<String, Object> getAttributes() {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.authorities;
     }
@@ -96,5 +105,10 @@ public class User extends BaseEntity implements UserDetails, Serializable {
     @Override
     public boolean isEnabled() {
         return BooleanUtils.isNotTrue(locked);
+    }
+
+    @Override
+    public String getName() {
+        return this.username;
     }
 }

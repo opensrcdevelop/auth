@@ -116,11 +116,12 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
-          <a-checkbox v-model="rememberMe" style="height: 24px;">
-              <span style="color: var(--color-text-2)"> 记住我 </span>
+          <a-checkbox v-model="rememberMe" style="height: 24px">
+            <span style="color: var(--color-text-2)"> 记住我 </span>
           </a-checkbox>
         </a-tab-pane>
       </a-tabs>
+      <FederationLogin />
     </div>
     <div class="form-container" v-if="toMfa && !toBind && !toFogotPwd">
       <a-spin style="width: 100%; height: 100%" :loading="mfaValidLoading">

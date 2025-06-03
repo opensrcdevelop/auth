@@ -33,7 +33,7 @@
                     t1.resource_name LIKE CONCAT( '%', #{keyword}, '%' )
                     OR t1.resource_code LIKE CONCAT( '%', #{keyword}, '%' )
                 )
-        </if>
+            </if>
         ORDER BY t2.resource_group_code, t1.resource_code
     </select>
 </mapper>

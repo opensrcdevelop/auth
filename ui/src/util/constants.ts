@@ -11,3 +11,5 @@ export const OAUTH_ISSUER = "oauth_issuer";
 export const REDIRECT_PATH = "redirect_path";
 export const REDIRECT_QUERY = "redirect_query";
 export const PERSISTENT_PAGE_INFO = "persistent_page_info";
+export const AUTH_SUCCESS = "authSuccess";
+export const AUTH_FAILURE = "authFailure";

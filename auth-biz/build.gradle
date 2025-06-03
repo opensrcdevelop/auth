@@ -13,10 +13,12 @@ dependencies {
     implementation project(':multi-tenant')
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
+    implementation 'org.springframework.boot:spring-boot-starter-freemarker'
 }

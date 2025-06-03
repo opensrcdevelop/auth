@@ -76,12 +76,28 @@ public class WebUtil {
         getResponse().ifPresent(response -> sendJsonResponse(response, object, status));
     }
 
+    public static void sendHtmlResponse(String html, HttpStatus status) {
+        getResponse().ifPresent(response -> sendHtmlResponse(response, html, status));
+    }
+
     public static void sendJsonResponse(HttpServletResponse response, Object object, HttpStatus status) {
         try {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
             response.setStatus(status.value());
             response.getWriter().write(OBJECT_MAPPER.writeValueAsString(object));
+            response.getWriter().flush();
+        } catch (IOException e) {
+            throw new ServerException(e);
+        }
+    }
+
+    public static void sendHtmlResponse(HttpServletResponse response, String html, HttpStatus status) {
+        try {
+            response.setContentType(MediaType.TEXT_HTML_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
+            response.setStatus(status.value());
+            response.getWriter().write(html);
             response.getWriter().flush();
         } catch (IOException e) {
             throw new ServerException(e);
