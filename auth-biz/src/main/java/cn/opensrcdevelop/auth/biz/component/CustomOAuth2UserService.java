@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
+import cn.opensrcdevelop.auth.biz.util.HttpExpressionUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -75,7 +76,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             RequestEntity<?> apiRequest;
             // 自定义用户信息请求
             if (userInfoReqCfgMap.containsKey(userInfoUri)) {
-                apiRequest = getCustomRequestEntity(userInfoUri, userInfoReqCfgMap.get(userInfoUri));
+                RequestConfigRequestDto requestCfg = userInfoReqCfgMap.get(userInfoUri);
+                // 执行 SpEL 表达式
+                HttpExpressionUtil.parseSpELMap(requestCfg.getParams());
+                HttpExpressionUtil.parseSpELMap(requestCfg.getPathVariables());
+                HttpExpressionUtil.parseSpELMap(requestCfg.getHeaders());
+                HttpExpressionUtil.parseSpELMap(requestCfg.getBody());
+
+                apiRequest = getCustomRequestEntity(userInfoUri, requestCfg);
             } else {
                 // 默认请求方式
                 apiRequest = getRequestEntity(userInfoUri, userRequest.getAccessToken(), clientRegistration);

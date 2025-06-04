@@ -1,4 +1,4 @@
-import {createIdentitySource} from "@/api/identitySource";
+import {createIdentitySource, getIdentitySourceProviderList,} from "@/api/identitySource";
 import router from "@/router";
 import {useGlobalVariablesStore} from "@/store/globalVariables";
 import {generateRandomString, getOAuthIssuer, handleApiError, handleApiSuccess,} from "@/util/tool";
@@ -12,9 +12,32 @@ const handleBack = () => {
   router.back();
 };
 
+/** 身份源提供商列表 */
+const providerList = reactive([]);
+
+/**
+ * 获取身份源提供商列表
+ */
+const handleGetProviderList = () => {
+  getIdentitySourceProviderList({
+    page: 1,
+    size: -1,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        providerList.length = 0;
+        providerList.push(...data.list);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取身份源提供商列表");
+    });
+};
+
 /**
  * 身份源提供商
  */
+const identitySourceProviderRef = ref(null);
 const identitySourceProvider = reactive({
   id: undefined,
   name: undefined,
@@ -77,19 +100,44 @@ const generateRandomIdentitySourceCode = () => {
  * 重置创建身份源表单
  */
 const handleResetCreateIdentitySourceForm = () => {
+  if (identitySourceProviderRef.value) {
+    identitySourceProviderRef.value.resetFields();
+    handleGetProviderList();
+  }
   createIdentitySourceFormRef.value.resetFields();
 };
 
 /**
  * 提交创建身份源表单
  */
-const handleCreateIdentitySourceFormSubmit = (formData: any) => {
+const handleCreateIdentitySourceFormSubmit = async () => {
+  let hasError = false;
+  if (identitySourceProviderRef.value) {
+    await identitySourceProviderRef.value.validate((errors) => {
+      if (errors) {
+        hasError = true;
+      }
+    });
+  }
+
+  await createIdentitySourceFormRef.value.validate((errors) => {
+    if (errors) {
+      hasError = true;
+    }
+  });
+
+  if (hasError) {
+    return;
+  }
+
   const requestData = {
-    ...formData,
+    ...createIdentitySourceForm,
     providerId: identitySourceProvider.id,
   };
   if (requestData.additionalParams) {
-    requestData.additionalParams = JSON.parse(formData.additionalParams);
+    requestData.additionalParams = JSON.parse(
+      createIdentitySourceForm.additionalParams
+    );
   } else {
     requestData.additionalParams = undefined;
   }
@@ -110,12 +158,23 @@ export default defineComponent({
   setup() {
     onMounted(() => {
       const globalVariables = useGlobalVariablesStore().getData();
-      identitySourceProvider.id = globalVariables.identitySourceProvider.id;
-      identitySourceProvider.name = globalVariables.identitySourceProvider.name;
+      if (
+        globalVariables.identitySourceProvider.id &&
+        globalVariables.identitySourceProvider.name
+      ) {
+        identitySourceProvider.id = globalVariables.identitySourceProvider.id;
+        identitySourceProvider.name =
+          globalVariables.identitySourceProvider.name;
+      } else {
+        identitySourceProvider.id = undefined;
+        identitySourceProvider.name = undefined;
+        handleGetProviderList();
+      }
     });
 
     return {
       handleBack,
+      identitySourceProviderRef,
       identitySourceProvider,
       createIdentitySourceForm,
       createIdentitySourceFormRef,
@@ -124,6 +183,7 @@ export default defineComponent({
       generateRandomIdentitySourceCode,
       handleResetCreateIdentitySourceForm,
       handleCreateIdentitySourceFormSubmit,
+      providerList,
     };
   },
 });

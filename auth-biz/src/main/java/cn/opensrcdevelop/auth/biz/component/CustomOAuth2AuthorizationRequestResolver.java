@@ -18,7 +18,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
 
 import java.io.StringReader;
@@ -35,7 +35,7 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
 
     private final DefaultOAuth2AuthorizationRequestResolver delegate;
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
-    private final AntPathRequestMatcher authorizationRequestMatcher = new AntPathRequestMatcher(AuthConstants.FEDERATION_LOGIN_URI + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
+    private final PathPatternRequestMatcher authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(AuthConstants.FEDERATION_LOGIN_URI + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
 
     public CustomOAuth2AuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository, IdentitySourceRegistrationService identitySourceRegistrationService) {
         delegate = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, AuthConstants.FEDERATION_LOGIN_URI);

@@ -15,7 +15,9 @@ export default indexTs;
         <div class="title">身份源列表</div>
         <div class="info">对身份源进行统一管理。</div>
       </div>
-      <a-button type="primary">创建身份源</a-button>
+      <a-button type="primary" @click="handleToCreateIdentitySource"
+        >创建身份源</a-button
+      >
     </div>
     <a-input-search
       :style="{ width: '320px' }"

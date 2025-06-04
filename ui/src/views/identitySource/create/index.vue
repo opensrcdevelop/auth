@@ -13,10 +13,41 @@ export default indexTs;
     <page-header @back="handleBack">
       <div class="create-tile">创建身份源</div>
       <div class="info-title">身份源提供商</div>
-      <div class="provider-container">
+      <div :class="identitySourceProvider.name ? 'provider-container' : ''">
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-input :model-value="identitySourceProvider.name" disabled />
+            <a-input
+              v-if="identitySourceProvider.name"
+              :model-value="identitySourceProvider.name"
+              disabled
+            />
+            <a-form
+              v-else
+              :model="identitySourceProvider"
+              layout="vertical"
+              ref="identitySourceProviderRef"
+            >
+              <a-form-item
+                field="id"
+                hide-label
+                :rules="[{ required: true, message: '身份提供商未选择' }]"
+              >
+                <a-select
+                  v-model="identitySourceProvider.id"
+                  placeholder="请选择身份提供商"
+                  allow-search
+                  allow-clear
+                >
+                  <a-option
+                    v-for="provider in providerList"
+                    :key="provider.id"
+                    :value="provider.id"
+                  >
+                    {{ provider.name }}
+                  </a-option>
+                </a-select>
+              </a-form-item>
+            </a-form>
           </a-col>
         </a-row>
       </div>
@@ -26,7 +57,6 @@ export default indexTs;
         layout="vertical"
         ref="createIdentitySourceFormRef"
         :rules="createIdentitySourceFormRules"
-        @submit-success="handleCreateIdentitySourceFormSubmit"
       >
         <a-row :gutter="24">
           <a-col :span="12">
@@ -113,7 +143,11 @@ export default indexTs;
         </a-form-item>
         <a-form-item hide-label>
           <a-space>
-            <a-button type="primary" html-type="submit">保存</a-button>
+            <a-button
+              type="primary"
+              @click="handleCreateIdentitySourceFormSubmit"
+              >创建</a-button
+            >
             <a-button @click="handleResetCreateIdentitySourceForm"
               >重置</a-button
             >

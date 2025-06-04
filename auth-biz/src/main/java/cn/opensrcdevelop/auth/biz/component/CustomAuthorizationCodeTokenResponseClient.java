@@ -78,21 +78,23 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
             Map<String, Object> valContext = getRequestCfgValueContext(authorizationGrantRequest, identitySourceRegistration);
             String requestCfgStr = CommonUtil.fillTemplate(identitySourceProvider.getTokenReqCfg(), valContext);
 
-            // 2.1.2 请求配置反序列化
+            // 2.1.3 请求配置反序列化
             RequestConfigRequestDto requestCfg = CommonUtil.deserializeObject(requestCfgStr, RequestConfigRequestDto.class);
 
-            // 2.1.3 执行 SpEL 表达式
+            // 2.1.4 执行 SpEL 表达式
             HttpExpressionUtil.parseSpELMap(requestCfg.getParams());
             HttpExpressionUtil.parseSpELMap(requestCfg.getBody());
+            HttpExpressionUtil.parseSpELMap(requestCfg.getHeaders());
+            HttpExpressionUtil.parseSpELMap(requestCfg.getPathVariables());
 
-            // 2.1.4 设置 access_token 属性名称
+            // 2.1.5 设置 access_token 属性名称
             if (StringUtils.isNotEmpty(requestCfg.getAccessTokenAttr())) {
                 accessTokenResponseConverter.setAccessTokenAttrName(requestCfg.getAccessTokenAttr());
             } else {
                 accessTokenResponseConverter.setAccessTokenAttrName(OAuth2ParameterNames.ACCESS_TOKEN);
             }
 
-            // 2.1.5 发送请求
+            // 2.1.6 发送请求
             accessTokenResponse = getResponse(clientRegistration, identitySourceProvider, requestCfg);
         } else {
             // 2.2 默认请求

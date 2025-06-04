@@ -1,6 +1,7 @@
 import {deleteIdentitySource, getIdentitySourceList, updateIdentitySource,} from "@/api/identitySource";
 import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, reactive, ref} from "vue";
@@ -107,6 +108,20 @@ const handleDeleteIdentitySource = (identitySource: any) => {
   });
 };
 
+/**
+ * 跳转到创建身份源
+ */
+const handleToCreateIdentitySource = () => {
+  const globalVariables = useGlobalVariablesStore();
+  globalVariables.identitySourceProvider.id = undefined;
+  globalVariables.identitySourceProvider.name = undefined;
+  globalVariables.saveData();
+
+  router.push({
+    path: "/identitySource/create",
+  });
+};
+
 export default defineComponent({
   setup() {
     identitySourceListPagination = usePagination(
@@ -124,7 +139,8 @@ export default defineComponent({
       handleToIdentitySourceDetail,
       handleToProviderDetail,
       handleUpdateIdentitySourceState,
-      handleDeleteIdentitySource
+      handleDeleteIdentitySource,
+      handleToCreateIdentitySource,
     };
   },
 });

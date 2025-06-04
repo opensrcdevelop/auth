@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -13,7 +14,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import java.io.IOException;
 
@@ -25,10 +26,10 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
     private static final String PARAMETER_EMAIL = "email";
     private static final String PARAMETER_CODE = "code";
-    private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/login/email", "POST");
+    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/login/email");
 
     public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager, RememberMeServices rememberMeServices) {
-        super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+        super(REQUEST_MATCHER, authenticationManager);
         super.setAuthenticationSuccessHandler(new LoginSuccessHandler());
         super.setAuthenticationFailureHandler(new LoginFailureHandler());
         super.setSecurityContextRepository(new HttpSessionSecurityContextRepository());

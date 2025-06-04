@@ -31,8 +31,10 @@ public class DelegatingOpaqueTokenIntrospector implements OpaqueTokenIntrospecto
         jwtAuthenticationProvider.authenticate(bearerTokenAuthenticationToken);
 
         String rootUrl = WebUtil.getRootUrl();
-        SpringOpaqueTokenIntrospector delegatedIntrospector = new SpringOpaqueTokenIntrospector(rootUrl + INTROSPECT_URI,
-                resourceServerProperties.getOpaquetoken().getClientId(), resourceServerProperties.getOpaquetoken().getClientSecret());
+        SpringOpaqueTokenIntrospector delegatedIntrospector = SpringOpaqueTokenIntrospector
+                .withIntrospectionUri(rootUrl + INTROSPECT_URI)
+                .clientId(resourceServerProperties.getOpaquetoken().getClientId())
+                .clientSecret(resourceServerProperties.getOpaquetoken().getClientSecret()).build();
         return delegatedIntrospector.introspect(token);
     }
 }

@@ -254,6 +254,10 @@ export default indexTs;
               <a-collapse-item header="配置说明" key="1">
                 <a-space direction="vertical" style="width: 100%">
                   <a-descriptions title="JSON 配置项" bordered :column="1">
+                    <a-descriptions-item label="说明">
+                      支持对多个用户信息地址的请求进行配置，配置时以用户信息地址为
+                      key，值为请求配置。
+                    </a-descriptions-item>
                     <a-descriptions-item label="method">
                       必填项，类型为字符串（String），对应 HTTP
                       请求方式，可选值为：GET、POST。
