@@ -140,7 +140,10 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     private String getAttribute(List<Map<String, Object>> attributesList, String attributeName) {
         for (Map<String, Object> attributes : attributesList) {
             if (attributes.containsKey(attributeName)) {
-                return attributes.get(attributeName).toString();
+                Object value = attributes.get(attributeName);
+                if (Objects.nonNull(value)) {
+                    return value.toString();
+                }
             } else {
                 var entrySet = attributes.entrySet();
                 for (var entry : entrySet) {
@@ -153,8 +156,6 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
                         return getAttribute(listAttribute, attributeName);
                     }
                 }
-
-                return null;
             }
         }
         return null;

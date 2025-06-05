@@ -186,7 +186,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         try {
             List<Map<String, Object>> responseObjList = new ArrayList<>();
             Object responseObj  = this.restOperations.exchange(request, Object.class).getBody();
-            if (responseObj instanceof Map) {
+            if (responseObj instanceof Map<?, ?>) {
                 responseObjList.add((Map<String, Object>) responseObj);
             }
 
