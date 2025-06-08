@@ -44,14 +44,27 @@ const handleTabChange = (tabKey: string) => {
   });
   activeTab.value = tabKey;
 
-  if (tabKey === "permission_management") {
-    handleGetUserPermissions();
-  }
-
-  if (tabKey === "login_logs") {
-    handleGetUserLoginLogs();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = userId.value) => {
+  switch(tabKey) {
+    case "user_info":
+      handleGetUserDetail(id);
+      handleGetUserExtAttrs();
+      break;
+    case "user_belong":
+      handleGetUserDetail(id);
+    case "permission_management":
+      handleGetUserDetail(id);
+      handleGetUserPermissions(id);
+      break;
+    case "login_logs":
+      handleGetUserDetail(id);
+      handleGetUserLoginLogs(id);
+      break;
+  }
+}
 
 const userId = ref("");
 const username = ref("");
@@ -1047,11 +1060,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "user_info";
-      handleGetUserDetail(userId);
-      handleGetUserExtAttrs();
-      if (activeTab.value === "login_logs") {
-        handleGetUserLoginLogs(userId);
-      }
+      handleTabInit(activeTab.value, userId);
     });
 
     return {

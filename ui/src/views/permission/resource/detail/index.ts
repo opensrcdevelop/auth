@@ -33,10 +33,19 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "permission_list") {
-    handleGetResourcePermissions();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = resourceId.value) => {
+  switch (tabKey) {
+    case "resource_info":
+      handleGetResourceDetail(id);
+      break;
+    case "permission_list":
+      handleGetResourcePermissions(id);
+      break;
+  }
+}
 
 const resourceId = ref("");
 const resourceName = ref("");
@@ -241,7 +250,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "resource_info";
-      handleGetResourceDetail(resourceId);
+      handleTabInit(activeTab.value, resourceId);
     });
 
     return {

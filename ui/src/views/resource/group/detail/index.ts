@@ -32,10 +32,20 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "resource_list") {
-    handleGetGroupResourceList();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = resourceGroupId.value) => {
+  switch(tabKey) {
+    case "resource_group_info":
+      handleGetResourceGroupDetail(id);
+      break;
+    case "resource_list":
+      handleGetResourceGroupDetail(id);
+      handleGetGroupResourceList(id);
+      break;
+  }
+}
 
 const resourceGroupId = ref("");
 const resourceGroupName = ref("");
@@ -197,7 +207,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "resource_group_info";
-      handleGetResourceGroupDetail(resourceGroupId);
+      handleTabInit(activeTab.value, resourceGroupId);
     });
 
     return {

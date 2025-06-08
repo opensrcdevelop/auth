@@ -1,4 +1,4 @@
-import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
+import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
 import router from "@/router";
 import {
   addRoleMapping,
@@ -8,14 +8,14 @@ import {
   removeRoleMapping,
   updateRole,
 } from "@/api/role";
-import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
-import {Modal, Notification} from "@arco-design/web-vue";
-import {searchUser} from "@/api/user";
-import {getUserGroupList} from "@/api/userGroup";
-import {cancelAuthorization} from "@/api/permission";
-import {useGlobalVariablesStore} from "@/store/globalVariables";
+import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
+import { Modal, Notification } from "@arco-design/web-vue";
+import { searchUser } from "@/api/user";
+import { getUserGroupList } from "@/api/userGroup";
+import { cancelAuthorization } from "@/api/permission";
+import { useGlobalVariablesStore } from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
-import {usePagination} from "@/hooks/usePagination";
+import { usePagination } from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -39,10 +39,21 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "permission_management") {
-    handleGetRolePermissions();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = roleId.value) => {
+  switch (tabKey) {
+    case "role_info":
+      handleGetRoleDetail(id);
+      handleGetRolePrincipals(id);
+      break;
+    case "permission_management":
+      handleGetRoleDetail(id);
+      handleGetRolePermissions(id);
+      break;
+  }
+}
 
 const roleId = ref("");
 const roleName = ref("");
@@ -749,27 +760,27 @@ const handleToPermissionDetail = (id: string) => {
 
 export default defineComponent({
   setup() {
-    const roleId = getQueryString("id");
+    const id = getQueryString("id");
     rolePrincipalsPagination = usePagination(
-      `${roleId}_rolePrincipals`,
+      `${id}_rolePrincipals`,
       ({ page, size }) => {
         if (getQueryString("active_tab") === "role_info") {
-          handleGetRolePrincipals(roleId, page, size);
+          handleGetRolePrincipals(id, page, size);
         }
       }
     );
     permissionsPagination = usePagination(
-      `${roleId}_rolePermissions`,
+      `${id}_rolePermissions`,
       ({ page, size }) => {
         if (getQueryString("active_tab") === "permission_management") {
-          handleGetRolePermissions(roleId, page, size);
+          handleGetRolePermissions(id, page, size);
         }
       }
     );
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "role_info";
-      handleGetRoleDetail(roleId);
+      handleTabInit(activeTab.value, id);
     });
 
     return {

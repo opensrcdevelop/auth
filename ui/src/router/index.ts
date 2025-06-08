@@ -1,8 +1,13 @@
-import {checkTenant} from "@/api/tenant";
-import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
-import {getSubDomain} from "@/util/tool";
-import {Notification} from "@arco-design/web-vue";
-import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
+import { checkTenant } from "@/api/tenant";
+import {
+  AUTH_TOKENS,
+  OAUTH_ISSUER,
+  TENANT_CODE,
+  TENANT_NAME,
+} from "@/util/constants";
+import { getSubDomain } from "@/util/tool";
+import { Notification } from "@arco-design/web-vue";
+import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 
 /** 菜单路由 */
 export const menuRoutes: RouteRecordRaw[] = [
@@ -431,6 +436,9 @@ export const routes: RouteRecordRaw[] = [
   {
     path: "/login",
     component: () => import("@/views/login/index.vue"),
+    meta: {
+      title: "登录",
+    },
   },
   {
     path: "/oauth2/redirect",
@@ -439,10 +447,16 @@ export const routes: RouteRecordRaw[] = [
   {
     path: "/login/changePwd",
     component: () => import("@/views/login/changePwd/index.vue"),
+    meta: {
+      title: "修改密码",
+    },
   },
   {
     path: "/user/home",
     component: () => import("@/views/user/home/index.vue"),
+    meta: {
+      title: "个人中心",
+    },
   },
   {
     path: "/403",
