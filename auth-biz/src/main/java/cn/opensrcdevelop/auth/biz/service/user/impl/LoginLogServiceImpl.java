@@ -9,6 +9,7 @@ import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,6 +18,7 @@ import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,21 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> implements LoginLogService {
 
+    private static final String PROP_MAX_LOGIN_LOGIN_NUM = "auth.server.max-login-log-num";
     private static final String PG_LIMIT = "limit ";
 
     private final ClientService clientService;
+
+    /**
+     * 保存登录日志
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    public void saveLoginLog(String userId) {
+        LoginLogServiceImpl aopSvc = (LoginLogServiceImpl) AopContext.currentProxy();
+        aopSvc.saveLoginLog(userId, Integer.parseInt(SpringContextUtil.getProperty(PROP_MAX_LOGIN_LOGIN_NUM)));
+    }
 
     /**
      * 保存登录日志
@@ -132,5 +146,23 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
         }).toList());
 
         return pageData;
+    }
+
+    /**
+     * 移除用户的最近登录会话
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    public void removeRecentLoginSessions(String userId) {
+        // 1. 获取用户最近一周的登录日志
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
+        List<LoginLog> loginLogs = super.list(Wrappers.<LoginLog>lambdaQuery()
+                .eq(LoginLog::getUserId, userId)
+                .ge(LoginLog::getLoginTime, oneWeekAgo)
+                .orderByDesc(LoginLog::getLoginTime));
+
+        // 2. 删除用户的最近登录会话
+        CommonUtil.stream(loginLogs).forEach(loginLog -> WebUtil.removeSession(loginLog.getSessionId()));
     }
 }

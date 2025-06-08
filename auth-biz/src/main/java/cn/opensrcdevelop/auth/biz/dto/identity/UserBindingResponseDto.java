@@ -25,4 +25,7 @@ public class UserBindingResponseDto {
     @Schema(description = "绑定时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime bindingTime;
+
+    @Schema(description = "授权请求 URI")
+    private String authReqUri;
 }

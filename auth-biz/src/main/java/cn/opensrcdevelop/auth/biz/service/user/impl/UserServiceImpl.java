@@ -281,6 +281,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Boolean.TRUE.equals(requestDto.getLocked()) || Boolean.FALSE.equals(requestDto.getConsoleAccess())) {
             ((UserService) AopContext.currentProxy()).clearAuthorizedTokens(userId);
         }
+
+        // 9. 删除 session（禁用账号的场合）
+        if (Boolean.TRUE.equals(requestDto.getLocked())) {
+            loginLogService.removeRecentLoginSessions(userId);
+        }
     }
 
     /**

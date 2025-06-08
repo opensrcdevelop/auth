@@ -69,8 +69,14 @@ public class IdentitySourceProviderRequestDto {
     @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String usernameAttribute;
 
+    @Schema(description = "唯一标识属性")
+    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    private String uniqueIdAttribute;
+
     @Schema(description = "用户匹配属性")
-    @NotBlankStr
+    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String userMatchAttribute;
 
     @Schema(description = "JWK 地址")

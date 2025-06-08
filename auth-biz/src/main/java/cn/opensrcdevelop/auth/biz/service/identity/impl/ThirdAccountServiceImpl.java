@@ -1,6 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.identity.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.UserBindingResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.entity.identity.ThirdAccount;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
@@ -13,6 +15,8 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,37 +42,46 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     private final UserServiceImpl userService;
     private final ThirdAccountRepository thirdAccountRepository;
 
+    /**
+     * 绑定第三方账号
+     *
+     * @param attributesList 第三方用户信息
+     * @param identitySourceRegistration 身份源
+     * @return 用户
+     */
     @Transactional
     @Override
     public User bind(List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {
 
-        String usernameAttribute = identitySourceRegistration.getIdentitySourceProvider().getUsernameAttribute();
-        String usernameAttributeValue = getAttribute(attributesList, usernameAttribute);
-        if (StringUtils.isEmpty(usernameAttributeValue)) {
-            log.warn("第三方用户信息中未找到用户名属性 {} 或该用户属性值为 null，无法绑定身份源 {}", usernameAttribute, identitySourceRegistration.getRegistrationId());
-            OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
-            throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
-        }
+        var checkRes = doCheck(attributesList, identitySourceRegistration);
+        String usernameAttributeValue = checkRes._1;
+        String uniqueIdAttributeValue = checkRes._2;
 
         // 1. 检查第三方账号是否已绑定
         ThirdAccount boundThirdAccount = super.getOne(Wrappers.<ThirdAccount>lambdaQuery()
-                .eq(ThirdAccount::getUniqueId, usernameAttributeValue)
+                .eq(ThirdAccount::getUniqueId, uniqueIdAttributeValue)
                 .eq(ThirdAccount::getRegistrationId, identitySourceRegistration.getRegistrationId()));
         if (Objects.nonNull(boundThirdAccount)) {
-            // 2. 已绑定，更新第三方用户信息
+            // 2. 已绑定
+            User user =userService.getById(boundThirdAccount.getUserId());
+            // 2.1 检查绑定的用户的状态
+            checkAccountStatus(user);
+
+            // 2.2 更新第三方用户信息
             super.update(Wrappers.<ThirdAccount>lambdaUpdate()
+                    .set(ThirdAccount::getUsername, usernameAttributeValue)
                     .set(ThirdAccount::getDetails, CommonUtil.serializeObject(attributesList))
-                    .eq(ThirdAccount::getUniqueId, usernameAttributeValue)
+                    .eq(ThirdAccount::getUniqueId, uniqueIdAttributeValue)
                     .eq(ThirdAccount::getRegistrationId, identitySourceRegistration.getRegistrationId()));
-            // 2.1 返回绑定的用户
-            return userService.getById(boundThirdAccount.getUserId());
+            // 2.3 返回绑定的用户
+            return user;
         } else {
             // 3. 未绑定，绑定第三方账号
             // 3.1 获取用户匹配属性
             String userMatchAttribute = identitySourceRegistration.getIdentitySourceProvider().getUserMatchAttribute();
             String userMatchAttributeValue = getAttribute(attributesList, userMatchAttribute);
             if (StringUtils.isEmpty(userMatchAttributeValue)) {
-                log.warn("用户信息中未找到匹配的用户属性 {} 或该用户属性值为 null，无法绑定身份源 {}", userMatchAttribute, identitySourceRegistration.getRegistrationId());
+                log.warn("用户信息中未找到有效的用户匹配属性 {}，无法绑定身份源 {}", userMatchAttribute, identitySourceRegistration.getRegistrationId());
                 OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
                 throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
             }
@@ -89,9 +102,14 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
                 log.info("未找到匹配的用户 {}，已自动注册用户 {}", userMatchAttributeValue, randomUsername);
             }
             // 3.3 绑定第三方账号
+            // 3.3.1 检查绑定的用户的状态
+            checkAccountStatus(user);
+
+            // 3.3.2 绑定第三方账号
             ThirdAccount thirdAccount = new ThirdAccount();
             thirdAccount.setUserId(user.getUserId());
-            thirdAccount.setUniqueId(usernameAttributeValue);
+            thirdAccount.setUniqueId(uniqueIdAttributeValue);
+            thirdAccount.setUsername(usernameAttributeValue);
             thirdAccount.setRegistrationId(identitySourceRegistration.getRegistrationId());
             thirdAccount.setDetails(CommonUtil.serializeObject(attributesList));
             super.save(thirdAccount);
@@ -99,6 +117,44 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
             // 3.4 返回绑定的用户
             return user;
         }
+    }
+
+    /**
+     * 用户自主绑定第三方账号
+     *
+     * @param userId 用户ID
+     * @param attributesList 第三方用户信息
+     * @param identitySourceRegistration 身份源
+     * @return 用户
+     */
+    @Transactional
+    @Override
+    public User bind(String userId, List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {
+        var checkRes = doCheck(attributesList, identitySourceRegistration);
+        String usernameAttributeValue = checkRes._1;
+        String uniqueIdAttributeValue = checkRes._2;
+
+        // 1. 检查第三方账号是否已绑定
+        ThirdAccount boundThirdAccount = super.getOne(Wrappers.<ThirdAccount>lambdaQuery()
+                .eq(ThirdAccount::getUniqueId, uniqueIdAttributeValue)
+                .eq(ThirdAccount::getRegistrationId, identitySourceRegistration.getRegistrationId()));
+
+        // 2. 第三方账号已被绑定
+        if (Objects.nonNull(boundThirdAccount)) {
+            OAuth2Error oauth2Error = new OAuth2Error(AuthConstants.THIRD_ACCOUNT_ALREADY_EXISTS_ERROR_CODE);
+            throw new OAuth2AuthenticationException(oauth2Error, AuthConstants.THIRD_ACCOUNT_ALREADY_EXISTS_ERROR_CODE);
+        }
+
+        // 3. 第三方账号未被绑定，绑定第三方账号
+        ThirdAccount thirdAccount = new ThirdAccount();
+        thirdAccount.setUserId(userId);
+        thirdAccount.setUniqueId(uniqueIdAttributeValue);
+        thirdAccount.setUsername(usernameAttributeValue);
+        thirdAccount.setRegistrationId(identitySourceRegistration.getRegistrationId());
+        thirdAccount.setDetails(CommonUtil.serializeObject(attributesList));
+        super.save(thirdAccount);
+
+        return userService.getById(userId);
     }
 
     /**
@@ -159,5 +215,33 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
             }
         }
         return null;
+    }
+
+    private Tuple2<String, String> doCheck(List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {
+        IdentitySourceProvider identitySourceProvider = identitySourceRegistration.getIdentitySourceProvider();
+        String usernameAttribute = identitySourceProvider.getUsernameAttribute();
+        String uniqueIdAttribute = identitySourceProvider.getUniqueIdAttribute();
+        String usernameAttributeValue = getAttribute(attributesList, usernameAttribute);
+        String uniqueIdAttributeValue = getAttribute(attributesList, uniqueIdAttribute);
+
+        if (StringUtils.isEmpty(usernameAttributeValue)) {
+            log.warn("第三方用户信息中未找到有效的用户名属性 {}，无法绑定身份源 {}", usernameAttribute, identitySourceRegistration.getRegistrationId());
+            OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
+            throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
+        }
+
+        if (StringUtils.isEmpty(uniqueIdAttributeValue)) {
+            log.warn("第三方用户信息中未找到有效的唯一标识属性 {}，无法绑定身份源 {}", uniqueIdAttribute, identitySourceRegistration.getRegistrationId());
+            OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
+            throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
+        }
+
+        return Tuple.of(usernameAttributeValue, uniqueIdAttributeValue);
+    }
+
+    private void checkAccountStatus(User user) {
+        if (Boolean.TRUE.equals(user.getLocked())) {
+            throw new OAuth2AuthenticationException(new OAuth2Error(AuthConstants.USER_LOCKED_ERROR_CODE), AuthConstants.USER_LOCKED_ERROR_CODE);
+        }
     }
 }

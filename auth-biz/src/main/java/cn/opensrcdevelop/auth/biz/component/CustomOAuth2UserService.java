@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.component;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.RequestConfigRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
@@ -10,10 +11,12 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.HttpUtil;
+import cn.opensrcdevelop.common.util.WebUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -65,7 +68,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         // 自定义用户信息请求
         if (Boolean.TRUE.equals(identitySourceProvider.getEnableCustomUserInfoReq()) && StringUtils.hasText(identitySourceProvider.getUserInfoReqCfg())) {
             // 填充请求配置
-            String requestCfgStr = fillRequestCfg(identitySourceProvider.getUserInfoReqCfg(), getRequestCfgValueContext(userRequest));
+            String requestCfgStr = fillRequestCfg(identitySourceProvider.getUserInfoReqCfg(), getRequestCfgValueContext(userRequest, identitySourceRegistration));
 
             // 反序列化
             userInfoReqCfgMap = CommonUtil.deserializeObject(requestCfgStr, new TypeReference<Map<String, RequestConfigRequestDto>>() {});
@@ -91,7 +94,18 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             attributesList.addAll(getResponse(apiRequest));
         }
 
-        // 绑定第三方账号
+        String bindUserId = null;
+        var httpReq = WebUtil.getRequest();
+        if (httpReq.isPresent()) {
+            HttpSession session = httpReq.get().getSession(false);
+            bindUserId = (String) session.getAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID);
+        }
+
+        // 用户自主绑定第三方账号
+        if (StringUtils.hasText(bindUserId)) {
+            return thirdAccountService.bind(bindUserId, attributesList, identitySourceRegistration);
+        }
+
         return thirdAccountService.bind(attributesList, identitySourceRegistration);
     }
 
@@ -108,7 +122,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         }
     }
 
-    private Map<String, Object> getRequestCfgValueContext(OAuth2UserRequest userRequest) {
+    private Map<String, Object> getRequestCfgValueContext(OAuth2UserRequest userRequest, IdentitySourceRegistration identitySourceRegistration) {
         Map<String, Object> requestCfgValueContext = new HashMap<>();
         requestCfgValueContext.put(OAuth2ParameterNames.ACCESS_TOKEN, userRequest.getAccessToken().getTokenValue());
         requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_ID, userRequest.getClientRegistration().getClientId());
@@ -116,6 +130,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         if (MapUtils.isNotEmpty(userRequest.getAdditionalParameters())) {
             requestCfgValueContext.putAll(userRequest.getAdditionalParameters());
+        }
+
+        if (StringUtils.hasText(identitySourceRegistration.getAdditionalParams())) {
+            requestCfgValueContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(), new TypeReference<Map<String, Object>>() {}));
         }
         return requestCfgValueContext;
     }

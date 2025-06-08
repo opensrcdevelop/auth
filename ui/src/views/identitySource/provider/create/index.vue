@@ -307,7 +307,7 @@ export default indexTs;
           />
         </a-form-item>
         <a-row :gutter="24">
-          <a-col :span="8">
+          <a-col :span="6">
             <a-form-item
               field="userInfoAuthenticationMethod"
               label="用户信息认证方式"
@@ -321,11 +321,10 @@ export default indexTs;
               </a-radio-group>
             </a-form-item>
           </a-col>
-          <a-col :span="8">
+          <a-col :span="6">
             <a-form-item
               field="usernameAttribute"
               label="用户名属性"
-              tooltip="用于唯一标识第三方用户"
             >
               <a-input
                 v-model="createProviderForm.usernameAttribute"
@@ -333,7 +332,15 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="8">
+                          <a-col :span="6">
+                  <a-form-item field="uniqueIdAttribute" label="唯一标识属性">
+                    <a-input
+                      v-model="createProviderForm.uniqueIdAttribute"
+                      placeholder="请输入唯一标识属性"
+                    />
+                  </a-form-item>
+                </a-col>
+          <a-col :span="6">
             <a-form-item
               field="userMatchAttribute"
               label="用户匹配属性"

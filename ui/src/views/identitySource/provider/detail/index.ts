@@ -262,6 +262,7 @@ const providerAuthInfoForm = reactive({
   userInfoAuthenticationMethod: undefined,
   scopes: undefined,
   usernameAttribute: undefined,
+  uniqueIdAttribute: undefined,
   userMatchAttribute: undefined,
 });
 const providerAuthInfoFormRules = {
@@ -269,6 +270,7 @@ const providerAuthInfoFormRules = {
     { required: true, message: "用户信息认证方式未选择" },
   ],
   usernameAttribute: [{ required: true, message: "用户名属性未填写" }],
+  uniqueIdAttribute: [{ required: true, message: "唯一标识属性未填写" }],
   userMatchAttribute: [{ required: true, message: "用户匹配属性未填写" }],
 };
 
@@ -349,6 +351,7 @@ const handleGetProviderDetail = () => {
           data.userInfoAuthenticationMethod;
         providerAuthInfoForm.scopes = data.scopes;
         providerAuthInfoForm.usernameAttribute = data.usernameAttribute;
+        providerAuthInfoForm.uniqueIdAttribute = data.uniqueIdAttribute;
         providerAuthInfoForm.userMatchAttribute = data.userMatchAttribute;
       });
     })

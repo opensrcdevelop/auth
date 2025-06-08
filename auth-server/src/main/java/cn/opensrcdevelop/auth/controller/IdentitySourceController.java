@@ -13,11 +13,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @Tag(name = "API-IdentitySource", description = "接口-身份源管理")
@@ -141,7 +144,7 @@ public class IdentitySourceController {
 
     @Operation(summary = "获取身份源关联的用户绑定列表", description = "获取身份源关联的用户绑定列表")
     @Parameters({
-            @Parameter(name = "id", description = "注册身份源ID", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "id", description = "身份源ID", in = ParameterIn.PATH, required = true),
             @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
             @Parameter(name = "keyword", description = "用户名检索关键字", in = ParameterIn.QUERY)
@@ -150,5 +153,29 @@ public class IdentitySourceController {
     @Authorize({ "allIdentitySourcePermissions", "getIdentitySourceUserBindings" })
     public PageData<UserBindingResponseDto> getUserBindingList(@PathVariable @NotBlank String id, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return thirdAccountService.getUserBindingList(id, page, size, keyword);
+    }
+
+    @Operation(summary = "获取当前用户已绑定的身份源", description = "获取当前用户已绑定的身份源")
+    @GetMapping("/bound")
+    public List<IdentitySourceRegistrationResponseDto> getBoundRegistrationIds() {
+        return identitySourceRegistrationService.getBoundRegistrations();
+    }
+
+    @Operation(summary = "绑定当前用户", description = "绑定当前用户")
+    @Parameters({
+            @Parameter(name = "code", description = "身份源标识", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/bind/{code}")
+    public UserBindingResponseDto bindUser(@PathVariable @NotBlank String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        return identitySourceRegistrationService.bindUser(code, request, response);
+    }
+
+    @Operation(summary = "解绑当前用户", description = "解绑当前用户")
+    @Parameters({
+            @Parameter(name = "id", description = "身份源ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/{id}/unbind")
+    public void unbindUser(@PathVariable @NotBlank String id) {
+        identitySourceRegistrationService.unbindUser(id);
     }
 }

@@ -44,6 +44,9 @@ public class IdentitySourceProviderResponseDto {
     @Schema(description = "用户名属性")
     private String usernameAttribute;
 
+    @Schema(description = "唯一标识属性")
+    private String uniqueIdAttribute;
+
     @Schema(description = "用户匹配属性")
     private String userMatchAttribute;
 

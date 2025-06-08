@@ -8,7 +8,6 @@ import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
 import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
 import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -39,7 +38,6 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
-    private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
     private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
 
     @Override
@@ -117,7 +115,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
      */
     private void setUserLoginInfo(String userId) {
         // 1. 保存登录日志
-        loginLogService.saveLoginLog(userId, authorizationServerProperties.getMaxLoginLogNum());
+        loginLogService.saveLoginLog(userId);
 
         // 2. 重置最近登录失败次数
         User updateUser = new User();

@@ -50,4 +50,5 @@ public class MessageConstants {
     public static final String PWD_POLICY_MSG_1011 = "pwd.policy.msg.1011";
     public static final String IDENTITY_PROVIDER_MSG_1000 = "identity.provider.msg.1000";
     public static final String IDENTITY_REGISTRATION_MSG_1000 = "identity.registration.msg.1000";
+    public static final String IDENTITY_REGISTRATION_MSG_1001 = "identity.registration.msg.1001";
 }

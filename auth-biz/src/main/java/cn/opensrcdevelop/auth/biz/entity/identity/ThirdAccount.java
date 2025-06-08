@@ -31,6 +31,9 @@ public class ThirdAccount extends BaseEntity implements Serializable {
     /** 第三方账号唯一标识 */
     private String uniqueId;
 
+    /** 第三方账号用户名 */
+    private String username;
+
     /** 第三方账号信息 */
     private String details;
 

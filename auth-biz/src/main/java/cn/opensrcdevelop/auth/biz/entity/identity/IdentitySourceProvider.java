@@ -57,6 +57,9 @@ public class IdentitySourceProvider extends BaseEntity implements Serializable {
     /** 用户匹配属性 */
     private String userMatchAttribute;
 
+    /** 唯一标识ID属性 */
+    private String uniqueIdAttribute;
+
     /** JWK 地址 */
     private String jwkSetUri;
 

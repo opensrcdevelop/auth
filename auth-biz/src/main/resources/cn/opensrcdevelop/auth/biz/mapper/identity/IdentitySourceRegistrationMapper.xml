@@ -22,6 +22,7 @@
             <result column="user_info_uris" property="userInfoUris" />
             <result column="user_info_authentication_method" property="userInfoAuthenticationMethod" />
             <result column="username_attribute" property="usernameAttribute" />
+            <result column="unique_id_attribute" property="uniqueIdAttribute" />
             <result column="user_match_attribute" property="userMatchAttribute" />
             <result column="jwk_set_uri" property="jwkSetUri" />
             <result column="issuer_uri" property="issuerUri" />
@@ -54,6 +55,7 @@
             t2.user_info_uris,
             t2.user_info_authentication_method,
             t2.username_attribute,
+            t2.unique_id_attribute,
             t2.user_match_attribute,
             t2.jwk_set_uri,
             t2.issuer_uri,

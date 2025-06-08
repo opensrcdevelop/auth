@@ -9,11 +9,11 @@ import lombok.Data;
 
 import java.util.Map;
 
-@Schema(description = "身份源注册请求")
+@Schema(description = "身份源请求")
 @Data
 public class IdentitySourceRegistrationRequestDto {
 
-    @Schema(description = "身份源注册ID")
+    @Schema(description = "身份源ID")
     @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
     private String id;
 
@@ -21,12 +21,12 @@ public class IdentitySourceRegistrationRequestDto {
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
     private String providerId;
 
-    @Schema(description = "身份源注册名称")
+    @Schema(description = "身份源名称")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
     @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String name;
 
-    @Schema(description = "身份源注册标识")
+    @Schema(description = "身份源标识")
     @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
     @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
     private String code;

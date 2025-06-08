@@ -39,10 +39,10 @@ public class IdentitySourceRegistration extends BaseEntity implements Serializab
     /** 身份源提供商 ID */
     private String providerId;
 
-    /** 身份源注册名称 */
+    /** 身份源名称 */
     private String registrationName;
 
-    /** 身份源注册标识 */
+    /** 身份源标识 */
     private String registrationCode;
 
     /** 客户端 ID */

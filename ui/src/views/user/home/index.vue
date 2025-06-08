@@ -52,7 +52,11 @@ export default homeTs;
         >
           <a-tab-pane key="user_info" title="个人信息">
             <div class="card">
-              <a-spin :loading="userInfoLoading" style="width: 100%">
+              <a-spin
+                :loading="loading"
+                style="width: 100%"
+                tip="处理中，请稍后..."
+              >
                 <a-card title="个人信息">
                   <template #extra>
                     <a-button type="text" @click="handleUpdateMyUserInfo">
@@ -135,45 +139,103 @@ export default homeTs;
             </div>
           </a-tab-pane>
           <a-tab-pane key="account_binding" title="账号绑定">
-            <div class="card">
-              <a-card title="手机号和邮箱">
-                <div class="binding-card">
-                  <div class="icon-container">
-                    <div class="icon">
-                      <icon-email />
-                    </div>
-                    <span>邮箱</span>
-                    <span
-                      v-if="userInfo['emailAddress']"
-                      style="color: #396aff; margin-left: 8px"
-                      >{{ userInfo["emailAddress"] }}</span
-                    >
-                  </div>
-                  <div class="status-container">
-                    <div class="binding" v-if="!userInfo['emailAddress']">
-                      <a-button type="text" @click="handleOpenBindEmailModal">
-                        <template #icon>
-                          <icon-font type="icon-binding" />
-                        </template>
-                        绑定
-                      </a-button>
-                    </div>
-                    <div class="unbind" v-else>
-                      <a-button
-                        type="text"
-                        status="warning"
-                        @click="handleOpenUnbindEmailModal"
+            <a-spin
+              :loading="loading"
+              style="width: 100%"
+              tip="处理中，请稍后..."
+            >
+              <div class="card">
+                <a-card title="手机号和邮箱">
+                  <div class="binding-card">
+                    <div class="icon-container">
+                      <div class="icon">
+                        <icon-email />
+                      </div>
+                      <span>邮箱</span>
+                      <span
+                        v-if="userInfo['emailAddress']"
+                        style="color: #396aff; margin-left: 8px"
+                        >{{ userInfo["emailAddress"] }}</span
                       >
-                        <template #icon>
-                          <icon-font type="icon-unbind" />
-                        </template>
-                        解除绑定
-                      </a-button>
+                    </div>
+                    <div class="status-container">
+                      <div class="binding" v-if="!userInfo['emailAddress']">
+                        <a-button type="text" @click="handleOpenBindEmailModal">
+                          <template #icon>
+                            <icon-font type="icon-binding" />
+                          </template>
+                          绑定
+                        </a-button>
+                      </div>
+                      <div class="unbind" v-else>
+                        <a-button
+                          type="text"
+                          status="warning"
+                          @click="handleOpenUnbindEmailModal"
+                        >
+                          <template #icon>
+                            <icon-font type="icon-unbind" />
+                          </template>
+                          解除绑定
+                        </a-button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </a-card>
-            </div>
+                </a-card>
+              </div>
+              <div class="card" v-if="boundIdentitySource.length > 0">
+                <a-card title="第三方账号">
+                  <div
+                    class="binding-card"
+                    v-for="identitySource in boundIdentitySource"
+                    :key="identitySource.id"
+                  >
+                    <div class="icon-container">
+                      <div class="icon">
+                        <img
+                          class="identity-source-logo"
+                          :src="identitySource.logo"
+                          :draggable="false"
+                        />
+                      </div>
+                      <div class="name-container">
+                        <span>{{ identitySource.name }}</span>
+                        <span
+                          class="username"
+                          v-if="identitySource.bindUsername"
+                          >用户名：{{ identitySource.bindUsername }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="status-container">
+                      <div class="binding" v-if="!identitySource.isBind">
+                        <a-button
+                          type="text"
+                          @click="handleBindUser(identitySource)"
+                        >
+                          <template #icon>
+                            <icon-font type="icon-binding" />
+                          </template>
+                          绑定
+                        </a-button>
+                      </div>
+                      <div class="unbind" v-else>
+                        <a-button
+                          type="text"
+                          status="warning"
+                          @click="handleUnbindUser(identitySource)"
+                        >
+                          <template #icon>
+                            <icon-font type="icon-unbind" />
+                          </template>
+                          解除绑定
+                        </a-button>
+                      </div>
+                    </div>
+                  </div>
+                </a-card>
+              </div>
+            </a-spin>
           </a-tab-pane>
         </a-tabs>
       </div>

@@ -4,18 +4,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
-@Schema(description = "身份源注册响应")
+@Schema(description = "身份源响应")
 @Data
 @Builder
 public class IdentitySourceRegistrationResponseDto {
 
-    @Schema(description = "身份源注册ID")
+    @Schema(description = "身份源ID")
     private String id;
 
-    @Schema(description = "身份源注册名称")
+    @Schema(description = "身份源名称")
     private String name;
 
-    @Schema(description = "身份源注册标识")
+    @Schema(description = "身份源标识")
     private String code;
 
     @Schema(description = "logo")
@@ -44,4 +44,10 @@ public class IdentitySourceRegistrationResponseDto {
 
     @Schema(description = "额外参数")
     private String additionalParams;
+
+    @Schema(description = "是否绑定用户")
+    private Boolean isBind;
+
+    @Schema(description = "绑定的用户名")
+    private String bindUsername;
 }

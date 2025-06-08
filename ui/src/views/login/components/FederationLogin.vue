@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import {getEnabledIdentitySource} from "@/api/identitySource";
 import router from "@/router";
-import {AUTH_FAILURE, AUTH_SUCCESS} from "@/util/constants";
+import {AUTH_FAILURE, AUTH_SUCCESS, USER_LOCKED} from "@/util/constants";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Notification} from "@arco-design/web-vue";
 import {computed, onMounted, reactive} from "vue";
@@ -59,6 +59,11 @@ const handleAuthWindowResponse = (event) => {
 
   if (event.data === AUTH_FAILURE) {
     Notification.error("第三方账号登录失败");
+    authWindow.close();
+  }
+
+  if (event.data === USER_LOCKED) {
+    Notification.error("账号已被禁用，无法通过第三方账号登录");
     authWindow.close();
   }
 };

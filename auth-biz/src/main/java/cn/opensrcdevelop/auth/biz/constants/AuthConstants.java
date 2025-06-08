@@ -21,4 +21,7 @@ public class AuthConstants {
     public static final String FEDERATION_LOGIN_URI = "/login/federation";
     public static final String FEDERATION_LOGIN_REDIRECTION_URI = "/login/federation/callback/*";
     public static final String FEDERATION_LOGIN_REDIRECT_URI = "{baseUrl}/login/federation/callback/{registrationId}";
+    public static final String SESSION_BIND_REQ_USER_ID = "SESSION_BIND_REQ_USER_ID";
+    public static final String THIRD_ACCOUNT_ALREADY_EXISTS_ERROR_CODE = "thirdAccount_already_exists";
+    public static final String USER_LOCKED_ERROR_CODE = "user_locked";
 }

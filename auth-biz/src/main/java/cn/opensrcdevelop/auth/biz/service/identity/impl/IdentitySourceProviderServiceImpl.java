@@ -61,6 +61,7 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         identitySourceProvider.setUserInfoUris(CommonUtil.stream(requestDto.getUserInfoUris()).collect(Collectors.joining(CommonConstants.COMMA)));
         identitySourceProvider.setScopes(CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
         identitySourceProvider.setUsernameAttribute(requestDto.getUsernameAttribute());
+        identitySourceProvider.setUniqueIdAttribute(requestDto.getUniqueIdAttribute());
         identitySourceProvider.setUserMatchAttribute(requestDto.getUserMatchAttribute());
         identitySourceProvider.setJwkSetUri(requestDto.getJwkSetUri());
         identitySourceProvider.setUserInfoAuthenticationMethod(requestDto.getUserInfoAuthenticationMethod());
@@ -124,6 +125,7 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         updateProvider.setScopes(CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
         updateProvider.setUsernameAttribute(requestDto.getUsernameAttribute());
         updateProvider.setUserMatchAttribute(requestDto.getUserMatchAttribute());
+        updateProvider.setUniqueIdAttribute(requestDto.getUniqueIdAttribute());
         updateProvider.setJwkSetUri(requestDto.getJwkSetUri());
         updateProvider.setUserInfoAuthenticationMethod(requestDto.getUserInfoAuthenticationMethod());
 
@@ -257,6 +259,7 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
                 .userInfoUris(Arrays.asList(provider.getUserInfoUris().split(CommonConstants.COMMA)))
                 .scopes(Arrays.asList(provider.getScopes().split(CommonConstants.COMMA)))
                 .usernameAttribute(provider.getUsernameAttribute())
+                .uniqueIdAttribute(provider.getUniqueIdAttribute())
                 .userMatchAttribute(provider.getUserMatchAttribute())
                 .jwkSetUri(provider.getJwkSetUri())
                 .userInfoAuthenticationMethod(provider.getUserInfoAuthenticationMethod())

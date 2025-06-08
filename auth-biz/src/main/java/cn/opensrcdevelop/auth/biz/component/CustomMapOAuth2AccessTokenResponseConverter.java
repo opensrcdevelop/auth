@@ -37,13 +37,15 @@ public class CustomMapOAuth2AccessTokenResponseConverter implements Converter<Ma
         }
 
         // @formatter:off
-        return OAuth2AccessTokenResponse.withToken(accessToken)
+        var response = OAuth2AccessTokenResponse.withToken(accessToken)
                 .tokenType(OAuth2AccessToken.TokenType.BEARER)
                 .expiresIn(expiresIn)
                 .refreshToken(refreshToken)
                 .additionalParameters(additionalParameters)
                 .build();
         // @formatter:on
+        additionalParameters.clear();
+        return response;
     }
 
     private static long getExpiresIn(Map<String, Object> tokenResponseParameters) {

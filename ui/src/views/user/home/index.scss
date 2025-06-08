@@ -69,11 +69,10 @@
     align-items: center;
 
     .tabs-container {
-      overflow: auto;
-      height: 100vh;
+      height: calc(100vh - 62px);
       width: 1200px;
-      padding: 24px 0 86px 0;
-      box-sizing: border-box;
+      padding: 24px;
+      overflow-y: auto;
 
       .card {
         width: 100%;
@@ -88,6 +87,8 @@
         align-items: center;
         justify-content: space-between;
         width: 100%;
+        height: 440x;
+        margin-bottom: 16px;
 
         .icon-container {
           display: flex;
@@ -104,8 +105,28 @@
             background-color: #eff2f6;
             font-size: 20px;
             margin-right: 8px;
+
+            .identity-source-logo {
+              width: 36px;
+              height: 36px;
+            }
           }
         }
+
+        .name-container {
+          display: flex;
+          flex-direction: column;
+
+          .username {
+            margin-top: 4px;
+            color: #86909c;
+            font-size: 14px;
+          }
+        }
+      }
+
+      .binding-card:last-child {
+        margin-bottom: 0;
       }
     }
   }

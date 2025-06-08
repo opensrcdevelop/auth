@@ -133,25 +133,25 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     }
 
     @Transactional
-    public void removeUserTokens(String principalname) {
-        // 1. 查询是否存在 RefrshToken
-        List<Authorization> authorizations = authorizationRepository.findRefreshTokensByPrincipalName(principalname);
+    public void removeUserTokens(String principalName) {
+        // 1. 查询是否存在 RefreshToken
+        List<Authorization> authorizations = authorizationRepository.findRefreshTokensByPrincipalName(principalName);
         CommonUtil.stream(authorizations).filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue())).forEach(authorization ->
-            // 2. 将 RefreshToken 加入黑名单，避免使用该 RereshToken
+            // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
             RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
                     "",
                     Duration.between(authorization.getRefreshTokenIssuedAt(), authorization.getRefreshTokenExpiresAt()).getSeconds(), TimeUnit.SECONDS));
 
         // 3. 数据库操作
-        authorizationRepository.deleteUserTokens(principalname);
+        authorizationRepository.deleteUserTokens(principalName);
     }
 
     @Transactional
     public void removeByLoginId(String loginId) {
-        // 1. 查询是否存在 RefrshToken
+        // 1. 查询是否存在 RefreshToken
         List<Authorization> authorizations = authorizationRepository.findRefreshTokensByLoginId(loginId);
         CommonUtil.stream(authorizations).filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue())).forEach(authorization ->
-            // 2. 将 RefreshToken 加入黑名单，避免使用该 RereshToken
+            // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
             RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
                     "",
                     Duration.between(authorization.getRefreshTokenIssuedAt(), authorization.getRefreshTokenExpiresAt()).getSeconds(), TimeUnit.SECONDS));

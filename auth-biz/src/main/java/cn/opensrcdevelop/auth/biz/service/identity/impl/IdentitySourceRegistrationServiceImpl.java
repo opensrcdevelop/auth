@@ -1,10 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.identity.impl;
 
+import cn.opensrcdevelop.auth.biz.component.CustomOAuth2AuthorizationRequestResolver;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceProviderResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceRegistrationRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceRegistrationResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.identity.UserBindingResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.entity.identity.ThirdAccount;
@@ -12,6 +14,7 @@ import cn.opensrcdevelop.auth.biz.mapper.identity.IdentitySourceRegistrationMapp
 import cn.opensrcdevelop.auth.biz.repository.identity.IdentitySourceRegistrationRepository;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -19,28 +22,47 @@ import cn.opensrcdevelop.common.util.WebUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.web.DefaultRedirectStrategy;
+import org.springframework.security.web.RedirectStrategy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentitySourceRegistrationMapper, IdentitySourceRegistration> implements IdentitySourceRegistrationService {
 
     private static final String AUTHORIZATION_URI_FORMAT = "%s" + AuthConstants.FEDERATION_LOGIN_URI + "/%s";
+
     private final IdentitySourceRegistrationRepository identitySourceRegistrationRepository;
     private final ThirdAccountService thirdAccountService;
+    private final AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository();
+    private final RedirectStrategy authorizationRedirectStrategy = new DefaultRedirectStrategy();
 
+
+    @Resource
+    @Lazy
+    private CustomOAuth2AuthorizationRequestResolver authorizationRequestResolver;
     /**
-     * 根据标识获取注册信息
+     * 根据标识获取身份源信息
      *
      * @param code 标识
-     * @return 注册信息
+     * @return 身份源信息
      */
     @Override
     public IdentitySourceRegistration getByCode(String code) {
@@ -48,9 +70,9 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 批量删除注册信息
+     * 批量删除身份源
      *
-     * @param ids 注册 ID 列表
+     * @param ids 身份源 ID 列表
      */
     @Transactional
     @Override
@@ -58,19 +80,19 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
         // 1. 删除绑定的第三方账号
         thirdAccountService.remove(Wrappers.<ThirdAccount>lambdaQuery().in(ThirdAccount::getRegistrationId, ids));
 
-        // 2. 删除注册信息
+        // 2. 删除身份源
         super.removeBatchByIds(ids);
     }
 
     /**
-     * 注册身份源
+     * 创建身份源
      *
      * @param requestDto 请求
      */
     @Transactional
     @Override
     public void createIdentitySourceRegistration(IdentitySourceRegistrationRequestDto requestDto) {
-        // 1. 检查身份源注册标识是否重复
+        // 1. 检查身份源标识是否重复
         checkRegistrationCode(requestDto, null);
 
         // 2. 属性编辑
@@ -93,7 +115,7 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 更新身份源注册信息
+     * 更新身份源信息
      *
      * @param requestDto 请求
      */
@@ -106,7 +128,7 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             return;
         }
 
-        // 2. 检查身份源注册标识是否重复
+        // 2. 检查身份源标识是否重复
         checkRegistrationCode(requestDto, rawRegistration);
 
         // 3. 属性编辑
@@ -129,9 +151,9 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 删除身份源注册信息
+     * 删除身份源
      *
-     * @param id 注册 ID
+     * @param id 身份源 ID
      */
     @Override
     public void removeIdentitySourceRegistration(String id) {
@@ -143,12 +165,12 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 获取身份源注册列表
+     * 获取身份源列表
      *
      * @param page 页数
      * @param size 条数
-     * @param keyword 身份源注册标识或名称检索关键字
-     * @return 身份源注册列表
+     * @param keyword 身份源标识或名称检索关键字
+     * @return 身份源列表
      */
     @Override
     public PageData<IdentitySourceRegistrationResponseDto> list(int page, int size, String keyword) {
@@ -185,10 +207,10 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 获取身份源注册信息详情
+     * 获取身份源详情
      *
      * @param id 注册 ID
-     * @return 身份源注册信息详情
+     * @return 身份源详情
      */
     @Override
     public IdentitySourceRegistrationResponseDto detail(String id) {
@@ -213,9 +235,9 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     }
 
     /**
-     * 获取启用的注册身份源
+     * 获取启用的身份源
      *
-     * @return 启用的注册身份源
+     * @return 启用的身份源
      */
     @Override
     public List<IdentitySourceRegistrationResponseDto> getEnabledRegistrations() {
@@ -227,12 +249,93 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             String code = registration.getRegistrationCode();
             String authorizationUri = String.format(AUTHORIZATION_URI_FORMAT, WebUtil.getRootUrl(), code);
             return IdentitySourceRegistrationResponseDto.builder()
+                    .id(registration.getRegistrationId())
                     .name(registration.getRegistrationName())
                     .code(code)
                     .logo(registration.getIdentitySourceProvider().getProviderLogo())
                     .authorizationUri(authorizationUri)
                     .build();
         }).toList();
+    }
+
+    /**
+     * 获取绑定的身份源
+     *
+     * @return 绑定的身份源
+     */
+    @Override
+    public List<IdentitySourceRegistrationResponseDto> getBoundRegistrations() {
+        List<IdentitySourceRegistrationResponseDto> boundRegistrations = new ArrayList<>();
+        // 1. 获取当前用户 ID
+        AuthUtil.getCurrentUserId().ifPresent(userId -> {
+            // 2. 获取启用的身份源
+            List<IdentitySourceRegistrationResponseDto> registrationResponseList = getEnabledRegistrations();
+
+            // 3. 获取用户已绑定的身份源ID
+            List<ThirdAccount> thirdAccounts = thirdAccountService.list(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getUserId, userId));
+
+            // 4. 组装返回结果
+            CommonUtil.stream(registrationResponseList).forEach(registrationRep -> {
+                CommonUtil.stream(thirdAccounts)
+                        .filter(thirdAccount -> StringUtils.equals(registrationRep.getId(), thirdAccount.getRegistrationId()))
+                        .findAny().ifPresent(thirdAccount -> {
+                            registrationRep.setAuthorizationUri(null);
+                            registrationRep.setIsBind(true);
+                            registrationRep.setBindUsername(thirdAccount.getUsername());
+                        });
+            });
+            boundRegistrations.addAll(registrationResponseList);
+        });
+
+        return boundRegistrations;
+    }
+
+    /**
+     * 绑定用户
+     *
+     * @param registrationCode 身份源标识
+     * @param request 请求
+     * @param response 响应
+     */
+    @Override
+    public UserBindingResponseDto bindUser(String registrationCode, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        UserBindingResponseDto responseDto = UserBindingResponseDto.builder().build();
+        // 1. 检查身份源是否存在
+        if (!super.exists(Wrappers.<IdentitySourceRegistration>lambdaQuery().eq(IdentitySourceRegistration::getRegistrationCode, registrationCode))) {
+            throw new BizException(MessageConstants.IDENTITY_REGISTRATION_MSG_1001, registrationCode);
+        }
+
+        // 2. 获取当前用户ID
+        Optional<String> userIdOptional = AuthUtil.getCurrentUserId();
+        if (userIdOptional.isEmpty()) {
+            return responseDto;
+        }
+
+        // 3. 授权请求转换保存
+        OAuth2AuthorizationRequest authorizationRequest = authorizationRequestResolver.resolve(request, registrationCode);
+        authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
+        request.getSession().setAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID, userIdOptional.get());
+
+        // 4. 返回授权重定向地址
+        responseDto.setAuthReqUri(authorizationRequest.getAuthorizationRequestUri());
+        return responseDto;
+    }
+
+    /**
+     * 解绑用户
+     *
+     * @param registrationId 身份源ID
+     */
+    @Override
+    public void unbindUser(String registrationId) {
+        // 1. 获取当前用户ID
+        Optional<String> userIdOptional = AuthUtil.getCurrentUserId();
+        if (userIdOptional.isEmpty()) {
+            return;
+        }
+
+        // 2. 删除第三方账号
+        thirdAccountService.remove(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getRegistrationId, registrationId).eq(ThirdAccount::getUserId, userIdOptional.get()));
     }
 
     private void checkRegistrationCode(IdentitySourceRegistrationRequestDto requestDto, IdentitySourceRegistration rawRegistration) {

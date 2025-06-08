@@ -60,7 +60,10 @@ export class Request {
           globalVariables.apiLoading = false;
         }
 
-        return res.data;
+        if (res.data) {
+          return res.data;
+        }
+        return res;
       },
       (err: any) => {
         if (this.showGlobalLoading) {

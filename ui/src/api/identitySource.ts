@@ -162,3 +162,38 @@ export function deleteIdentitySourceProvider(id: string) {
     url: `/identitySource/provider/${id}`,
   });
 }
+
+/**
+ * 获取绑定的身份源
+ * 
+ * @returns 绑定的身份源
+ */
+export function getBoundIdentitySource() {
+  return apiRequest.get({
+    url: "/identitySource/bound"
+  })
+}
+
+/**
+ * 绑定当前用户
+ * 
+ * @param code 身份源标识
+ * @returns 响应结果
+ */
+export function bindUser(code: string) {
+  return apiRequest.get({
+    url: `/identitySource/bind/${code}`
+  })
+}
+
+/**
+ * 解绑当前用户
+ * 
+ * @param id 身份源ID
+ * @returns 响应结果
+ */
+export function unbindUser(id: string) {
+  return apiRequest.delete({
+    url: `/identitySource/${id}/unbind`
+  })
+}
