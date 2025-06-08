@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.authentication.email;
 
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

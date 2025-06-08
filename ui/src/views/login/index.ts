@@ -5,9 +5,14 @@ import {checkCode, emailLoginSubmit, loginSubmit, resetPwd, sendEmailCodeSubmit,
 import {logoutSubmit} from "@/api/logout";
 import router from "@/router";
 import {TENANT_NAME} from "@/util/constants";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
+import FederationLogin from "./components/FederationLogin.vue";
 
 /** 租户名称 */
 const tenantName = ref(undefined);
+
+/** 记住我 */
+const rememberMe = ref(false);
 
 const passwordLoginForm = reactive({
   username: undefined,
@@ -66,7 +71,7 @@ const backToLogin = () => {
  */
 const openCaptchaVerify = () => {
   captchaVerifyRef.value.show();
-}
+};
 
 /**
  * 提交密码登录表单
@@ -75,8 +80,12 @@ const openCaptchaVerify = () => {
  */
 const handlePasswordLoginFromSubmit = (captchaVerification) => {
   loginLoading.value = true;
-  passwordLoginForm.captchaVerification = captchaVerification.captchaVerification;
-  loginSubmit(passwordLoginForm)
+  passwordLoginForm.captchaVerification =
+    captchaVerification.captchaVerification;
+  loginSubmit({
+    ...passwordLoginForm,
+    rememberMe: rememberMe.value,
+  })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         handleLoginResult(data, "password");
@@ -133,6 +142,7 @@ const emailLoginFormRef = ref();
 const emailLoginForm = reactive({
   email: undefined,
   code: undefined,
+  rememberMe: false
 });
 const emailLoginFormRules = reactive({
   email: [
@@ -194,7 +204,10 @@ const handleSendEmailCode = () => {
  */
 const handleEmailLoginFormSubmit = (formData) => {
   loginLoading.value = true;
-  emailLoginSubmit(formData)
+  emailLoginSubmit({
+    ...formData,
+    rememberMe: rememberMe.value,
+  })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         handleLoginResult(data, "email");
@@ -218,6 +231,9 @@ const handleLoginResult = (result: any, loginType: string) => {
   if (result.needChangePwd) {
     router.push({
       path: "/login/changePwd",
+      query: {
+        type: result.changePwdType || "0",
+      },
     });
     return;
   }
@@ -369,6 +385,10 @@ const resetPwdFormRules = {
  * 提交重置密码表单
  */
 const handleResetPwdFormSubmit = (formData: any) => {
+  if (!checkRes.valid) {
+    return;
+  }
+
   delete formData.confirmPwd;
   delete formData.username;
 
@@ -398,7 +418,44 @@ const handleBackToForgotPwd = () => {
   toCheckForgotPwdCode.value = true;
 };
 
+/**
+ * 密码检查
+ */
+const checkLoading = ref(false);
+const checkRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkLoading.value = true;
+  resetPwdForm.newPwd = password;
+  checkPasswordWithoutPolicy({
+    identity: resetPwdForm.username,
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkRes.valid = data.valid;
+        checkRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkRes.ruleResults = data.ruleResults;
+        } else {
+          checkRes.ruleResults = [];
+        }
+        checkLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkLoading.value = false;
+    });
+};
+
 export default defineComponent({
+  components: {
+    FederationLogin
+  },
   setup() {
     onMounted(() => {
       tenantName.value = localStorage.getItem(TENANT_NAME);
@@ -443,6 +500,10 @@ export default defineComponent({
       handleResetPwdFormSubmit,
       handleBackToForgotPwd,
       mfaValidLoading,
+      checkLoading,
+      checkRes,
+      handleCheckPassword,
+      rememberMe
     };
   },
 });

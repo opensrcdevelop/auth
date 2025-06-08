@@ -63,6 +63,29 @@
       display: flex;
       justify-content: center;
     }
+
+    .send-code-btn-container {
+      display: flex;
+      align-items: flex-end;
+      padding-left: 12px;
+      box-sizing: border-box;
+    }
+  }
+}
+
+@media (max-width: 460px) {
+  
+  .login-container {
+    height: fit-content;
+    display: flex;
+    align-items: flex-start;
+
+
+    .form-container {
+      height: fit-content;
+      max-height: none;
+      box-shadow: none;
+    }
   }
 }
 

@@ -1,10 +1,11 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
 <style lang="scss" scoped>
-@import "./index.scss";
+@use "./index.scss";
 </style>
 
 <template>
@@ -13,14 +14,14 @@ export default detailTs;
       <div class="detail-header">
         <div>
           <span class="title">{{ permissionExpName }}</span>
-          <a-tooltip content="去调试">
-            <icon-bug class="debug" @click="handleToDebugPermissionExp" />
-          </a-tooltip>
           <div class="id">
             <span>ID:</span>
             <copy-text :text="permissionExpId" textColor="#86909c" />
           </div>
         </div>
+        <a-button type="primary" @click="handleToDebugPermissionExp">
+          调试运行
+        </a-button>
       </div>
       <a-tabs :active-key="activeTab" @change="handleTabChange">
         <a-tab-pane key="condition_info" title="限制条件信息">

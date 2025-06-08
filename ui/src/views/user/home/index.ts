@@ -1,19 +1,22 @@
-import { getEnabledDictData } from "@/api/dict";
-import { changePwd, sendEmailCodeSubmit } from "@/api/login";
-import { logoutSubmit } from "@/api/logout";
+import {getEnabledDictData} from "@/api/dict";
+import {bindUser, getBoundIdentitySource, unbindUser,} from "@/api/identitySource";
+import {changePwd, sendEmailCodeSubmit} from "@/api/login";
+import {logoutSubmit} from "@/api/logout";
+import {checkPasswordWithoutPolicy} from "@/api/setting";
 import {
-  bindEmail,
-  getCurrentUser,
-  getVisibleUserAttrs,
-  sendBindEmailCode,
-  unbindEmail,
-  updateMyUserInfo,
+    bindEmail,
+    getCurrentUser,
+    getVisibleUserAttrs,
+    sendBindEmailCode,
+    unbindEmail,
+    updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Message, Modal, Notification } from "@arco-design/web-vue";
-import { defineComponent, onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import {AUTH_FAILURE, AUTH_SUCCESS, BINDING_EXISTS} from "@/util/constants";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Message, Modal, Notification} from "@arco-design/web-vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
+import {useRoute} from "vue-router";
 
 const activeTab = ref("user_info");
 
@@ -30,7 +33,26 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string) => {
+  switch (tabKey) {
+    case "user_info":
+      handleGetUserInfo();
+      handleGetUserAttrs();
+      break;
+    case "account_binding":
+      handleGetUserInfo();
+      handleGetBoundIdentitySource();
+      break;
+  }
+};
+
+const loading = ref(false);
+
+// 控制台访问权限
+const consoleAccess = ref(false);
 
 /**
  * 跳转到控制台
@@ -78,7 +100,6 @@ const username = ref(undefined);
 const userInfo = reactive({});
 /** 用户属性 */
 const userAttrs = reactive([]);
-const userInfoLoading = ref(false);
 
 /** 字典数据值 */
 const allDictDatas = reactive({});
@@ -87,11 +108,12 @@ const allDictDatas = reactive({});
  * 获取用户信息
  */
 const handleGetUserInfo = () => {
-  userInfoLoading.value = true;
+  loading.value = true;
   getCurrentUser()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         username.value = data.username;
+        consoleAccess.value = data.consoleAccess;
 
         Object.assign(userInfo, data);
       });
@@ -100,7 +122,7 @@ const handleGetUserInfo = () => {
       handleApiError(err, "获取用户信息");
     })
     .finally(() => {
-      userInfoLoading.value = false;
+      loading.value = false;
     });
 };
 
@@ -108,6 +130,7 @@ const handleGetUserInfo = () => {
  * 获取用户属性
  */
 const handleGetUserAttrs = () => {
+  loading.value = true;
   getVisibleUserAttrs()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -156,6 +179,9 @@ const handleGetUserAttrs = () => {
     })
     .catch((err: any) => {
       handleApiError(err, "获取可见的用户属性");
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
@@ -164,6 +190,7 @@ const handleGetUserAttrs = () => {
  */
 const handleGetEnabledDictData = async (attrKey: string, dictId: string) => {
   try {
+    loading.value = true;
     const result = await getEnabledDictData(dictId);
     handleApiSuccess(result, (data: any) => {
       allDictDatas[attrKey].length = 0;
@@ -171,6 +198,8 @@ const handleGetEnabledDictData = async (attrKey: string, dictId: string) => {
     });
   } catch (err: any) {
     handleApiError(err, "获取启用的字典数据");
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -182,7 +211,7 @@ const handleUpdateMyUserInfo = () => {
     Message.warning("用户名不能为空");
     return;
   }
-  userInfoLoading.value = true;
+  loading.value = true;
   updateMyUserInfo(userInfo)
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -195,7 +224,7 @@ const handleUpdateMyUserInfo = () => {
       handleApiError(err, "更新个人信息");
     })
     .finally(() => {
-      userInfoLoading.value = false;
+      loading.value = false;
     });
 };
 
@@ -238,6 +267,7 @@ const handleOpenChangePwdModal = () => {
 const handleCloseChangePwdModal = () => {
   changePwdModalVisivle.value = false;
   changePwdFormRef.value.resetFields();
+  passwordCheckerRef.value.setPassword("");
 };
 
 /**
@@ -246,6 +276,10 @@ const handleCloseChangePwdModal = () => {
  * @param formData 修改密码表单
  */
 const handleSubmitChangePwdForm = (formData: any) => {
+  if (!checkPasswordRes.valid) {
+    return;
+  }
+
   changePwdFormSubmitLoading.value = true;
   changePwd(formData)
     .then((result: any) => {
@@ -259,6 +293,40 @@ const handleSubmitChangePwdForm = (formData: any) => {
     })
     .finally(() => {
       changePwdFormSubmitLoading.value = false;
+    });
+};
+
+/**
+ * 密码检查
+ */
+const passwordCheckerRef = ref(null);
+const checkPasswordLoading = ref(false);
+const checkPasswordRes = reactive({
+  valid: false,
+  errorMessage: undefined,
+  ruleResults: undefined,
+});
+const handleCheckPassword = (password: string) => {
+  checkPasswordLoading.value = true;
+  changePwdForm.newPwd = password;
+  checkPasswordWithoutPolicy({
+    password,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        checkPasswordRes.valid = data.valid;
+        checkPasswordRes.errorMessage = data.errorMessage;
+        if (data.ruleResults) {
+          checkPasswordRes.ruleResults = data.ruleResults;
+        } else {
+          checkPasswordRes.ruleResults = [];
+        }
+        checkPasswordLoading.value = false;
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "密码检查");
+      checkPasswordLoading.value = false;
     });
 };
 
@@ -374,6 +442,101 @@ const handleSendEmailCode = () => {
   }
 };
 
+/** 绑定的身份源 */
+const boundIdentitySource = reactive([]);
+
+/**
+ * 获取绑定的身份源
+ */
+const handleGetBoundIdentitySource = () => {
+  loading.value = true;
+  getBoundIdentitySource()
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        boundIdentitySource.length = 0;
+        boundIdentitySource.push(...data);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取绑定的身份源");
+    })
+    .finally(() => {
+      loading.value = false;
+    });
+};
+
+/**
+ * 绑定第三方账号
+ */
+var authWindow;
+const handleBindUser = (identitySource: any) => {
+  loading.value = true;
+  bindUser(identitySource.code)
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        // 打开第三方认证窗口
+        authWindow = window.open(
+          data.authReqUri,
+          "_blank",
+          "width=600,height=600"
+        );
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "绑定第三方账号");
+    })
+    .finally(() => {
+      loading.value = false;
+    });
+};
+
+/**
+ * 处理第三方认证窗口响应
+ */
+const handleAuthWindowResponse = (event) => {
+  if (event.data === AUTH_SUCCESS) {
+    Notification.success("第三方账号绑定成功");
+    authWindow.close();
+    handleGetBoundIdentitySource();
+  }
+
+  if (event.data === AUTH_FAILURE) {
+    Notification.error("第三方账号绑定失败");
+    authWindow.close();
+  }
+
+  if (event.data === BINDING_EXISTS) {
+    Notification.error("该第三方账号已绑定其他用户，请先解绑");
+    authWindow.close();
+  }
+};
+
+/**
+ * 解绑第三方账号
+ */
+const handleUnbindUser = (identitySource: any) => {
+  Modal.warning({
+    title: `确定与「${identitySource.name}」解除绑定吗？`,
+    content: "",
+    hideCancel: false,
+    okButtonProps: {
+      status: "warning",
+    },
+    onOk: () => {
+      unbindUser(identitySource.id)
+        .then((result: any) => {
+          handleApiSuccess(result, () => {
+            Notification.success("解绑成功");
+            handleGetBoundIdentitySource();
+          });
+        })
+        .catch((err: any) => {
+          handleApiError(err, "绑定第三方账号");
+        });
+    },
+  });
+};
+
 export default defineComponent({
   setup() {
     onMounted(() => {
@@ -381,8 +544,8 @@ export default defineComponent({
       if (route.query.active_tab) {
         activeTab.value = route.query.active_tab as string;
       }
-      handleGetUserInfo();
-      handleGetUserAttrs();
+      handleTabInit(activeTab.value);
+      window.addEventListener("message", handleAuthWindowResponse);
     });
 
     return {
@@ -394,7 +557,7 @@ export default defineComponent({
       userInfo,
       userAttrs,
       handleUpdateMyUserInfo,
-      userInfoLoading,
+      loading,
       changePwdModalVisivle,
       handleOpenChangePwdModal,
       handleCloseChangePwdModal,
@@ -417,6 +580,14 @@ export default defineComponent({
       sendEmailCodeBtnText,
       handleSendEmailCode,
       allDictDatas,
+      passwordCheckerRef,
+      checkPasswordLoading,
+      checkPasswordRes,
+      handleCheckPassword,
+      consoleAccess,
+      boundIdentitySource,
+      handleBindUser,
+      handleUnbindUser,
     };
   },
 });

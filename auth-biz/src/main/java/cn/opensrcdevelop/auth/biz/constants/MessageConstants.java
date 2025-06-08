@@ -36,4 +36,19 @@ public class MessageConstants {
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
     public static final String PERMISSION_EXP_MSG_1000 = "permission.exp.msg.1000";
+    public static final String PWD_POLICY_MSG_1000 = "pwd.policy.msg.1000";
+    public static final String PWD_POLICY_MSG_1001 = "pwd.policy.msg.1001";
+    public static final String PWD_POLICY_MSG_1002 = "pwd.policy.msg.1002";
+    public static final String PWD_POLICY_MSG_1003 = "pwd.policy.msg.1003";
+    public static final String PWD_POLICY_MSG_1004 = "pwd.policy.msg.1004";
+    public static final String PWD_POLICY_MSG_1005 = "pwd.policy.msg.1005";
+    public static final String PWD_POLICY_MSG_1006 = "pwd.policy.msg.1006";
+    public static final String PWD_POLICY_MSG_1007 = "pwd.policy.msg.1007";
+    public static final String PWD_POLICY_MSG_1008 = "pwd.policy.msg.1008";
+    public static final String PWD_POLICY_MSG_1009 = "pwd.policy.msg.1009";
+    public static final String PWD_POLICY_MSG_1010 = "pwd.policy.msg.1010";
+    public static final String PWD_POLICY_MSG_1011 = "pwd.policy.msg.1011";
+    public static final String IDENTITY_PROVIDER_MSG_1000 = "identity.provider.msg.1000";
+    public static final String IDENTITY_REGISTRATION_MSG_1000 = "identity.registration.msg.1000";
+    public static final String IDENTITY_REGISTRATION_MSG_1001 = "identity.registration.msg.1001";
 }

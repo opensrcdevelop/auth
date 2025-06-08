@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.util.UrlUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +35,7 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
         // 添加租户二级域名
         TenantContext tenantContext = TenantContextHolder.getTenantContext();
         if (!tenantContext.isDefaultTenant()) {
-            URL tmpUrl = new URL(loginFormUrl);
+            URL tmpUrl = URI.create(loginFormUrl).toURL();
             loginFormUrl = tmpUrl.getProtocol() +
                     "://" +
                     tenantContext.getTenantCode() +

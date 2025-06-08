@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.handler;
 
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.UserService;
-import cn.opensrcdevelop.auth.biz.service.impl.UserServiceImpl;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
+import cn.opensrcdevelop.auth.biz.service.user.impl.UserServiceImpl;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.response.CodeEnum;
 import cn.opensrcdevelop.common.response.R;

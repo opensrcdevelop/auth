@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.7'
+    id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
 
     // frontend
@@ -13,24 +13,25 @@ bootJar.enabled = false
 ext {
     // dependencies version
     commonsLang3Ver = '3.14.0'
-    springCloudVer = '2023.0.4'
+    springCloudVer = '2024.0.1'
     mybatisVer = '3.0.4'
     zxingVer = '3.5.3'
-    commonsCodecVer = '1.17.0'
-    vavrVer = '0.10.4'
-    mybatisPlusVer = '3.5.9'
-    commonsPool2Ver = '2.12.0'
-    springDocVer = '2.5.0'
+    commonsCodecVer = '1.18.0'
+    vavrVer = '0.10.6'
+    mybatisPlusVer = '3.5.11'
+    commonsPool2Ver = '2.12.1'
+    springDocVer = '2.8.6'
     commonsCollections4Ver = '4.5.0-M1'
-    browscapJavaVer = '1.4.4'
-    commonsIoVer = '2.16.1'
-    joseJwtVer = '9.40'
+    browscapJavaVer = '1.5.1'
+    commonsIoVer = '2.19.0'
+    joseJwtVer = '10.3'
     ttlVer = '2.14.5'
     dynamicDsVer = '4.3.1'
     lokiVer = "1.6.0-m1"
     httpClient4Ver = '4.5.14'
     ajCaptchaVer = '1.3.0'
     ip2RegionVer = '2.7.0'
+    redissonVer = '3.45.1'
 }
 
 allprojects {

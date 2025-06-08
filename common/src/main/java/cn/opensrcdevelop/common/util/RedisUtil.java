@@ -4,11 +4,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 @SuppressWarnings("unused")
 public class RedisUtil {
@@ -16,11 +19,29 @@ public class RedisUtil {
     private RedisUtil() {}
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ReentrantLock LOCK = new ReentrantLock();
     private static StringRedisTemplate redisTemplate;
+    private static RedissonClient redissonClient;
 
-    public static synchronized void setRedisTemplate(StringRedisTemplate stringRedisTemplate) {
-        if (redisTemplate == null) {
-            RedisUtil.redisTemplate = stringRedisTemplate;
+    public static void setRedisTemplate(StringRedisTemplate stringRedisTemplate) {
+        LOCK.lock();
+        try {
+            if (redisTemplate == null) {
+                redisTemplate = stringRedisTemplate;
+            }
+        } finally {
+            LOCK.unlock();
+        }
+    }
+
+    public static void setRedissonClient(RedissonClient client) {
+        LOCK.lock();
+        try {
+            if (redissonClient == null) {
+                redissonClient = client;
+            }
+        } finally {
+            LOCK.unlock();
         }
     }
 
@@ -111,5 +132,15 @@ public class RedisUtil {
             return null;
         }
         return CommonUtil.deserializeObject(val, clazz);
+    }
+
+    /**
+     *  获取分布式锁
+     *
+     * @param key 键
+     * @return 分布式锁
+     */
+    public static RLock getLock(String key) {
+        return redissonClient.getLock(key);
     }
 }

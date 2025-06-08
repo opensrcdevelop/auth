@@ -1,11 +1,11 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.DictDataRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.DictDataResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.DictRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.DictResponseDto;
-import cn.opensrcdevelop.auth.biz.service.DictDataService;
-import cn.opensrcdevelop.auth.biz.service.DictService;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictResponseDto;
+import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
+import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;

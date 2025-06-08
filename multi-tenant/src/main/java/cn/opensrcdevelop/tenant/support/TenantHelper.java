@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 
 import javax.sql.DataSource;
+import java.net.URI;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -74,6 +75,7 @@ public class TenantHelper {
                 }
             }
         } catch (Exception e) {
+            removeTenantDatabase(tenantCode);
             throw new ServerException(e);
         }
     }
@@ -179,6 +181,7 @@ public class TenantHelper {
         String tenantDbName = multiTenantProperties.getDbPrefix() + tenantCode;
 
         try (Connection connection = dynamicRoutingDataSource.getConnection();
+             var checkDbExists = connection.prepareStatement(CHECK_DATABASE_EXISTS_SCRIPT);
              @SuppressWarnings("all")
              var deleteDb = connection.prepareStatement(DROP_DATABASE_SCRIPT + tenantDbName);
         ) {
@@ -186,8 +189,12 @@ public class TenantHelper {
             dynamicRoutingDataSource.removeDataSource(tenantCode);
 
             // 2. 删除租户数据库
-            deleteDb.execute();
-            log.info("成功删除租户数据库：{}", tenantDbName);
+            checkDbExists.setString(1, tenantDbName);
+            ResultSet resultSet = checkDbExists.executeQuery();
+            if (resultSet.next()) {
+                deleteDb.execute();
+                log.info("成功删除租户数据库：{}", tenantDbName);
+            }
         } catch (Exception e) {
             throw new ServerException(e);
         }
@@ -206,6 +213,8 @@ public class TenantHelper {
                 .locations(multiTenantProperties.getFlywayLocation())
                 .baselineOnMigrate(true)
                 .cleanDisabled(true)
+                .placeholderPrefix("$${")
+                .placeholderSuffix("}$$")
                 .placeholders(placeHolders)
                 .load();
         flyway.migrate();
@@ -220,7 +229,7 @@ public class TenantHelper {
     public static String getTenantIssuer(String tenantCode) {
         return Try.of(() -> {
             // 添加租户子域名
-            URL tmpurl = new URL(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER));
+            URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER)).toURL();
             return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
         }).getOrElseThrow(ServerException::new);
     }
@@ -234,8 +243,26 @@ public class TenantHelper {
     public static String getTenantConsoleUrl(String tenantCode) {
         return Try.of(() -> {
             // 添加租户子域名
-            URL tmpurl = new URL(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL));
+            URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL)).toURL();
             return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
         }).getOrElseThrow(ServerException::new);
+    }
+
+    /**
+     * 获取租户控制台 URL
+     *
+     * @return 租户控制台 URL
+     */
+    public static String getTenantConsoleUrl() {
+        TenantContext tenantContext =  TenantContextHolder.getTenantContext();
+        if (tenantContext.isDefaultTenant()) {
+            return SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL);
+        } else {
+            return Try.of(() -> {
+                // 添加租户子域名
+                URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL)).toURL();
+                return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantContext.getTenantCode() + "." + tmpurl.getAuthority());
+            }).getOrElseThrow(ServerException::new);
+        }
     }
 }

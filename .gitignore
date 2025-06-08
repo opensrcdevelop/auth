@@ -41,3 +41,4 @@ ui/node/**
 ui/node_modules/**
 ui/.frontend-gradle-plugin/**
 auth-server/src/main/resources/ui/**
+ui/package-lock.json

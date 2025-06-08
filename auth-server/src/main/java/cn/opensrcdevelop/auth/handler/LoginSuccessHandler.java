@@ -1,13 +1,13 @@
 package cn.opensrcdevelop.auth.handler;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.dto.LoginResponseDto;
-import cn.opensrcdevelop.auth.biz.entity.User;
+import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
-import cn.opensrcdevelop.auth.biz.service.LoginLogService;
-import cn.opensrcdevelop.auth.biz.service.UserService;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
+import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
+import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
 
@@ -29,9 +30,15 @@ import java.io.IOException;
  */
 public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
+    // 变更密码类型
+    // 0：首次登录或密码过期
+    private static final Integer CHANGE_PWD_TYPE_0 = 0;
+    // 1: 密码强度不满足要求
+    private static final Integer CHANGE_PWD_TYPE_1 = 1;
+
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
-    private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
+    private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -82,16 +89,21 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         // 3. 需要变更密码
         if (Boolean.TRUE.equals(user.getNeedChangePwd())) {
-            HttpSession session = request.getSession(true);
-            if (session != null) {
-                // 3.1 设置变更密码结果
-                session.setAttribute(AuthConstants.SESSION_CHANGED_PWD, false);
-                responseDto.setNeedChangePwd(true);
-            }
+            responseDto.setNeedChangePwd(true);
+            responseDto.setChangePwdType(CHANGE_PWD_TYPE_0);
+            setChangePwdSessionFlag(request);
         }
 
         // 4. 控制台访问
         responseDto.setConsoleAccess(Boolean.TRUE.equals(user.getConsoleAccess()));
+
+        // 5. 检查密码强度
+        boolean checkRes = passwordPolicyService.checkLoginPasswordStrength(user.getUserId(), request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY));
+        if (!checkRes) {
+            responseDto.setNeedChangePwd(true);
+            responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
+            setChangePwdSessionFlag(request);
+        }
 
         WebUtil.sendJsonResponse(R.ok(responseDto), HttpStatus.OK);
     }
@@ -103,12 +115,24 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
      */
     private void setUserLoginInfo(String userId) {
         // 1. 保存登录日志
-        loginLogService.saveLoginLog(userId, authorizationServerProperties.getMaxLoginLogNum());
+        loginLogService.saveLoginLog(userId);
 
         // 2. 重置最近登录失败次数
         User updateUser = new User();
         updateUser.setUserId(userId);
         updateUser.setLoginFailedCnt(0);
         userService.updateById(updateUser);
+    }
+
+    /**
+     * 设置变更密码 Session 标识
+     *
+     * @param request 请求
+     */
+    private void setChangePwdSessionFlag(HttpServletRequest request) {
+        HttpSession session = request.getSession(true);
+        if (session != null) {
+            session.setAttribute(AuthConstants.SESSION_CHANGED_PWD, false);
+        }
     }
 }

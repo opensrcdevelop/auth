@@ -1,5 +1,5 @@
 import {checkTenant} from "@/api/tenant";
-import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME} from "@/util/constants";
+import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
 import {getSubDomain} from "@/util/tool";
 import {Notification} from "@arco-design/web-vue";
 import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
@@ -91,6 +91,29 @@ export const menuRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: "/identitySource",
+    meta: {
+      title: "身份源管理",
+      icon: "icon-identitySource",
+    },
+    children: [
+      {
+        path: "/identitySource/provider/list",
+        component: () => import("@/views/identitySource/provider/index.vue"),
+        meta: {
+          title: "提供商管理",
+        },
+      },
+      {
+        path: "/identitySource/list",
+        component: () => import("@/views/identitySource/index.vue"),
+        meta: {
+          title: "身份源列表",
+        },
+      },
+    ],
+  },
+  {
     path: "/tenant",
     component: () => import("@/views/tenant/index.vue"),
     meta: {
@@ -105,6 +128,36 @@ export const menuRoutes: RouteRecordRaw[] = [
       title: "数据字典",
       icon: "icon-dict",
     },
+  },
+  {
+    path: "/system_setting",
+    meta: {
+      title: "系统设置",
+      icon: "icon-system",
+    },
+    children: [
+      {
+        path: "/system_setting/message",
+        component: () => import("@/views/setting/message/index.vue"),
+        meta: {
+          title: "消息设置",
+        },
+      },
+      {
+        path: "/system_setting/password",
+        component: () => import("@/views/setting/password/index.vue"),
+        meta: {
+          title: "密码安全",
+        },
+      },
+      {
+        path: "/system_setting/jwt",
+        component: () => import("@/views/setting/jwt/index.vue"),
+        meta: {
+          title: "JWT 设置",
+        },
+      },
+    ],
   },
 ];
 
@@ -316,6 +369,54 @@ const pageRoutes: RouteRecordRaw[] = [
     meta: {
       parent: "/permission/expression",
       title: "调试限制条件",
+    },
+  },
+  {
+    path: "/system_setting/password/create",
+    component: () => import("@/views/setting/password/create/index.vue"),
+    meta: {
+      parent: "/system_setting/password",
+      title: "创建密码策略",
+    },
+  },
+  {
+    path: "/system_setting/password/detail",
+    component: () => import("@/views/setting/password/detail/index.vue"),
+    meta: {
+      parent: "/system_setting/password",
+      title: "密码策略详情",
+    },
+  },
+  {
+    path: "/identitySource/provider/detail",
+    component: () => import("@/views/identitySource/provider/detail/index.vue"),
+    meta: {
+      parent: "/identitySource/provider/list",
+      title: "身份源提供商详情",
+    },
+  },
+  {
+    path: "/identitySource/provider/create",
+    component: () => import("@/views/identitySource/provider/create/index.vue"),
+    meta: {
+      parent: "/identitySource/provider/list",
+      title: "创建身份源提供商",
+    },
+  },
+  {
+    path: "/identitySource/detail",
+    component: () => import("@/views/identitySource/detail/index.vue"),
+    meta: {
+      parent: "/identitySource/list",
+      title: "身份源详情",
+    },
+  },
+  {
+    path: "/identitySource/create",
+    component: () => import("@/views/identitySource/create/index.vue"),
+    meta: {
+      parent: "/identitySource/list",
+      title: "创建身份源",
     },
   },
 ];

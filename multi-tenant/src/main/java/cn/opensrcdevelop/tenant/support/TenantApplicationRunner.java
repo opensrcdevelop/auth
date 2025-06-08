@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TenantApplicationRunner implements ApplicationRunner {
+public class TenantApplicationRunner implements ApplicationRunner, Ordered {
 
     private final TenantService tenantService;
 
@@ -44,5 +45,10 @@ public class TenantApplicationRunner implements ApplicationRunner {
         ).toList();
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
         log.info("结束执行全部租户数据库迁移脚本");
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }

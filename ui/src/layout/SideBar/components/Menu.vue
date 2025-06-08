@@ -1,6 +1,6 @@
 <template>
   <a-scrollbar style="overflow: auto;">
-    <a-menu theme="light" :default-selected-keys="defaultSelected">
+    <a-menu theme="light" :default-selected-keys="defaultSelected" breakpoint="md">
       <menu-item
         v-for="menu in menuRoutes"
         :key="menu.path"
@@ -12,9 +12,9 @@
 
 <script setup lang="ts">
 import MenuItem from "./MenuItem.vue";
-import { useRoute } from "vue-router";
-import { menuRoutes } from "@/router";
-import { computed } from "vue";
+import {useRoute} from "vue-router";
+import {menuRoutes} from "@/router";
+import {computed} from "vue";
 
 const route = useRoute();
 

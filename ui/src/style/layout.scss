@@ -3,7 +3,7 @@
   height: 100%;
 
   .layout-sider {
-    width: 240px;
+    width: 240px !important;
     min-width: 240px;
     position: relative;
     overflow: hidden;
@@ -16,6 +16,7 @@
 
       .arco-menu-light,
       .arco-menu-inline-header,
+      .arco-menu-pop-header,
       .arco-menu-item {
         background-color: #f7f8fa;
       }
@@ -33,7 +34,8 @@
       }
 
       .arco-menu-inline-header:hover,
-      .arco-menu-item:hover {
+      .arco-menu-item:hover,
+      .arco-menu-pop-header:hover {
         border-radius: 4px;
         background-color: #e5e6eb;
         color: #396aff;
@@ -71,6 +73,11 @@
       padding: 4px;
       justify-content: space-between;
       align-items: center;
+      transition: all 0.3s;
+
+      .trigger-button {
+        color: var(--color-text-3);
+      }
     }
   }
 
@@ -82,6 +89,26 @@
 
     .spin {
       width: 100%;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-container {
+
+    .layout-sider {
+      width: 48px !important;
+      min-width: 48px;
+    }
+
+    .action-container {
+      .avatar {
+        opacity: 0;
+        visibility: hidden;
+        width: 0;
+        height: 0;
+        margin-bottom: 0;
+      }
     }
   }
 }

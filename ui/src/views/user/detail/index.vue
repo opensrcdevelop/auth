@@ -1,11 +1,11 @@
 <script lang="ts">
-import { h } from "vue";
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
 <style lang="scss" scoped>
-@import "./index.scss";
+@use "./index.scss";
 </style>
 
 <template>
@@ -481,6 +481,16 @@ export default detailTs;
                     {{ record.permissionCode }}
                   </template>
                 </a-table-column>
+                <a-table-column
+                  title="优先级"
+                  :sortable="{
+                    sortDirections: ['ascend', 'descend'],
+                  }"
+                >
+                  <template #cell="{ record }">
+                    <priority-tag :priority="record.priority" />
+                  </template>
+                </a-table-column>
                 <a-table-column title="操作">
                   <template #cell="{ record }">
                     <a-dropdown>
@@ -811,13 +821,15 @@ export default detailTs;
         @submit-success="handleResetPwdFormSubmit"
       >
         <a-form-item field="password" label="密码">
-          <a-input-group style="width: 100%">
-            <a-input-password
-              v-model="resetPwdForm.password"
+          <password-checker
+              ref="passwordCheckerRef"
+              type="password"
               placeholder="请输入密码"
+              :loading="checkPasswordLoading"
+              @check="handleCheckPassword"
+              :checkRes="checkPasswordRes"
             />
-            <a-button @click="handleGeneratePassword">生成密码</a-button>
-          </a-input-group>
+          <a-button type="text" @click="handleGeneratePassword" style="margin-left: 4px;">生成密码</a-button>
         </a-form-item>
         <a-row :gutter="24">
           <a-col :span="12">

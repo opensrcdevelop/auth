@@ -24,4 +24,7 @@ public class MailInfo {
 
     /** 密送 */
     private List<String> bcc;
+
+    /** 邮件内容 */
+    private String content;
 }

@@ -2,9 +2,11 @@ package cn.opensrcdevelop.common.aop;
 
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.CodeEnum;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
+import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +63,7 @@ public class RestExceptionHandler {
     public R<ValidationErrorResponse> exception(HandlerMethodValidationException e) {
         log.debug(e.getMessage(), e);
         ValidationErrorResponse response = new ValidationErrorResponse();
-        response.setErrors(e.getAllValidationResults().stream().map(o -> {
+        response.setErrors(e.getParameterValidationResults().stream().map(o -> {
             String paramName = o.getMethodParameter().getParameterName();
             return o.getResolvableErrors().stream().map(x -> {
                 var error = new ValidationErrorResponse.ValidationError();
@@ -75,6 +77,23 @@ public class RestExceptionHandler {
                 return error;
             }).toList();
         }).flatMap(Collection::stream).toList());
+        return R.optFailWithData(CodeEnum.RCD20001, response);
+    }
+
+    /**
+     * 参数校验错误
+     */
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public R<ValidationErrorResponse> exception(ValidationException e) {
+        ValidationErrorResponse response = new ValidationErrorResponse();
+        response.setErrors(CommonUtil.stream(e.getConstraintViolations()).map(c -> {
+            var error = new ValidationErrorResponse.ValidationError();
+            error.setField(c.getPropertyPath().toString());
+            error.setErrorMsg(c.getMessage());
+
+            return error;
+        }).toList());
         return R.optFailWithData(CodeEnum.RCD20001, response);
     }
 

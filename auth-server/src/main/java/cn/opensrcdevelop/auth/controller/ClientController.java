@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.ClientRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.ClientResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.CreateOrUpdateSecretClientResponseDto;
-import cn.opensrcdevelop.auth.biz.service.ClientService;
+import cn.opensrcdevelop.auth.biz.dto.client.ClientRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.ClientResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.CreateOrUpdateSecretClientResponseDto;
+import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;

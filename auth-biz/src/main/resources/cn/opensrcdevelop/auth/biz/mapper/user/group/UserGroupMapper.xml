@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.user.group.UserGroupMapper">
+
+    <select id="searchUserGroups" resultType="cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup">
+        SELECT
+            t1.user_group_id,
+            t2.user_group_name,
+            t2.user_group_code,
+            t2.description
+        FROM
+            t_user_group_mapping t1
+            LEFT JOIN t_user_group t2 ON t2.user_group_id = t1.user_group_id
+        WHERE
+            t1.user_id = #{userId}
+        ORDER BY t2.user_group_code
+    </select>
+
+    <select id="searchGroupUsers" resultType="cn.opensrcdevelop.auth.biz.entity.user.User">
+        SELECT
+            t2.user_id,
+            t2.username,
+            t2.email_address,
+            t2.phone_number
+        FROM
+            t_user_group_mapping t1
+            LEFT JOIN t_user t2 ON t2.user_id = t1.user_id
+        WHERE
+            t1.user_group_id = #{userGroupId}
+        <if test="keyword != null and keyword != ''">
+            AND(
+                t2.username LIKE CONCAT('%', #{keyword}, '%')
+                OR t2.email_address LIKE CONCAT ( '%', #{keyword}, '%' )
+                OR t2.phone_number LIKE CONCAT ( '%', #{keyword}, '%' )
+            )
+        </if>
+        ORDER BY t2.create_time DESC
+    </select>
+</mapper>

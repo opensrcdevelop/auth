@@ -1,10 +1,11 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
 <style lang="scss" scoped>
-@import "./index.scss";
+@use "./index.scss";
 </style>
 
 <template>
@@ -214,6 +215,16 @@ export default detailTs;
                 >
                   <template #cell="{ record }">
                     {{ record.permissionCode }}
+                  </template>
+                </a-table-column>
+                <a-table-column
+                  title="优先级"
+                  :sortable="{
+                    sortDirections: ['ascend', 'descend'],
+                  }"
+                >
+                  <template #cell="{ record }">
+                    <priority-tag :priority="record.priority" />
                   </template>
                 </a-table-column>
                 <a-table-column title="操作">

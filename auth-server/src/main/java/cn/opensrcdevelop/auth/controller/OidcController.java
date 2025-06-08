@@ -1,11 +1,11 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.OidcClaimRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcClaimResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.OidcScopeResponseDto;
-import cn.opensrcdevelop.auth.biz.service.OidcClaimService;
-import cn.opensrcdevelop.auth.biz.service.OidcScopeService;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeResponseDto;
+import cn.opensrcdevelop.auth.biz.service.client.oidc.OidcClaimService;
+import cn.opensrcdevelop.auth.biz.service.client.oidc.OidcScopeService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.validation.ValidationGroups;

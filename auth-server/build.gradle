@@ -20,6 +20,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation "org.mybatis.spring.boot:mybatis-spring-boot-starter:$rootProject.mybatisVer"
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
     implementation "com.baomidou:mybatis-plus-jsqlparser-4.9:$rootProject.mybatisPlusVer"
@@ -35,5 +36,6 @@ dependencies {
     implementation "org.apache.httpcomponents:httpclient:${rootProject.httpClient4Ver}"
     implementation "com.anji-plus:spring-boot-starter-captcha:$rootProject.ajCaptchaVer"
     implementation 'org.codehaus.janino:janino'
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     runtimeOnly 'org.postgresql:postgresql'
 }

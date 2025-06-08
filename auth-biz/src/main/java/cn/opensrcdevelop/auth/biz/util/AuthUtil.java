@@ -2,10 +2,10 @@ package cn.opensrcdevelop.auth.biz.util;
 
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.DataFilterRequestDto;
-import cn.opensrcdevelop.auth.biz.entity.Role;
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.DictDataService;
+import cn.opensrcdevelop.auth.biz.dto.user.DataFilterRequestDto;
+import cn.opensrcdevelop.auth.biz.entity.role.Role;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -17,6 +17,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.jackson2.CoreJackson2Module;
+import org.springframework.security.oauth2.client.jackson2.OAuth2ClientJackson2Module;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -48,6 +49,7 @@ public class AuthUtil {
                 new CoreJackson2Module(),
                 new WebServletJackson2Module(),
                 new JavaTimeModule(),
+                new OAuth2ClientJackson2Module(),
                 new OAuth2AuthorizationServerJackson2Module());
     }
 

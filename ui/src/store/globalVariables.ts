@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import {defineStore} from "pinia";
 
 /** 定义全局变量 */
 export const useGlobalVariablesStore = defineStore("globalVariables", {
@@ -21,6 +21,11 @@ export const useGlobalVariablesStore = defineStore("globalVariables", {
       dictId: undefined,
       /** 权限表达式 */
       permissionExp: undefined,
+      /** 身份提供商 */
+      identitySourceProvider: {
+        id: undefined,
+        name: undefined
+      },
     };
   },
   actions: {

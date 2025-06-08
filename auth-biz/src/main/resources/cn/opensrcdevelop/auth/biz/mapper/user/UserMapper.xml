@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.user.UserMapper">
+
+    <resultMap id="userResultMap" type="cn.opensrcdevelop.auth.biz.entity.user.User">
+        <id column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="phone_number" property="phoneNumber"/>
+        <result column="email_address" property="emailAddress" />
+        <result column="enable_mfa" property="enableMfa" />
+        <result column="locked" property="locked" />
+        <result column="console_access" property="consoleAccess" />
+        <result column="create_time" property="createTime" />
+        <collection property="userAttrs" ofType="cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr">
+            <id column="attr_id" property="attrId" />
+            <result column="attr_key" property="attrKey" />
+            <result column="attr_name" property="attrName" />
+            <result column="attr_data_type"  property="attrDataType" />
+            <result column="attr_value"  property="attrValue" />
+        </collection>
+    </resultMap>
+
+
+    <select id="searchUsers" resultMap="userResultMap">
+        SELECT
+            t1.user_id,
+            t1.username,
+            t1.phone_number,
+            t1.email_address,
+            t1.enable_mfa,
+            t1.locked,
+            t1.console_access,
+            t1.create_time,
+            t3.attr_id,
+            t3.attr_key,
+            t3.attr_name,
+            t3.attr_data_type,
+            t2.attr_value
+        FROM
+            t_user t1
+            LEFT JOIN t_user_attr_mapping t2 ON t2.user_id = t1.user_id
+            LEFT JOIN t_user_attr t3 ON t3.attr_id = t2.attr_id
+        ${ew.customSqlSegment}
+        ORDER BY t1.create_time DESC
+    </select>
+</mapper>

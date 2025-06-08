@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.support;
 
-import cn.opensrcdevelop.auth.biz.entity.Role;
-import cn.opensrcdevelop.auth.biz.entity.User;
-import cn.opensrcdevelop.auth.biz.service.UserService;
+import cn.opensrcdevelop.auth.biz.entity.role.Role;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;

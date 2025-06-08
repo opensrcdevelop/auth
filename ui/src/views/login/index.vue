@@ -1,10 +1,11 @@
 <script lang="ts">
 import loginTs from "./index";
+
 export default loginTs;
 </script>
 
 <style scoped lang="scss">
-@import "./index.scss";
+@use "./index.scss";
 </style>
 
 <template>
@@ -56,7 +57,18 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
-          <a-link @click="handleToForgotPwd">忘记密码</a-link>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <a-checkbox v-model="rememberMe">
+              <span style="color: var(--color-text-2)"> 记住我 </span>
+            </a-checkbox>
+            <a-link @click="handleToForgotPwd">忘记密码</a-link>
+          </div>
         </a-tab-pane>
         <a-tab-pane key="2" title="邮箱登录">
           <a-form
@@ -86,13 +98,15 @@ export default loginTs;
                   </a-input>
                 </a-col>
                 <a-col :span="8">
-                  <a-button
-                    style="width: 110px; margin-left: 20px"
-                    type="outline"
-                    :disabled="sendEmailCodeDisable"
-                    @click="handleSendEmailCode"
-                    >{{ sendEmailCodeBtnText }}</a-button
-                  >
+                  <div class="send-code-btn-container">
+                    <a-button
+                      style="width: 100%"
+                      type="outline"
+                      :disabled="sendEmailCodeDisable"
+                      @click="handleSendEmailCode"
+                      >{{ sendEmailCodeBtnText }}</a-button
+                    >
+                  </div>
                 </a-col>
               </a-row>
             </a-form-item>
@@ -102,8 +116,12 @@ export default loginTs;
               >
             </a-form-item>
           </a-form>
+          <a-checkbox v-model="rememberMe" style="height: 24px">
+            <span style="color: var(--color-text-2)"> 记住我 </span>
+          </a-checkbox>
         </a-tab-pane>
       </a-tabs>
+      <FederationLogin />
     </div>
     <div class="form-container" v-if="toMfa && !toBind && !toFogotPwd">
       <a-spin style="width: 100%; height: 100%" :loading="mfaValidLoading">
@@ -208,13 +226,15 @@ export default loginTs;
                 </a-input>
               </a-col>
               <a-col :span="8">
-                <a-button
-                  style="width: 110px; margin-left: 20px"
-                  type="outline"
-                  :disabled="sendForgotPwdEmailCodeDisable"
-                  @click="handleSendForgotPwdEmailCode"
-                  >{{ sendForgotPwdEmailCodeBtnText }}</a-button
-                >
+                <div class="send-code-btn-container">
+                  <a-button
+                    style="width: 100%"
+                    type="outline"
+                    :disabled="sendForgotPwdEmailCodeDisable"
+                    @click="handleSendForgotPwdEmailCode"
+                    >{{ sendForgotPwdEmailCodeBtnText }}</a-button
+                  >
+                </div>
               </a-col>
             </a-row>
           </a-form-item>
@@ -231,7 +251,7 @@ export default loginTs;
       <div class="forgot-pwd-container" v-if="toResetPwd">
         <div class="forgot-pwd-title">重置密码</div>
         <div class="forgot-pwd-info">
-          {{ `你正在重试 ${resetPwdForm.username} 的密码。` }}
+          {{ `你正在重置 ${resetPwdForm.username} 的密码。` }}
         </div>
         <a-form
           ref="resetPwdFormRef"
@@ -241,24 +261,19 @@ export default loginTs;
           @submit-success="handleResetPwdFormSubmit"
         >
           <a-form-item field="newPwd" label="新密码" hide-label>
-            <a-input-password
-              v-model="resetPwdForm.newPwd"
+            <password-checker
+              type="password"
               placeholder="请输入新密码"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
+              :loading="checkLoading"
+              @check="handleCheckPassword"
+              :checkRes="checkRes"
+            />
           </a-form-item>
           <a-form-item field="confirmPwd" label="确认密码" hide-label>
             <a-input-password
               v-model="resetPwdForm.confirmPwd"
               placeholder="请确认密码"
-            >
-              <template #prefix>
-                <icon-lock />
-              </template>
-            </a-input-password>
+            />
           </a-form-item>
           <a-form-item hide-label>
             <a-button html-type="submit" type="primary" class="login-btn"

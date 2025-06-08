@@ -20,8 +20,9 @@ import {
   CODE_VERIFIER,
   REDIRECT_PATH,
   REDIRECT_QUERY,
-  STATE
+  STATE,
 } from "@/util/constants";
+import {getCurrentUser} from "@/api/user";
 
 // 获取地址栏授权码
 const code = getQueryString(CODE);
@@ -36,14 +37,16 @@ if (code) {
   const urlState = getQueryString(STATE);
   if (urlState !== state) {
     hasError.value = true;
-    errorText.value = "state 不匹配，可能存在 CSRF 攻击";
+    errorText.value = "state 不匹配";
   } else {
     // 获取 token
     getToken({
       grant_type: AUTHORIZAION_CODE,
       client_id: import.meta.env.VITE_OAUTH_CLIENT_ID,
       client_secret: import.meta.env.VITE_OAUTH_CLIENT_SECRET,
-      redirect_uri: `${getConsoleUrl()}${import.meta.env.VITE_UI_BASE_PATH || ''}/oauth2/redirect`,
+      redirect_uri: `${getConsoleUrl()}${
+        import.meta.env.VITE_UI_BASE_PATH || ""
+      }/oauth2/redirect`,
       code,
       code_verifier: localStorage.getItem(CODE_VERIFIER),
       state,
@@ -61,15 +64,26 @@ if (code) {
             router.push({
               path: redirectPath,
               query: JSON.parse(redirectQuery),
-            })
+            });
           } else {
-            router.push({ path: redirectPath })
+            router.push({ path: redirectPath });
           }
           localStorage.removeItem(REDIRECT_PATH);
           localStorage.removeItem(REDIRECT_QUERY);
         } else {
-          // 跳转到首页
-          router.push({ path: "/" });
+          // 获取用户是否有控制台权限
+          getCurrentUser().then((result: any) => {
+            handleApiSuccess(result, (data: any) => {
+              console.log(data);
+              if (data.consoleAccess) {
+                // 跳转到首页
+                router.push({ path: "/" });
+              } else {
+                // 跳转到用户中心
+                router.push({ path: "/user/home" });
+              }
+            });
+          });
         }
       })
       .catch((err: any) => {
@@ -92,7 +106,9 @@ if (code) {
   // 获取授权码
   window.location.href = `${getOAuthIssuer()}/oauth2/authorize?client_id=${
     import.meta.env.VITE_OAUTH_CLIENT_ID
-  }&response_type=code&scope=openid&redirect_uri=${getConsoleUrl()}${import.meta.env.VITE_UI_BASE_PATH || ''}/oauth2/redirect&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
+  }&response_type=code&scope=openid&redirect_uri=${getConsoleUrl()}${
+    import.meta.env.VITE_UI_BASE_PATH || ""
+  }/oauth2/redirect&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
 }
 
 loading.value = false;
@@ -101,7 +117,9 @@ const handleRetry = () => {
   logoutSubmit()
     .then((result: any) => {
       handleApiSuccess(result, () => {
-       window.location.href = `${getConsoleUrl()}${import.meta.env.VITE_UI_BASE_PATH || ''}`;
+        window.location.href = `${getConsoleUrl()}${
+          import.meta.env.VITE_UI_BASE_PATH || ""
+        }`;
       });
     })
     .catch((err: any) => {

@@ -31,9 +31,12 @@ public class AuthorizationServerProperties {
     /** 验证 Token */
     private Boolean introspectToken;
 
-    /** 开启单点登录 */
-    private Boolean enableSso = false;
-
     /** 最大登录日志数 */
     private Integer maxLoginLogNum = -1;
+
+    /** RememberMe 有效时间（默认 14 天） */
+    private Integer rememberMeSeconds = 1209600;
+
+    /** RememberMe Token Secret */
+    private String rememberMeTokenSecret;
 }

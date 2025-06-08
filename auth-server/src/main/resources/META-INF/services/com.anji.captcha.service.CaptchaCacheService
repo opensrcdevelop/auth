@@ -1,1 +1,1 @@
-cn.opensrcdevelop.auth.biz.service.impl.CaptchaCacheServiceRedisImpl
+cn.opensrcdevelop.auth.biz.component.RedisCaptchaCacheService

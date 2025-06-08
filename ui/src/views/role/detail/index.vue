@@ -1,10 +1,11 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
 <style lang="scss" scoped>
-@import "./index.scss";
+@use "./index.scss";
 </style>
 
 <template>
@@ -212,6 +213,16 @@ export default detailTs;
                     {{ record.permissionCode }}
                   </template>
                 </a-table-column>
+                <a-table-column
+                  title="优先级"
+                  :sortable="{
+                    sortDirections: ['ascend', 'descend'],
+                  }"
+                >
+                  <template #cell="{ record }">
+                    <priority-tag :priority="record.priority" />
+                  </template>
+                </a-table-column>
                 <a-table-column title="操作">
                   <template #cell="{ record }">
                     <a-dropdown>
@@ -270,7 +281,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -293,7 +304,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -314,7 +325,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
@@ -335,7 +346,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetRolePermissions(1, 15)"
+                        @click="handleGetRolePermissions()"
                         type="primary"
                         >确认</a-button
                       >
