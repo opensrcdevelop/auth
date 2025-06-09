@@ -21,7 +21,7 @@ ext {
     mybatisPlusVer = '3.5.11'
     commonsPool2Ver = '2.12.1'
     springDocVer = '2.8.6'
-    commonsCollections4Ver = '4.5.0-M1'
+    commonsCollections4Ver = '4.5.0'
     browscapJavaVer = '1.5.1'
     commonsIoVer = '2.19.0'
     joseJwtVer = '10.3'
