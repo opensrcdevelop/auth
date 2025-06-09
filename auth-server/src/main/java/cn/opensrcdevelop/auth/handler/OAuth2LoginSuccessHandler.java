@@ -29,9 +29,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 用户自主绑定，不保存登录日志
         HttpSession session = request.getSession(false);
-        if (Objects.nonNull(session) && Objects.isNull(session.getAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID))) {
-            User user = (User) authentication.getPrincipal();
-            setUserLoginInfo(user.getUserId());
+        if (Objects.nonNull(session)) {
+            if (Objects.isNull(session.getAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID))) {
+                User user = (User) authentication.getPrincipal();
+                setUserLoginInfo(user.getUserId());
+            } else {
+                // 移除绑定标识
+                session.removeAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID);
+            }
         }
 
         // 向子页面发送 HTML 响应

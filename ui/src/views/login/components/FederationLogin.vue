@@ -1,8 +1,13 @@
 <template>
-  <div v-if="federationLoginEnabled" class="federation-login-conainer">
+  <div class="loading-container" v-if="loading">
+    <a-skeleton animation>
+      <a-skeleton-line :rows="3" />
+    </a-skeleton>
+  </div>
+  <div v-if="federationLoginEnabled" class="federation-login-container">
     <div class="federation-login-title">第三方账号登录</div>
     <div
-      class="federation-login-button-conainer"
+      class="federation-login-button-container"
       v-for="item in identitySourceList"
     >
       <a-button
@@ -25,7 +30,7 @@ import router from "@/router";
 import {AUTH_FAILURE, AUTH_SUCCESS, USER_LOCKED} from "@/util/constants";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Notification} from "@arco-design/web-vue";
-import {computed, onMounted, reactive} from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 
 // 身份源列表
 const identitySourceList = reactive([]);
@@ -33,6 +38,7 @@ const identitySourceList = reactive([]);
 const federationLoginEnabled = computed(() => {
   return identitySourceList.length > 0;
 });
+const loading = ref(false);
 
 onMounted(() => {
   handleGetEnabledIdentitySource();
@@ -82,6 +88,7 @@ const toTarget = () => {
   }
 };
 const handleGetEnabledIdentitySource = () => {
+  loading.value = true;
   getEnabledIdentitySource()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -91,19 +98,26 @@ const handleGetEnabledIdentitySource = () => {
     })
     .catch((err: any) => {
       handleApiError(err, "获取启用的身份源");
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 </script>
 
 <style lang="scss" scoped>
-.federation-login-conainer {
+.loading-container {
+  margin-top: 16px;
+}
+
+.federation-login-container {
   width: 100%;
   height: 100%;
   margin-top: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  user-select: none;
+  user-select: none; 
 
   .federation-login-title {
     position: relative;
@@ -132,7 +146,7 @@ const handleGetEnabledIdentitySource = () => {
     transform: translate(120%, -50%);
   }
 
-  .federation-login-button-conainer {
+  .federation-login-button-container {
     width: 100%;
 
     .federation-login-button {
