@@ -31,7 +31,7 @@ ext {
     httpClient4Ver = '4.5.14'
     ajCaptchaVer = '1.3.0'
     ip2RegionVer = '2.7.0'
-    redissonVer = '3.45.1'
+    redissonVer = '3.49.0'
 }
 
 allprojects {
