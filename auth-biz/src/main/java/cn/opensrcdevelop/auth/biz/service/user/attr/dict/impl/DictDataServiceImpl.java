@@ -244,7 +244,7 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     }
 
     public String generateEnabledDictDataCacheKeyById(List<String> dictDataIds) {
-        DictData dictData = super.getById(dictDataIds.get(0));
+        DictData dictData = super.getById(dictDataIds.getFirst());
         return Objects.nonNull(dictData) ? TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictData.getDictId() : "";
     }
 

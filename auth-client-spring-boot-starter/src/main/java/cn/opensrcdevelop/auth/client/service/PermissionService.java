@@ -32,7 +32,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -202,8 +202,8 @@ public class PermissionService implements ApplicationContextAware {
         // 1.1 获取 baseUrl
         String baseUrl;
         if (StringUtils.isEmpty(authClientProperties.getIssuer())) {
-            URL url = new URL(request.getRequestURL().toString());
-            baseUrl = String.format(URL_FORMAT, url.getProtocol(), url.getAuthority());
+            URI uri = URI.create(request.getRequestURL().toString());
+            baseUrl = String.format(URL_FORMAT, uri.getScheme(), uri.getAuthority());
         } else {
             baseUrl = authClientProperties.getIssuer();
         }

@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.config;
 
 import cn.opensrcdevelop.auth.biz.component.CustomOAuth2UserService;
+import cn.opensrcdevelop.auth.biz.component.OidcUserInfoService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
@@ -68,8 +69,16 @@ public class AuthServerConfig {
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
                                                                       AuthorizationServerProperties authorizationServerProperties,
                                                                       RememberMeServices rememberMeServices,
+                                                                      OidcUserInfoService oidcUserInfoService,
                                                                       OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
-        AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), captchaVerificationCheckFilter(), authorizationServerProperties, rememberMeServices);
+        AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(
+                corsFilter(),
+                totpValidFilter(),
+                changePwdCheckFilter(),
+                captchaVerificationCheckFilter(),
+                authorizationServerProperties,
+                oidcUserInfoService,
+                rememberMeServices);
         http.with(authorizationServerConfigurer, x-> {});
         http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> {});
         http.with(auth2LoginConfigurer, x -> {});
@@ -199,7 +208,7 @@ public class AuthServerConfig {
             List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
             if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
                 UserService userService = SpringContextUtil.getBean(UserService.class);
-                User user = userService.getUserInfo(userId, aud.get(0));
+                User user = userService.getUserInfo(userId, aud.getFirst());
 
                 // 2. 获取用户 map
                 var userMap = AuthUtil.convertUserMap(user);
