@@ -156,7 +156,7 @@ export default createTs;
     hide-cancel
     :footer="false"
     :mask-closable="false"
-    :width="720"
+    :width="740"
   >
     <template #title>
       <div>
