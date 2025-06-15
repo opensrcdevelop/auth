@@ -85,7 +85,7 @@
     padding: 32px;
     width: 100%;
     height: calc(100vh);
-    overflow: auto;
+    overflow: auto !important;
 
     .spin {
       width: 100%;

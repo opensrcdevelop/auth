@@ -72,6 +72,16 @@ public class AuthUtil {
     }
 
     /**
+     * 获取当前客户端 ID
+     *
+     * @return 当前客户端 ID
+     */
+    public static Optional<String> getCurrentClientId() {
+        List<String> aud = getCurrentJwtClaim(JwtClaimNames.AUD);
+        return Optional.ofNullable(CollectionUtils.isNotEmpty(aud) ? aud.getFirst() : null);
+    }
+
+    /**
      * 获取当前 Jwt claims
      *
      * @return 当前 Jwt claims

@@ -24,6 +24,7 @@ public class MessageConstants {
     public static final String DICT_DATA_MSG_1001 = "dict.data.msg.1001";
     public static final String DICT_MSG_1000 = "dict.msg.1000";
     public static final String CLIENT_MSG_1000 = "client.msg.1000";
+    public static final String CLIENT_MSG_1001 = "client.msg.1001";
     public static final String PERMISSION_MSG_1000 = "permission.msg.1000";
     public static final String PERMISSION_MSG_1001 = "permission.msg.1001";
     public static final String RESOURCE_MSG_1000 = "resource.msg.1000";

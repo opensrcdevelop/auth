@@ -1,13 +1,16 @@
 package cn.opensrcdevelop.auth.config;
 
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.filter.TenantContextFilter;
 import cn.opensrcdevelop.auth.interceptor.OAuth2ContextInterceptor;
+import cn.opensrcdevelop.auth.interceptor.OpenApiInterceptor;
 import cn.opensrcdevelop.auth.interceptor.TraceUserInterceptor;
 import cn.opensrcdevelop.common.annoation.NoPathPrefix;
 import cn.opensrcdevelop.common.filter.ForwardFilter;
 import cn.opensrcdevelop.common.filter.RestFilter;
 import cn.opensrcdevelop.common.filter.TraceFilter;
 import cn.opensrcdevelop.common.interceptor.RestResponseInterceptor;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +35,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         RestResponseInterceptor restResponseInterceptor = new RestResponseInterceptor();
         OAuth2ContextInterceptor oAuth2ContextInterceptor = new OAuth2ContextInterceptor();
         TraceUserInterceptor traceUserInterceptor = new TraceUserInterceptor();
+        OpenApiInterceptor openApiInterceptor = new OpenApiInterceptor(SpringContextUtil.getBean(SystemSettingService.class));
 
         registry.addInterceptor(restResponseInterceptor)
                 .addPathPatterns("/**")
@@ -42,6 +46,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(SWAGGER_PATH, UI_PATH);
 
         registry.addInterceptor(traceUserInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(SWAGGER_PATH, UI_PATH);
+
+        registry.addInterceptor(openApiInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(SWAGGER_PATH, UI_PATH);
     }

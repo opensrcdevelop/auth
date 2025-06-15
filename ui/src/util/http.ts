@@ -200,6 +200,11 @@ async function refreshingToken(
           localStorage.removeItem(AUTH_TOKENS);
           handleRelogin();
         }
+      } else {
+          isRefreshing = false;
+          retryRequests = [];
+          localStorage.removeItem(AUTH_TOKENS);
+          handleRelogin();
       }
     }
   } else {

@@ -220,7 +220,15 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
         }
     }
 
-    private <T> T getSystemSetting(String key, Class<T> clazz) {
+    /**
+     * 获取系统设置
+     *
+     * @param key 系统设置
+     * @param clazz 类型
+     * @return 系统设置
+     * @param <T> T
+     */
+    public <T> T getSystemSetting(String key, Class<T> clazz) {
         // 1. 从缓存获取
         SystemSetting systemSetting = RedisUtil.get(getCacheKey(key), SystemSetting.class);
 
@@ -240,7 +248,14 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
         return Try.of(() -> clazz.getConstructor().newInstance()).getOrElseThrow(ServerException::new);
     }
 
-    private <T> void saveSystemSetting(String key, T value) {
+    /**
+     * 保存系统设置
+     *
+     * @param key 系统设置
+     * @param value 系统设置值
+     * @param <T> T
+     */
+    public <T> void saveSystemSetting(String key, T value) {
         // 1. JSON 序列化
         String configJson = CommonUtil.serializeObject(value);
 

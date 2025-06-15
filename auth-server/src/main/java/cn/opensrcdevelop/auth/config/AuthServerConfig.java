@@ -16,7 +16,9 @@ import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
+import cn.opensrcdevelop.auth.support.CustomOAuth2RefreshTokenGenerator;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -38,10 +40,17 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.RememberMeServices;
@@ -52,6 +61,7 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableConfigurationProperties(AuthorizationServerProperties.class)
@@ -80,7 +90,7 @@ public class AuthServerConfig {
                 oidcUserInfoService,
                 rememberMeServices);
         http.with(authorizationServerConfigurer, x-> {});
-        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> {});
+        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> x.tokenGenerator(tokenGenerator()));
         http.with(auth2LoginConfigurer, x -> {});
         return http.build();
     }
@@ -233,6 +243,48 @@ public class AuthServerConfig {
         rememberMeServices.setParameter(AuthConstants.REMEMBER_ME);
 
         return rememberMeServices;
+    }
+
+    /**
+     * 自定义 Refresh Token 生成器 （禁用公共客户端检查）
+     */
+    @Bean
+    @SuppressWarnings("unchecked")
+    public OAuth2TokenGenerator<OAuth2Token> tokenGenerator() {
+        JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(SpringContextUtil.getBean(JWKSource.class)));
+        jwtGenerator.setJwtCustomizer(tokenCustomizer(SpringContextUtil.getBean(OidcUserInfoService.class)));
+        return new DelegatingOAuth2TokenGenerator(
+                jwtGenerator,
+                new OAuth2AccessTokenGenerator(),
+                new CustomOAuth2RefreshTokenGenerator()
+        );
+    }
+
+    /**
+     * 自定义 jwt claim
+     */
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer(OidcUserInfoService oidcUserInfoService) {
+        return context -> {
+            OAuth2TokenType tokenType = context.getTokenType();
+            Set<String> scopes = context.getAuthorizedScopes();
+
+            if (context.getPrincipal().getPrincipal() instanceof User user) {
+                JwtClaimsSet.Builder claims =  context.getClaims();
+
+                // access_token
+                if (OAuth2TokenType.ACCESS_TOKEN.equals(tokenType)) {
+                    claims.claim(StandardClaimNames.SUB, user.getUserId());
+                    claims.claim(CommonConstants.USERNAME, user.getUsername());
+                }
+
+                // id_token
+                if (OidcParameterNames.ID_TOKEN.equals(tokenType.getValue())) {
+                    oidcUserInfoService.getClaims(user.getUserId(), context.getRegisteredClient().getClientId(), scopes)
+                            .forEach(claims::claim);
+                }
+            }
+        };
     }
 
     @PostConstruct

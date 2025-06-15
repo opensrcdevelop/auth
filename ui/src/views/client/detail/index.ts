@@ -1,4 +1,4 @@
-import { defineComponent, h, nextTick, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
   deleteClient,
@@ -7,9 +7,9 @@ import {
   updateClientDetail,
   updateClientSecret,
 } from "@/api/client";
-import { useRoute } from "vue-router";
-import { getOAuthIssuer, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Message, Modal, Notification } from "@arco-design/web-vue";
+import {useRoute} from "vue-router";
+import {getOAuthIssuer, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Message, Modal, Notification} from "@arco-design/web-vue";
 import {
   createOidcClaim,
   createOidcScope,
@@ -20,7 +20,7 @@ import {
   updateOidcClaim,
   updateOidcScope,
 } from "@/api/oidc";
-import { getUserAttrs } from "@/api/user";
+import {getUserAttrs} from "@/api/user";
 
 /**
  * 返回上一级
@@ -122,6 +122,7 @@ const handleGetClientDetail = (id: string) => {
           data.refreshTokenTimeToLive;
         clientAuthorizeInfoForm.accessTokenTimeToLive =
           data.accessTokenTimeToLive;
+        clientAuthorizeInfoForm.requireProofKey = data.requireProofKey;
       });
     })
     .catch((err: any) => {
@@ -227,6 +228,7 @@ const clientAuthorizeInfoForm = reactive({
   authorizationCodeTimeToLive: 0,
   accessTokenTimeToLive: 0,
   refreshTokenTimeToLive: 0,
+  requireProofKey: false,
 });
 
 const clientAuthorizeInfoFormRules = {
@@ -558,14 +560,14 @@ const handleDeleteClientSubmit = (name: string, id: string) => {
 
 export default defineComponent({
   setup() {
-    onMounted(() => {
+    onMounted(async () => {
       const route = useRoute();
       if (route.query.active_tab) {
         activeTab.value = route.query.active_tab as string;
       }
       const clientId = route.query.id as string;
-      handleGetClientDetail(clientId);
-      handleGetOidcEndpointInfo();
+      await handleGetClientDetail(clientId);
+      await handleGetOidcEndpointInfo();
       handleGetOidcScopes();
       handleGetOidcClaims();
       handleGetUserAttrs();

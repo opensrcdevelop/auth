@@ -2,6 +2,7 @@ package cn.opensrcdevelop.auth.biz.service.client.impl;
 
 import cn.opensrcdevelop.auth.biz.component.DbRegisteredClientRepository;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
+import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
 import cn.opensrcdevelop.auth.biz.dto.client.ClientRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.client.ClientResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.client.CreateOrUpdateSecretClientResponseDto;
@@ -10,6 +11,7 @@ import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.auth.biz.mapper.client.ClientMapper;
 import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.service.resource.group.ResourceGroupService;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
@@ -43,6 +45,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     private final DbRegisteredClientRepository registeredClientRepository;
     private final PasswordEncoder passwordEncoder;
     private final ResourceGroupService resourceGroupService;
+    private final SystemSettingService systemSettingService;
 
     private static final Integer CLIENT_SECRETS_BYTES = 40;
 
@@ -60,8 +63,11 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto createClient(ClientRequestDto requestDto) {
-        // 1. 检查客户端名称是否存在
+        // 1. 检查
+        // 1.1 检查客户端名称是否存在
         checkClientName(requestDto, null);
+        // 1.2 检查是否为控制台客户端
+        checkIsConsoleClient(requestDto.getId());
 
         CreateOrUpdateSecretClientResponseDto responseDto = new CreateOrUpdateSecretClientResponseDto();
         // 2. 客户端编辑
@@ -180,6 +186,9 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         clientResponseDto.setAuthorizationCodeTimeToLive(registeredClient.getTokenSettings().getAuthorizationCodeTimeToLive().toMinutes());
         clientResponseDto.setAccessTokenTimeToLive(registeredClient.getTokenSettings().getAccessTokenTimeToLive().toMinutes());
         clientResponseDto.setRefreshTokenTimeToLive(registeredClient.getTokenSettings().getRefreshTokenTimeToLive().toMinutes());
+
+        // PKCE
+        clientResponseDto.setRequireProofKey(registeredClient.getClientSettings().isRequireProofKey());
         return clientResponseDto;
     }
 
@@ -197,8 +206,11 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             return;
         }
 
-        // 2. 检查客户端名称是否存在
+        // 2. 检查
+        // 2.1 检查客户端名称是否存在
         checkClientName(requestDto, rawClient);
+        // 2.2 检查是否为控制台客户端
+        checkIsConsoleClient(requestDto.getId());
 
         // 3. 更新客户端
         Client client = editUpdateClient(requestDto);
@@ -214,6 +226,9 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(String id) {
+        // 检查是否为控制台客户端
+        checkIsConsoleClient(id);
+
         var responseDto = new CreateOrUpdateSecretClientResponseDto();
 
         // 获取版本号
@@ -242,7 +257,34 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     @Transactional
     @Override
     public void deleteClient(String clientId) {
+        // 1. 检查是否为控制台客户端
+        checkIsConsoleClient(clientId);
+
+        // 2. 数据库操作
         super.removeById(clientId);
+    }
+
+    /**
+     * 轮换控制台客户端密钥
+     *
+     * @return 轮换后的密钥
+     */
+    @Override
+    public String rotateConsoleClientSecret() {
+        String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+
+        // 获取版本号
+        Integer version = super.getById(consoleClientId).getVersion();
+
+        // 更新客户端密钥
+        String secret = CommonUtil.getBase32StringKey(CLIENT_SECRETS_BYTES);
+        Client updateClient = new Client();
+        updateClient.setVersion(version == null ? 1 : version);
+        updateClient.setClientId(consoleClientId);
+        updateClient.setClientSecret(passwordEncoder.encode(secret));
+        super.updateById(updateClient);
+
+        return secret;
     }
 
     private Client editUpdateClient(ClientRequestDto requestDto) {
@@ -293,6 +335,10 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
                 clientSettings.put(ConfigurationSettingNames.Client.REQUIRE_AUTHORIZATION_CONSENT, requestDto.getRequireAuthorizationConsent());
             }
 
+            if (Objects.nonNull(requestDto.getRequireProofKey())) {
+                clientSettings.put(ConfigurationSettingNames.Client.REQUIRE_PROOF_KEY, requestDto.getRequireProofKey());
+            }
+
             // 2.1.1 Token 属性设置
             updateClient.setTokenSettings(AuthUtil.writeMap(tokenSettings));
             // 2.1.2 Client 属性设置
@@ -332,6 +378,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         clientBuilder.tokenSettings(tokenSettingsBuilder.build());
 
         clientSettingsBuilder.requireAuthorizationConsent(!Objects.isNull(requestDto.getRequireAuthorizationConsent()) && requestDto.getRequireAuthorizationConsent());
+        clientSettingsBuilder.requireProofKey(!Objects.isNull(requestDto.getRequireProofKey()) && requestDto.getRequireProofKey());
         clientBuilder.clientSettings(clientSettingsBuilder.build());
 
         return clientBuilder.build();
@@ -344,6 +391,13 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
 
         if (Objects.nonNull(super.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, requestDto.getName())))) {
             throw new BizException(MessageConstants.CLIENT_MSG_1000, requestDto.getName());
+        }
+    }
+
+    private void checkIsConsoleClient(String clientId) {
+        String consoleClientId =  systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+        if (StringUtils.equals(consoleClientId, clientId)) {
+            throw new BizException(MessageConstants.CLIENT_MSG_1001, clientId);
         }
     }
 }

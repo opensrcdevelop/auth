@@ -33,4 +33,8 @@ public interface SystemSettingService extends IService<SystemSetting> {
     void rotateJwtSecret();
 
     void rotateJwtSecret(String tenantCode);
+
+    <T> T getSystemSetting(String key, Class<T> clazz);
+
+    <T> void saveSystemSetting(String key, T value);
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 import createTs from "./index";
+
 export default createTs;
 </script>
 
@@ -80,6 +81,9 @@ export default createTs;
             >
           </a-checkbox-group>
         </a-form-item>
+        <a-form-item field="requireProofKey" label="是否需要 PKCE">
+          <a-switch type="round" v-model="createClientForm.requireProofKey" />
+        </a-form-item>
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item
@@ -152,7 +156,7 @@ export default createTs;
     hide-cancel
     :footer="false"
     :mask-closable="false"
-    :width="660"
+    :width="720"
   >
     <template #title>
       <div>
@@ -163,7 +167,12 @@ export default createTs;
       </div>
     </template>
     <div class="secret-modal">
-      <copy-text :text="clientSecret" />
+      <div class="client-info">
+        客户端 ID：<copy-text :text="clientId" />
+      </div>
+      <div class="client-info">
+        客户端密钥：<copy-text :text="clientSecret" />
+      </div>
       <div class="info-text">客户端密钥仅显示一次，请及时保存。</div>
     </div>
   </a-modal>
