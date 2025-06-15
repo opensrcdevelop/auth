@@ -1,13 +1,8 @@
-import { checkTenant } from "@/api/tenant";
-import {
-  AUTH_TOKENS,
-  OAUTH_ISSUER,
-  TENANT_CODE,
-  TENANT_NAME,
-} from "@/util/constants";
-import { getSubDomain } from "@/util/tool";
-import { Notification } from "@arco-design/web-vue";
-import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import {checkTenant} from "@/api/tenant";
+import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
+import {getSubDomain, isTenant} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
+import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
 
 /** 菜单路由 */
 export const menuRoutes: RouteRecordRaw[] = [
@@ -17,6 +12,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "客户端",
       icon: "icon-app",
+      visible: () => true,
     },
   },
   {
@@ -24,6 +20,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "用户管理",
       icon: "icon-user",
+      visible: () => true,
     },
     children: [
       {
@@ -31,6 +28,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/user/index.vue"),
         meta: {
           title: "用户列表",
+          visible: () => true,
         },
       },
       {
@@ -38,6 +36,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/user/group/index.vue"),
         meta: {
           title: "用户组管理",
+          visible: () => true,
         },
       },
       {
@@ -45,6 +44,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/user/attr/index.vue"),
         meta: {
           title: "字段管理",
+          visible: () => true,
         },
       },
     ],
@@ -54,6 +54,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "资源管理",
       icon: "icon-resource",
+      visible: () => true,
     },
     children: [
       {
@@ -61,6 +62,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/resource/group/index.vue"),
         meta: {
           title: "资源组管理",
+          visible: () => true,
         },
       },
     ],
@@ -70,6 +72,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "权限管理",
       icon: "icon-permission",
+      visible: () => true,
     },
     children: [
       {
@@ -77,6 +80,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/permission/resource/index.vue"),
         meta: {
           title: "资源权限",
+          visible: () => true,
         },
       },
       {
@@ -84,6 +88,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/role/index.vue"),
         meta: {
           title: "角色管理",
+          visible: () => true,
         },
       },
       {
@@ -91,6 +96,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/permission/expression/index.vue"),
         meta: {
           title: "限制条件",
+          visible: () => true,
         },
       },
     ],
@@ -100,6 +106,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "身份源管理",
       icon: "icon-identitySource",
+      visible: () => true,
     },
     children: [
       {
@@ -107,6 +114,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/identitySource/provider/index.vue"),
         meta: {
           title: "提供商管理",
+          visible: () => true,
         },
       },
       {
@@ -114,6 +122,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/identitySource/index.vue"),
         meta: {
           title: "身份源列表",
+          visible: () => true,
         },
       },
     ],
@@ -124,6 +133,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "多租户",
       icon: "icon-tenant",
+      visible: () => !isTenant(),
     },
   },
   {
@@ -132,6 +142,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "数据字典",
       icon: "icon-dict",
+      visible: () => true,
     },
   },
   {
@@ -139,6 +150,7 @@ export const menuRoutes: RouteRecordRaw[] = [
     meta: {
       title: "系统设置",
       icon: "icon-system",
+      visible: () => true,
     },
     children: [
       {
@@ -146,6 +158,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/setting/message/index.vue"),
         meta: {
           title: "消息设置",
+          visible: () => true,
         },
       },
       {
@@ -153,6 +166,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/setting/password/index.vue"),
         meta: {
           title: "密码安全",
+          visible: () => true,
         },
       },
       {
@@ -160,6 +174,7 @@ export const menuRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/setting/jwt/index.vue"),
         meta: {
           title: "JWT 设置",
+          visible: () => true,
         },
       },
     ],
@@ -481,6 +496,12 @@ const router = createRouter({
  * 前置路由拦截
  */
 router.beforeEach((to, from, next) => {
+  const visible = to.meta.visible as Function;
+  console.log(to.meta)
+  if (visible && !visible()) {
+    router.push("/404")
+  }
+
   window.document.title = to.meta.title
     ? (`Auth Server - ${to.meta.title}` as string)
     : "Auth Server";
@@ -533,6 +554,10 @@ async function handleCheckTenant(to: any) {
     } catch (error) {
       Notification.error("检查租户标识错误");
     }
+  } else {
+    localStorage.removeItem(OAUTH_ISSUER);
+    localStorage.removeItem(TENANT_CODE);
+    localStorage.removeItem(TENANT_NAME);
   }
 }
 

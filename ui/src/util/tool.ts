@@ -146,3 +146,12 @@ export const getConsoleUrl = () => {
     return import.meta.env.VITE_DEFAULT_CONSOLE_URL;
   }
 };
+
+/**
+ * 判断是否为租户
+ * 
+ * @returns 是否为租户
+ */
+export const isTenant = () => {
+  return localStorage.getItem(TENANT_CODE) !== null;
+}
