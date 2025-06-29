@@ -10,6 +10,7 @@ bootJar {
 
 dependencies {
     implementation project(':common')
+    implementation project(':auth-audit')
     implementation 'org.springframework.security:spring-security-core'
     // https://github.com/baomidou/dynamic-datasource
     implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"

@@ -170,7 +170,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
     @Audit(
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION_EXP,
-            sysOperation = SysOperationType.DELETE,
+            sysOperation = SysOperationType.UPDATE,
             success = "'修改了限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）'",
             error = "'修改限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）失败'"
     )

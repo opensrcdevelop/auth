@@ -21,6 +21,8 @@ import java.util.*;
 @Getter
 public class CompareObj<T> {
 
+    private static final List<String> IGNORE_PROPERTIES = List.of("updateTime", "updateBy", "version");
+
     private String entityName;
 
     private String id;
@@ -120,6 +122,7 @@ public class CompareObj<T> {
         return names;
     }
 
+    @SuppressWarnings("all")
     public List<PropertyValueChange> editChanges(List<Change> changes) {
         if (CollectionUtils.isEmpty(changes)) {
             return Collections.emptyList();
@@ -128,6 +131,9 @@ public class CompareObj<T> {
         List<PropertyValueChange> newChanges = new ArrayList<>();
         for (Change change : changes) {
             if (change instanceof ValueChange valueChange) {
+                if (IGNORE_PROPERTIES.contains(valueChange.getPropertyName())) {
+                    continue;
+                }
                 newChanges.add(PropertyValueChange.builder()
                         .propertyName(valueChange.getPropertyName())
                         .left(valueChange.getLeft())

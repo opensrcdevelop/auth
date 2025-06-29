@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.audit.AuditLogResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.audit.ObjChangeLogResponseDto;
 import cn.opensrcdevelop.auth.biz.service.audit.AuditLogService;
 import cn.opensrcdevelop.auth.biz.service.audit.ObjChangeLogService;
+import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.response.PageData;
@@ -39,6 +40,7 @@ public class AuditLogController {
             @Parameter(name = "end", description = "结束时间", in = ParameterIn.QUERY)
     })
     @GetMapping("/userOperation")
+    @Authorize({ "allAuditLogPermissions", "listUserOperationLogs" })
     public PageData<AuditLogResponseDto> userOperationLogs(@RequestParam(defaultValue = "1") int page,
                                                            @RequestParam(defaultValue = "15") int size,
                                                            @RequestParam(required = false) String keyword,
@@ -60,6 +62,7 @@ public class AuditLogController {
             @Parameter(name = "end", description = "结束时间", in = ParameterIn.QUERY)
     })
     @GetMapping("/sysOperation")
+    @Authorize({ "allAuditLogPermissions", "listSysOperationLogs" })
     public PageData<AuditLogResponseDto> sysOperationLogs(@RequestParam(defaultValue = "1") int page,
                                                           @RequestParam(defaultValue = "15") int size,
                                                           @RequestParam(required = false) String keyword,
@@ -75,6 +78,7 @@ public class AuditLogController {
             @Parameter(name = "id", description = "审计日志ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}/objChanges")
+    @Authorize({ "allAuditLogPermissions", "listObjChangeLogs" })
     public ObjChangeLogResponseDto objChangeLog(@PathVariable @NotBlank String id) {
         return objChangeLogService.getObjChangeLog(id);
     }
