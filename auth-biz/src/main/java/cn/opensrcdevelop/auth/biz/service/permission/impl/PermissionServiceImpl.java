@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.permission.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
@@ -58,6 +64,15 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.CREATE,
+            success = "'在资源（' + @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) + '）中创建了权限（' " +
+                    " + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）'",
+            error = "'在资源（' + @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) + '）中创建权限（' " +
+                    " + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public void createPermission(PermissionRequestDto requestDto) {
@@ -65,11 +80,14 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         checkPermissionCode(requestDto, null);
 
         // 2.属性设置
+        String permissionId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("permissionId", permissionId);
+
         Permission permission = new Permission();
         permission.setPermissionName(requestDto.getName());
         permission.setPermissionCode(requestDto.getCode());
         permission.setDescription(requestDto.getDesc());
-        permission.setPermissionId(CommonUtil.getUUIDString());
+        permission.setPermissionId(permissionId);
         permission.setResourceId(requestDto.getResourceId());
 
         // 3. 数据库操作
@@ -290,6 +308,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param permissionId 权限ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了权限（' + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）'",
+            error = "'删除权限（' + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）失败'"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -306,15 +331,28 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了权限（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) + '）'",
+            error = "'修改权限（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) + '）失败'"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void updatePermission(PermissionRequestDto requestDto) {
+        String permissionId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawPermission = super.getById(requestDto.getId());
         if (Objects.isNull(rawPermission)) {
             return;
         }
+        compareObjBuilder.id(permissionId);
+        compareObjBuilder.before(rawPermission);
 
         // 2. 检查权限标识是否存在
         checkPermissionCode(requestDto, rawPermission);
@@ -329,6 +367,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
         // 4. 数据库操作
         super.updateById(updatePermission);
+
+        compareObjBuilder.after(super.getById(permissionId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**

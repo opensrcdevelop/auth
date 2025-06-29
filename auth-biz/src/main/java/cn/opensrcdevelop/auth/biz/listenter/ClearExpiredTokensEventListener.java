@@ -107,7 +107,7 @@ public class ClearExpiredTokensEventListener implements ApplicationListener<Clea
             // 2.2.2.1.2 保留分组内最新的一条记录，即保留 refresh_token
             groupRes.keySet().forEach(key -> groupRes.computeIfPresent(key, (k, v) -> {
                 if (!v.isEmpty()) {
-                    v.remove(v.size() - 1);
+                    v.removeLast();
                 }
                 return v;
             }));

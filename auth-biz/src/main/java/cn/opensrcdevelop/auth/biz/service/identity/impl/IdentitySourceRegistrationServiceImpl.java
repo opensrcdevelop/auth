@@ -1,5 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.identity.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.component.CustomOAuth2AuthorizationRequestResolver;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
@@ -32,8 +39,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.security.web.DefaultRedirectStrategy;
-import org.springframework.security.web.RedirectStrategy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,12 +57,12 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     private final IdentitySourceRegistrationRepository identitySourceRegistrationRepository;
     private final ThirdAccountService thirdAccountService;
     private final AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository();
-    private final RedirectStrategy authorizationRedirectStrategy = new DefaultRedirectStrategy();
 
 
     @Resource
     @Lazy
     private CustomOAuth2AuthorizationRequestResolver authorizationRequestResolver;
+
     /**
      * 根据标识获取身份源信息
      *
@@ -89,6 +94,13 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了身份源（' + #registrationId + '）'",
+            error = "'创建身份源（' + #requestDto.name + '）' 失败，对应的提供商为：' + @linkGen.toLink(#requestDto.providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER)"
+    )
     @Transactional
     @Override
     public void createIdentitySourceRegistration(IdentitySourceRegistrationRequestDto requestDto) {
@@ -96,9 +108,12 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
         checkRegistrationCode(requestDto, null);
 
         // 2. 属性编辑
+        String registrationId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("registrationId", registrationId);
+
         IdentitySourceRegistration registration = new IdentitySourceRegistration();
         registration.setProviderId(requestDto.getProviderId());
-        registration.setRegistrationId(CommonUtil.getUUIDString());
+        registration.setRegistrationId(registrationId);
         registration.setRegistrationCode(requestDto.getCode());
         registration.setRegistrationName(requestDto.getName());
         registration.setClientId(requestDto.getClientId());
@@ -119,14 +134,27 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了身份源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) + '）'",
+            error = "'修改身份源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+    )
     @Transactional
     @Override
     public void updateIdentitySourceRegistration(IdentitySourceRegistrationRequestDto requestDto) {
+        String registrationId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawRegistration = super.getById(requestDto.getId());
         if (Objects.isNull(rawRegistration)) {
             return;
         }
+        compareObjBuilder.id(registrationId);
+        compareObjBuilder.before(rawRegistration);
 
         // 2. 检查身份源标识是否重复
         checkRegistrationCode(requestDto, rawRegistration);
@@ -148,6 +176,9 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
 
         // 4. 数据库操作
         super.updateById(updateRegistration);
+
+        compareObjBuilder.after(super.getById(registrationId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -155,6 +186,13 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      *
      * @param id 身份源 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了身份源（' + @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) + '）'",
+            error = "'删除身份源（' + @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+    )
     @Override
     public void removeIdentitySourceRegistration(String id) {
         // 1. 删除绑定的第三方账号
@@ -275,15 +313,13 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             List<ThirdAccount> thirdAccounts = thirdAccountService.list(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getUserId, userId));
 
             // 4. 组装返回结果
-            CommonUtil.stream(registrationResponseList).forEach(registrationRep -> {
-                CommonUtil.stream(thirdAccounts)
-                        .filter(thirdAccount -> StringUtils.equals(registrationRep.getId(), thirdAccount.getRegistrationId()))
-                        .findAny().ifPresent(thirdAccount -> {
-                            registrationRep.setAuthorizationUri(null);
-                            registrationRep.setIsBind(true);
-                            registrationRep.setBindUsername(thirdAccount.getUsername());
-                        });
-            });
+            CommonUtil.stream(registrationResponseList).forEach(registrationRep -> CommonUtil.stream(thirdAccounts)
+                    .filter(thirdAccount -> StringUtils.equals(registrationRep.getId(), thirdAccount.getRegistrationId()))
+                    .findAny().ifPresent(thirdAccount -> {
+                        registrationRep.setAuthorizationUri(null);
+                        registrationRep.setIsBind(true);
+                        registrationRep.setBindUsername(thirdAccount.getUsername());
+                    }));
             boundRegistrations.addAll(registrationResponseList);
         });
 
@@ -297,13 +333,22 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      * @param request 请求
      * @param response 响应
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            userOperation = UserOperationType.BIND_THIRD_ACCOUNT,
+            success = "'绑定了身份源（' + @linkGen.toLink(#registrationCode, T(ResourceType).IDENTITY_SOURCE) + '）'",
+            error = "'绑定身份源（' + @linkGen.toLink(#registrationCode, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+    )
     @Override
     public UserBindingResponseDto bindUser(String registrationCode, HttpServletRequest request, HttpServletResponse response) throws IOException {
         UserBindingResponseDto responseDto = UserBindingResponseDto.builder().build();
         // 1. 检查身份源是否存在
-        if (!super.exists(Wrappers.<IdentitySourceRegistration>lambdaQuery().eq(IdentitySourceRegistration::getRegistrationCode, registrationCode))) {
+        IdentitySourceRegistration registration = super.getOne(Wrappers.<IdentitySourceRegistration>lambdaQuery().eq(IdentitySourceRegistration::getRegistrationCode, registrationCode));
+        if (Objects.isNull(registration)) {
             throw new BizException(MessageConstants.IDENTITY_REGISTRATION_MSG_1001, registrationCode);
         }
+        AuditContext.setSpelVariable("registrationId", registration.getRegistrationId());
 
         // 2. 获取当前用户ID
         Optional<String> userIdOptional = AuthUtil.getCurrentUserId();
@@ -326,6 +371,13 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      *
      * @param registrationId 身份源ID
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            userOperation = UserOperationType.UNBIND_THIRD_ACCOUNT,
+            success = "'解绑了身份源（' + @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) + '）'",
+            error = "'解绑身份源（' + @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+    )
     @Override
     public void unbindUser(String registrationId) {
         // 1. 获取当前用户ID

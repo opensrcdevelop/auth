@@ -259,6 +259,10 @@ public class AuthUtil {
      * @return 用户扩展属性值
      */
     public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType, boolean withDictDataId, boolean withTimestamp) {
+        if (Objects.isNull(value)) {
+            return null;
+        }
+
         return switch (dataType) {
             case NUMBER -> new BigDecimal(value);
             case BOOLEAN -> Boolean.valueOf(value);

@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.system.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.component.RotateJwtSecretApplicationRunner;
 import cn.opensrcdevelop.auth.biz.component.ScheduledTaskService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
@@ -59,11 +65,25 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
      *
      * @param mailServiceConfig 邮件服务配置
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.MESSAGE_SETTING,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了邮件服务配置'",
+            error = "'修改邮件服务配置失败'"
+    )
     @Transactional
     @Override
     public void saveMailServerConfig(MailServiceConfigDto mailServiceConfig) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+        compareObjBuilder.before(getMailServerConfig());
+
         saveSystemSetting(SystemSettingConstants.MAIL_SERVER_CONFIG, mailServiceConfig);
         MailUtil.setJavaMailSender(buildJavaMailSender(mailServiceConfig));
+
+        compareObjBuilder.after(getMailServerConfig());
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -102,10 +122,24 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
      *
      * @param mailMessageConfig 邮件消息配置
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.MESSAGE_SETTING,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了邮件消息配置'",
+            error = "'修改邮件消息配置失败'"
+    )
     @Transactional
     @Override
     public void saveMailMessageConfig(MailMessageConfigDto mailMessageConfig) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+        compareObjBuilder.before(getMailMessageConfig());
+
         saveSystemSetting(SystemSettingConstants.MAIL_MESSAGE_CONFIG, mailMessageConfig);
+
+        compareObjBuilder.after(getMailMessageConfig());
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -143,16 +177,37 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
      *
      * @param jwtSecretRotationConfig JWT 密钥轮换配置
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.JWT_SETTING,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了 JWT 密钥轮换配置'",
+            error = "'修改 JWT 密钥轮换配置失败'"
+    )
     @Transactional
     @Override
     public void setJwtSecretRotationConfig(JwtSecretRotationConfigDto jwtSecretRotationConfig) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+        compareObjBuilder.before(getJwtSecretRotationConfig());
+
         saveSystemSetting(SystemSettingConstants.JWT_SECRET_ROTATION_CONFIG, jwtSecretRotationConfig);
+
+        compareObjBuilder.after(getJwtSecretRotationConfig());
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
      * 轮换 JWT 密钥
      *
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.JWT_SETTING,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'轮换了 JWT 密钥'",
+            error = "'轮换 JWT 密钥失败'"
+    )
     @Transactional
     @Override
     public void rotateJwtSecret() {

@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.identity;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.entity.BaseEntity;
@@ -28,6 +30,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_identity_source_registration")
+@EntityName("身份源")
 public class IdentitySourceRegistration extends BaseEntity implements Serializable {
 
     @Serial
@@ -37,30 +40,39 @@ public class IdentitySourceRegistration extends BaseEntity implements Serializab
     private String registrationId;
 
     /** 身份源提供商 ID */
+    @PropertyName("身份源提供商ID")
     private String providerId;
 
     /** 身份源名称 */
+    @PropertyName("身份源名称")
     private String registrationName;
 
     /** 身份源标识 */
+    @PropertyName("身份源标识")
     private String registrationCode;
 
     /** 客户端 ID */
+    @PropertyName("客户端ID")
     private String clientId;
 
     /** 客户端密钥 */
+    @PropertyName("客户端密钥")
     private String clientSecret;
 
     /** 客户端认证方式 */
+    @PropertyName("客户端认证方式")
     private String clientAuthenticationMethod;
 
     /** 授权模式 */
+    @PropertyName("授权模式")
     private String authorizationGrantType;
 
     /** 是否启用 */
+    @PropertyName("是否启用")
     private Boolean enabled;
 
     /** 附加参数 */
+    @PropertyName("附加参数")
     private String additionalParams;
 
     @TableField(exist = false)

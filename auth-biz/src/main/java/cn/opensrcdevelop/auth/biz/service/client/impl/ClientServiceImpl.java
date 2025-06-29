@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.client.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.component.DbRegisteredClientRepository;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
@@ -60,6 +66,13 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      * @param requestDto 请求
      * @return 响应
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CLIENT,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT + '）'",
+            error = "'创建客户端（' + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto createClient(ClientRequestDto requestDto) {
@@ -92,11 +105,12 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
 
         // 5. 设置资源组
         ResourceGroup resourceGroup = new ResourceGroup();
-        resourceGroup.setResourceGroupId(CommonUtil.getUUIDString());
+        resourceGroup.setResourceGroupId(CommonUtil.getUUIDV7String());
         resourceGroup.setResourceGroupName(registeredClient.getClientName());
         resourceGroup.setResourceGroupCode(registeredClient.getClientId());
         resourceGroupService.save(resourceGroup);
 
+        AuditContext.setSpelVariable("clientId", registeredClient.getClientId());
         return responseDto;
     }
 
@@ -197,25 +211,41 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CLIENT,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了客户端（' + @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) + '）'",
+            error = "'修改客户端（' + @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) + '）失败'"
+    )
     @Transactional
     @Override
     public void updateClient(ClientRequestDto requestDto) {
+        String clientId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
-        Client rawClient = super.getById(requestDto.getId());
+        Client rawClient = super.getById(clientId);
         if (Objects.isNull(rawClient)) {
             return;
         }
+        compareObjBuilder.id(clientId);
+        compareObjBuilder.before(rawClient);
 
         // 2. 检查
         // 2.1 检查客户端名称是否存在
         checkClientName(requestDto, rawClient);
         // 2.2 检查是否为控制台客户端
-        checkIsConsoleClient(requestDto.getId());
+        checkIsConsoleClient(clientId);
 
         // 3. 更新客户端
         Client client = editUpdateClient(requestDto);
         client.setVersion(rawClient.getVersion());
         super.updateById(client);
+
+        compareObjBuilder.after(super.getById(clientId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -223,6 +253,13 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param id 客户端 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CLIENT,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'更新了客户端（' + @linkGen.toLink(#id, T(ResourceType).CLIENT) + '）的密钥",
+            error = "'更新客户端（' + @linkGen.toLink(#id, T(ResourceType).CLIENT) + '）的密钥失败'"
+    )
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(String id) {
@@ -254,6 +291,13 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      *
      * @param clientId 客户端ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CLIENT,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT) + '）'",
+            error = "'删除客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT) + '）失败'"
+    )
     @Transactional
     @Override
     public void deleteClient(String clientId) {

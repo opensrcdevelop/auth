@@ -146,6 +146,32 @@ export const menuRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: "/audit/logs",
+    meta: {
+      title: "审计日志",
+      icon: "icon-auditLog",
+      visible: () => true,
+    },
+    children: [
+      {
+        path: "/audit/logs/user",
+        component: () => import("@/views/audit/userOperation/index.vue"),
+        meta: {
+          title: "用户操作日志",
+          visible: () => true,
+        }
+      },
+      {
+        path: "/audit/logs/sys",
+        component: () => import("@/views/audit/sysOperation/index.vue"),
+        meta: {
+          title: "系统操作日志",
+          visible: () => true,
+        }
+      }
+    ]
+  },
+  {
     path: "/system_setting",
     meta: {
       title: "系统设置",
@@ -497,7 +523,6 @@ const router = createRouter({
  */
 router.beforeEach((to, from, next) => {
   const visible = to.meta.visible as Function;
-  console.log(to.meta)
   if (visible && !visible()) {
     router.push("/404")
   }

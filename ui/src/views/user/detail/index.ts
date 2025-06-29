@@ -1,14 +1,14 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-    clearAuthorizedTokens,
-    clearAuthorizedTokensByLoginId,
-    getUserAttrs,
-    getUserDetail,
-    getUserLoginLogs,
-    getUserPermissions,
-    rebindMfaDevice,
-    updateUser,
+  clearAuthorizedTokens,
+  clearAuthorizedTokensByLoginId,
+  getUserAttrs,
+  getUserDetail,
+  getUserLoginLogs,
+  getUserPermissions,
+  rebindMfaDevice,
+  updateUser,
 } from "@/api/user";
 import {generateRandomString, getQueryString, handleApiError, handleApiSuccess,} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -885,7 +885,7 @@ const handleCancelAuthorization = (permission: any) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消授权成功");
-            handleGetUserDetail(userId.value);
+            handleGetUserPermissions();
           });
         })
         .catch((err: any) => {

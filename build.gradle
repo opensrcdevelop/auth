@@ -32,6 +32,8 @@ ext {
     ajCaptchaVer = '1.3.0'
     ip2RegionVer = '2.7.0'
     redissonVer = '3.45.1'
+    javersVer = '7.8.0'
+    uuidCreatorVer = '6.1.1'
 }
 
 allprojects {
@@ -78,6 +80,8 @@ allprojects {
             testImplementation 'org.springframework.boot:spring-boot-starter-test'
             testImplementation 'org.assertj:assertj-core'
             testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+            testAnnotationProcessor 'org.projectlombok:lombok'
+            testCompileOnly 'org.projectlombok:lombok'
         }
 
         dependencyManagement {

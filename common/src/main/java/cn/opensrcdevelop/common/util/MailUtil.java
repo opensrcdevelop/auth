@@ -74,7 +74,7 @@ public class MailUtil {
 
         try (StringReader reader = new StringReader(template);
              StringWriter writer = new StringWriter()) {
-            Template processor = new Template(CommonUtil.getUUIDString(), reader, null, StandardCharsets.UTF_8.name());
+            Template processor = new Template(CommonUtil.getUUIDV7String(), reader, null, StandardCharsets.UTF_8.name());
             processor.process(parameters, writer);
             return writer.toString();
         }

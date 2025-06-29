@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.user.attr.dict;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -16,6 +18,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_dict")
+@EntityName("字典")
 public class Dict extends BaseEntity implements Serializable {
 
     @Serial
@@ -23,14 +26,18 @@ public class Dict extends BaseEntity implements Serializable {
 
     /** 字典ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("字典ID")
     private String dictId;
 
     /** 字典名称 */
+    @PropertyName("字典名称")
     private String dictName;
 
     /** 字典标识 */
+    @PropertyName("字典标识")
     private String dictCode;
 
     /** 描述 */
+    @PropertyName("描述")
     private String description;
 }

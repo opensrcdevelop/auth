@@ -52,4 +52,8 @@ public class MessageConstants {
     public static final String IDENTITY_PROVIDER_MSG_1000 = "identity.provider.msg.1000";
     public static final String IDENTITY_REGISTRATION_MSG_1000 = "identity.registration.msg.1000";
     public static final String IDENTITY_REGISTRATION_MSG_1001 = "identity.registration.msg.1001";
+    public static final String OIDC_SCOPE_MSG_1000 = "oidc.scope.msg.1000";
+    public static final String OIDC_CLAIM_MSG_1000 = "oidc.claim.msg.1000";
+    public static final String AUDIT_LOG_MSG_1000 = "audit.log.msg.1000";
+    public static final String AUDIT_LOG_MSG_1001 = "audit.log.msg.1001";
 }

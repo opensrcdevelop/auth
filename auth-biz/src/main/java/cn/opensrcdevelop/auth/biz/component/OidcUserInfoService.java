@@ -54,7 +54,7 @@ public class OidcUserInfoService implements Converter<OidcUserInfoAuthentication
         List<OidcScope> oidcScopes = oidcScopeService.getScopeClaims(new ArrayList<>(scopes));
 
         // 2. 获取用户信息 Map
-        Map<String, Object> userMap = AuthUtil.convertUserMap(userService.getUserInfo(userId,  clientId));
+        Map<String, Object> userMap = AuthUtil.convertUserMap(userService.getUserInfo(userId));
 
         // 3. 设置 id_token 的 claim
         CommonUtil.stream(oidcScopes).forEach(oidcScope ->

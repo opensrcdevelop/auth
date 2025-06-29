@@ -57,7 +57,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     public void saveLoginLog(String userId, Integer maxLoginLogTotalNum) {
         // 1. 保存登录日志
         LoginLog loginLog = new LoginLog();
-        String loginLogId = CommonUtil.getUUIDString();
+        String loginLogId = CommonUtil.getUUIDV7String();
         loginLog.setLoginId(loginLogId);
         loginLog.setUserId(userId);
         WebUtil.getRequest().ifPresent(request -> {

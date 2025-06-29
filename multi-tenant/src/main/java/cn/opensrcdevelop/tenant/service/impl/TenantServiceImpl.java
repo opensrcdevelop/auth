@@ -45,7 +45,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
 
         // 2. 数据库操作
         Tenant tenant = new Tenant();
-        tenant.setTenantId(CommonUtil.getUUIDString());
+        tenant.setTenantId(CommonUtil.getUUIDV7String());
         tenant.setTenantCode(requestDto.getCode());
         tenant.setTenantName(requestDto.getName());
         tenant.setDescription(requestDto.getDesc());

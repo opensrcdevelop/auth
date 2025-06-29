@@ -1,5 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.user.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
@@ -99,6 +106,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 创建用户请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）'",
+            error = "'创建用户（' + #requestDto.username + '）失败'"
+    )
     @Transactional
     @Override
     public void createUser(UserRequestDto requestDto) {
@@ -112,7 +126,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         checkPhoneNumber(requestDto, null);
 
         // 4. 属性设置
-        String userId = CommonUtil.getUUIDString();
+        String userId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("userId", userId);
         User user = new User();
         user.setUserId(userId);
         user.setUsername(requestDto.getUsername());
@@ -138,11 +153,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 获取用户信息
      *
      * @param userId            用户ID
-     * @param resourceGroupCode 资源组码
      * @return 用户信息
      */
     @Override
-    public User getUserInfo(String userId, String resourceGroupCode) {
+    public User getUserInfo(String userId) {
         // 1. 获取用户信息
         User user = super.getById(userId);
         user.setPassword(null);
@@ -224,15 +238,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 更新用户信息请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了用户（' + @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) + '）'",
+            error = "'修改用户（' + @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) + '）失败'"
+    )
     @Transactional
     @Override
     public void updateUser(UserRequestDto requestDto) {
         String userId = requestDto.getUserId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
-        var rawUser = super.getById(userId);
+        var rawUser = getUserInfo(userId);
         if (Objects.isNull(rawUser)) {
             return;
         }
+        compareObjBuilder.id(userId);
+        compareObjBuilder.before(AuthUtil.convertUserMap(rawUser));
 
         // 2. 检查用户名是否存在
         checkUsername(requestDto, rawUser);
@@ -286,6 +312,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Boolean.TRUE.equals(requestDto.getLocked())) {
             loginLogService.removeRecentLoginSessions(userId);
         }
+
+        compareObjBuilder.after(AuthUtil.convertUserMap(getUserInfo(userId)));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -313,6 +342,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 变更密码请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UPDATE_PWD
+    )
     @Transactional
     @Override
     public void changePwd(ChangePwdRequestDto requestDto, HttpServletRequest request) {
@@ -368,6 +402,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）'",
+            error = "'删除用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）失败'"
+    )
     @Transactional
     @Override
     public void removeUser(String userId) {
@@ -425,6 +466,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'重置了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息",
+            error = "'重置用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息失败'"
+    )
     @Transactional
     @Override
     public void rebindMfaDevice(String userId) {
@@ -450,6 +498,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）已授权的 Token",
+            error = "'删除用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）已授权的 Token 失败'"
+    )
     @Transactional
     @Override
     public void clearAuthorizedTokens(String userId) {
@@ -468,6 +523,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.RESET_PWD
+    )
     @Transactional
     @Override
     public void resetPwd(ResetPwdRequestDto requestDto) {
@@ -538,6 +598,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.BIND_EMAIL,
+            success = "'绑定了邮箱（' + #requestDto.email + '）'",
+            error = "'绑定邮箱（' + #requestDto.email + '）失败'"
+    )
     @Override
     public void bindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, true);
@@ -548,6 +615,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UNBIND_EMAIL,
+            success = "'解绑了邮箱（' + #requestDto.email + '）'",
+            error = "'解绑邮箱（' + #requestDto.email + '）失败'"
+    )
     @Override
     public void unbindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, false);

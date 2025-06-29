@@ -92,7 +92,7 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
                 // 3.2.1 未找到用户，自动注册
                 String randomUsername = CommonUtil.generateRandomString(USERNAME_LENGTH);
                 User newUser = new User();
-                newUser.setUserId(CommonUtil.getUUIDString());
+                newUser.setUserId(CommonUtil.getUUIDV7String());
                 newUser.setUsername(randomUsername);
                 if (EMAIL_ATTR.equals(userMatchAttribute)) {
                     newUser.setEmailAddress(userMatchAttributeValue);

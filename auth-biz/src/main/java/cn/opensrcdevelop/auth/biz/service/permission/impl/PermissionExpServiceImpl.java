@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.permission.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
@@ -46,12 +52,22 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了限制条件（' + @linkGen.toLink(#expressionId, T(ResourceType).PERMISSION_EXP) + '）'",
+            error = "'创建限制条件（' + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public void createPermissionExp(PermissionExpRequestDto requestDto) {
         // 1. 属性设置
+        String expressionId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("expressionId", expressionId);
+
         PermissionExp permissionExp = new PermissionExp();
-        permissionExp.setExpressionId(CommonUtil.getUUIDString());
+        permissionExp.setExpressionId(expressionId);
         permissionExp.setExpressionName(requestDto.getName());
         permissionExp.setExpression(requestDto.getExpression());
         permissionExp.setDescription(requestDto.getDesc());
@@ -151,19 +167,32 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP,
+            sysOperation = SysOperationType.DELETE,
+            success = "'修改了限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）'",
+            error = "'修改限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）失败'"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
+        String expressionId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawPermissionExp = super.getById(requestDto.getId());
         if (Objects.isNull(rawPermissionExp)) {
             return;
         }
+        compareObjBuilder.id(expressionId);
+        compareObjBuilder.before(rawPermissionExp);
 
         // 2. 属性设置
         PermissionExp permissionExp = new PermissionExp();
-        permissionExp.setExpressionId(requestDto.getId());
+        permissionExp.setExpressionId(expressionId);
         permissionExp.setExpressionName(requestDto.getName());
         permissionExp.setExpression(requestDto.getExpression());
         permissionExp.setDescription(requestDto.getDesc());
@@ -171,6 +200,9 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
 
         // 3. 数据库操作
         super.updateById(permissionExp);
+
+        compareObjBuilder.after(super.getById(expressionId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -178,6 +210,13 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
      *
      * @param permissionExpId 权限表达式ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了限制条件（' + @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) + '）'",
+            error = "'删除限制条件（' + @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) + '）失败'"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override

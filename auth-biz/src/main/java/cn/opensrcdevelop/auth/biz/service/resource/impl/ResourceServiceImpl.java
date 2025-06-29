@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.resource.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.resource.ResourceRequestDto;
@@ -44,6 +50,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了资源（' + @linkGen.toLink(#resourceId, T(ResourceType).RESOURCE) + '）'",
+            error = "'创建资源（' + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public void createResource(ResourceRequestDto requestDto) {
@@ -51,9 +64,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
         checkResourceCode(requestDto, null);
 
         // 2. 属性设置
+        String resourceId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("resourceId", resourceId);
+
         Resource resource = new Resource();
         resource.setResourceName(requestDto.getName());
-        resource.setResourceId(CommonUtil.getUUIDString());
+        resource.setResourceId(resourceId);
         resource.setResourceCode(requestDto.getCode());
         resource.setDescription(requestDto.getDesc());
         resource.setResourceGroupId(requestDto.getResourceGroupId());
@@ -180,14 +196,27 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了资源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) + '）'",
+            error = "'修改资源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) + '）失败'"
+    )
     @Transactional
     @Override
     public void updateResource(ResourceRequestDto requestDto) {
+        String resourceId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawResource = super.getById(requestDto.getId());
         if (Objects.isNull(rawResource)) {
             return;
         }
+        compareObjBuilder.id(resourceId);
+        compareObjBuilder.before(rawResource);
 
         // 2. 检查资源标识是否存在
         checkResourceCode(requestDto, rawResource);
@@ -203,6 +232,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
         // 4. 数据库操作
         super.updateById(updateResource);
+
+        compareObjBuilder.after(super.getById(resourceId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -210,6 +242,13 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
      *
      * @param resourceIds 资源ID集合
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了资源（' + @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) + '）'",
+            error = "'删除资源（' + @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) + '）失败'"
+    )
     @Transactional
     @Override
     public void removeResource(List<String> resourceIds) {

@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.role;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
 import cn.opensrcdevelop.common.entity.BaseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_role")
+@EntityName("角色")
 public class Role extends BaseEntity implements Serializable {
 
     @Serial
@@ -27,15 +30,19 @@ public class Role extends BaseEntity implements Serializable {
 
     /** 角色ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("角色ID")
     private String roleId;
 
     /** 角色名称 */
+    @PropertyName("角色名称")
     private String roleName;
 
-    /** 角色码 */
+    /** 角色标识 */
+    @PropertyName("角色标识")
     private String roleCode;
 
     /** 描述 */
+    @PropertyName("描述")
     private String description;
 
     /** 用户集合 */

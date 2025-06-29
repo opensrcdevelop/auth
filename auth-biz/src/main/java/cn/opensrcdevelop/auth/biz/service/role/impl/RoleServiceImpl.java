@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.role.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
@@ -53,6 +59,13 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.ROLE,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）'",
+            error = "'创建角色（' + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public void createRole(RoleRequestDto requestDto) {
@@ -60,8 +73,11 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         checkRoleCode(requestDto, null);
 
         // 2. 设置属性
+        String roleId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("roleId", roleId);
+
         Role role = new Role();
-        role.setRoleId(CommonUtil.getUUIDString());
+        role.setRoleId(CommonUtil.getUUIDV7String());
         role.setRoleName(requestDto.getName());
         role.setRoleCode(requestDto.getCode());
         role.setDescription(requestDto.getDesc());
@@ -75,6 +91,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.ROLE,
+            sysOperation = SysOperationType.CREATE,
+            success = "'为用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
+                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）添加了角色（'" +
+                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）'",
+            error = "'为用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
+                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）添加角色（'" +
+                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）失败'"
+    )
     @Transactional
     @Override
     public void createUserRoleMapping(RoleMappingRequestDto requestDto) {
@@ -112,6 +139,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.ROLE,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
+                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）的角色（'" +
+                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）'",
+            error = "'删除用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
+                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）的角色（'" +
+                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）失败'"
+    )
     @Transactional
     @Override
     public void removeUserRoleMapping(RoleMappingRequestDto requestDto) {
@@ -245,14 +283,27 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.ROLE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了角色（' + @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) + '）'",
+            error = "'修改角色（' + @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) + '）失败'"
+    )
     @Transactional
     @Override
     public void updateRole(RoleRequestDto requestDto) {
+        String roleId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawRole = super.getById(requestDto.getId());
         if (Objects.isNull(rawRole)) {
             return;
         }
+        compareObjBuilder.id(roleId);
+        compareObjBuilder.before(rawRole);
 
         // 2. 检查角色标识是否存在
         checkRoleCode(requestDto, rawRole);
@@ -267,13 +318,23 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
         // 4. 数据库操作
         super.updateById(updateRole);
+
+        compareObjBuilder.after(super.getById(roleId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
-     * 移除角色
+     * 删除角色
      *
      * @param roleId 角色ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.ROLE,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）'",
+            error = "'删除角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）失败'"
+    )
     @Transactional
     @Override
     public void removeRole(String roleId) {

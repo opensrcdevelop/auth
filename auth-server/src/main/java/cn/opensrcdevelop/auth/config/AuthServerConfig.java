@@ -218,7 +218,7 @@ public class AuthServerConfig {
             List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
             if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
                 UserService userService = SpringContextUtil.getBean(UserService.class);
-                User user = userService.getUserInfo(userId, aud.getFirst());
+                User user = userService.getUserInfo(userId);
 
                 // 2. 获取用户 map
                 var userMap = AuthUtil.convertUserMap(user);
@@ -236,7 +236,7 @@ public class AuthServerConfig {
     public RememberMeServices rememberMeServices(UserDetailsService userDetailsService, AuthorizationServerProperties authorizationServerProperties) {
         String secret = authorizationServerProperties.getRememberMeTokenSecret();
         if (StringUtils.isEmpty(secret)) {
-            secret = CommonUtil.getUUIDString();
+            secret = CommonUtil.getUUIDV7String();
         }
         TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(secret , userDetailsService);
         rememberMeServices.setTokenValiditySeconds(authorizationServerProperties.getRememberMeSeconds());
