@@ -16,6 +16,11 @@ import java.lang.annotation.Target;
 public @interface Audit {
 
     /**
+     * 用户ID
+     */
+    String userId() default StringUtils.EMPTY;
+
+    /**
      * 审计类型
      */
     AuditType type();

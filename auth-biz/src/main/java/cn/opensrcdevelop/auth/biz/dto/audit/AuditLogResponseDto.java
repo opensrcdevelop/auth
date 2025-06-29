@@ -41,6 +41,9 @@ public class AuditLogResponseDto {
     @Schema(description = "操作结果")
     private Boolean result;
 
+    @Schema(description = "额外信息")
+    private String extraInfo;
+
     @Schema(description = "IP")
     private String ip;
 

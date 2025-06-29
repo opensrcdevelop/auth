@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -303,27 +302,25 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      */
     @Override
     public List<IdentitySourceRegistrationResponseDto> getBoundRegistrations() {
-        List<IdentitySourceRegistrationResponseDto> boundRegistrations = new ArrayList<>();
         // 1. 获取当前用户 ID
-        AuthUtil.getCurrentUserId().ifPresent(userId -> {
-            // 2. 获取启用的身份源
-            List<IdentitySourceRegistrationResponseDto> registrationResponseList = getEnabledRegistrations();
+        String userId = AuthUtil.getCurrentUserId();
 
-            // 3. 获取用户已绑定的身份源ID
-            List<ThirdAccount> thirdAccounts = thirdAccountService.list(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getUserId, userId));
+        // 2. 获取启用的身份源
+        List<IdentitySourceRegistrationResponseDto> registrationResponseList = getEnabledRegistrations();
 
-            // 4. 组装返回结果
-            CommonUtil.stream(registrationResponseList).forEach(registrationRep -> CommonUtil.stream(thirdAccounts)
-                    .filter(thirdAccount -> StringUtils.equals(registrationRep.getId(), thirdAccount.getRegistrationId()))
-                    .findAny().ifPresent(thirdAccount -> {
-                        registrationRep.setAuthorizationUri(null);
-                        registrationRep.setIsBind(true);
-                        registrationRep.setBindUsername(thirdAccount.getUsername());
-                    }));
-            boundRegistrations.addAll(registrationResponseList);
-        });
+        // 3. 获取用户已绑定的身份源ID
+        List<ThirdAccount> thirdAccounts = thirdAccountService.list(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getUserId, userId));
 
-        return boundRegistrations;
+        // 4. 组装返回结果
+        CommonUtil.stream(registrationResponseList).forEach(registrationRep -> CommonUtil.stream(thirdAccounts)
+                .filter(thirdAccount -> StringUtils.equals(registrationRep.getId(), thirdAccount.getRegistrationId()))
+                .findAny().ifPresent(thirdAccount -> {
+                    registrationRep.setAuthorizationUri(null);
+                    registrationRep.setIsBind(true);
+                    registrationRep.setBindUsername(thirdAccount.getUsername());
+                }));
+
+        return new ArrayList<>(registrationResponseList);
     }
 
     /**
@@ -333,13 +330,6 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
      * @param request 请求
      * @param response 响应
      */
-    @Audit(
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.IDENTITY_SOURCE,
-            userOperation = UserOperationType.BIND_THIRD_ACCOUNT,
-            success = "'绑定了身份源（' + @linkGen.toLink(#registrationCode, T(ResourceType).IDENTITY_SOURCE) + '）'",
-            error = "'绑定身份源（' + @linkGen.toLink(#registrationCode, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
-    )
     @Override
     public UserBindingResponseDto bindUser(String registrationCode, HttpServletRequest request, HttpServletResponse response) throws IOException {
         UserBindingResponseDto responseDto = UserBindingResponseDto.builder().build();
@@ -348,18 +338,14 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
         if (Objects.isNull(registration)) {
             throw new BizException(MessageConstants.IDENTITY_REGISTRATION_MSG_1001, registrationCode);
         }
-        AuditContext.setSpelVariable("registrationId", registration.getRegistrationId());
 
         // 2. 获取当前用户ID
-        Optional<String> userIdOptional = AuthUtil.getCurrentUserId();
-        if (userIdOptional.isEmpty()) {
-            return responseDto;
-        }
+        String userId = AuthUtil.getCurrentUserId();
 
         // 3. 授权请求转换保存
         OAuth2AuthorizationRequest authorizationRequest = authorizationRequestResolver.resolve(request, registrationCode);
         authorizationRequestRepository.saveAuthorizationRequest(authorizationRequest, request, response);
-        request.getSession().setAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID, userIdOptional.get());
+        request.getSession().setAttribute(AuthConstants.SESSION_BIND_REQ_USER_ID, userId);
 
         // 4. 返回授权重定向地址
         responseDto.setAuthReqUri(authorizationRequest.getAuthorizationRequestUri());
@@ -381,13 +367,10 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
     @Override
     public void unbindUser(String registrationId) {
         // 1. 获取当前用户ID
-        Optional<String> userIdOptional = AuthUtil.getCurrentUserId();
-        if (userIdOptional.isEmpty()) {
-            return;
-        }
+        String userId = AuthUtil.getCurrentUserId();
 
         // 2. 删除第三方账号
-        thirdAccountService.remove(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getRegistrationId, registrationId).eq(ThirdAccount::getUserId, userIdOptional.get()));
+        thirdAccountService.remove(Wrappers.<ThirdAccount>lambdaQuery().eq(ThirdAccount::getRegistrationId, registrationId).eq(ThirdAccount::getUserId, userId));
     }
 
     private void checkRegistrationCode(IdentitySourceRegistrationRequestDto requestDto, IdentitySourceRegistration rawRegistration) {

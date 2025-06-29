@@ -6,11 +6,12 @@ import cn.opensrcdevelop.auth.audit.entity.AuditLog;
 import cn.opensrcdevelop.auth.audit.entity.ObjChangeLog;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.event.AuditEvent;
-import cn.opensrcdevelop.common.constants.CommonConstants;
-import cn.opensrcdevelop.common.filter.TraceFilter;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -38,11 +39,13 @@ import java.util.Objects;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @Aspect
 public class AuditAspect implements ApplicationContextAware {
 
     private static final ParameterNameDiscoverer PARAMETER_NAME_DISCOVERER = new DefaultParameterNameDiscoverer();
     private static final ExpressionParser EXPRESSION_PARSER = new SpelExpressionParser();
+    private final MessageUtil messageUtil;
 
     private ApplicationContext appCtx;
 
@@ -54,15 +57,23 @@ public class AuditAspect implements ApplicationContextAware {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         Audit auditAnnotation = methodSignature.getMethod().getAnnotation(Audit.class);
         boolean isSuccess = false;
+        String exMsg = null;
         try {
             Object result = joinPoint.proceed();
             isSuccess = true;
             return result;
+        } catch (Exception ex) {
+            if (ex instanceof BizException bizException) {
+                exMsg = messageUtil.getMsg(bizException.getMsgCode(), bizException.getParams());
+            } else {
+                exMsg = ex.getMessage();
+            }
+            throw ex;
         } finally {
             try {
                 AuditEvent auditEvent = null;
                 // 构建审计日志
-                AuditLog auditLog = buildAuditLog(auditAnnotation, isSuccess, joinPoint);
+                AuditLog auditLog = buildAuditLog(auditAnnotation, isSuccess, exMsg, joinPoint);
                 auditEvent = new AuditEvent(auditLog, null);
 
                 // 构建对象变化日志
@@ -81,7 +92,7 @@ public class AuditAspect implements ApplicationContextAware {
         }
     }
 
-    private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, ProceedingJoinPoint proceedingJoinPoint) {
+    private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, String exMsg, ProceedingJoinPoint proceedingJoinPoint) {
         AuditLog auditLog = new AuditLog();
         auditLog.setAuditId(CommonUtil.getUUIDV7String());
         // 审计类型
@@ -98,9 +109,13 @@ public class AuditAspect implements ApplicationContextAware {
         // 资源ID
         auditLog.setResourceId(auditAnnotation.resource().getId());
         // 请求ID
-        auditLog.setRequestId(TraceFilter.TTL_MDC.get().get(CommonConstants.MDC_TRACE_ID));
+        auditLog.setRequestId(WebUtil.getRequestId());
         // 用户ID
-        auditLog.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (StringUtils.isNotEmpty(auditAnnotation.userId())) {
+            auditLog.setUserId(parseSpel(auditAnnotation.userId(), proceedingJoinPoint));
+        } else {
+            auditLog.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
+        }
 
         String ip = WebUtil.getRemoteIP();
         // IP
@@ -121,7 +136,14 @@ public class AuditAspect implements ApplicationContextAware {
         // 操作详情
         auditLog.setOperationDetail(isSuccess ? parseSpel(auditAnnotation.success(), proceedingJoinPoint) : parseSpel(auditAnnotation.error(), proceedingJoinPoint));
         // 额外信息
-        auditLog.setExtraInfo(auditAnnotation.extra());
+        String extraInfo = auditAnnotation.extra();
+        if (StringUtils.isNotEmpty(exMsg)) {
+            if (StringUtils.isNotEmpty(extraInfo)) {
+                extraInfo = extraInfo + "\n";
+            }
+            extraInfo = extraInfo + "Error：" + exMsg;
+        }
+        auditLog.setExtraInfo(extraInfo);
         return auditLog;
     }
 

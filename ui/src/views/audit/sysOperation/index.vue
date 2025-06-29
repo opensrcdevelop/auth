@@ -224,7 +224,7 @@ export default indexTs;
               <a-descriptions-item label="用户名">
                 <span>{{ record.username }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="用户 ID">
+              <a-descriptions-item label="用户 ID" :span="2">
                 <span>{{ record.userId }}</span>
               </a-descriptions-item>
               <a-descriptions-item label="请求 ID">
@@ -244,6 +244,9 @@ export default indexTs;
               </a-descriptions-item>
               <a-descriptions-item label="浏览器类型">
                 <span>{{ record.browserType }}</span>
+              </a-descriptions-item>
+              <a-descriptions-item label="额外信息" :span="3">
+                <span class="pre-wrap">{{ record.extraInfo }}</span>
               </a-descriptions-item>
             </a-descriptions>
           </div>

@@ -179,36 +179,39 @@ export default indexTs;
                     type="text"
                     size="mini"
                     style="margin-left: 6px"
-                    v-if="record.type == 2 && record.result"
+                    v-if="record.type == 1 && record.result"
                     @click="handleGetObjChanges(record.id)"
                     >查询变更</a-button
                   >
                 </template>
                 <div v-html="record.detail" />
               </a-descriptions-item>
-              <a-descriptions-item label="用户名" :span="1">
+              <a-descriptions-item label="用户名">
                 <span>{{ record.username }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="用户 ID" :span="1">
+              <a-descriptions-item label="用户 ID" :span="2">
                 <span>{{ record.userId }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="请求 ID" :span="1">
+              <a-descriptions-item label="请求 ID">
                 <span>{{ record.requestId }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="IP" :span="1">
+              <a-descriptions-item label="IP">
                 <span>{{ record.ip }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="IP 归属地" :span="1">
+              <a-descriptions-item label="IP 归属地">
                 <span>{{ record.ipRegion }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="设备类型" :span="1">
+              <a-descriptions-item label="设备类型">
                 <span>{{ record.deviceType }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="OS 类型" :span="1">
+              <a-descriptions-item label="OS 类型">
                 <span>{{ record.osType }}</span>
               </a-descriptions-item>
-              <a-descriptions-item label="浏览器类型" :span="1">
+              <a-descriptions-item label="浏览器类型">
                 <span>{{ record.browserType }}</span>
+              </a-descriptions-item>
+              <a-descriptions-item label="额外信息" :span="3">
+                <span class="pre-wrap">{{ record.extraInfo }}</span>
               </a-descriptions-item>
             </a-descriptions>
           </div>

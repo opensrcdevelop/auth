@@ -1,5 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.auth.impl;
 
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
+import cn.opensrcdevelop.auth.audit.util.AuditUtil;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckRequestDto;
@@ -9,6 +12,7 @@ import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
 import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
 import cn.opensrcdevelop.auth.biz.service.auth.TotpService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -54,6 +58,9 @@ public class TotpServiceImpl implements TotpService {
         // 4. 初次绑定，执行校验操作后，更新设备绑定状态为已绑定
         if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
             userService.update(Wrappers.<User>lambdaUpdate().set(User::getMfaDeviceBind, true).eq(User::getUserId, totpValidContext.getUserId()));
+
+            // 5. 审计
+            AuditUtil.publishSuccessUserOperationAuditEvent(AuthUtil.getCurrentUserId(), ResourceType.USER, UserOperationType.BIND_MFA, "绑定了 MFA 设备");
         }
 
         TotpCodeCheckResponseDto responseDto = new TotpCodeCheckResponseDto();

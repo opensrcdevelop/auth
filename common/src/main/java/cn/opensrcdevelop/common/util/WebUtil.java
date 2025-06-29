@@ -2,6 +2,7 @@ package cn.opensrcdevelop.common.util;
 
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.filter.TraceFilter;
 import com.blueconic.browscap.Capabilities;
 import com.blueconic.browscap.UserAgentParser;
 import com.blueconic.browscap.UserAgentService;
@@ -290,6 +291,15 @@ public class WebUtil {
                 }
             }
         });
+    }
+
+    /**
+     * 获取请求ID
+     *
+     * @return 请求ID
+     */
+    public static String getRequestId() {
+        return TraceFilter.TTL_MDC.get().get(CommonConstants.MDC_TRACE_ID);
     }
 
     private static Capabilities getUserAgent() {

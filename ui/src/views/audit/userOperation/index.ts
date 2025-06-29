@@ -9,7 +9,7 @@ import {defineComponent, reactive, ref} from "vue";
  * 操作类型
  */
 const operationTypes = [
-  { value: 1, label: "修改用户信息" },
+  { value: 1, label: "修改个人信息" },
   { value: 2, label: "修改密码" },
   { value: 3, label: "绑定邮箱" },
   { value: 4, label: "解绑邮箱" },
@@ -17,7 +17,7 @@ const operationTypes = [
   { value: 6, label: "解绑手机号" },
   { value: 7, label: "绑定第三方账号" },
   { value: 8, label: "解绑第三方账号" },
-  { value: 9, label: "绑定 MFA" },
+  { value: 9, label: "绑定 MFA 设备" },
   { value: 10, label: "重置密码" },
 ];
 

@@ -345,7 +345,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Audit(
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
-            userOperation = UserOperationType.UPDATE_PWD
+            userOperation = UserOperationType.UPDATE_PWD,
+            success = "'修改了密码'",
+            error = "'修改密码失败'"
     )
     @Transactional
     @Override
@@ -470,7 +472,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.UPDATE,
-            success = "'重置了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息",
+            success = "'重置了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息'",
             error = "'重置用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息失败'"
     )
     @Transactional
@@ -524,9 +526,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * @param requestDto 请求
      */
     @Audit(
+            userId = "#userId",
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
-            userOperation = UserOperationType.RESET_PWD
+            userOperation = UserOperationType.RESET_PWD,
+            success = "'重置了密码'",
+            error = "'重置密码失败'"
     )
     @Transactional
     @Override
@@ -543,6 +548,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Objects.isNull(user)) {
             throw new BizException(MessageConstants.RESET_PWD_MSG_1000);
         }
+        AuditContext.setSpelVariable("userId", user.getUserId());
 
         // 3. 检查密码强度
         passwordPolicyService.checkPasswordStrength(user.getUserId(), requestDto.getNewPwd());
@@ -561,9 +567,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userInfo 用户信息
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UPDATE_USER_INFO,
+            success = "'修改了个人信息'",
+            error = "'修改个人信息失败'"
+    )
     @Transactional
     @Override
     public void updateMe(Map<String, Object> userInfo) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取当前用户 ID
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
         if (StringUtils.isBlank(userId)) {
@@ -571,10 +587,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 获取版本号
-        var rawUser = super.getById(userId);
+        var rawUser = getUserInfo(userId);
         if (Objects.isNull(rawUser)) {
             return;
         }
+        compareObjBuilder.id(userId);
+        compareObjBuilder.before(AuthUtil.convertUserMap(rawUser));
 
         // 3. 获取用户可编辑的用户属性
         var editableUserAttrs = CommonUtil.stream(userAttrService.getVisibleUserAttrs()).filter(UserAttrResponseDto::getUserEditable).toList();
@@ -591,6 +609,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 6. 更新用户
         super.updateById(updateUser);
+
+        compareObjBuilder.after(AuthUtil.convertUserMap(getUserInfo(userId)));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -827,22 +848,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BizException(MessageConstants.BIND_EMAIL_MSG_1000);
         }
 
-        AuthUtil.getCurrentUserId().ifPresent(userId -> {
-            // 3. 获取当前用户
-            User rawUser = super.getById(userId);
+        // 3. 获取当前用户
+        User rawUser = super.getById(AuthUtil.getCurrentUserId());
 
-            // 4. 检查当前用户的邮箱是否与请求的邮箱一致
-            if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
-                throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
-            }
+        // 4. 检查当前用户的邮箱是否与请求的邮箱一致
+        if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
+            throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
+        }
 
-            // 5. 更新用户信息
-            User updateUser = new User();
-            updateUser.setUserId(userId);
-            updateUser.setVersion(rawUser.getVersion());
-            updateUser.setEmailAddress(isBinding ? email : "");
-            super.updateById(updateUser);
-        });
+        // 5. 更新用户信息
+        User updateUser = new User();
+        updateUser.setUserId(rawUser.getUserId());
+        updateUser.setVersion(rawUser.getVersion());
+        updateUser.setEmailAddress(isBinding ? email : "");
+        super.updateById(updateUser);
     }
 
     private void checkUsername(UserRequestDto requestDto, User rawUser) {

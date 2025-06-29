@@ -67,8 +67,12 @@ public class AuthUtil {
      *
      * @return 当前用户 ID
      */
-    public static Optional<String> getCurrentUserId() {
-        return Optional.ofNullable(getCurrentJwtClaim(JwtClaimNames.SUB));
+    public static String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() instanceof User user) {
+            return user.getUserId();
+        }
+        return getCurrentJwtClaim(JwtClaimNames.SUB);
     }
 
     /**
