@@ -6,6 +6,8 @@ import cn.opensrcdevelop.auth.audit.event.AuditEvent;
 import cn.opensrcdevelop.auth.biz.service.audit.AuditLogService;
 import cn.opensrcdevelop.auth.biz.service.audit.ObjChangeLogService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
+import cn.opensrcdevelop.tenant.support.TenantHelper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.context.ApplicationListener;
@@ -26,6 +28,9 @@ public class AuditEventListener implements ApplicationListener<AuditEvent> {
     @Override
     @Async(ExecutorConstants.EXECUTOR_IO_DENSE)
     public void onApplicationEvent(AuditEvent event) {
+        // 异步场合，需要切换租户数据源
+        TenantHelper.switchTenantDs(TenantContextHolder.getTenantContext().getTenantCode());
+
         // 1. 保存审计日志
         AuditLog auditLog = event.getAuditLog();
         if (Objects.isNull(auditLog)) {
