@@ -13,13 +13,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
-@Transactional
 public class AuditEventListener implements ApplicationListener<AuditEvent> {
 
     private final AuditLogService auditLogService;
