@@ -55,8 +55,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_ATTR,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了用户属性（' + @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) + '）'",
-            error = "'创建用户属性（' + #requestDto.name + '）失败'"
+            success = "创建了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "创建用户属性（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -275,8 +275,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_ATTR,
             sysOperation = SysOperationType.UPDATE,
-            success = "修改了用户属性（' + @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) + '）",
-            error = "修改用户属性（' + @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) + '）失败"
+            success = "修改了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "修改用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）失败"
     )
     @Transactional
     @Override
@@ -386,8 +386,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_ATTR,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户属性（' + @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) + '）'",
-            error = "'删除用户属性（' + @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) + '）失败'"
+            success = "删除了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "删除用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）失败"
     )
     @Transactional
     @Override

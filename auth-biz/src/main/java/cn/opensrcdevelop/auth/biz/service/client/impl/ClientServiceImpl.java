@@ -70,8 +70,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.CLIENT,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT + '）'",
-            error = "'创建客户端（' + #requestDto.name + '）失败'"
+            success = "创建了客户端{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）",
+            fail = "创建客户端{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -215,8 +215,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.CLIENT,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了客户端（' + @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) + '）'",
-            error = "'修改客户端（' + @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) + '）失败'"
+            success = "修改了客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）",
+            fail = "修改客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）失败"
     )
     @Transactional
     @Override
@@ -257,8 +257,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.CLIENT,
             sysOperation = SysOperationType.UPDATE,
-            success = "'更新了客户端（' + @linkGen.toLink(#id, T(ResourceType).CLIENT) + '）的密钥",
-            error = "'更新客户端（' + @linkGen.toLink(#id, T(ResourceType).CLIENT) + '）的密钥失败'"
+            success = "更新了客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥",
+            fail = "更新客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥失败"
     )
     @Transactional
     @Override
@@ -295,8 +295,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.CLIENT,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT) + '）'",
-            error = "'删除客户端（' + @linkGen.toLink(#clientId, T(ResourceType).CLIENT) + '）失败'"
+            success = "删除了客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）",
+            fail = "删除客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）失败"
     )
     @Transactional
     @Override

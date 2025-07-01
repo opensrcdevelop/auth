@@ -136,8 +136,8 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
             type = AuditType.USER_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE,
             userOperation = UserOperationType.BIND_THIRD_ACCOUNT,
-            success = "'绑定了身份源（' + @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) + '）'",
-            error = "'绑定身份源失败（' + @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) + '）'"
+            success = "绑定了身份源（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）",
+            fail = "绑定身份源失败（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）"
     )
     @Transactional
     @Override

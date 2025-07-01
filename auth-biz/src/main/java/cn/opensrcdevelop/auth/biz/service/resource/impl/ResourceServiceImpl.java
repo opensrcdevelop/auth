@@ -54,8 +54,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了资源（' + @linkGen.toLink(#resourceId, T(ResourceType).RESOURCE) + '）'",
-            error = "'创建资源（' + #requestDto.name + '）失败'"
+            success = "创建了资源（{{ @linkGen.toLink(#resourceId, T(ResourceType).RESOURCE) }}）",
+            fail = "创建资源（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -200,8 +200,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了资源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) + '）'",
-            error = "'修改资源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) + '）失败'"
+            success = "修改了资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）",
+            fail = "修改资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）失败"
     )
     @Transactional
     @Override
@@ -246,8 +246,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了资源（' + @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) + '）'",
-            error = "'删除资源（' + @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) + '）失败'"
+            success = "删除了资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）",
+            fail = "删除资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）失败"
     )
     @Transactional
     @Override

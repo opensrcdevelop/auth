@@ -46,9 +46,9 @@ public @interface Audit {
     String success() default StringUtils.EMPTY;
 
     /**
-     * 错误信息
+     * 失败信息
      */
-    String error() default StringUtils.EMPTY;
+    String fail() default StringUtils.EMPTY;
 
     /**
      *  额外信息

@@ -2,6 +2,7 @@ package cn.opensrcdevelop.common.util;
 
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -56,5 +57,9 @@ public class SpringContextUtil implements ApplicationContextAware {
 
     public static void publishEvent(ApplicationEvent event) {
         context.publishEvent(event);
+    }
+
+    public static BeanFactory getBeanFactory() {
+        return context.getAutowireCapableBeanFactory();
     }
 }

@@ -54,8 +54,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了字典（' + @linkGen.toLink(#dictId, T(ResourceType).DICT) + '）'",
-            error = "'创建字典（' + #requestDto.name + '）失败'"
+            success = "创建了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
+            fail = "创建字典（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -86,8 +86,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了字典（' + @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) + '）'",
-            error = "'修改字典（' + @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) + '）失败'"
+            success = "修改了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）",
+            fail = "修改字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）失败"
     )
     @Transactional
     @Override
@@ -193,8 +193,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了字典（' + @linkGen.toLink(#dictId, T(ResourceType).DICT) + '）'",
-            error = "'删除字典（' + @linkGen.toLink(#dictId, T(ResourceType).DICT) + '）失败'"
+            success = "删除了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
+            fail = "删除字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）失败"
     )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,

@@ -49,12 +49,14 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.CREATE,
-            success = "'给用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、用户组（' " +
-                    " + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）、角色（' + @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) " +
-                    " + '）授予了权限（' + @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) + '）'",
-            error = "'给用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、用户组（' " +
-                    " + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）、角色（' + @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) " +
-                    " + '）授予权限（' + @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) + '）失败'"
+            success = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ " +
+                    "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
+                    "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
+                    "）授予了权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）",
+            fail = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ " +
+                    "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
+                    "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
+                    "）授予权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -182,8 +184,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.DELETE,
-            success = "'取消了对 ' + #principalPermission",
-            error = "'取消对 ' + #principalPermission + ' 失败'"
+            success = "取消了对 {{ #principalPermission }}",
+            fail = "取消对 {{ #principalPermission }} 失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -236,9 +238,9 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.CREATE,
-            success = "'给 ' + #principalPermissions + '添加了限制条件（'" +
-                    " + @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) + '）'",
-            error = "'给 '+ #principalPermissions + '添加限制条件（' + @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) + '）失败'"
+            success = "给 {{ #principalPermissions }} 添加了限制条件（" +
+                    "{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）",
+            fail = "给 {{ #principalPermissions }} 添加限制条件（{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -296,8 +298,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.UPDATE,
-            success = "'将对 ' + #principalPermission + ' 的优先级由 '+ #oldPriority +' 修改为了 '+ #newPriority",
-            error = "'将对 ' + #principalPermission + ' 的优先级由 '+ #oldPriority +' 修改为 '+ #newPriority + ' 失败'"
+            success = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为了 {{ #newPriority }}",
+            fail = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为 {{ #newPriority }} 失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Override

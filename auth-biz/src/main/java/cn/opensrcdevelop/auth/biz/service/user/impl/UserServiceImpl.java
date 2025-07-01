@@ -110,8 +110,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）'",
-            error = "'创建用户（' + #requestDto.username + '）失败'"
+            success = "创建了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）",
+            fail = "创建用户（{{ #requestDto.username }}）失败"
     )
     @Transactional
     @Override
@@ -242,8 +242,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了用户（' + @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) + '）'",
-            error = "'修改用户（' + @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) + '）失败'"
+            success = "修改了用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）",
+            fail = "修改用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）失败"
     )
     @Transactional
     @Override
@@ -346,8 +346,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
             userOperation = UserOperationType.UPDATE_PWD,
-            success = "'修改了密码'",
-            error = "'修改密码失败'"
+            success = "修改了密码",
+            fail = "修改密码失败"
     )
     @Transactional
     @Override
@@ -408,8 +408,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）'",
-            error = "'删除用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）失败'"
+            success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）",
+            fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）失败"
     )
     @Transactional
     @Override
@@ -472,8 +472,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.UPDATE,
-            success = "'重置了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息'",
-            error = "'重置用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）的 MFA 设备绑定信息失败'"
+            success = "重置了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息",
+            fail = "重置用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息失败"
     )
     @Transactional
     @Override
@@ -504,8 +504,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）已授权的 Token",
-            error = "'删除用户（' + @linkGen.toLink(#userId, T(ResourceType).USER) + '）已授权的 Token 失败'"
+            success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已授权的 Token",
+            fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已授权的 Token 失败"
     )
     @Transactional
     @Override
@@ -530,8 +530,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
             userOperation = UserOperationType.RESET_PWD,
-            success = "'重置了密码'",
-            error = "'重置密码失败'"
+            success = "重置了密码",
+            fail = "重置密码失败"
     )
     @Transactional
     @Override
@@ -571,8 +571,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
             userOperation = UserOperationType.UPDATE_USER_INFO,
-            success = "'修改了个人信息'",
-            error = "'修改个人信息失败'"
+            success = "修改了个人信息",
+            fail = "修改个人信息失败"
     )
     @Transactional
     @Override
@@ -623,8 +623,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
             userOperation = UserOperationType.BIND_EMAIL,
-            success = "'绑定了邮箱（' + #requestDto.email + '）'",
-            error = "'绑定邮箱（' + #requestDto.email + '）失败'"
+            success = "绑定了邮箱（{{ #requestDto.email }}）",
+            fail = "绑定邮箱（{{ #requestDto.email }}）失败"
     )
     @Override
     public void bindEmail(BindOrUnbindEmailRequestDto requestDto) {
@@ -640,8 +640,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             type = AuditType.USER_OPERATION,
             resource = ResourceType.USER,
             userOperation = UserOperationType.UNBIND_EMAIL,
-            success = "'解绑了邮箱（' + #requestDto.email + '）'",
-            error = "'解绑邮箱（' + #requestDto.email + '）失败'"
+            success = "解绑了邮箱（{{ #requestDto.email }}）",
+            fail = "解绑邮箱（{{ #requestDto.email }}）失败"
     )
     @Override
     public void unbindEmail(BindOrUnbindEmailRequestDto requestDto) {

@@ -62,8 +62,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了用户组（' + @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) + '）'",
-            error = "'创建用户组（' + #requestDto.name + '）失败'"
+            success = "创建了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
+            fail = "创建用户组（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -94,10 +94,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
             sysOperation = SysOperationType.CREATE,
-            success = "'向用户组（' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) " +
-                    " + '）中添加了用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）'",
-            error = "'向用户组（' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) " +
-                    " + '）中添加用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）失败'"
+            success = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中添加了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
+            fail = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中添加用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
     )
     @Transactional
     @Override
@@ -179,10 +179,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户组（' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) " +
-                    " + '）中的用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）'",
-            error = "'删除用户组（' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) " +
-                    " + '）中的用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）失败'"
+            success = "删除了用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
+            fail = "删除用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
     )
     @Transactional
     @Override
@@ -276,8 +276,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
             sysOperation = SysOperationType.DELETE,
-            success = "'修改了用户组（' + @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) + '）'",
-            error = "'修改用户组（' + @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) + '）失败'"
+            success = "修改了用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）",
+            fail = "修改用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）失败"
     )
     @Transactional
     @Override
@@ -321,8 +321,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户组（' + @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) + '）'",
-            error = "'删除用户组（' + @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) + '）失败'"
+            success = "删除了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
+            fail = "删除用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）失败"
     )
     @Transactional
     @Override

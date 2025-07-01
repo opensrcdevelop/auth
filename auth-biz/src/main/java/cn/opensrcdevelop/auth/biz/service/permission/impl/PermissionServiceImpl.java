@@ -68,10 +68,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.CREATE,
-            success = "'在资源（' + @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) + '）中创建了权限（' " +
-                    " + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）'",
-            error = "'在资源（' + @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) + '）中创建权限（' " +
-                    " + #requestDto.name + '）失败'"
+            success = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建了权限（ " +
+                    "{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）",
+            fail = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建权限（ " +
+                    "{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -312,8 +312,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了权限（' + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）'",
-            error = "'删除权限（' + @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) + '）失败'"
+            success = "删除了权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）",
+            fail = "删除权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -335,8 +335,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了权限（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) + '）'",
-            error = "'修改权限（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) + '）失败'"
+            success = "修改了权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）",
+            fail = "修改权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional

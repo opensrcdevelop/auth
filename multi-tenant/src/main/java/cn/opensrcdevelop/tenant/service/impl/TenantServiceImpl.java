@@ -45,7 +45,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             resource = ResourceType.TENANT,
             sysOperation = SysOperationType.CREATE,
             success = "'创建了租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）'",
-            error = "'创建租户（' + #requestDto.name + '）失败'"
+            fail = "'创建租户（' + #requestDto.name + '）失败'"
     )
     @Transactional
     @Override
@@ -132,7 +132,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             resource = ResourceType.TENANT,
             sysOperation = SysOperationType.UPDATE,
             success = "'修改了租户（' + @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) + '）'",
-            error = "'修改租户（' + @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) + '）失败'"
+            fail = "'修改租户（' + @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) + '）失败'"
     )
     @Transactional
     @Override
@@ -199,7 +199,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             resource = ResourceType.TENANT,
             sysOperation = SysOperationType.DELETE,
             success = "'删除了租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）'",
-            error = "'删除租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）失败'"
+            fail = "'删除租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）失败'"
     )
     @Transactional
     @Override

@@ -56,8 +56,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION_EXP,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了限制条件（' + @linkGen.toLink(#expressionId, T(ResourceType).PERMISSION_EXP) + '）'",
-            error = "'创建限制条件（' + #requestDto.name + '）失败'"
+            success = "创建了限制条件（{{ @linkGen.toLink(#expressionId, T(ResourceType).PERMISSION_EXP) }}）",
+            fail = "创建限制条件（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -171,8 +171,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION_EXP,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）'",
-            error = "'修改限制条件（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) + '）失败'"
+            success = "修改了限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）",
+            fail = "修改限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -214,8 +214,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpressionMa
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PERMISSION_EXP,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了限制条件（' + @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) + '）'",
-            error = "'删除限制条件（' + @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) + '）失败'"
+            success = "删除了限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）",
+            fail = "删除限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）失败"
     )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional

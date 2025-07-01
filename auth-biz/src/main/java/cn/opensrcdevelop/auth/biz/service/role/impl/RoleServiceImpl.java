@@ -63,8 +63,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.ROLE,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）'",
-            error = "'创建角色（' + #requestDto.name + '）失败'"
+            success = "创建了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）",
+            fail = "创建角色（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -95,12 +95,12 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.ROLE,
             sysOperation = SysOperationType.CREATE,
-            success = "'为用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
-                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）添加了角色（'" +
-                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）'",
-            error = "'为用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
-                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）添加角色（'" +
-                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）失败'"
+            success = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）添加了角色（" +
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）",
+            fail = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）添加角色（" +
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败"
     )
     @Transactional
     @Override
@@ -143,12 +143,12 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.ROLE,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
-                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）的角色（'" +
-                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）'",
-            error = "'删除用户（' + @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) + '）、' + " +
-                    "'用户组（ ' + @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) + '）的角色（'" +
-                    " + @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) + '）失败'"
+            success = "删除了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）的角色（" +
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）",
+            fail = "删除用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）的角色（" +
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败"
     )
     @Transactional
     @Override
@@ -287,8 +287,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.ROLE,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了角色（' + @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) + '）'",
-            error = "'修改角色（' + @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) + '）失败'"
+            success = "修改了角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）",
+            fail = "修改角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）失败"
     )
     @Transactional
     @Override
@@ -332,8 +332,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.ROLE,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）'",
-            error = "'删除角色（' + @linkGen.toLink(#roleId, T(ResourceType).ROLE) + '）失败'"
+            success = "删除了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）",
+            fail = "删除角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）失败"
     )
     @Transactional
     @Override

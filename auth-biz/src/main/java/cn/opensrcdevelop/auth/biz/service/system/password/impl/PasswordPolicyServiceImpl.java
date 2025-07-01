@@ -86,8 +86,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PWD_POLICY,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了密码策略（' + @linkGen.toLink(#policyId, T(ResourceType).PWD_POLICY) + '）'",
-            error = "'创建密码策略（' + #requestDto.name + '）失败'"
+            success = "创建了密码策略（{{ @linkGen.toLink(#policyId, T(ResourceType).PWD_POLICY) }}）",
+            fail = "创建密码策略（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -209,8 +209,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PWD_POLICY,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了密码策略执行顺序，' + #auditText",
-            error = "'修改密码策略执行顺序失败'"
+            success = "修改了密码策略执行顺序，{{ #auditText }}",
+            fail = "修改密码策略执行顺序失败"
     )
     @Transactional
     @Override
@@ -247,8 +247,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PWD_POLICY,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了密码策略（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) + '），应用主体变更：' + #mappingChanges",
-            error = "'修改密码策略（' + @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) + '）失败'"
+            success = "修改了密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}），应用主体变更：{{ #mappingChanges }}",
+            fail = "修改密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}）失败"
     )
     @Transactional
     @Override
@@ -337,8 +337,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.PWD_POLICY,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了密码策略（' + @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) + '）'",
-            error = "'删除密码策略（' + @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) + '）失败'"
+            success = "删除了密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）",
+            fail = "删除密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）失败"
     )
     @Transactional
     @Override

@@ -142,8 +142,8 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE_GROUP,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了资源组（' + @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) + '）'",
-            error = "'删除资源组（' + @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) + '）失败'"
+            success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）失败"
     )
     @Transactional
     @Override
@@ -167,8 +167,8 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE_GROUP,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了资源组（' + @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) + '）'",
-            error = "'创建资源组（' + @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) + '）失败'"
+            success = "创建了资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "创建资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败"
     )
     @Transactional
     @Override
@@ -199,8 +199,8 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE_GROUP,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了资源组（' + @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) + '）'",
-            error = "'修改资源组（' + @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) + '）失败'"
+            success = "修改了资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "修改资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）失败"
     )
     @Transactional
     @Override

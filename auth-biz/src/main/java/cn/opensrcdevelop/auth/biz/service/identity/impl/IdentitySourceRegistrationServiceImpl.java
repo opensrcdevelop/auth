@@ -97,8 +97,8 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了身份源（' + #registrationId + '）'",
-            error = "'创建身份源（' + #requestDto.name + '）' 失败，对应的提供商为：' + @linkGen.toLink(#requestDto.providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER)"
+            success = "创建了身份源（{{ #registrationId }}）",
+            fail = "创建身份源（{{ #requestDto.name }}）失败，对应的提供商为：{{ @linkGen.toLink(#requestDto.providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}"
     )
     @Transactional
     @Override
@@ -137,8 +137,8 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了身份源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) + '）'",
-            error = "'修改身份源（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+            success = "修改了身份源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) }}）",
+            fail = "修改身份源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE) }}）失败"
     )
     @Transactional
     @Override
@@ -189,8 +189,8 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了身份源（' + @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) + '）'",
-            error = "'删除身份源（' + @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+            success = "删除了身份源（{{ @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) }}）",
+            fail = "删除身份源（{{ @linkGen.toLink(#id, T(ResourceType).IDENTITY_SOURCE) }}）失败"
     )
     @Override
     public void removeIdentitySourceRegistration(String id) {
@@ -361,8 +361,8 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
             type = AuditType.USER_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE,
             userOperation = UserOperationType.UNBIND_THIRD_ACCOUNT,
-            success = "'解绑了身份源（' + @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) + '）'",
-            error = "'解绑身份源（' + @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) + '）' 失败"
+            success = "解绑了身份源（{{ @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) }}）",
+            fail = "解绑身份源（{{ @linkGen.toLink(#registrationId, T(ResourceType).IDENTITY_SOURCE) }}）失败"
     )
     @Override
     public void unbindUser(String registrationId) {

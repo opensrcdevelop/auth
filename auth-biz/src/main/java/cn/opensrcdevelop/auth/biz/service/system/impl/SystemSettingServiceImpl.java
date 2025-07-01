@@ -69,8 +69,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.MESSAGE_SETTING,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了邮件服务配置'",
-            error = "'修改邮件服务配置失败'"
+            success = "修改了邮件服务配置",
+            fail = "修改邮件服务配置失败"
     )
     @Transactional
     @Override
@@ -126,8 +126,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.MESSAGE_SETTING,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了邮件消息配置'",
-            error = "'修改邮件消息配置失败'"
+            success = "修改了邮件消息配置",
+            fail = "修改邮件消息配置失败"
     )
     @Transactional
     @Override
@@ -181,8 +181,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.JWT_SETTING,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了 JWT 密钥轮换配置'",
-            error = "'修改 JWT 密钥轮换配置失败'"
+            success = "修改了 JWT 密钥轮换配置",
+            fail = "修改 JWT 密钥轮换配置失败"
     )
     @Transactional
     @Override
@@ -205,8 +205,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.JWT_SETTING,
             sysOperation = SysOperationType.UPDATE,
-            success = "'轮换了 JWT 密钥'",
-            error = "'轮换 JWT 密钥失败'"
+            success = "轮换了 JWT 密钥",
+            fail = "轮换 JWT 密钥失败"
     )
     @Transactional
     @Override

@@ -95,8 +95,8 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.MESSAGE_SETTING,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了邮件模版（' + #templateName + '）'",
-            error = "'修改邮件模版（' + #templateName + '）失败'"
+            success = "修改了邮件模版（{{ #templateName }}）",
+            fail = "修改邮件模版（{{ #templateName }}）失败"
     )
     @Transactional
     @Override

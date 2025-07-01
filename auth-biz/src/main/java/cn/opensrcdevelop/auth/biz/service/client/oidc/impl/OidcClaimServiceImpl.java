@@ -45,7 +45,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
             sysOperation = SysOperationType.CREATE,
             success = "'创建了 OIDC Claim（ ' + #requestDto.name + '），对应的用户属性为：' " +
                     " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)",
-            error = "'创建 OIDC Claim（' + #requestDto.name + '）失败，对应的用户属性为：' " +
+            fail = "'创建 OIDC Claim（' + #requestDto.name + '）失败，对应的用户属性为：' " +
                     " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)"
     )
     @Transactional
@@ -97,7 +97,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
             success = "'将 OIDC Claim 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name" +
                     " + '，对应的用户属性由 '+ @linkGen.toLink(#oldUserAttrId, T(ResourceType).USER_ATTR) + ' 修改为了 '" +
                     " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)",
-            error = "'修改 OIDC Claim（' + #oldName + '）失败'"
+            fail = "'修改 OIDC Claim（' + #oldName + '）失败'"
     )
     @Transactional
     @Override
@@ -134,7 +134,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
             resource = ResourceType.OIDC_CLAIM,
             sysOperation = SysOperationType.DELETE,
             success = "'删除了 OIDC Claim（' + #claimName + '）'",
-            error = "'删除 OIDC Claim（' + #claimName + '）失败'"
+            fail = "'删除 OIDC Claim（' + #claimName + '）失败'"
     )
     @Transactional
     @Override

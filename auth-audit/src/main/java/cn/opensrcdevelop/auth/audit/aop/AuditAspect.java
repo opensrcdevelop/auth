@@ -20,12 +20,10 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -41,13 +39,14 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 @Aspect
-public class AuditAspect implements ApplicationContextAware {
+public class AuditAspect {
 
     private static final ParameterNameDiscoverer PARAMETER_NAME_DISCOVERER = new DefaultParameterNameDiscoverer();
     private static final ExpressionParser EXPRESSION_PARSER = new SpelExpressionParser();
+    private static final String SPEL_PREFIX = "{{";
+    private static final String SPEL_SUFFIX = "}}";
+    private static final String RESOURCE_TYPE_PACKAGE_PREFIX = "cn.opensrcdevelop.auth.audit.enums";
     private final MessageUtil messageUtil;
-
-    private ApplicationContext appCtx;
 
     @Pointcut("@annotation(cn.opensrcdevelop.auth.audit.annotation.Audit)")
     public void pointCut() {}
@@ -93,6 +92,9 @@ public class AuditAspect implements ApplicationContextAware {
     }
 
     private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, String exMsg, ProceedingJoinPoint proceedingJoinPoint) {
+        // SpEL 表达式解析上下文
+        StandardEvaluationContext evaluationContext = getEvaluationContext(proceedingJoinPoint);
+
         AuditLog auditLog = new AuditLog();
         auditLog.setAuditId(CommonUtil.getUUIDV7String());
         // 审计类型
@@ -112,7 +114,7 @@ public class AuditAspect implements ApplicationContextAware {
         auditLog.setRequestId(WebUtil.getRequestId());
         // 用户ID
         if (StringUtils.isNotEmpty(auditAnnotation.userId())) {
-            auditLog.setUserId(parseSpel(auditAnnotation.userId(), proceedingJoinPoint));
+            auditLog.setUserId(parseSpel(evaluationContext, auditAnnotation.userId()));
         } else {
             auditLog.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         }
@@ -134,7 +136,7 @@ public class AuditAspect implements ApplicationContextAware {
         // 操作结果
         auditLog.setOperationResult(isSuccess);
         // 操作详情
-        auditLog.setOperationDetail(isSuccess ? parseSpel(auditAnnotation.success(), proceedingJoinPoint) : parseSpel(auditAnnotation.error(), proceedingJoinPoint));
+        auditLog.setOperationDetail(isSuccess ? replaceExpressions(auditAnnotation.success(), evaluationContext) : replaceExpressions(auditAnnotation.fail(), evaluationContext));
         // 额外信息
         String extraInfo = auditAnnotation.extra();
         if (StringUtils.isNotEmpty(exMsg)) {
@@ -159,11 +161,42 @@ public class AuditAspect implements ApplicationContextAware {
         }).toList();
     }
 
-    private String parseSpel(String spel, ProceedingJoinPoint proceedingJoinPoint) {
+    private String replaceExpressions(String template, StandardEvaluationContext evaluationContext) {
+        StringBuilder result = new StringBuilder();
+        int lastIndex = 0;
+        int startIndex;
+        int endIndex;
+
+        while ((startIndex = template.indexOf(SPEL_PREFIX, lastIndex)) != -1) {
+            endIndex = template.indexOf(SPEL_SUFFIX, startIndex);
+            if (endIndex == -1) break;
+
+            // 添加非表达式部分
+            result.append(template, lastIndex, startIndex);
+
+            // 解析并添加表达式结果
+            String expression = template.substring(startIndex + SPEL_PREFIX.length(), endIndex).trim();
+            Object value = EXPRESSION_PARSER.parseExpression(expression).getValue(evaluationContext);
+            result.append(value != null ? value.toString() : StringUtils.EMPTY);
+
+            lastIndex = endIndex + SPEL_SUFFIX.length();
+        }
+
+        // 添加剩余部分
+        result.append(template.substring(lastIndex));
+        return result.toString();
+    }
+
+    private String parseSpel(EvaluationContext evaluationContext, String spel) {
         if (StringUtils.isBlank(spel)) {
             return spel;
         }
 
+        // 解析 SpEL 表达式
+        return EXPRESSION_PARSER.parseExpression(spel).getValue(evaluationContext, String.class);
+    }
+
+    private StandardEvaluationContext getEvaluationContext(ProceedingJoinPoint proceedingJoinPoint) {
         // 1. 添加上下文参数
         StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
         // 1.1 添加方法参数
@@ -183,16 +216,10 @@ public class AuditAspect implements ApplicationContextAware {
 
         // 1.3 添加 Link 解析参数
         StandardTypeLocator typeLocator = new StandardTypeLocator();
-        typeLocator.registerImport("cn.opensrcdevelop.auth.audit.enums");
+        typeLocator.registerImport(RESOURCE_TYPE_PACKAGE_PREFIX);
         evaluationContext.setTypeLocator(typeLocator);
-        evaluationContext.setBeanResolver(new BeanFactoryResolver(appCtx.getAutowireCapableBeanFactory()));
+        evaluationContext.setBeanResolver(new BeanFactoryResolver(SpringContextUtil.getBeanFactory()));
 
-        // 2. 解析 SpEL 表达式
-        return EXPRESSION_PARSER.parseExpression(spel).getValue(evaluationContext, String.class);
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext appCtx) throws BeansException {
-        this.appCtx = appCtx;
+        return evaluationContext;
     }
 }

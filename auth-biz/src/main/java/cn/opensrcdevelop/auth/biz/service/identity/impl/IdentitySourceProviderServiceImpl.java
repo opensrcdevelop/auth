@@ -50,8 +50,8 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
             sysOperation = SysOperationType.CREATE,
-            success = "'创建了身份源提供商（' + #providerId + '）'",
-            error = "'创建身份源提供商（' + #requestDto.name + '）失败'"
+            success = "创建了身份源提供商（{{ #providerId }}）",
+            fail = "创建身份源提供商（{{ #requestDto.name }}）失败"
     )
     @Transactional
     @Override
@@ -113,8 +113,8 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了身份源提供商（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) + '）'",
-            error = "'修改身份源提供商（' + @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) + '）失败'"
+            success = "修改了身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
+            fail = "修改身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
     )
     @Transactional
     @Override
@@ -200,8 +200,8 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了身份源提供商（' + @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) + '）'",
-            error = "'删除身份源提供商（' + @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) + '）失败'"
+            success = "删除了身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
+            fail = "删除身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
     )
     @Transactional
     @Override

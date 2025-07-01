@@ -51,7 +51,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             resource = ResourceType.OIDC_SCOPE,
             sysOperation = SysOperationType.CREATE,
             success = "'创建了 OIDC Scope（' + #requestDto.name + '），包含的 Claim 为：' + #claims",
-            error = "'创建 OIDC Scope（' + #requestDto.name + '）失败，包含的 Claim 为：' + #claims"
+            fail = "'创建 OIDC Scope（' + #requestDto.name + '）失败，包含的 Claim 为：' + #claims"
     )
     @Transactional
     @Override
@@ -149,7 +149,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             sysOperation = SysOperationType.UPDATE,
             success = "'将 OIDC Scope 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name + " +
                     "'，包含的 Claim 由 ' + #oldClaims + ' 修改为了 ' + #claims",
-            error = "'修改 OIDC Scope（' + #oldName + '）失败'"
+            fail = "'修改 OIDC Scope（' + #oldName + '）失败'"
     )
     @Transactional
     @Override
@@ -196,7 +196,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             resource = ResourceType.OIDC_SCOPE,
             sysOperation = SysOperationType.DELETE,
             success = "'删除了 OIDC Scope（' + #scopeName + '）'",
-            error = "'删除 OIDC Scope（' + #scopeName + '）失败'"
+            fail = "'删除 OIDC Scope（' + #scopeName + '）失败'"
 
     )
     @Transactional

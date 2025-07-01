@@ -57,10 +57,10 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT_DATA,
             sysOperation = SysOperationType.CREATE,
-            success = "'向字典（' + @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) + '）' " +
-                    " + '中添加了数据（' + @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) + '）'",
-            error = "'向字典（' + @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) + '）' " +
-                    " + '中添加数据（' + @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) + '）' + '失败'"
+            success = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中添加了数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）",
+            fail = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中添加数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）失败"
     )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
@@ -97,10 +97,10 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT_DATA,
             sysOperation = SysOperationType.UPDATE,
-            success = "'修改了字典（' + @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) + '）'" +
-                    " + '中的数据（ ' + @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) + '）'",
-            error = "'修改字典（' + @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) + '）'" +
-                    " + '中的数据（'+ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) + '）' + '失败'"
+            success = "修改了字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）",
+            fail = "修改字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）失败"
     )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
@@ -214,8 +214,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT_DATA,
             sysOperation = SysOperationType.DELETE,
-            success = "'删除了字典数据（' + @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) + '）'",
-            error = "'删除字典数据（' + @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) + '）' + '失败'"
+            success = "删除了字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）",
+            fail = "删除字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）失败"
     )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
