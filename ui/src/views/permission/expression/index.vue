@@ -1,5 +1,6 @@
 <script lang="ts">
 import expressionTs from "./index";
+
 export default expressionTs;
 </script>
 
@@ -22,7 +23,7 @@ export default expressionTs;
     </div>
     <a-input-search
       :style="{ width: '320px' }"
-      placeholder="输入条件名称或表达式进行搜索"
+      placeholder="输入条件名称进行搜索"
       allow-clear
       v-model="permissionExpSearchKeyword"
       @search="handleGetPermissionExpList(1, 15)"
@@ -57,7 +58,7 @@ export default expressionTs;
             </template>
           </a-table-column>
           <a-table-column
-            title="SpringEL 表达式"
+            title="描述"
             ellipsis
             :sortable="{
               sortDirections: ['ascend', 'descend'],
@@ -65,7 +66,7 @@ export default expressionTs;
           >
             <template #cell="{ record }">
               <span>
-                {{ record.expression }}
+                {{ record.desc ? record.desc : "-" }}
               </span>
             </template>
           </a-table-column>

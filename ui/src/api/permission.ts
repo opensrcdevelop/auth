@@ -90,6 +90,18 @@ export function getPermissionExpDetail(id: string) {
 }
 
 /**
+ * 获取权限表达式关联的权限列表
+ * 
+ * @param id 权限表达式ID
+ * @returns 权限表达式关联的权限列表
+ */
+export function getPermissionExpPermissions(id: string) {
+  return apiRequest.get({
+    url: `/permission/exp/${id}/permissions`,
+  });
+}
+
+/**
  * 删除授权条件
  *
  * @param data 请求
@@ -189,5 +201,92 @@ export function debugPermissionExp(data: any) {
 export function updateAuthorizePriority(id: String, priority: Number){
   return apiRequest.put({
     url: `/permission/authorize/${id}/${priority}`
+  })
+}
+
+/**
+ * 创建权限表达式模板
+ * 
+ * @param data 创建权限表达式模板表单
+ * @returns 调用结果
+ */
+export function createPermissionExpTemplate(data: any) {
+  return apiRequest.post({
+    url: "/permission/exp/template",
+    data,
+  });
+}
+
+/**
+ * 获取权限表达式模板列表
+ * 
+ * @param params 请求参数
+ * @returns 权限表达式模板列表
+ */
+export function getPermissionExpTemplateList(params: any) {
+  return apiRequest.get({
+    url: "/permission/exp/template/list",
+    params,
+  });
+}
+
+/**
+ * 获取权限表达式模板详情
+ * 
+ * @param id 权限表达式模板ID
+ * @returns 权限表达式模板详情
+ */
+export function getPermissionExpTemplateDetail(id: string) {
+  return apiRequest.get({
+    url: `/permission/exp/template/${id}`,
+  });
+}
+
+/**
+ * 更新权限表达式模板
+ * 
+ * @param data 更新权限表达式模板表单
+ * @returns 调用结果
+ */
+export function updatePermissionExpTemplate(data: any) {
+  return apiRequest.put({
+    url: "/permission/exp/template",
+    data,
+  });
+}
+
+/**
+ * 删除权限表达式模板
+ * 
+ * @param id 模板ID
+ * @returns 调用结果
+ */
+export function deletePermissionExpTemplate(id: string) {
+  return apiRequest.delete({
+    url: `/permission/exp/template/${id}`,
+  });
+}
+
+/**
+ * 获取权限表达式模板关联的权限表达式列表
+ * 
+ * @param id 模版ID
+ * @returns 权限表达式模板关联的权限表达式列表
+ */
+export function getPermissionExpTemplateExpList(id: string) {
+  return apiRequest.get({
+    url: `/permission/exp/template/${id}/exps`,
+  })
+}
+
+/**
+ * 获取权限表达式模板参数配置
+ * 
+ * @param id 模板ID
+ * @returns 模板参数配置
+ */
+export function getPremissionExpTemplateParamConfigs(id: string) {
+  return apiRequest.get({
+    url: `/permission/exp/template/${id}/params`,
   })
 }

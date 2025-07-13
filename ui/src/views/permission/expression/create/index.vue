@@ -1,5 +1,6 @@
 <script lang="ts">
 import createTs from "./index";
+
 export default createTs;
 </script>
 
@@ -17,7 +18,6 @@ export default createTs;
         ref="createPermissionExpInfoFormRef"
         :rules="createPermissionExpInfoFormRules"
         layout="vertical"
-        @submit-success="handleCreatePermissionExpInfoFormSubmit"
       >
         <a-form-item field="name" label="限制条件名称">
           <a-input
@@ -25,10 +25,34 @@ export default createTs;
             placeholder="请输入限制条件名称"
           />
         </a-form-item>
-        <a-form-item field="expression" label="SpringEL 表达式">
+        <a-form-item field="templateId" label="限制条件模板">
+          <a-select
+            placeholder="请选择限制条件模板"
+            allow-search
+            allow-clear
+            v-model="createPermissionExpInfoForm.templateId"
+            @change="handleTemplateSelectChange"
+          >
+            <a-option v-for="item in templateList" :value="item.id">
+              {{ item.name }}
+            </a-option>
+          </a-select>
+        </a-form-item>
+        <div v-if="templateParamConfigs.length > 0">
+          <ParamInput
+            ref="templateParamsRef"
+            :configs="templateParamConfigs"
+            v-model="createPermissionExpInfoForm.templateParams"
+          />
+        </div>
+        <a-form-item
+          v-if="!createPermissionExpInfoForm.templateId"
+          field="expression"
+          label="JEXL 表达式"
+        >
           <monaco-editor
             v-model="createPermissionExpInfoForm.expression"
-            language="plaintext"
+            language="jexl"
             :editorOption="{
               contextmenu: false,
             }"
@@ -47,7 +71,7 @@ export default createTs;
         </a-form-item>
         <a-form-item hide-label>
           <a-space>
-            <a-button type="primary" html-type="submit">创建</a-button>
+            <a-button type="primary" @click="handleCreatePermissionExpInfoFormSubmit">创建</a-button>
             <a-button @click="handleResetCreatePermissionExpInfoForm"
               >重置</a-button
             >

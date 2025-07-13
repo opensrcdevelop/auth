@@ -12,8 +12,8 @@ import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.*;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrMappingRequestDto;
@@ -184,47 +184,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters) {
-        // 1. 查询数据库
-        List<User> queryRes;
-
-        // 1.1 编辑查询条件
+        // 1. 计算分页偏移量 & 编辑查询条件
+        int offset = (page - 1) * size;
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(CommonUtil.extractFileNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterRequestDto filter : filters) {
                 AuthUtil.editQuery(queryWrapper, filter);
             }
-            queryRes = userRepository.searchUsers(queryWrapper);
+        }
+
+        // 2. 获取总条数 & 计算总页数
+        long total = userRepository.countUsers(queryWrapper);
+        long pages;
+        if (size > 0) {
+            pages = (long) Math.ceil((double) total / size);
         } else {
-            queryRes = userRepository.searchUsers(queryWrapper);
+            pages = 1;
         }
 
-        // 2. 逻辑分页
+        // 3. 判断请求的页数是否超出范围
+        if (page > pages) {
+            page = 1;
+        }
+
+        // 4. 查询用户列表
+        List<User> queryRes = userRepository.searchUsers(queryWrapper, size, offset);
+
+        // 5. 属性编辑
         PageData<Map<String, Object>> pageData = new PageData<>();
-        List<User> records = queryRes;
-        if (page > 0 && size > 0) {
-            // 2.1 计算分页参数
-            long total = queryRes.size();
-            long pages = (long) Math.ceil((double) total / size);
-            if (page > pages) {
-                page = 1;
-            }
-            pageData.setTotal(total);
-            pageData.setPages(pages);
-            pageData.setSize((long) size);
-            pageData.setCurrent((long) page);
+        pageData.setTotal(total);
+        pageData.setPages(pages);
+        pageData.setSize((long) size);
+        pageData.setCurrent((long) page);
 
-            // 2.2 内存分页
-            records = CommonUtil.stream(queryRes)
-                    .skip((long) (page - 1) * size)
-                    .limit(size)
-                    .toList();
-        }
-
-        // 3. 属性编辑
-        List<Map<String, Object>> userResponses = CommonUtil.stream(records).map(r -> {
-            var userMap = AuthUtil.convertUserMap(r);
-            // 3.1 移除用户 Map 中角色信息
+        List<Map<String, Object>> userResponses = CommonUtil.stream(queryRes).map(u -> {
+            var userMap = AuthUtil.convertUserMap(u);
+            // 5.1 移除用户 Map 中角色信息
             userMap.remove(CommonConstants.ROLES);
             return userMap;
         }).toList();
@@ -445,7 +441,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 获取当前用户信息
         if (StringUtils.isNotEmpty(userId)) {
-            List<User> queryRes = userRepository.searchUsers(Wrappers.<User>query().eq("t1.user_id", userId).eq("deleted", false));
+            List<User> queryRes = userRepository.searchUsers(Wrappers.<User>query().eq("t_user.user_id", userId).eq("deleted", false), 1, 0);
             if (CollectionUtils.isEmpty(queryRes)) {
                 return Collections.emptyMap();
             }

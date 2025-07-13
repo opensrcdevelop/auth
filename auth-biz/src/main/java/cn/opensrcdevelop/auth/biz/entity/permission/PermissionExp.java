@@ -34,8 +34,16 @@ public class PermissionExp extends BaseEntity implements Serializable {
     private String expressionName;
 
     /** 表达式 */
-    @PropertyName("SpringEL 表达式")
+    @PropertyName("JEXL 表达式")
     private String expression;
+
+    /** 模板ID */
+    @PropertyName("模板ID")
+    private String templateId;
+
+    /** 模板参数 */
+    @PropertyName("模板参数")
+    private String templateParams;
 
     /** 描述 */
     @PropertyName("描述")

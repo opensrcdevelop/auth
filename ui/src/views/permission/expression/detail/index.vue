@@ -40,10 +40,36 @@ export default detailTs;
                   placeholder="请输入限制条件名称"
                 />
               </a-form-item>
-              <a-form-item field="expression" label="SpringEL 表达式">
+              <a-form-item
+                v-if="permissionExpInfoForm.templateId"
+                field="templateId"
+                label="限制条件模板"
+              >
+                <a-select
+                  placeholder="请选择限制条件模板"
+                  disabled
+                  v-model="permissionExpInfoForm.templateId"
+                >
+                  <a-option v-for="item in templateList" :value="item.id">
+                    {{ item.name }}
+                  </a-option>
+                </a-select>
+              </a-form-item>
+              <div v-if="templateParamConfigs.length > 0">
+                <ParamInput
+                  ref="templateParamsRef"
+                  :configs="templateParamConfigs"
+                  v-model="permissionExpInfoForm.templateParams"
+                />
+              </div>
+              <a-form-item
+                v-if="!permissionExpInfoForm.templateId"
+                field="expression"
+                label="JEXL 表达式"
+              >
                 <monaco-editor
                   v-model="permissionExpInfoForm.expression"
-                  language="plaintext"
+                  language="jexl"
                   :editorOption="{
                     contextmenu: false,
                   }"
@@ -69,6 +95,10 @@ export default detailTs;
                 </a-space>
               </a-form-item>
             </a-form>
+          </div>
+        </a-tab-pane>
+        <a-tab-pane key="permission_list" title="关联权限">
+          <div class="tab-container">
             <div class="info-title">关联权限</div>
             <a-table :data="permissions" :bordered="false" :pagination="false">
               <template #columns>

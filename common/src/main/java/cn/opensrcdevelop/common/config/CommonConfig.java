@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.common.config;
 
+import cn.opensrcdevelop.common.exression.ExpressionEngine;
 import jakarta.validation.Validator;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -33,5 +34,10 @@ public class CommonConfig {
         messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
         localValidatorFactoryBean.setValidationMessageSource(messageSource);
         return localValidatorFactoryBean;
+    }
+
+    @Bean
+    public ExpressionEngine expressionEngine() {
+        return new ExpressionEngine(1024);
     }
 }

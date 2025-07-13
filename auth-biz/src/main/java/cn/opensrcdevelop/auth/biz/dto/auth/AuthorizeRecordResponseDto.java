@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.dto.auth;
 
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;

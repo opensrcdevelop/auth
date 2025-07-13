@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import MenuItem from "./MenuItem.vue";
 import {useRoute} from "vue-router";
-import {menuRoutes} from "@/router";
+import menuRoutes from "@/router/menuRoutes";
 import {computed} from "vue";
 
 const route = useRoute();

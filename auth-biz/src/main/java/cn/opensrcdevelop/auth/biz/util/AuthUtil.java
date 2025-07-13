@@ -304,7 +304,7 @@ public class AuthUtil {
                 WHERE
                     t_user_attr_mapping.attr_id = t_user_attr.attr_id
                     AND
-                    user_id = t1.user_id
+                    t_user_attr_mapping.user_id = t_user.user_id
                     AND
                     %s
                 """;
@@ -352,7 +352,7 @@ public class AuthUtil {
     }
 
     private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
-        String queryKey = "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
+        String queryKey = "t_user." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
         Object queryValue = switch (valueDataType) {
             case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
             case BOOLEAN -> Boolean.valueOf(value.toString());

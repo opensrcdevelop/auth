@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.dto.permission;
 
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

@@ -34,6 +34,7 @@ ext {
     redissonVer = '3.50.0'
     javersVer = '7.8.0'
     uuidCreatorVer = '6.1.1'
+    jexl3Ver = '3.5.0'
 }
 
 allprojects {

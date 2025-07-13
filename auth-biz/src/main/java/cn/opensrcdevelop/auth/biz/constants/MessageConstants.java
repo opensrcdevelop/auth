@@ -37,6 +37,8 @@ public class MessageConstants {
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
     public static final String PERMISSION_EXP_MSG_1000 = "permission.exp.msg.1000";
+    public static final String PERMISSION_EXP_MSG_1001 = "permission.exp.msg.1001";
+    public static final String PERMISSION_EXP_MSG_1002 = "permission.exp.msg.1002";
     public static final String PWD_POLICY_MSG_1000 = "pwd.policy.msg.1000";
     public static final String PWD_POLICY_MSG_1001 = "pwd.policy.msg.1001";
     public static final String PWD_POLICY_MSG_1002 = "pwd.policy.msg.1002";
@@ -56,4 +58,6 @@ public class MessageConstants {
     public static final String OIDC_CLAIM_MSG_1000 = "oidc.claim.msg.1000";
     public static final String AUDIT_LOG_MSG_1000 = "audit.log.msg.1000";
     public static final String AUDIT_LOG_MSG_1001 = "audit.log.msg.1001";
+    public static final String PERMISSION_EXP_TEMPLATE_MSG_1000 = "permission.exp.template.msg.1000";
+    public static final String PERMISSION_EXP_TEMPLATE_MSG_1001 = "permission.exp.template.msg.1001";
 }
