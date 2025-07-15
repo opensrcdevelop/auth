@@ -1,9 +1,9 @@
-import { debugPermissionExp } from "@/api/permission";
+import {debugPermissionExp} from "@/api/permission";
 import router from "@/router";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal } from "@arco-design/web-vue";
-import { defineComponent, h, onMounted, reactive, ref } from "vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal} from "@arco-design/web-vue";
+import {defineComponent, h, onMounted, reactive, ref} from "vue";
 
 /**
  * 返回上一级
@@ -24,6 +24,7 @@ const debugPermissionExpForm = reactive({
   expressionId: undefined,
   context: undefined,
 });
+console.log(debugPermissionExpForm);
 const debugPermissionExpFormRules = {
   context: {
     validator: (value, cb) => {

@@ -343,6 +343,9 @@ const handleToDebugPermissionExp = () => {
   });
 };
 
+/** 调试运行弹框 */
+const debugDrawerVisible = ref(false);
+
 export default defineComponent({
   components: {
     ParamInput,
@@ -376,6 +379,7 @@ export default defineComponent({
       handlePermissionExpInfoFormSubmit,
       handleResetPermissionExpInfoForm,
       handleToDebugPermissionExp,
+      debugDrawerVisible
     };
   },
 });

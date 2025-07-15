@@ -19,6 +19,9 @@ export default indexTs;
             <copy-text :text="templateId" textColor="#86909c" />
           </div>
         </div>
+        <a-button type="primary" @click="handleOpenDebugDrawer">
+          调试运行
+        </a-button>
       </div>
       <a-tabs :active-key="activeTab" @change="handleTabChange">
         <a-tab-pane key="template_info" title="限制条件模板信息">
@@ -153,6 +156,75 @@ export default indexTs;
           item.label
         }}</a-option>
       </a-select>
+    </a-modal>
+
+    <a-drawer
+      :width="540"
+      :visible="debugDrawerVisible"
+      ok-text="调试运行"
+      :ok-loading="debugFormSubmitLoading"
+      @cancel="handleCloseDebugDrawer"
+      @ok="handleDebugFormSubmit"
+    >
+      <template #title>调试运行限制条件模板</template>
+      <a-form
+        :model="debugForm"
+        :rules="debugFormRules"
+        ref="debugFormRef"
+        layout="vertical"
+      >
+        <ParamInput
+          ref="debugParamRef"
+          :configs="debugParamConfigs"
+          v-model="debugForm.templateParams"
+        />
+        <a-form-item field="context" label="上下文">
+          <monaco-editor
+            v-model="debugForm.context"
+            language="json"
+            height="280px"
+            :editorOption="{
+              contextmenu: false,
+            }"
+          />
+          <template #extra>
+            <div>
+              上下文为 JSON 对象格式，请确保输入的上下文符合 JSON 格式要求
+            </div>
+          </template>
+        </a-form-item>
+      </a-form>
+    </a-drawer>
+
+    <a-modal
+      :visible="debugResultModalVisible"
+      :footer="false"
+      :mask-closable="false"
+      @cancel="debugResultModalVisible = false"
+    >
+      <template #title>调试运行结果</template>
+      <a-descriptions :column="1" bordered>
+        <a-descriptions-item label="状态">
+          {{ debugResult.success ? "成功" : "失败" }}
+        </a-descriptions-item>
+        <a-descriptions-item label="结果" v-if="debugResult.success">
+          <a-tag v-if="debugResult.execResult" color="#00b42a">
+            <template #icon>
+              <icon-check-circle-fill style="color: #fff" />
+            </template>
+            允许
+          </a-tag>
+          <a-tag v-else color="#f53f3f">
+            <template #icon>
+              <icon-minus-circle-fill style="color: #fff" />
+            </template>
+            拒绝
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="错误" v-else>
+          {{ debugResult.execResult }}
+        </a-descriptions-item>
+      </a-descriptions>
     </a-modal>
   </div>
 </template>

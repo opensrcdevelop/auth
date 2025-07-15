@@ -1,4 +1,5 @@
 import apiRequest from "@/util/apiRequest";
+import noneLoadingApiRequest from "@/util/noneApiLoadingRequest";
 
 /**
  * 取消授权
@@ -185,7 +186,7 @@ export function authorize(data: any) {
  * @returns 调用结果
  */
 export function debugPermissionExp(data: any) {
-  return apiRequest.post({
+  return noneLoadingApiRequest.post({
     url: "/permission/exp/debug",
     data,
   })

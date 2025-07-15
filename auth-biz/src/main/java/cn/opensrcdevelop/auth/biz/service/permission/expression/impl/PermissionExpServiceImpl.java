@@ -19,6 +19,7 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionE
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeCondition;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExp;
+import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExpTemplate;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
@@ -28,6 +29,7 @@ import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
 import cn.opensrcdevelop.common.exception.BizException;
+import cn.opensrcdevelop.common.exression.ExpressionEngine;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -39,16 +41,16 @@ import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.expression.MapAccessor;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -57,6 +59,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
 
     private final PermissionService permissionService;
     private final AuthorizeConditionService authorizeConditionService;
+    private final ExpressionEngine expressionEngine;
 
     @Resource
     @Lazy
@@ -97,21 +100,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
             String templateId = requestDto.getTemplateId();
             var paramConfigs = permissionExpTemplateService.getParamsConfigs(templateId);
             var params = requestDto.getTemplateParams();
-            if (CollectionUtils.isNotEmpty(paramConfigs)) {
-                // 2.1.1 检查模板参数是否填写完整
-                if (CollectionUtils.isEmpty(params) || params.size() != paramConfigs.size()) {
-                    throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1001);
-                }
+            checkParams(paramConfigs, params);
 
-                // 2.1.2 检查必填参数是否填写
-                var requiredParamCodes = paramConfigs.stream().filter(PermissionExpTemplateParamConfigDto::getRequired)
-                        .map(PermissionExpTemplateParamConfigDto::getCode).toList();
-                var paramCodes = params.stream().map(PermissionExpTemplateParamDto::getCode).toList();
-                var notInputtedParamCodes = CommonUtil.stream(requiredParamCodes).filter(paramCode -> !paramCodes.contains(paramCode)).toList();
-                if (CollectionUtils.isNotEmpty(notInputtedParamCodes)) {
-                    throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1002, notInputtedParamCodes);
-                }
-            }
             permissionExp.setTemplateId(templateId);
             permissionExp.setTemplateParams(CommonUtil.serializeObject(requestDto.getTemplateParams()));
         } else {
@@ -281,26 +271,61 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
      */
     @Override
     public DebugPermissionExpResponseDto debugPermissionExp(DebugPermissionExpRequestDto requestDto) {
-        // 1. 获取权限表达式
-        PermissionExp permissionExp = super.getById(requestDto.getExpressionId());
-        if (Objects.isNull(permissionExp)) {
-            throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1000, requestDto.getExpressionId());
+        // 1. 参数校验
+        boolean useTemplate = Boolean.TRUE.equals(requestDto.getUseTemplate());
+        if (useTemplate) {
+            CommonUtil.validateBean(requestDto, DebugPermissionExpRequestDto.UseTemplate.class);
+        } else {
+            CommonUtil.validateBean(requestDto, DebugPermissionExpRequestDto.NotUseTemplate.class);
         }
-        String expression = permissionExp.getExpression();
+
+        // 2. 获取表达式 & 添加执行上下文
+        Map<String, Object> execCtx = new HashMap<>();
+        String expression;
+        if (useTemplate) {
+            PermissionExpTemplate permissionExpTemplate = permissionExpTemplateService.getById(requestDto.getTemplateId());
+            if (Objects.isNull(permissionExpTemplate)) {
+                throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1003, requestDto.getTemplateId());
+            }
+            if (StringUtils.isNotEmpty(permissionExpTemplate.getTemplateParamConfigs())) {
+                var paramConfigs = CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {});
+                // 2.1 校验模板参数
+                checkParams(paramConfigs, requestDto.getTemplateParams());
+
+                // 2.2 添加模板参数执行上下文
+                execCtx.putAll(permissionExpTemplateService.getParamExecutionContext(paramConfigs, requestDto.getTemplateParams()));
+            }
+            expression = permissionExpTemplate.getExpression();
+        } else {
+            PermissionExp permissionExp = super.getById(requestDto.getExpressionId());
+            if (Objects.isNull(permissionExp)) {
+                throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1000, requestDto.getExpressionId());
+            }
+            expression = permissionExp.getExpression();
+        }
 
         // 2. 执行表达式
         DebugPermissionExpResponseDto responseDto = new DebugPermissionExpResponseDto();
-        try {
-            SpelExpressionParser spelExpressionParser = new SpelExpressionParser();
-            StandardEvaluationContext standardEvaluationContext = new StandardEvaluationContext(requestDto.getContext());
-            standardEvaluationContext.addPropertyAccessor(new MapAccessor());
-            Boolean res = spelExpressionParser.parseExpression(expression).getValue(standardEvaluationContext, Boolean.class);
-            responseDto.setIsSuccess(Boolean.TRUE);
-            responseDto.setExecuteRes(res);
-        } catch (Exception e) {
-            responseDto.setIsSuccess(Boolean.FALSE);
-            responseDto.setExecuteRes(e.getMessage());
+        // 2.2 添加上下文
+        if (MapUtils.isNotEmpty(requestDto.getContext())) {
+            execCtx.putAll(requestDto.getContext());
         }
+
+        Object execResult = null;
+        try {
+            // 2.3 执行
+            execResult = expressionEngine.evaluate(expression, execCtx);
+        } catch (Exception e) {
+            responseDto.setSuccess(Boolean.FALSE);
+            responseDto.setExecuteRes(e.getMessage());
+            return responseDto;
+        }
+
+        if (!(execResult instanceof Boolean)) {
+            throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1004);
+        }
+        responseDto.setSuccess(Boolean.TRUE);
+        responseDto.setExecuteRes(execResult);
         return responseDto;
     }
 
@@ -358,5 +383,25 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
             return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(), PrincipalTypeEnum.ROLE.getDisplayName());
         }
         return Tuple.of(null, null, null, null);
+    }
+
+    private void checkParams(List<PermissionExpTemplateParamConfigDto> paramConfigs, List<PermissionExpTemplateParamDto> params) {
+        if (CollectionUtils.isEmpty(paramConfigs)) {
+            return;
+        }
+
+        // 1. 检查模板参数是否填写完整
+        if (CollectionUtils.isEmpty(params) || params.size() != paramConfigs.size()) {
+            throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1001);
+        }
+
+        // 2 检查必填参数是否填写
+        var requiredParamCodes = paramConfigs.stream().filter(PermissionExpTemplateParamConfigDto::getRequired)
+                .map(PermissionExpTemplateParamConfigDto::getCode).toList();
+        var paramCodes = params.stream().map(PermissionExpTemplateParamDto::getCode).toList();
+        var notInputtedParamCodes = CommonUtil.stream(requiredParamCodes).filter(paramCode -> !paramCodes.contains(paramCode)).toList();
+        if (CollectionUtils.isNotEmpty(notInputtedParamCodes)) {
+            throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1002, notInputtedParamCodes);
+        }
     }
 }

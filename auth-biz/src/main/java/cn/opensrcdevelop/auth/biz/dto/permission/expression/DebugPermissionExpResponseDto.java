@@ -8,7 +8,7 @@ import lombok.Data;
 public class DebugPermissionExpResponseDto {
 
     @Schema(description = "是否成功")
-    private Boolean isSuccess;
+    private Boolean success;
 
     @Schema(description = "执行结果")
     private Object executeRes;

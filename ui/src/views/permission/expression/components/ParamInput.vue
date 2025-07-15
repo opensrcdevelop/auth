@@ -58,8 +58,8 @@ import {reactive, ref} from "vue";
 import {ParamConfig} from "../template/components/ParamSelect.vue";
 
 const props = defineProps<{
-  modelValue: [];
-  configs: ParamConfig;
+  modelValue: any[];
+  configs: ParamConfig[];
 }>();
 
 const paramsForm = reactive({

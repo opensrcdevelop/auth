@@ -1,4 +1,5 @@
 import {
+    debugPermissionExp,
     getPermissionExpTemplateDetail,
     getPermissionExpTemplateExpList,
     updatePermissionExpTemplate,
@@ -8,6 +9,7 @@ import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import ParamSelect, {ParamConfig} from "../components/ParamSelect.vue";
+import ParamInput from "../../components/ParamInput.vue";
 
 /**
  * 返回上一级
@@ -41,7 +43,9 @@ const handleTabInit = (tabKey: string, id: string = templateId.value) => {
       handleGetTemplateDetail(id);
       break;
     case "expression_list":
-      handleGetTemplateDetail(id);
+      if (!templateId) {
+        handleGetTemplateDetail(id);
+      }
       handleGetExpList(id);
       break;
   }
@@ -71,23 +75,24 @@ const templateInfoFormRules = {
 /**
  * 获取模板详情
  */
-const handleGetTemplateDetail = (id: string = templateId.value) => {
-  getPermissionExpTemplateDetail(id)
-    .then((result: any) => {
-      handleApiSuccess(result, (data: any) => {
-        templateName.value = data.name;
-        templateId.value = data.id;
+const handleGetTemplateDetail = async (id: string = templateId.value) => {
+  try {
+    const result = await getPermissionExpTemplateDetail(id);
+    handleApiSuccess(result, (data: any) => {
+      templateName.value = data.name;
+      templateId.value = data.id;
 
-        templateInfoForm.id = data.id;
-        templateInfoForm.name = data.name;
-        templateInfoForm.desc = data.desc;
-        templateInfoForm.expression = data.expression;
-        templateInfoForm.paramConfigs = data.paramConfigs;
-      });
-    })
-    .catch((err: any) => {
-      handleApiError(err, "获取权限表达式模板详情");
+      templateInfoForm.id = data.id;
+      templateInfoForm.name = data.name;
+      templateInfoForm.desc = data.desc;
+      templateInfoForm.expression = data.expression;
+      templateInfoForm.paramConfigs = data.paramConfigs;
+
+      paramConfigRefs.value = [];
     });
+  } catch (err) {
+    handleApiError(err, "获取权限表达式模板详情");
+  }
 };
 
 /**
@@ -147,7 +152,6 @@ const handleParamConfigModalConfirm = () => {
  * 移除参数配置
  */
 const handleRemoveParamConfig = (index: number) => {
-  const paramConfig = templateInfoForm.paramConfigs[index];
   Modal.confirm({
     title: `确定删除「模板参数 - ${index + 1}」吗？`,
     content: "",
@@ -226,9 +230,113 @@ const handleToExpDetail = (exp: any) => {
   });
 };
 
+/** 调试运行弹框 */
+const debugDrawerVisible = ref(false);
+const debugParamConfigs = reactive([]);
+const debugParamRef = ref();
+const debugFormRef = ref();
+const debugForm = reactive({
+  templateId: undefined,
+  useTemplate: true,
+  templateParams: [],
+  context: undefined,
+});
+const debugFormRules = {
+  context: {
+    validator: (value, cb) => {
+      if (value) {
+        try {
+          const valueObj = JSON.parse(value);
+          if (typeof valueObj !== "object") {
+            cb("上下文 JSON 字符串必须是一个对象");
+          }
+        } catch (err: any) {
+          cb("请检查 JSON 格式是否正确");
+        }
+      } else {
+        cb();
+      }
+    },
+  },
+};
+
+/**
+ * 打开调试运行弹框
+ */
+const handleOpenDebugDrawer = () => {
+  debugForm.templateId = templateId.value;
+  debugForm.templateParams.length = 0;
+  debugParamConfigs.length = 0;
+  if (templateInfoForm.paramConfigs) {
+    debugParamConfigs.push(...templateInfoForm.paramConfigs);
+    const params = templateInfoForm.paramConfigs.map((item) => {
+      return {
+        code: item.code,
+        value: item.defaultValue,
+      };
+    });
+    debugForm.templateParams.push(...params);
+  }
+  debugDrawerVisible.value = true;
+};
+
+/**
+ * 关闭调试运行弹框
+ */
+const handleCloseDebugDrawer = () => {
+  debugFormRef.value.resetFields();
+  debugParamRef.value.reset();
+  debugDrawerVisible.value = false;
+};
+
+/** 调试运行结果 */
+const debugResult = reactive({
+  success: undefined,
+  execResult: undefined,
+});
+const debugResultModalVisible = ref(false);
+
+/**
+ * 提交调试运行表单
+ */
+const debugFormSubmitLoading = ref(false);
+const handleDebugFormSubmit = async () => {
+  const validateResults = [];
+  validateResults.push(debugFormRef.value.validate());
+  validateResults.push(debugParamRef.value.validate());
+  const result = await Promise.all(validateResults);
+  const isValid = result.filter((item) => item).length === 0;
+  if (!isValid) {
+    return;
+  }
+
+  debugFormSubmitLoading.value = true;
+  debugPermissionExp({
+    templateId: debugForm.templateId,
+    useTemplate: debugForm.useTemplate,
+    templateParams: debugForm.templateParams,
+    context: debugForm.context ? JSON.parse(debugForm.context) : {},
+  })
+    .then((result) => {
+      handleApiSuccess(result, (data: any) => {
+        debugResult.success = data.success;
+        debugResult.execResult = data.executeRes;
+
+        debugResultModalVisible.value = true;
+      });
+    })
+    .catch((err) => {
+      handleApiError(err, "调试运行限制条件模板");
+    })
+    .finally(() => {
+      debugFormSubmitLoading.value = false;
+    });
+};
+
 export default defineComponent({
   components: {
     ParamSelect,
+    ParamInput,
   },
   setup() {
     onMounted(() => {
@@ -256,7 +364,19 @@ export default defineComponent({
       handleTemplateInfoFormSubmit,
       handleResetTemplateInfoForm,
       expList,
-      handleToExpDetail
+      handleToExpDetail,
+      debugDrawerVisible,
+      debugForm,
+      debugFormRef,
+      debugParamRef,
+      debugFormRules,
+      debugParamConfigs,
+      handleOpenDebugDrawer,
+      handleCloseDebugDrawer,
+      debugFormSubmitLoading,
+      handleDebugFormSubmit,
+      debugResult,
+      debugResultModalVisible,
     };
   },
 });

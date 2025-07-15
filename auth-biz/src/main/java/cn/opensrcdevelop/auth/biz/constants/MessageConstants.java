@@ -39,6 +39,8 @@ public class MessageConstants {
     public static final String PERMISSION_EXP_MSG_1000 = "permission.exp.msg.1000";
     public static final String PERMISSION_EXP_MSG_1001 = "permission.exp.msg.1001";
     public static final String PERMISSION_EXP_MSG_1002 = "permission.exp.msg.1002";
+    public static final String PERMISSION_EXP_MSG_1003 = "permission.exp.msg.1003";
+    public static final String PERMISSION_EXP_MSG_1004 = "permission.exp.msg.1004";
     public static final String PWD_POLICY_MSG_1000 = "pwd.policy.msg.1000";
     public static final String PWD_POLICY_MSG_1001 = "pwd.policy.msg.1001";
     public static final String PWD_POLICY_MSG_1002 = "pwd.policy.msg.1002";

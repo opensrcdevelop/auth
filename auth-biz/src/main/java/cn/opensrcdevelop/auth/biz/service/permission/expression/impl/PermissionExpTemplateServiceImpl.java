@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamType;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExp;
@@ -25,9 +26,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -114,14 +114,15 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         }
 
         // 2. 反序列
-        return CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {});
+        return CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
+        });
     }
 
     /**
      * 获取权限表达式模版列表
      *
-     * @param page 页数
-     * @param size 条数
+     * @param page    页数
+     * @param size    条数
      * @param keyword 权限表达式模版名称检索关键字
      * @return 权限表达式模版列表
      */
@@ -204,8 +205,35 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
             responseDto.setId(permissionExp.getExpressionId());
             responseDto.setName(permissionExp.getExpressionName());
             responseDto.setDesc(permissionExp.getDescription());
-            return  responseDto;
+            return responseDto;
         }).toList();
+    }
+
+    /**
+     * 获取模板参数对应的执行上下文
+     *
+     * @param paramConfigs 模板参数配置
+     * @param params     参数列表
+     * @return 执行上下文
+     */
+    @Override
+    public Map<String, Object> getParamExecutionContext(List<PermissionExpTemplateParamConfigDto> paramConfigs, List<PermissionExpTemplateParamDto> params) {
+        Map<String, Object> execCtx = new HashMap<>();
+        for (var paramConfig : paramConfigs) {
+            // 1. 获取匹配的参数
+            var param = CommonUtil.stream(params)
+                    .filter(templateParam ->
+                            templateParam.getCode().equals(paramConfig.getCode()))
+                    .findFirst();
+            if (param.isPresent()) {
+                // 2. 转换参数类型
+                execCtx.put(paramConfig.getCode(), convertParam(paramConfig.getType(), param.get().getValue()));
+            } else {
+                // 3. 无匹配参数，设置为null
+                execCtx.put(paramConfig.getCode(), null);
+            }
+        }
+        return execCtx;
     }
 
     private void checkParams(PermissionExpTemplateRequestDto requestDto) {
@@ -228,5 +256,17 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
                 CommonUtil.validateBean(paramConfig);
             }
         }
+    }
+
+    private Object convertParam(PermissionExpTemplateParamType type, Object value) {
+        if (Objects.isNull(value)) {
+            return null;
+        }
+        return switch (type) {
+            case NUMBER -> new BigDecimal(value.toString());
+            case BOOLEAN -> Boolean.valueOf(value.toString());
+            case LIST -> Arrays.asList(StringUtils.split(value.toString(), "\n"));
+            case STRING, CHOICE -> value;
+        };
     }
 }

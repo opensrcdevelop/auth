@@ -48,7 +48,6 @@ const handleGetTemplateList = () => {
       handleApiSuccess(result, (data: any) => {
         templateList.length = 0;
         templateList.push(...data.list);
-        console.log(templateList);
       });
     })
     .catch((err: any) => {
