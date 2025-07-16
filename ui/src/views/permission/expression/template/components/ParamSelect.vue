@@ -23,9 +23,18 @@
             </a-form-item>
           </a-col>
           <a-col :span="8">
-            <a-form-item field="required" label="是否必填">
-              <a-switch v-model="modelValue.required" type="round" />
-            </a-form-item>
+            <a-row>
+              <a-col :span="12">
+                <a-form-item field="required" label="是否必填">
+                  <a-switch v-model="modelValue.required" type="round" />
+                </a-form-item>
+              </a-col>
+              <a-col v-if="modelValue.type === 'CHOICE'" :span="12">
+                <a-form-item field="required" label="是否多选">
+                  <a-switch v-model="modelValue.multiple" type="round" />
+                </a-form-item>
+              </a-col>
+            </a-row>
           </a-col>
         </a-row>
         <div v-if="modelValue.type === 'CHOICE'">
@@ -78,6 +87,7 @@
           <a-select
             v-if="modelValue.type === 'CHOICE'"
             allow-clear
+            :multiple="modelValue.multiple"
             v-model="modelValue.defaultValue"
             placeholder="请选择默认值"
           >
@@ -119,6 +129,7 @@ export interface ParamConfig {
   name: string;
   code: string;
   options: string[];
+  multiple: boolean;
   defaultValue: any;
 }
 
@@ -147,6 +158,7 @@ const paramConfigRules = {
     },
   ],
   required: [{ required: true, message: "是否必填未选择" }],
+  multiple: [{ required: true, message: "是否多选未选择" }],
 };
 
 const handleAddOption = () => {
@@ -169,16 +181,16 @@ const handleRemoveParamConfig = () => {
 
 const validate = () => {
   return paramConfigRef.value.validate();
-}
+};
 
 const reset = () => {
   paramConfigRef.value.resetFields();
-}
+};
 
 defineExpose({
   validate,
-  reset
-})
+  reset,
+});
 </script>
 
 <style lang="scss" scoped>

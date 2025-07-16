@@ -72,11 +72,13 @@ const handleParamConfigModalConfirm = () => {
     required: false,
     defaultValue: undefined,
     options: undefined,
+    multiple: undefined,
     code: undefined,
   };
 
   if (selectedParamType.value === "CHOICE") {
-    paramConfig.options = [""];
+    paramConfig.options = [undefined];
+    paramConfig.multiple = false;
   }
 
   templateInfoForm.paramConfigs.push(paramConfig);

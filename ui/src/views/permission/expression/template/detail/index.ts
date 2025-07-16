@@ -1,8 +1,8 @@
 import {
-    debugPermissionExp,
-    getPermissionExpTemplateDetail,
-    getPermissionExpTemplateExpList,
-    updatePermissionExpTemplate,
+  debugPermissionExp,
+  getPermissionExpTemplateDetail,
+  getPermissionExpTemplateExpList,
+  updatePermissionExpTemplate,
 } from "@/api/permission";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
@@ -137,12 +137,14 @@ const handleParamConfigModalConfirm = () => {
     type: selectedParamType.value,
     required: false,
     defaultValue: undefined,
+    multiple: undefined,
     options: undefined,
     code: undefined,
   };
 
   if (selectedParamType.value === "CHOICE") {
-    paramConfig.options = [""];
+    paramConfig.options = [undefined];
+    paramConfig.multiple = false;
   }
 
   templateInfoForm.paramConfigs.push(paramConfig);

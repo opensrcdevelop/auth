@@ -28,6 +28,7 @@
         <a-select
           v-if="config.type === 'CHOICE'"
           allow-clear
+          :multiple="config.multiple"
           v-model="modelValue[index].value"
           :placeholder="`请选择${config.name}`"
         >

@@ -34,6 +34,10 @@ public class PermissionExpTemplateParamConfigDto {
     @NotEmpty(groups = { ChoiceType.class })
     private List<@NotBlank String> options;
 
+    @Schema(description = "是否多选")
+    @NotNull(groups = { ChoiceType.class })
+    private Boolean multiple;
+
     @Schema(description = "是否必填")
     @NotNull
     private Boolean required;
