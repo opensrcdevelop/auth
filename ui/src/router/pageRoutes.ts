@@ -202,14 +202,6 @@ const pageRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/permission/expression/debug",
-    component: () => import("@/views/permission/expression/debug/index.vue"),
-    meta: {
-      parent: "/permission/expression",
-      title: "调试限制条件",
-    },
-  },
-  {
     path: "/system_setting/password/create",
     component: () => import("@/views/setting/password/create/index.vue"),
     meta: {

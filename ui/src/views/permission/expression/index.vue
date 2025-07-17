@@ -88,15 +88,6 @@ export default expressionTs;
                     </template>
                     删除</a-doption
                   >
-                  <a-doption
-                    style="color: #545968"
-                    @click="handleToDebugPermissionExp(record)"
-                  >
-                    <template #icon>
-                      <icon-bug />
-                    </template>
-                    调试</a-doption
-                  >
                 </template>
               </a-dropdown>
             </template>

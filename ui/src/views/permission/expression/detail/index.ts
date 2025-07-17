@@ -1,6 +1,7 @@
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
+    debugPermissionExp,
     getPermissionExpDetail,
     getPermissionExpPermissions,
     getPermissionExpTemplateList,
@@ -10,7 +11,6 @@ import {
 } from "@/api/permission";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
-import {useGlobalVariablesStore} from "@/store/globalVariables";
 import ParamInput from "../components/ParamInput.vue";
 
 /**
@@ -327,24 +327,90 @@ const handleToPermissionDetail = (id: string) => {
   });
 };
 
-/**
- * 跳转调试权限表达式
- */
-const handleToDebugPermissionExp = () => {
-  const globalVariables = useGlobalVariablesStore();
-  globalVariables.permissionExp = {
-    id: permissionExpId.value,
-    name: permissionExpName.value,
-    expression: permissionExpInfoForm.expression,
-  };
-  globalVariables.saveData();
-  router.push({
-    path: "/permission/expression/debug",
-  });
-};
-
 /** 调试运行弹框 */
 const debugDrawerVisible = ref(false);
+const debugFormRef = ref();
+const debugForm = reactive({
+  expressionId: undefined,
+  useTemplate: false,
+  context: undefined,
+});
+const debugFormRules = {
+  context: {
+    validator: (value, cb) => {
+      if (value) {
+        try {
+          const valueObj = JSON.parse(value);
+          if (typeof valueObj !== "object") {
+            cb("上下文 JSON 字符串必须是一个对象");
+          }
+        } catch (err: any) {
+          cb("请检查 JSON 格式是否正确");
+        }
+      } else {
+        cb();
+      }
+    },
+  },
+};
+
+/**
+ * 打开调试运行弹框
+ */
+const handleOpenDebugDrawer = () => {
+  debugForm.expressionId = permissionExpId.value;
+  debugDrawerVisible.value = true;
+};
+
+/**
+ * 关闭调试运行弹框
+ */
+const handleCloseDebugDrawer = () => {
+  debugFormRef.value.resetFields();
+  debugDrawerVisible.value = false;
+};
+
+/** 调试运行结果 */
+const debugResult = reactive({
+  success: undefined,
+  execResult: undefined,
+});
+const debugResultModalVisible = ref(false);
+
+/**
+ * 提交调试运行表单
+ */
+const debugFormSubmitLoading = ref(false);
+const handleDebugFormSubmit = async () => {
+  const validateResults = [];
+  validateResults.push(debugFormRef.value.validate());
+  const result = await Promise.all(validateResults);
+  const isValid = result.filter((item) => item).length === 0;
+  if (!isValid) {
+    return;
+  }
+
+  debugFormSubmitLoading.value = true;
+  debugPermissionExp({
+    expressionId: debugForm.expressionId,
+    useTemplate: debugForm.useTemplate,
+    context: debugForm.context ? JSON.parse(debugForm.context) : {},
+  })
+    .then((result) => {
+      handleApiSuccess(result, (data: any) => {
+        debugResult.success = data.success;
+        debugResult.execResult = data.executeRes;
+
+        debugResultModalVisible.value = true;
+      });
+    })
+    .catch((err) => {
+      handleApiError(err, "调试运行限制条件模板");
+    })
+    .finally(() => {
+      debugFormSubmitLoading.value = false;
+    });
+};
 
 export default defineComponent({
   components: {
@@ -378,8 +444,16 @@ export default defineComponent({
       handleRemoveAuthorizeCondition,
       handlePermissionExpInfoFormSubmit,
       handleResetPermissionExpInfoForm,
-      handleToDebugPermissionExp,
-      debugDrawerVisible
+      debugDrawerVisible,
+      debugFormRef,
+      debugForm,
+      debugFormRules,
+      handleOpenDebugDrawer,
+      handleCloseDebugDrawer,
+      handleDebugFormSubmit,
+      debugFormSubmitLoading,
+      debugResult,
+      debugResultModalVisible,
     };
   },
 });
