@@ -12,6 +12,8 @@ import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
@@ -22,9 +24,11 @@ import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
+import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.resource.ResourceService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
@@ -38,6 +42,7 @@ import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -58,6 +63,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Resource
     @Lazy
     private ResourceService resourceService;
+
+    @Resource
+    @Lazy
+    private PermissionExpService permissionExpService;
 
     /**
      * 创建权限
@@ -103,11 +112,11 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS,
             key = "#root.target.generateCurrentUserPermissionsCacheKey()",
             condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
-    @CacheExpire("30 * 60")
+    @CacheExpire("7 * 24 * 3600")
     @Override
     public List<PermissionResponseDto> getCurrentUserPermissions() {
         // 1. 获取当前用户
-        String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
+        String userId = AuthUtil.getCurrentUserId();
         List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
 
         if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
@@ -128,13 +137,12 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
                 // 3.1 权限信息
                 Permission permission = authorizeRecord.getPermission();
-                response.setPermissionCode(permission.getPermissionCode());
-                response.setResourceCode(permission.getResource().getResourceCode());
+                response.setPermissionLocator(generatePermissionLocator(permission));
 
                 // 3.2 限制条件
                 var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
                     PermissionExpResponseDto permissionExpResponse = new PermissionExpResponseDto();
-                    permissionExpResponse.setExpression(exp.getExpression());
+                    permissionExpResponse.setId(exp.getExpressionId());
                     return permissionExpResponse;
                 }).toList();
                 response.setConditions(conditions);
@@ -237,7 +245,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     public PermissionResponseDto detail(String permissionId, String keyword) {
         PermissionResponseDto permissionResponse = new PermissionResponseDto();
         // 1. 查询数据库
-        Permission permission = super.getById(permissionId);
+        Permission permission = permissionRepository.getPermission(permissionId);
         if (permission == null) {
             return permissionResponse;
         }
@@ -247,7 +255,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionName(permission.getPermissionName());
         permissionResponse.setPermissionCode(permission.getPermissionCode());
         permissionResponse.setPermissionDesc(permission.getDescription());
-        permissionResponse.setResourceId(permission.getResourceId());
+        permissionResponse.setResourceId(permission.getResource().getResourceId());
+
+        permissionResponse.setPermissionLocator(generatePermissionLocator(permission));
 
         // 3. 设置授权记录
         var records = CommonUtil.stream(permissionRepository.searchPermissionAuthorizeRecords(permissionId, keyword)).map(authorizeRecord -> {
@@ -383,6 +393,48 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         return permissionRepository.searchExpPermission(expressionId);
     }
 
+    /**
+     * 校验权限
+     *
+     * @param requestDto 校验权限请求
+     * @return 校验权限响应
+     */
+    @Override
+    public List<VerifyPermissionResponseDto> verifyPermissions(VerifyPermissionsRequestDto requestDto) {
+        // 1. 获取当前用户权限
+        PermissionService proxyService = (PermissionService) AopContext.currentProxy();
+        Map<String, PermissionResponseDto> permissions = CommonUtil.stream(proxyService.getCurrentUserPermissions())
+                .collect(Collectors.toMap(PermissionResponseDto::getPermissionLocator, p -> p));
+
+        // 2. 校验权限
+        return CommonUtil.stream(requestDto.getPermissions())
+                .map(permissionLocator -> {
+                    var responseBuilder = VerifyPermissionResponseDto.builder();
+                    responseBuilder.permission(permissionLocator);
+
+                    // 2.1 检查是否存在该权限
+                    if (!permissions.containsKey(permissionLocator)) {
+                        responseBuilder.allow(false);
+                        return responseBuilder.build();
+                    }
+
+                    // 2.2 检查是否存在限制条件
+                    List<PermissionExpResponseDto> conditions = permissions.get(permissionLocator).getConditions();
+                    if (CollectionUtils.isNotEmpty(conditions)) {
+                        // 2.2.1 执行表达式
+                        for (PermissionExpResponseDto condition : conditions) {
+                            if (!Boolean.TRUE.equals(permissionExpService.executePermissionExp(condition.getId(), requestDto.getContext()))) {
+                                responseBuilder.allow(false);
+                                break;
+                            }
+                        }
+                    } else {
+                        responseBuilder.allow(true);
+                    }
+                    return responseBuilder.build();
+                }).toList();
+    }
+
     private Tuple4<String, String, String, String> getPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -436,5 +488,20 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (Objects.nonNull(super.getOne(Wrappers.<Permission>lambdaQuery().eq(Permission::getPermissionCode, requestDto.getCode()).and(q -> q.eq(Permission::getResourceId, requestDto.getResourceId()))))) {
             throw new BizException(MessageConstants.PERMISSION_MSG_1000, requestDto.getCode());
         }
+    }
+
+    private String generatePermissionLocator(Permission permission) {
+        if (Objects.isNull(permission)) {
+            return StringUtils.EMPTY;
+        }
+
+        List<String> locatorParts = List.of(permission.getResource().getResourceGroup().getResourceGroupCode(),
+                permission.getResource().getResourceCode(), permission.getPermissionCode());
+        return CommonUtil.stream(locatorParts).map(x -> {
+            if (Objects.isNull(x)) {
+                return StringUtils.EMPTY;
+            }
+            return x.trim();
+        }).collect(Collectors.joining(CommonConstants.COLON));
     }
 }

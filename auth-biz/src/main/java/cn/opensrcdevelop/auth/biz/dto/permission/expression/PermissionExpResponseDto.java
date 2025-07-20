@@ -4,11 +4,16 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionE
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 
 @Schema(description = "权限表达式响应")
 @Data
-public class PermissionExpResponseDto {
+public class PermissionExpResponseDto implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 5960756665250441854L;
 
     @Schema(description = "表达式 ID")
     private String id;

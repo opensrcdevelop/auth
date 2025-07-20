@@ -386,7 +386,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
                 PermissionExpResponseDto condition = new PermissionExpResponseDto();
                 condition.setId(exp.getExpressionId());
                 condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
+                condition.setDesc(exp.getDescription());
                 return condition;
             }).toList();
             permissionResponse.setConditions(conditions);

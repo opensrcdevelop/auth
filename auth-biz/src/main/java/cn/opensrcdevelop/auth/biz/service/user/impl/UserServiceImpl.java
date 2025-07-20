@@ -8,10 +8,7 @@ import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
-import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
-import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
+import cn.opensrcdevelop.auth.biz.constants.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
@@ -38,11 +35,13 @@ import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.JwtUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -58,6 +57,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -241,6 +242,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             success = "修改了用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）",
             fail = "修改用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）失败"
     )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey(#requestDto.userId)"
+    )
     @Transactional
     @Override
     public void updateUser(UserRequestDto requestDto) {
@@ -407,6 +412,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）",
             fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）失败"
     )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey(#userId)"
+    )
     @Transactional
     @Override
     public void removeUser(String userId) {
@@ -434,6 +443,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @return 当前用户信息
      */
+    @Cacheable(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey()"
+    )
+    @CacheExpire("7 * 24 * 3600")
     @Override
     public Map<String, Object> getCurrentUserInfo() {
         // 1. 获取当前用户 ID
@@ -570,6 +584,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             success = "修改了个人信息",
             fail = "修改个人信息失败"
     )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey()"
+    )
     @Transactional
     @Override
     public void updateMe(Map<String, Object> userInfo) {
@@ -690,7 +708,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 PermissionExpResponseDto condition = new PermissionExpResponseDto();
                 condition.setId(exp.getExpressionId());
                 condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
+                condition.setDesc(exp.getDescription());
                 return condition;
             }).toList();
             permissionResponse.setConditions(conditions);
@@ -715,6 +733,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void clearAuthorizedTokensByLoginId(String loginId) {
         dbOAuth2AuthorizationService.removeByLoginId(loginId);
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generateCurrentUserInfoCacheKey() {
+        String userId = AuthUtil.getCurrentUserId();
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId;
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generateCurrentUserInfoCacheKey(String userId) {
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId;
     }
 
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {

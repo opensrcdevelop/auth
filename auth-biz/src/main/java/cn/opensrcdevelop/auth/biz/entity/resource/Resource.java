@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.resource;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.common.entity.BaseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_resource")
+@EntityName("资源")
 public class Resource extends BaseEntity implements Serializable {
 
     @Serial
@@ -27,21 +30,27 @@ public class Resource extends BaseEntity implements Serializable {
 
     /** 资源ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("资源ID")
     private String resourceId;
 
     /** 资源名称 */
+    @PropertyName("资源名称")
     private String resourceName;
 
-    /** 资源码 */
+    /** 资源标识 */
+    @PropertyName("资源标识")
     private String resourceCode;
 
     /** 描述 */
+    @PropertyName("描述")
     private String description;
 
     /** API URL 标识 */
+    @PropertyName("API URL 标识")
     private String apiIdentifier;
 
     /** 资源组ID */
+    @PropertyName("资源组ID")
     private String resourceGroupId;
 
     /** 权限集合 */

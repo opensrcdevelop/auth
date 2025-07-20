@@ -287,4 +287,22 @@
         FROM t_user_group
         WHERE user_group_id = #{user_group_id}
     </select>
+
+    <select id="getPermission" resultMap="permissionResultMap">
+        SELECT
+            t1.permission_id,
+            t1.permission_code,
+            t1.permission_name,
+            t1.description,
+            t2.resource_id,
+            t2.resource_code,
+            t3.resource_group_id,
+            t3.resource_group_code
+        FROM
+            t_permission t1
+            LEFT JOIN t_resource t2 ON t2.resource_id = t1.resource_id
+            LEFT JOIN t_resource_group t3 ON t3.resource_group_id = t2.resource_group_id
+        WHERE
+            t1.permission_id = #{permissionId}
+    </select>
 </mapper>

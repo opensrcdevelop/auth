@@ -2,6 +2,11 @@
   width: 100%;
   height: 100%;
 
+  .spin {
+    height: 100%;
+    width: 100%;
+  }
+
   .layout-sider {
     width: 240px !important;
     min-width: 240px;
@@ -86,16 +91,30 @@
     width: 100%;
     height: calc(100vh);
     overflow: auto !important;
-
-    .spin {
-      width: 100%;
-    }
   }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.1s ease;
+}
+
+.fade-enter-from {
+  opacity: 0.2;
+}
+.fade-enter-to {
+  opacity: 1;
+}
+
+.fade-leave-from {
+  opacity: 1;
+}
+.fade-leave-to {
+  opacity: 0.2;
 }
 
 @media (max-width: 768px) {
   .layout-container {
-
     .layout-sider {
       width: 48px !important;
       min-width: 48px;

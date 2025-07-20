@@ -15,8 +15,12 @@ export default detailTs;
         <div>
           <span class="title">{{ permissionName }}</span>
           <div class="id">
-            <span>ID:</span>
+            <span>ID:&nbsp;&nbsp;</span>
             <copy-text :text="permissionId" textColor="#86909c" />
+          </div>
+          <div class="locator">
+            <span>定位符:&nbsp;&nbsp;</span>
+            <copy-text :text="permissionLocator" textColor="#86909c" />
           </div>
         </div>
       </div>
@@ -196,10 +200,17 @@ export default detailTs;
                           bordered
                         >
                           <a-descriptions-item label="限制条件名称">
-                            {{ condition.name }}
+                            <a-link>
+                              <a
+                                :href="`/ui/permission/expression/detail?id=${condition.id}`"
+                                target="_blank"
+                                >{{ condition.name }}</a
+                              >
+                              <icon-launch style="margin-left: 4px" />
+                            </a-link>
                           </a-descriptions-item>
-                          <a-descriptions-item label="SpringEL 表达式">
-                            {{ condition.expression }}
+                          <a-descriptions-item label="限制条件描述">
+                            {{ condition.desc ? condition.desc : "-" }}
                           </a-descriptions-item>
                         </a-descriptions>
                         <div

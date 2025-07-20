@@ -10,6 +10,7 @@ import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PermissionExpService extends IService<PermissionExp> {
 
@@ -26,4 +27,10 @@ public interface PermissionExpService extends IService<PermissionExp> {
     DebugPermissionExpResponseDto debugPermissionExp(DebugPermissionExpRequestDto requestDto);
 
     List<PermissionResponseDto> expPermissions(String permissionExpId);
+
+    PermissionExp getPermissionExpWithCache(String permissionExpId);
+
+    Boolean executePermissionExp(String permissionExpId, Map<String, Object> customCtx);
+
+    void removeTemplatePermissionExp(String templateId);
 }

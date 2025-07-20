@@ -20,6 +20,7 @@ public enum ResourceType {
     PWD_POLICY("2d2225a8-5143-4465-ab76-06b101abff8f", "密码策略"),
     PERMISSION("75c35dc3-1996-48ab-be27-e4078f86a559", "权限"),
     PERMISSION_EXP("79a30d3a-0fde-4087-a307-619cc0c56b17", "权限表达式"),
+    PERMISSION_EXP_TEMPLATE("01982839-ae11-75ae-8680-4bb5e0bbe83f", "权限表达式模板"),
     RESOURCE("edd2a541-f482-45cd-9842-c1ebf43c346c", "资源"),
     RESOURCE_GROUP("911e08a0-d91a-4c66-8a7d-c8fda2c79c69", "资源组"),
     ROLE("4d367bc0-d043-402c-a1d5-d4e5c55c9e23", "角色"),

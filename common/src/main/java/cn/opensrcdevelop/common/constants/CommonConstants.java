@@ -27,4 +27,11 @@ public class CommonConstants {
     public static final String MDC_USERNAME = "username";
     public static final String REP_HEADER_X_REQUEST_ID = "X-Request-Id";
     public static final String URL_FORMAT = "%s://%s";
+    public static final String COLON = ":";
+    public static final String REQ_CTX = "_reqCtx";
+    public static final String REQ_CTX_IP = "ip";
+    public static final String REQ_CTX_DEVICE_TYPE = "deviceType";
+    public static final String REQ_CTX_BROWSER_TYPE = "browserType";
+    public static final String REQ_CTX_OS_TYPE = "osType";
+    public static final String USER_CTX = "_userCtx";
 }

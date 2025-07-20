@@ -28,10 +28,14 @@ import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeConditionService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
+import cn.opensrcdevelop.auth.biz.service.user.UserService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exression.ExpressionEngine;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.WebUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -43,7 +47,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +67,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     private final PermissionService permissionService;
     private final AuthorizeConditionService authorizeConditionService;
     private final ExpressionEngine expressionEngine;
+    private final UserService userService;
 
     @Resource
     @Lazy
@@ -198,7 +206,12 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
             success = "修改了限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）",
             fail = "修改限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）失败"
     )
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
+            }
+    )
     @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
@@ -252,7 +265,12 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
             success = "删除了限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）",
             fail = "删除限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）失败"
     )
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
+            }
+    )
     @Transactional
     @Override
     public void removePermissionExp(String permissionExpId) {
@@ -364,6 +382,103 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
             permissionResponse.setPrincipalTypeDisplayName(permissionPrincipal._4);
             return permissionResponse;
         }).toList();
+    }
+
+    /**
+     * 获取权限表达式（使用缓存）
+     *
+     * @param permissionExpId 权限表达式ID
+     * @return 权限表达式
+     */
+    @Cacheable(
+            cacheNames = CacheConstants.CACHE_PERMISSION_EXP,
+            key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)",
+            condition = "#result != null"
+    )
+    @Override
+    public PermissionExp getPermissionExpWithCache(String permissionExpId) {
+        PermissionExp permissionExp = super.getById(permissionExpId);
+        if (Objects.nonNull(permissionExp.getTemplateId())) {
+            permissionExp.setPermissionExpTemplate(permissionExpTemplateService.getById(permissionExp.getTemplateId()));
+        }
+        return permissionExp;
+    }
+
+    /**
+     * 执行权限表达式
+     *
+     * @param permissionExpId 权限表达式ID
+     * @param customCtx      自定义上下文
+     * @return 执行结果
+     */
+    @Override
+    public Boolean executePermissionExp(String permissionExpId, Map<String, Object> customCtx) {
+        // 1. 获取权限表达式
+        PermissionExpService proxyService = (PermissionExpService) AopContext.currentProxy();
+        PermissionExp permissionExp = proxyService.getPermissionExpWithCache(permissionExpId);
+
+        // 2. 构建执行上下文
+        Map<String, Object> executeCtx = new HashMap<>();
+
+        // 2.1 添加请求环境属性上下文
+        Map<String, Object> reqCtx = new HashMap<>();
+        reqCtx.put(CommonConstants.REQ_CTX_IP, WebUtil.getRemoteIP());
+        reqCtx.put(CommonConstants.REQ_CTX_BROWSER_TYPE, WebUtil.getBrowserTypeNoVersion());
+        reqCtx.put(CommonConstants.REQ_CTX_DEVICE_TYPE, WebUtil.getDeviceType());
+        reqCtx.put(CommonConstants.REQ_CTX_OS_TYPE, WebUtil.getDeviceOsNoVersion());
+        executeCtx.put(CommonConstants.REQ_CTX, reqCtx);
+
+        // 2.2 添加请求用户属性上下文
+        executeCtx.put(CommonConstants.USER_CTX, userService.getCurrentUserInfo());
+
+        if (Objects.nonNull(permissionExp.getTemplateId())) {
+            // 2.3 添加模板参数上下文
+            var paramConfigs = CommonUtil.deserializeObject(permissionExp.getPermissionExpTemplate().getTemplateParamConfigs(),
+                    new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {});
+            var params= CommonUtil.deserializeObject(permissionExp.getTemplateParams(),
+                    new TypeReference<List<PermissionExpTemplateParamDto>>() {});
+            executeCtx.putAll(permissionExpTemplateService.getParamExecutionContext(paramConfigs, params));
+        }
+
+        // 2.4 添加自定义上下文
+        if (MapUtils.isNotEmpty(customCtx)) {
+            executeCtx.putAll(customCtx);
+        }
+
+        // 3. 执行表达式
+        String expression = Objects.nonNull(permissionExp.getTemplateId()) ? permissionExp.getPermissionExpTemplate().getExpression() : permissionExp.getExpression();
+        Object result = expressionEngine.evaluate(expression, executeCtx);
+        if (!(result instanceof Boolean)) {
+            return false;
+        }
+        return (Boolean) result;
+    }
+
+    /**
+     * 删除模板关联的权限表达式
+     *
+     * @param templateId 模板ID
+     */
+    @Caching(
+            evict = {
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, allEntries = true)
+            }
+    )
+    @Transactional
+    @Override
+    public void removeTemplatePermissionExp(String templateId) {
+        // 1. 数据库操作
+        super.remove(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generatePermissionExpCacheKey(String permissionExpId) {
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + permissionExpId;
     }
 
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {

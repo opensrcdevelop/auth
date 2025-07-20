@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -48,4 +49,7 @@ public class PermissionExp extends BaseEntity implements Serializable {
     /** 描述 */
     @PropertyName("描述")
     private String description;
+
+    @TableField(exist = false)
+    private PermissionExpTemplate permissionExpTemplate;
 }

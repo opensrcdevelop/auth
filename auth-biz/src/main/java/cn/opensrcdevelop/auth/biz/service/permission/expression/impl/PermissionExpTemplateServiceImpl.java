@@ -1,6 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.permission.expression.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamType;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
@@ -40,6 +45,13 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
+            fail = "创建限制条件模板（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createPermissionExpTemplate(PermissionExpTemplateRequestDto requestDto) {
@@ -68,13 +80,32 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了限制条件模板（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
+            fail = "修改限制条件模板（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void updatePermissionExpTemplate(PermissionExpTemplateRequestDto requestDto) {
-        // 1. 检查模版参数
+        String templateId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        // 2. 获取版本号
+        var rawPermissionExpTemplate = super.getById(requestDto.getId());
+        if (Objects.isNull(rawPermissionExpTemplate)) {
+            return;
+        }
+        compareObjBuilder.id(templateId);
+        compareObjBuilder.before(rawPermissionExpTemplate);
+
+        // 2. 检查模版参数
         checkParams(requestDto);
 
-        // 2. 属性编辑
+        // 3. 属性编辑
         PermissionExpTemplate updatePermissionExpTemplate = new PermissionExpTemplate();
         updatePermissionExpTemplate.setTemplateId(requestDto.getId());
         updatePermissionExpTemplate.setTemplateName(requestDto.getName());
@@ -86,6 +117,9 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
 
         // 3. 数据库操作
         super.updateById(updatePermissionExpTemplate);
+
+        compareObjBuilder.after(super.getById(templateId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -93,10 +127,21 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
      *
      * @param templateId 模版ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
+            fail = "删除限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）失败"
+    )
+    @Transactional
     @Override
     public void deletePermissionExpTemplate(String templateId) {
         // 1. 数据库操作
         super.removeById(templateId);
+
+        // 2. 删除关联的权限表达式
+        permissionExpService.removeTemplatePermissionExp(templateId);
     }
 
     /**

@@ -1,14 +1,14 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  clearAuthorizedTokens,
-  clearAuthorizedTokensByLoginId,
-  getUserAttrs,
-  getUserDetail,
-  getUserLoginLogs,
-  getUserPermissions,
-  rebindMfaDevice,
-  updateUser,
+    clearAuthorizedTokens,
+    clearAuthorizedTokensByLoginId,
+    getUserAttrs,
+    getUserDetail,
+    getUserLoginLogs,
+    getUserPermissions,
+    rebindMfaDevice,
+    updateUser,
 } from "@/api/user";
 import {generateRandomString, getQueryString, handleApiError, handleApiSuccess,} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -20,6 +20,7 @@ import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
 import {getEnabledDictData} from "@/api/dict";
 import {usePagination} from "@/hooks/usePagination";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
+import {IconFilter} from "@arco-design/web-vue/es/icon";
 
 /**
  * 返回上一级
@@ -48,7 +49,7 @@ const handleTabChange = (tabKey: string) => {
 };
 
 const handleTabInit = (tabKey: string, id: string = userId.value) => {
-  switch(tabKey) {
+  switch (tabKey) {
     case "user_info":
       handleGetUserDetail(id);
       handleGetUserExtAttrs();
@@ -64,7 +65,7 @@ const handleTabInit = (tabKey: string, id: string = userId.value) => {
       handleGetUserLoginLogs(id);
       break;
   }
-}
+};
 
 const userId = ref("");
 const username = ref("");
@@ -170,42 +171,37 @@ const authorizeSearchKeywords = reactive({
   // 权限标识检索关键字
   permissionCode: undefined,
 });
+/** 过滤标记 */
+const authorizeFilteredFlags = reactive({
+  resourceGroupName: false,
+  resourceName: false,
+  permissionName: false,
+  permissionCode: false,
+});
 
 // 资源组名称过滤
 const resourceGroupNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceGroupName = value;
-    handleGetUserPermissions();
-  },
   slotName: "resource-group-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceGroupName ? h(IconFilter) : h(IconSearch),
 };
 // 资源名称过滤
 const resourceNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceName = value;
-    handleGetUserPermissions();
-  },
   slotName: "resource-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceName ? h(IconFilter) : h(IconSearch),
 };
-// 资源名称过滤
+// 权限名称过滤
 const permissionNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionName = value;
-    handleGetUserPermissions();
-  },
   slotName: "permission-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionName ? h(IconFilter) : h(IconSearch),
 };
 // 资源标识过滤
 const permissionCodeFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionCode = value;
-    handleGetUserPermissions();
-  },
   slotName: "permission-code-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionCode ? h(IconFilter) : h(IconSearch),
 };
 
 /**
@@ -229,7 +225,28 @@ const handleGetUserPermissions = (
         permissions.length = 0;
         permissions.push(...data.list);
 
-        permissionsPagination.updatePagination(data.current, data.total, data.size);
+        permissionsPagination.updatePagination(
+          data.current,
+          data.total,
+          data.size
+        );
+
+        // 设置过滤标记
+        if (authorizeSearchKeywords.resourceGroupName) {
+          authorizeFilteredFlags.resourceGroupName = true;
+        }
+
+        if (authorizeSearchKeywords.resourceName) {
+          authorizeFilteredFlags.resourceName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionName) {
+          authorizeFilteredFlags.permissionName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionCode) {
+          authorizeFilteredFlags.permissionCode = true;
+        }
       });
     })
     .catch((err: any) => {
@@ -242,6 +259,7 @@ const handleGetUserPermissions = (
  */
 const handleResetPermissionFilter = (keyword: string) => {
   authorizeSearchKeywords[keyword] = undefined;
+  authorizeFilteredFlags[keyword] = false;
   handleGetUserPermissions();
 };
 
@@ -868,7 +886,6 @@ const handleCheckPassword = (password: string) => {
     });
 };
 
-
 /**
  * 取消授权
  */
@@ -1149,7 +1166,7 @@ export default defineComponent({
       passwordCheckerRef,
       checkPasswordLoading,
       checkPasswordRes,
-      handleCheckPassword
+      handleCheckPassword,
     };
   },
 });

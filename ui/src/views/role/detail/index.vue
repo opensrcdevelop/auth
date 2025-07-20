@@ -259,10 +259,17 @@ export default detailTs;
                       bordered
                     >
                       <a-descriptions-item label="限制条件名称">
-                        {{ condition.name }}
+                        <a-link>
+                          <a
+                            :href="`/ui/permission/expression/detail?id=${condition.id}`"
+                            target="_blank"
+                            >{{ condition.name }}</a
+                          >
+                          <icon-launch style="margin-left: 4px" />
+                        </a-link>
                       </a-descriptions-item>
-                      <a-descriptions-item label="SpringEL 表达式">
-                        {{ condition.expression }}
+                      <a-descriptions-item label="限制条件描述">
+                        {{ condition.desc ? condition.desc : "-" }}
                       </a-descriptions-item>
                     </a-descriptions>
                   </div>

@@ -394,7 +394,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 PermissionExpResponseDto condition = new PermissionExpResponseDto();
                 condition.setId(exp.getExpressionId());
                 condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
+                condition.setDesc(exp.getDescription());
                 return condition;
             }).toList();
             permissionResponse.setConditions(conditions);

@@ -1,13 +1,13 @@
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  addAuthorizeCondition,
-  cancelAuthorization,
-  getPermissionDetail,
-  getPermissionExpList,
-  removeAuthorizeCondition,
-  updateAuthorizePriority,
-  updatePermission,
+    addAuthorizeCondition,
+    cancelAuthorization,
+    getPermissionDetail,
+    getPermissionExpList,
+    removeAuthorizeCondition,
+    updateAuthorizePriority,
+    updatePermission,
 } from "@/api/permission";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -38,6 +38,7 @@ const handleTabChange = (tabKey: string) => {
 
 const permissionId = ref("");
 const permissionName = ref("");
+const permissionLocator = ref("");
 
 /** 权限基本信息 */
 const permissionInfoFormRef = ref();
@@ -106,6 +107,7 @@ const handleGetPermissionDetail = (id: string) => {
       handleApiSuccess(result, (data: any) => {
         permissionId.value = data.permissionId;
         permissionName.value = data.permissionName;
+        permissionLocator.value = data.permissionLocator;
 
         permissionInfoForm.id = data.permissionId;
         permissionInfoForm.code = data.permissionCode;
@@ -411,6 +413,7 @@ export default defineComponent({
       handleTabChange,
       permissionId,
       permissionName,
+      permissionLocator,
       permissionInfoFormRef,
       permissionInfoForm,
       permissionInfoFormRules,

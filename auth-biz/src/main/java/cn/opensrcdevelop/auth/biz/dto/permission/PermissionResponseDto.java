@@ -5,11 +5,16 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRespons
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 
 @Schema(description = "权限响应")
 @Data
-public class PermissionResponseDto {
+public class PermissionResponseDto implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 668737550490829362L;
 
     @Schema(description = "权限ID")
     private String permissionId;
@@ -22,6 +27,9 @@ public class PermissionResponseDto {
 
     @Schema(description = "权限描述")
     private String permissionDesc;
+
+    @Schema(description = "权限定位符")
+    private String permissionLocator;
 
     @Schema(description = "资源组ID")
     private String resourceGroupId;

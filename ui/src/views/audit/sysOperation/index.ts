@@ -30,6 +30,7 @@ const resourceTypes = [
   { id: "2d2225a8-5143-4465-ab76-06b101abff8f", name: "密码策略" },
   { id: "75c35dc3-1996-48ab-be27-e4078f86a559", name: "权限" },
   { id: "79a30d3a-0fde-4087-a307-619cc0c56b17", name: "限制条件" },
+  { id: "01982839-ae11-75ae-8680-4bb5e0bbe83f", name: "限制条件模板" },
   { id: "edd2a541-f482-45cd-9842-c1ebf43c346c", name: "资源" },
   { id: "911e08a0-d91a-4c66-8a7d-c8fda2c79c69", name: "资源组" },
   { id: "4d367bc0-d043-402c-a1d5-d4e5c55c9e23", name: "角色" },

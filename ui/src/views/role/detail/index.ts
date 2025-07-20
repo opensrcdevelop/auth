@@ -1,21 +1,22 @@
-import { computed, defineComponent, h, onMounted, reactive, ref } from "vue";
+import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  addRoleMapping,
-  getRoleDetail,
-  getRolePermissions,
-  getRolePrincipals,
-  removeRoleMapping,
-  updateRole,
+    addRoleMapping,
+    getRoleDetail,
+    getRolePermissions,
+    getRolePrincipals,
+    removeRoleMapping,
+    updateRole,
 } from "@/api/role";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { searchUser } from "@/api/user";
-import { getUserGroupList } from "@/api/userGroup";
-import { cancelAuthorization } from "@/api/permission";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {searchUser} from "@/api/user";
+import {getUserGroupList} from "@/api/userGroup";
+import {cancelAuthorization} from "@/api/permission";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
-import { usePagination } from "@/hooks/usePagination";
+import {usePagination} from "@/hooks/usePagination";
+import {IconFilter} from "@arco-design/web-vue/es/icon";
 
 /**
  * 返回上一级
@@ -53,7 +54,7 @@ const handleTabInit = (tabKey: string, id: string = roleId.value) => {
       handleGetRolePermissions(id);
       break;
   }
-}
+};
 
 const roleId = ref("");
 const roleName = ref("");
@@ -118,42 +119,37 @@ const authorizeSearchKeywords = reactive({
   // 权限标识检索关键字
   permissionCode: undefined,
 });
+/** 过滤标记 */
+const authorizeFilteredFlags = reactive({
+  resourceGroupName: false,
+  resourceName: false,
+  permissionName: false,
+  permissionCode: false,
+});
 
 // 资源组名称过滤
 const resourceGroupNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceGroupName = value;
-    handleGetRolePermissions();
-  },
   slotName: "resource-group-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceGroupName ? h(IconFilter) : h(IconSearch),
 };
 // 资源名称过滤
 const resourceNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceName = value;
-    handleGetRolePermissions();
-  },
   slotName: "resource-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceName ? h(IconFilter) : h(IconSearch),
 };
-// 资源名称过滤
+// 权限名称过滤
 const permissionNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionName = value;
-    handleGetRolePermissions();
-  },
   slotName: "permission-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionName ? h(IconFilter) : h(IconSearch),
 };
-// 资源标识过滤
+// 权限标识过滤
 const permissionCodeFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionCode = value;
-    handleGetRolePermissions();
-  },
   slotName: "permission-code-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionCode ? h(IconFilter) : h(IconSearch),
 };
 
 /**
@@ -182,6 +178,23 @@ const handleGetRolePermissions = (
           data.total,
           data.size
         );
+
+        // 设置过滤标记
+        if (authorizeSearchKeywords.resourceGroupName) {
+          authorizeFilteredFlags.resourceGroupName = true;
+        }
+
+        if (authorizeSearchKeywords.resourceName) {
+          authorizeFilteredFlags.resourceName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionName) {
+          authorizeFilteredFlags.permissionName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionCode) {
+          authorizeFilteredFlags.permissionCode = true;
+        }
       });
     })
     .catch((err: any) => {
@@ -194,6 +207,7 @@ const handleGetRolePermissions = (
  */
 const handleResetPermissionFilter = (keyword: string) => {
   authorizeSearchKeywords[keyword] = undefined;
+  authorizeFilteredFlags[keyword] = false;
   handleGetRolePermissions();
 };
 

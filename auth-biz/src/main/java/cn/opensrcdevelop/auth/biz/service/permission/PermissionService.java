@@ -2,6 +2,8 @@ package cn.opensrcdevelop.auth.biz.service.permission;
 
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -32,4 +34,6 @@ public interface PermissionService extends IService<Permission> {
     void updatePermission(PermissionRequestDto requestDto);
 
     List<AuthorizeRecord> getExpPermissions(String expressionId);
+
+    List<VerifyPermissionResponseDto> verifyPermissions(VerifyPermissionsRequestDto requestDto);
 }

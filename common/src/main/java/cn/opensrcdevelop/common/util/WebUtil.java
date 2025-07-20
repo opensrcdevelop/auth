@@ -122,7 +122,7 @@ public class WebUtil {
     }
 
     public static String getRemoteIP(HttpServletRequest request) {
-        String ipAddress = request.getHeader("x-forwarded-for");
+        String ipAddress = request.getHeader("X-Forwarded-For");
 
         if (ipAddress == null || ipAddress.isEmpty() || CommonConstants.UNKNOWN.equalsIgnoreCase(ipAddress)) {
             ipAddress = request.getHeader("Proxy-Client-IP");
@@ -208,6 +208,19 @@ public class WebUtil {
     }
 
     /**
+     * 获取请求设备操作系统（不包含版本号）
+     *
+     * @return 设备操作系统（不包含版本号）
+     */
+    public static String getDeviceOsNoVersion() {
+        Capabilities userAgent = getUserAgent();
+        if (userAgent != null) {
+            return userAgent.getPlatform();
+        }
+        return CommonConstants.UNKNOWN;
+    }
+
+    /**
      * 获取请求浏览器类型
      *
      * @return 浏览器类型
@@ -216,6 +229,19 @@ public class WebUtil {
         Capabilities userAgent = getUserAgent();
         if (userAgent != null) {
             return userAgent.getBrowser() + "/" + userAgent.getBrowserMajorVersion();
+        }
+        return CommonConstants.UNKNOWN;
+    }
+
+    /**
+     * 获取请求浏览器类型（不包含版本号）
+     *
+     * @return 浏览器类型（不包含版本号）
+     */
+    public static String getBrowserTypeNoVersion() {
+        Capabilities userAgent = getUserAgent();
+        if (userAgent != null) {
+            return userAgent.getBrowser();
         }
         return CommonConstants.UNKNOWN;
     }

@@ -21,6 +21,7 @@ public class LinkGenerator {
         LINK_TEMPLATES.put(ResourceType.ROLE, LINK_TEMPLATE.formatted("/role/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.PERMISSION, LINK_TEMPLATE.formatted("/permission/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP, LINK_TEMPLATE.formatted("/permission/expression/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP_TEMPLATE, LINK_TEMPLATE.formatted("/permission/expression/template/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.CLIENT, LINK_TEMPLATE.formatted("/client/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.USER_ATTR, LINK_TEMPLATE.formatted("/user/attr/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.RESOURCE, LINK_TEMPLATE.formatted("/permission/resource/detail", "%s", "%s"));

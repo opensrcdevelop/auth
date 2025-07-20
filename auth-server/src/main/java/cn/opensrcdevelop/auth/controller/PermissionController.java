@@ -4,6 +4,8 @@ import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRequestDto;
@@ -66,10 +68,10 @@ public class PermissionController {
         permissionExpService.createPermissionExp(requestDto);
     }
 
-    @Operation(summary = "获取当前用户权限", description = "获取当前用户权限")
-    @GetMapping("/me")
-    public List<PermissionResponseDto> getCurrentUserPermissions() {
-        return permissionService.getCurrentUserPermissions();
+    @Operation(summary = "校验权限", description = "校验权限")
+    @PostMapping("/verify")
+    public List<VerifyPermissionResponseDto> verifyPermissions(@RequestBody @Valid VerifyPermissionsRequestDto requestDto) {
+        return permissionService.verifyPermissions(requestDto);
     }
 
     @Operation(summary = "取消授权", description = "取消授权")
@@ -193,12 +195,14 @@ public class PermissionController {
 
     @Operation(summary = "创建权限表达式模板", description = "创建权限表达式模板")
     @PostMapping("/exp/template")
+    @Authorize({ "allPermissionExpTemplatePermissions", "createPermissionExpTemplate" })
     public void createPermissionExpTemplate(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) PermissionExpTemplateRequestDto requestDto) {
         permissionExpTemplateService.createPermissionExpTemplate(requestDto);
     }
 
     @Operation(summary = "更新权限表达式模板", description = "更新权限表达式模板")
     @PutMapping("/exp/template")
+    @Authorize({ "allPermissionExpTemplatePermissions", "updatePermissionExpTemplate" })
     public void updatePermissionExpTemplate(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionExpTemplateRequestDto requestDto) {
         permissionExpTemplateService.updatePermissionExpTemplate(requestDto);
     }
@@ -208,6 +212,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/exp/template/{id}")
+    @Authorize({ "allPermissionExpTemplatePermissions", "deletePermissionExpTemplate" })
     public void deletePermissionExpTemplate(@PathVariable @NotBlank String id) {
         permissionExpTemplateService.deletePermissionExpTemplate(id);
     }
@@ -219,6 +224,7 @@ public class PermissionController {
             @Parameter(name = "keyword", description = "权限表达式模板名称检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/exp/template/list")
+    @Authorize({ "allPermissionExpTemplatePermissions", "listPermissionExpTemplate" })
     public PageData<PermissionExpTemplateResponseDto> listPermissionExpTemplate(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return permissionExpTemplateService.list(page, size, keyword);
     }
@@ -228,6 +234,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/template/{id}")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateDetail" })
     public PermissionExpTemplateResponseDto detailPermissionExpTemplate(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.detail(id);
     }
@@ -237,6 +244,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/template/{id}/params")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateParamConfigs" })
     public List<PermissionExpTemplateParamConfigDto> permissionExpTemplateParamConfigs(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.getParamsConfigs(id);
     }
@@ -246,6 +254,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/template/{id}/exps")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateExps" })
     public List<PermissionExpResponseDto> listTemplatePermissionExp(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.getPermissionExpList(id);
     }

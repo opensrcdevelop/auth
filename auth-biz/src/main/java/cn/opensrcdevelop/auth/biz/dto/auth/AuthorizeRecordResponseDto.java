@@ -6,12 +6,17 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "授权记录响应")
 @Data
-public class AuthorizeRecordResponseDto {
+public class AuthorizeRecordResponseDto implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 7022450554605127518L;
 
     @Schema(description = "授权ID")
     private String authorizeId;
