@@ -222,7 +222,7 @@ const handleRemoveAuthorizeCondition = (authorizeId: string) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消限制成功");
-            handleGetPermissionExpDetail(permissionExpId.value);
+            handleGetPermissionExpPermissions(permissionExpId.value);
           });
         })
         .catch((err: any) => {
