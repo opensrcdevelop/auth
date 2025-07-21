@@ -481,7 +481,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             return;
         }
 
-        if (Objects.isNull(resourceService.getById(requestDto.getResourceId()))) {
+        if (Objects.isNull(rawPermission) && Objects.isNull(resourceService.getById(requestDto.getResourceId()))) {
             throw new BizException(MessageConstants.PERMISSION_MSG_1001);
         }
 

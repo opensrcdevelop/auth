@@ -129,6 +129,8 @@ const handleTemplateInfoFormSubmit = async () => {
       handleApiSuccess(result, () => {
         Notification.success("创建成功");
         handleResetTemplateInfoForm();
+        templateInfoForm.paramConfigs = [];
+        paramConfigRefs.value = [];
       });
     })
     .catch((err: any) => {
