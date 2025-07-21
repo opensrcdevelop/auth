@@ -71,6 +71,6 @@
             ${ew.customSqlSegment}
             GROUP BY
                 t_user.user_id
-        )
+        ) AS filtered_users
     </select>
 </mapper>
