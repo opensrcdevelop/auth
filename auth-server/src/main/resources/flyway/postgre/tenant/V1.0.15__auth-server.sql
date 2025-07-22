@@ -20,18 +20,18 @@ CREATE SEQUENCE "t_permission_exp_template_id_seq"
 
 DROP TABLE IF EXISTS "t_permission_exp_template";
 CREATE TABLE "t_permission_exp_template" (
-                                             "id" int8 NOT NULL DEFAULT nextval('t_permission_exp_template_id_seq'::regclass),
-                                             "template_id" varchar(50) NOT NULL,
-                                             "template_name" varchar(255),
-                                             "expression" text,
-                                             "template_param_configs" text,
-                                             "description" varchar(500),
-                                             "create_time" timestamp(6),
-                                             "create_by" varchar(255),
-                                             "update_time" timestamp(6),
-                                             "update_by" varchar(255),
-                                             "version" int4 DEFAULT 1,
-                                             "deleted" bool DEFAULT false
+  "id" int8 NOT NULL DEFAULT nextval('t_permission_exp_template_id_seq'::regclass),
+  "template_id" varchar(50) NOT NULL,
+  "template_name" varchar(255),
+  "expression" text,
+  "template_param_configs" text,
+  "description" varchar(500),
+  "create_time" timestamp(6),
+  "create_by" varchar(255),
+  "update_time" timestamp(6),
+  "update_by" varchar(255),
+  "version" int4 DEFAULT 1,
+  "deleted" bool DEFAULT false
 )
 ;
 
@@ -88,7 +88,7 @@ ALTER TABLE "t_permission_exp_template" ADD CONSTRAINT "t_permission_exp_templat
 -- Alter table t_permission_exp
 -- ----------------------------
 ALTER TABLE "t_permission_exp"
-DROP COLUMN IF EXISTS "template_id",
+    DROP COLUMN IF EXISTS "template_id",
     DROP COLUMN IF EXISTS "template_params",
     ADD COLUMN "template_id" varchar(50),
     ADD COLUMN "template_params" text,
