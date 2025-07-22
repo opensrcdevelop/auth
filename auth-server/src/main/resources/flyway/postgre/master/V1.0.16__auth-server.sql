@@ -128,6 +128,6 @@ INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code
 -- ----------------------------
 -- Records of t_authorize
 -- ----------------------------
-DELETE FROM "t_authorize" WHERE "authorize_id" = '0197bb20-67d8-767e-912d-7af98cb27dfb';
+DELETE FROM "t_authorize" WHERE "authorize_id" = '0198286f-70c0-7c62-865b-943dc1d116aa';
 
 INSERT INTO "t_authorize" ("user_id", "role_id", "user_group_id", "permission_id", "authorize_id", "authorize_time", "priority") VALUES (NULL, 'baec302c-39ac-4e51-9d28-fb8c9c43caa3', NULL, '0198286b-2a92-715c-b881-74c9b40651ac', '0198286f-70c0-7c62-865b-943dc1d116aa', '2025-07-20 23:24:08.768644', 0);

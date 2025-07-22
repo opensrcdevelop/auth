@@ -131,6 +131,7 @@ export default defineComponent({
     onMounted(() => {
       handleGetTemplateList();
       createPermissionExpInfoForm.templateId = undefined;
+      templateParamConfigs.length = 0;
     });
 
     return {
