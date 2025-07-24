@@ -1,12 +1,12 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-    addUserGroupMapping,
-    getGroupUsers,
-    getUserGroupDetail,
-    getUserGroupPermissions,
-    removeUserGroupMapping,
-    updateUserGroup,
+  addUserGroupMapping,
+  getGroupUsers,
+  getUserGroupDetail,
+  getUserGroupPermissions,
+  removeUserGroupMapping,
+  updateUserGroup,
 } from "@/api/userGroup";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -520,7 +520,7 @@ const handleCancelAuthorization = (permission: any) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消授权成功");
-            handleGetUserGroupDetail(userGroupId.value);
+            handleGetUserGroupPermissions(userGroupId.value);
           });
         })
         .catch((err: any) => {

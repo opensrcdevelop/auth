@@ -1,12 +1,12 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-    addRoleMapping,
-    getRoleDetail,
-    getRolePermissions,
-    getRolePrincipals,
-    removeRoleMapping,
-    updateRole,
+  addRoleMapping,
+  getRoleDetail,
+  getRolePermissions,
+  getRolePrincipals,
+  removeRoleMapping,
+  updateRole,
 } from "@/api/role";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -663,7 +663,7 @@ const handleCancelAuthorization = (permission: any) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消授权成功");
-            handleGetRoleDetail(roleId.value);
+            handleGetRolePermissions(roleId.value);
           });
         })
         .catch((err: any) => {
