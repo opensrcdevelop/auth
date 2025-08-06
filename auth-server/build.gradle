@@ -17,6 +17,7 @@ dependencies {
     implementation project(':auth-client-spring-boot-starter')
     implementation project(':multi-tenant')
     implementation project(':auth-audit')
+    implementation project(':ai-chart')
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'

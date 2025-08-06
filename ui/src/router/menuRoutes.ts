@@ -151,6 +151,15 @@ const menuRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    path: "/chatbi",
+    component: () => import("@/views/chatbi/index.vue"),
+    meta: {
+      title: "ChatBI 问数",
+      icon: "icon-chat",
+      visible: () => true,
+    },
+  },
+  {
     path: "/audit/logs",
     meta: {
       title: "审计日志",

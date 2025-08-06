@@ -35,6 +35,7 @@ ext {
     javersVer = '7.8.0'
     uuidCreatorVer = '6.1.1'
     jexl3Ver = '3.5.0'
+    springAiVer = '1.0.0'
 }
 
 allprojects {
@@ -88,6 +89,7 @@ allprojects {
         dependencyManagement {
             imports {
                 mavenBom "org.springframework.cloud:spring-cloud-dependencies:$rootProject.springCloudVer"
+                mavenBom "org.springframework.ai:spring-ai-bom:${springAiVer}"
             }
         }
 

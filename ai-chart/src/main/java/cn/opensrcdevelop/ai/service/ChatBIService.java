@@ -1,0 +1,9 @@
+package cn.opensrcdevelop.ai.service;
+
+import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+public interface ChatBIService {
+
+    SseEmitter streamChatBI(ChatBIRequestDto requestDto);
+}
