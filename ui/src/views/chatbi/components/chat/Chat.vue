@@ -7,6 +7,7 @@
         :class="[
           'message',
           message.role === 'user' ? 'user-message' : 'assistant-message',
+          message.role === 'user' && index !== 0 ? 'user-message-mt' : '',
         ]"
       >
         <div
@@ -17,27 +18,25 @@
               : 'assistant-message-content',
           ]"
         >
-          <div v-if="message.type === 'AVATAR'" class="avatar-container">
+          <div v-if="message.type === 'LOADING'" class="avatar-container">
             <a-avatar class="avatar-assistant">
               <icon-font type="icon-assistant"></icon-font>
             </a-avatar>
             <a-tag color="arcoblue">
               <template #icon>
-                <icon-loading v-if="loading" />
+                <icon-loading v-if="message.loading" />
                 <icon-check-circle v-else />
               </template>
-              {{ loading ? "回答生成中..." : "回答完成" }}
+              {{ message.content }}
             </a-tag>
           </div>
           <div v-if="message.type === 'LOADING'"></div>
           <div v-if="message.type === 'TEXT'" v-text="message.content"></div>
-
           <div
             v-if="message.type === 'MARKDOWN'"
             v-html="renderMarkdown(message.content)"
             class="markdown-body"
           ></div>
-
           <div
             v-if="message.type === 'ECHARTS'"
             class="echarts-container"
@@ -55,6 +54,7 @@
           maxRows: 5,
         }"
         v-model="userInput"
+        @keyup.enter.ctrl="sendMessage"
       />
       <div class="bottom-bar">
         <div class="option"></div>
@@ -72,7 +72,7 @@
           <a-button
             type="primary"
             shape="circle"
-            @click="stopGenerating"
+            @click="stopGenerating()"
             v-else
           >
             <template #icon>
@@ -92,6 +92,7 @@ import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import * as echarts from "echarts";
+import {generateRandomString} from "@/util/tool";
 
 /**
  * Markdown
@@ -108,11 +109,16 @@ const md = new MarkdownIt({
           `<div class="code-block-container">`,
           `<div class="code-block-header">`,
           `<span class="code-language">${lang}</span>`,
+          `<div class="code-block-buttons">`,
           `<button class="copy-code-button" data-code="${encodeURIComponent(
             str
           )}">复制</button>`,
+          `<button class="fold-code-button">折叠</button>`,
           `</div>`,
+          `</div>`,
+          `<div class="code-block-content">`,
           `<pre class="hljs"><code>${highlightedCode}</code></pre>`,
+          `</div>`,
           `</div>`,
         ].join("");
       } catch (_) {}
@@ -133,9 +139,14 @@ const md = new MarkdownIt({
 // 添加行内代码的渲染规则
 md.renderer.rules.code_inline = (tokens, idx) => {
   const token = tokens[idx];
-  return `<code class="inline-code">${md.utils.escapeHtml(
+  return [
+    `<div class="inline-code-container">`,
+    `<code class="inline-code">${md.utils.escapeHtml(
     token.content
-  )}</code>`;
+  )}</code>`,
+  `</div>`,
+  ]
+  .join("");
 };
 const renderMarkdown = (text) => md.render(text);
 
@@ -196,20 +207,26 @@ const messageContainer = ref(null);
 const messages = reactive([]);
 const userInput = ref("");
 const loading = ref(false);
+const questionId = ref("");
 
 /**
  * 发送消息
  */
 const sendMessage = async () => {
   if (!userInput.value.trim() || loading.value) return;
+  questionId.value = generateRandomString(12);
   messages.push({
     role: "user",
     type: "TEXT",
     content: userInput.value,
+    questionId: questionId.value,
   });
   messages.push({
     role: "assistant",
-    type: "AVATAR",
+    type: "LOADING",
+    loading: true,
+    content: "回答生成中...",
+    questionId: questionId.value,
   });
 
   const question = userInput.value;
@@ -220,14 +237,16 @@ const sendMessage = async () => {
     url: "/chatbi/chat/stream",
     body: {
       question,
+      questionId: questionId.value,
       modelProviderId: "401572c0-828d-43e8-a497-d3e90d901e86",
       model: "qwen-coder-plus-latest",
       dataSourceId: "27058042-ae53-49cd-bd19-64a6e986f179",
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
-      loading.value = false;
+      // loading.value = false;
       console.log(error);
+      abort();
     },
     onClose: () => {
       loading.value = false;
@@ -239,10 +258,27 @@ const sendMessage = async () => {
  * 处理消息
  */
 const handleMessage = (message) => {
-  const { type, content } = message;
+  const { questionId, chatId, type, content } = message;
 
   if (type === "DONE") {
-    stopGenerating();
+    const loadingItem = messages.find(
+      (item) => item.questionId === questionId && item.type === "LOADING"
+    );
+    if (loadingItem) {
+      loadingItem.loading = false;
+      loadingItem.content = "回答完成";
+    }
+    stopGenerating(questionId);
+    return;
+  }
+
+  if (type === "LOADING") {
+    const loadingItem = messages.find(
+      (item) => item.questionId === questionId && item.type === "LOADING"
+    );
+    if (loadingItem) {
+      loadingItem.content = content;
+    }
     return;
   }
 
@@ -265,6 +301,8 @@ const handleMessage = (message) => {
         role: "assistant",
         type,
         content,
+        questionId,
+        chatId,
       });
     }
   } else {
@@ -272,6 +310,8 @@ const handleMessage = (message) => {
       role: "assistant",
       type,
       content,
+      questionId,
+      chatId,
     });
   }
   nextTick(() => {
@@ -298,6 +338,26 @@ const handleMessage = (message) => {
         }
       });
     });
+
+    // 添加折叠按钮事件监听
+    const foldButtons = document.querySelectorAll(".fold-code-button");
+    foldButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const container = button.closest(".code-block-container");
+        const content = container.querySelector(
+          ".code-block-content"
+        ) as HTMLElement;
+        // 切换折叠类
+        content.classList.toggle("folded");
+
+        // 更新按钮文本
+        if (content.classList.contains("folded")) {
+          button.textContent = "展开";
+        } else {
+          button.textContent = "折叠";
+        }
+      });
+    });
     scrollToBottom();
   });
 };
@@ -305,11 +365,17 @@ const handleMessage = (message) => {
 /**
  * 停止生成
  */
-const stopGenerating = () => {
+const stopGenerating = (qId: string = questionId.value) => {
   abort();
   loading.value = false;
   if (messages.length > 0) {
-    const lastMessage = messages[messages.length - 1];
+    const loadingItem = messages.find(
+      (item) => item.questionId === qId && item.type === "LOADING"
+    );
+    if (loadingItem) {
+      loadingItem.loading = false;
+      loadingItem.loadingMsg = "回答已取消";
+    }
   }
 };
 
@@ -361,16 +427,15 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  border-radius: 12px;
 }
 
 .message-container {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  border-radius: 12px;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
   /* WebKit 浏览器滚动条样式 */
   &::-webkit-scrollbar {
@@ -422,6 +487,10 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
     flex-direction: row-reverse;
   }
 
+  .user-message-mt {
+    margin-top: 20px;
+  }
+
   .assistant-message {
     margin-bottom: 0;
   }
@@ -449,13 +518,18 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
   }
 
   .echarts-container {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 4px;
     width: 100%;
     height: 330px;
   }
 }
 
 .input-area {
-  border: 1px solid #ebeef5;
+  background-color: #ffffff;
+  margin: 0 16px 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
   border-radius: 12px;
   padding: 6px;
   box-sizing: border-box;
@@ -516,12 +590,17 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
 }
 
 :deep(.markdown-body) {
+  p,
+  pre {
+    margin-bottom: 0;
+  }
+
   /** 代码块容器 */
   .code-block-container {
     position: relative;
-    margin: 12px 0;
+    margin: 4px 0;
     border-radius: 8px;
-    background: #f6f8fa;
+    background: #fff;
   }
 
   /** 代码块头部 */
@@ -530,16 +609,25 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: #f3ecec;
+    background: #f6f8fa;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
   }
 
   /** 代码块内容 */
   .code-block-content {
-    padding: 12px;
     font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
     font-size: 14px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  /** 折叠状态 */
+  .code-block-content.folded {
+    max-height: 0;
+    opacity: 0;
   }
 
   /** 代码语言标签 */
@@ -549,8 +637,31 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
     text-transform: uppercase;
   }
 
+  /** 代码块按钮组 */
+  .code-block-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
   /** 复制按钮 */
   .copy-code-button {
+    padding: 2px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+  }
+
+  /** 折叠按钮 */
+  .fold-code-button {
     padding: 2px 8px;
     font-size: 12px;
     background: transparent;
@@ -603,6 +714,10 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
   }
 
   /** 行内代码 */
+  .inline-code-container {
+    margin: 4px 0;
+  }
+
   .inline-code {
     padding: 2px 6px;
     font-size: 0.9em;

@@ -1,0 +1,213 @@
+ai:
+  prompt:
+    templates:
+      select_table:
+        system: |
+          You are an expert in database schema understanding.
+        user: |
+          User query: ${user_query}
+          
+          Candidate table descriptions:
+          <#list table_descriptions as item>
+          - ${item}
+          </#list>
+          
+          Task:
+          1. Identify which tables are relevant to the query (fact and dimension tables).
+          2. Return ONLY a JSON object matching one of the schemas below. No extra text.
+          
+          Success schema:
+          {
+            "success": true,
+            "tables": [
+              {
+                "table_id": "table_id",
+                "table_name": "table_name",
+                "description": "description",
+                "additional_info": "additional_info"
+              }
+            ]
+          }
+          
+          Failure schema (when no tables can be determined):
+          {
+            "success": false,
+            "error": "<reason>"
+          }
+          
+          Requirements:
+          - All table names must be lowercase.
+          - Do not wrap the response in Markdown code blocks.
+      generate_sql:
+        system: |
+          You are an expert in generating SQL queries from natural language, specifically for ${sql_syntax} syntax.
+        user: |
+          You are an expert in SQL query generation.
+          Your task is to generate an accurate SQL query based strictly on the given information.
+
+          ### Current date:
+          ${current_date}
+          
+          ### Date Format Specification:
+          When the user question does not explicitly specify a date format, use the following standard format for date columns:
+          - **YYYY-MM-DD** format for date literals
+          - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+
+          ### User's Question:
+          ${user_query}
+
+          ### Relevant Tables:
+          <#list relevant_tables as table>
+          - **Table**: ${table.table_name}
+            - **Description**: ${table.description}
+            - **Additional Info**: ${table.additional_info}
+            - **Columns**:
+            <#list table.fields as item>
+              - ${item}
+            </#list>
+          </#list>
+
+          ### Reasoning Process:
+          1. **Identify the relevant tables**: Determine which tables are needed based on the user question.
+          2. **Extract required fields**: Identify the columns that should be included in the query.
+          3. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
+          4. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
+          5. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
+          6. **Chart-friendly output**: Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
+          7. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, immediately return: { "success":false,"error":"Only SELECT queries are allowed" }
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success schema:
+          {
+            "success": true,
+            "sql": "<generated SQL>"
+          }
+          
+          Failure schema (If the request is not a SELECT or cannot be fulfilled):
+          {
+            "success": false,
+            "error": "<reason>"
+          }
+          
+          **Strict Constraints:**
+          - Use only the provided tables, columns, and code table values.
+          - Do not use any table, column, or value not explicitly listed.
+          - Do not wrap the response in Markdown code blocks.
+
+
+      generate_chart:
+        system: |
+          You are an expert in data visualization.
+        user: |
+          Return **JSON metadata** for ECharts or table rendering based on the user question, SQL and query result.
+          Do NOT include real data or full ECharts option.
+          
+          ### Inputs
+          User Question: ${user_query}
+          Executed SQL: ${sql}
+          Query Result: ${query_result}
+          
+          ### Steps
+          1. List every column and its meaning.
+          2. Decide displayType: "chart" or "table".
+          3. Map columns:
+             - chart: dimension, metric, series, color, tooltip, sort.
+             - table: column title, width, align, formatter, sort.
+          4. Provide optional chart options: type, stack, smooth, legend, grid, toolbox, axisName, unit, decimals.
+          5. Provide meta: title, subtitle.
+          
+          ### Output (ONLY JSON)
+          Success:
+          {
+            "success": true,
+            "config": {
+              "displayType": "chart" | "table",
+              "chartType?": "bar" | "line" | "pie" | "scatter" | "funnel" | "radar" | "gauge",
+              "fieldMapping": {
+                // chart
+                "xAxis?": "<col>",
+                "yAxis?": "<col>",
+                "series?": "<col>",
+                "color?": "<col>",
+                "tooltip?": "<col>",
+                // table
+                "columns?": [
+                  {
+                    "key": "<col>",
+                    "title": "<display name>",
+                    "width?": 120,
+                    "align?": "left|center|right",
+                    "formatter?": "number|percent|date|currency",
+                    "sortable?": true
+                  }
+                ],
+                "sortBy?": "<col>",
+                "sortOrder?": "asc|desc"
+              },
+              "options": {
+                "smooth?": true | false,
+                "legend?": true | false,
+                "grid?": { "left": "3%", "right": "4%", "bottom": "3%", "containLabel": true },
+                "toolbox?": { "feature": { "saveAsImage": {} } },
+                "axisName?": { "x": "", "y": "" }
+              },
+              "meta": {
+                "title": "<card title>",
+                "description?": "<subtitle>"
+              }
+            }
+          }
+          
+          Failure:
+          { "success": false, "error": "<reason>" }
+          
+          Constraints:
+          - Use only actual column names.
+          - No Markdown code blocks.
+      repair_sql:
+        system: |
+          You are an SQL expert, specifically for ${sql_syntax} syntax. Fix the given SQL according to the error message and provided table schema.
+        user: |          
+          SQL:
+          ${sql}
+          
+          Error:
+          ${error}
+          
+          Date Format Specification:
+          When the original SQL does not explicitly specify a date format, use the following standard format for date columns:
+          - **YYYY-MM-DD** format for date literals
+          - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          - Use CAST or TO_DATE functions when necessary to ensure consistent date handling
+
+          Relevant Tables:
+          <#list relevant_tables as table>
+          - **Table**: ${table.table_name}
+            - **Description**: ${table.description}
+            - **Additional Info**: ${table.additional_info}
+            - **Columns**:
+            <#list table.fields as item>
+              - ${item}
+            </#list>
+          </#list>
+
+          Task:
+          1. Analyze the error and schema.
+          2. Return ONLY a JSON object matching one of the schemas below.
+          Success schema:
+          {
+            "success": true,
+            "sql": "<fixed SQL>"
+          }
+          
+          Failure schema:
+          {
+            "success": false,
+            "error": "<reason>"
+          }
+          
+          **Strict Constraints:**
+          - Use only the provided tables, columns, and code table values.
+          - Do not use any table, column, or value not explicitly listed.
+          - Do not wrap the response in Markdown code blocks.

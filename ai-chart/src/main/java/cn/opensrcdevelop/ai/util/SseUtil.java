@@ -1,12 +1,12 @@
 package cn.opensrcdevelop.ai.util;
 
+import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class SseUtil {
 
@@ -23,7 +23,12 @@ public class SseUtil {
     public static void sendChatBIText(SseEmitter emitter, String text) throws IOException {
         emitter.send(SseEmitter
                 .event()
-                .data(ChatBIResponseDto.builder().content(text).type(ChatContentType.TEXT).build(), MediaType.APPLICATION_JSON)
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(text)
+                        .type(ChatContentType.TEXT)
+                        .build(), MediaType.APPLICATION_JSON)
         );
     }
 
@@ -31,27 +36,37 @@ public class SseUtil {
      * 发送 ChatBI Markdown消息
      *
      * @param emitter SseEmitter
-     * @param md    Markdown消息
+     * @param md      Markdown消息
      * @throws IOException IO异常
      */
     public static void sendChatBIMd(SseEmitter emitter, String md) throws IOException {
         emitter.send(SseEmitter
                 .event()
-                .data(ChatBIResponseDto.builder().content(md).type(ChatContentType.MARKDOWN).build(), MediaType.APPLICATION_JSON)
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(md)
+                        .type(ChatContentType.MARKDOWN)
+                        .build(), MediaType.APPLICATION_JSON)
         );
     }
 
     /**
-     * 发送 ChatBI Echarts 图表消息
+     * 发送 ChatBI 图表
      *
      * @param emitter SseEmitter
-     * @param echarts    Echarts 图表消息
+     * @param chart   图表
      * @throws IOException IO异常
      */
-    public static void sendChatBIEcharts(SseEmitter emitter, Map<String, Object> echarts) throws IOException {
+    public static void sendChatBIChart(SseEmitter emitter, Object chart) throws IOException {
         emitter.send(SseEmitter
                 .event()
-                .data(ChatBIResponseDto.builder().content(echarts).type(ChatContentType.ECHARTS).build(), MediaType.APPLICATION_JSON)
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(chart)
+                        .type(ChatContentType.ECHARTS)
+                        .build(), MediaType.APPLICATION_JSON)
         );
     }
 
@@ -64,7 +79,30 @@ public class SseUtil {
     public static void sendChatBIDone(SseEmitter emitter) throws IOException {
         emitter.send(SseEmitter
                 .event()
-                .data(ChatBIResponseDto.builder().type(ChatContentType.DONE).build(), MediaType.APPLICATION_JSON)
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .type(ChatContentType.DONE)
+                        .build(), MediaType.APPLICATION_JSON)
+        );
+    }
+
+    /**
+     * 发送 ChatBI Loading
+     *
+     * @param emitter SseEmitter
+     * @param loadingMsg 加载消息
+     * @throws IOException IO异常
+     */
+    public static void sendChatBILoading(SseEmitter emitter, String loadingMsg) throws IOException {
+        emitter.send(SseEmitter
+                .event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(loadingMsg)
+                        .type(ChatContentType.LOADING)
+                        .build(), MediaType.APPLICATION_JSON)
         );
     }
 }

@@ -22,7 +22,7 @@ export default indexTs;
         </a-tab-pane>
         <a-tab-pane key="data_source" title="数据源管理">
         </a-tab-pane>
-        <a-tab-pane key="llm" title="大模型管理">
+        <a-tab-pane key="llm" title="LLM 管理">
         </a-tab-pane>
     </a-tabs>
   </div>

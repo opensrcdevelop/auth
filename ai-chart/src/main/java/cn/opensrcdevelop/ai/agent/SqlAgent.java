@@ -1,0 +1,152 @@
+package cn.opensrcdevelop.ai.agent;
+
+import cn.opensrcdevelop.ai.datasource.DataSourceManager;
+import cn.opensrcdevelop.ai.entity.Table;
+import cn.opensrcdevelop.ai.entity.TableField;
+import cn.opensrcdevelop.ai.prompt.PromptTemplate;
+import cn.opensrcdevelop.ai.service.TableFieldService;
+import cn.opensrcdevelop.ai.service.TableService;
+import cn.opensrcdevelop.ai.util.PromptTemplateUtil;
+import cn.opensrcdevelop.common.util.CommonUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class SqlAgent {
+
+    private final DataSourceManager dataSourceManager;
+    private final TableService tableService;
+    private final TableFieldService tableFieldService;
+    private final PromptTemplate promptTemplate;
+
+
+    /**
+     * 从表描述中获取相关表
+     *
+     * @param chatClient ChatClient
+     * @param userQuery 用户查询
+     * @param dataSourceId 数据源ID
+     * @return 相关表
+     */
+    public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuery, String dataSourceId) {
+        // 1. 获取数据源中的表信息
+        List<Table> candidateTables = tableService.list(Wrappers.<Table>lambdaQuery()
+                .eq(Table::getDataSourceId, dataSourceId)
+                .eq(Table::getToUse, true));
+
+        if (CollectionUtils.isEmpty(candidateTables)) {
+            return Map.of(
+                    "success", false,
+                    "error", "数据源中没有可用的表"
+            );
+        }
+
+        List<String> tableDescriptions = candidateTables.stream().map(table -> {
+            Map<String, String> tableDescription = new HashMap<>();
+            tableDescription.put("table_id", table.getTableId());
+            tableDescription.put("table_name", table.getTableName());
+            tableDescription.put("description", table.getRemark() == null ? "No description available" : table.getRemark());
+            tableDescription.put("additional_info", table.getAdditionalInfo() == null ? "No additional info available" : table.getAdditionalInfo());
+            return CommonUtil.serializeObject(tableDescription);
+        }).toList();
+
+        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("select_table");
+
+        // 2. 推测关联表
+        return chatClient.prompt()
+                .system(prompt.getSystem())
+                .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
+                        "user_query", userQuery,
+                        "table_descriptions", tableDescriptions
+                )))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    /**
+     * 生成 SQL
+     *
+     * @param chatClient ChatClient
+     * @param userQuery 用户查询
+     * @param relevantTables 相关表
+     * @param dataSourceId 数据源ID
+     * @return SQL
+     */
+    public Map<String, Object> generateSql(ChatClient chatClient, String userQuery, List<Map<String, Object>> relevantTables, String dataSourceId) {
+        // 1. 获取关联表的字段信息
+        List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
+
+        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("generate_sql");
+
+        // 2. 生成 SQL
+        return chatClient.prompt()
+                .system(PromptTemplateUtil.getPrompt(prompt.getSystem(), Map.of("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())))
+                .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
+                        "current_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                        "user_query", userQuery,
+                        "relevant_tables", newRelevantTables
+                )))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    /**
+     * 修复 SQL
+     *
+     * @param chatClient ChatClient
+     * @param sql SQL
+     * @param error 错误信息
+     * @param relevantTables 相关表
+     * @param dataSourceId 数据源ID
+     * @return 修复后的 SQL
+     */
+    public Map<String, Object> repairSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
+        // 1. 获取关联表的字段信息
+        List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
+
+        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("repair_sql");
+
+        // 2. 修复 SQL
+        return chatClient.prompt()
+               .system(PromptTemplateUtil.getPrompt(prompt.getSystem(), Map.of("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())))
+               .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
+                       "sql", sql,
+                       "error", error,
+                       "relevant_tables", newRelevantTables
+               )))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    private List<Map<String, Object>> getTableWithField(List<Map<String, Object>> tables) {
+        List<String> tableIds = CommonUtil.stream(tables).map(x -> x.get("table_id").toString()).toList();
+        List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+                .in(TableField::getTableId, tableIds));
+
+        return CommonUtil.stream(tables).map(table -> {
+            Map<String, Object> newTableInfo = new HashMap<>(table);
+            List<TableField> tableFields = CommonUtil.stream(allTableFields).filter(x -> x.getTableId().equals(table.get("table_id"))).toList();
+            List<String> fieldDescriptions = CommonUtil.stream(tableFields).map(x -> {
+                Map<String, String> fieldDescription = new HashMap<>();
+                fieldDescription.put("field_name", x.getFieldName());
+                fieldDescription.put("field_data_type", x.getFieldType());
+                fieldDescription.put("description", x.getRemark() == null ? "No description available":  x.getRemark());
+                fieldDescription.put("additional_info", x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
+                return CommonUtil.serializeObject(fieldDescription);
+            }).toList();
+            newTableInfo.put("fields", fieldDescriptions);
+            return newTableInfo;
+        }).toList();
+    }
+}
