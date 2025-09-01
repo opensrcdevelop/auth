@@ -22,8 +22,6 @@ public class ChartAgent {
      * 根据用户提问及数据库查询结果生成图表
      *
      * @param chatClient  ChatClient
-     * @param chatId 对话ID
-     * @param dataSourceId 数据源ID
      * @param sql 执行的 SQL
      * @param question 用户提问
      * @param queryResult 查询结果

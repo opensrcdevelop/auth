@@ -21,11 +21,15 @@ public class ChartConf extends BaseEntity implements Serializable {
     @TableId(type = IdType.INPUT)
     private String chartId;
 
+    private String dataSourceId;
+
+    private String questionId;
+
+    private String chatId;
+
+    private String question;
+
     private String config;
 
     private String sql;
-
-    private String dataSourceId;
-
-    private String chatId;
 }

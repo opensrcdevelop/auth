@@ -36,6 +36,7 @@ public class ChatClientManager {
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
     private final ChatMemory chatMemory;
+    private final LanguageConstraintAdvisor languageConstraintAdvisor;
 
     /**
      * 获取 ChatClient
@@ -72,6 +73,7 @@ public class ChatClientManager {
         return ChatClient.builder(chatModel)
                 .defaultOptions(ChatOptions.builder().model(model).build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .defaultAdvisors(languageConstraintAdvisor)
                 .build();
     }
 

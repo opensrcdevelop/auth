@@ -5,11 +5,11 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import lombok.experimental.UtilityClass;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @UtilityClass
 public class ChartRenderer {
@@ -21,74 +21,80 @@ public class ChartRenderer {
      *
      * @param conf     配置实体
      * @param dataRows 查询结果
-     * @return ECharts option JSON 或 Markdown 表格
+     * @return 图表
      */
-    public Object render(ChartConf conf, List<Map<String, Object>> dataRows) {
+    public Tuple2<String, Object> render(ChartConf conf, List<Map<String, Object>> dataRows) {
         try {
             JsonNode cfg = MAPPER.readTree(conf.getConfig());
             String displayType = cfg.path("displayType").asText("chart");
 
             if ("table".equalsIgnoreCase(displayType)) {
-                return buildMarkdownTable(cfg, dataRows);
+                return Tuple.of("table", buildArcoTableConfig(cfg, dataRows));
             } else {
-                return buildEchartsOption(cfg, dataRows);
+                return Tuple.of("chart", buildEchartsOption(cfg, dataRows));
             }
         } catch (Exception e) {
             throw new ServerException("渲染图表失败", e);
         }
     }
 
-    private String buildMarkdownTable(JsonNode cfg, List<Map<String, Object>> rows) {
+    private Map<String, Object> buildArcoTableConfig(JsonNode cfg, List<Map<String, Object>> rows) {
         JsonNode columnsNode = cfg.path("fieldMapping").path("columns");
+        String titleText = cfg.path("meta").path("title").asText("");
+        String description = cfg.path("meta").path("description").asText("");
+
+        // 1. 标题
+        Map<String, Object> title = Map.of(
+                "text", titleText,
+                "description", description
+        );
+
+        // 无数据
         if (!columnsNode.isArray() || columnsNode.isEmpty() || rows.isEmpty()) {
-            return "**暂无数据**";
+            return Map.of(
+                    "columns", List.of(),
+                    "data", List.of(),
+                    "title", title
+            );
         }
 
-        List<Map<String, Object>> columns = MAPPER.convertValue(columnsNode, new TypeReference<>() {
-        });
-
-        // 表头
-        StringBuilder sb = new StringBuilder("|");
+        // 2. 列配置
+        List<Map<String, Object>> columns = MAPPER.convertValue(columnsNode, new TypeReference<>() {});
+        List<Map<String, Object>> arcoColumns = new ArrayList<>();
         for (Map<String, Object> col : columns) {
-            sb.append(col.get("title")).append('|');
+            Map<String, Object> column = new HashMap<>();
+            // 2.1 列标题
+            column.put("title", col.get("title"));
+            // 2.2 列信息的标识
+            column.put("dataIndex", col.get("key"));
+            // 2.3 对齐方式
+            column.put("align", "left");
+            // 2.4 排序
+            column.put("sortable", Map.of(
+                    "sortDirections", List.of("ascend", "descend")
+            ));
+            arcoColumns.add(column);
         }
-        sb.append('\n');
 
-        // 分隔符
-        sb.append("|");
-        for (Map<String, Object> col : columns) {
-            String align = String.valueOf(col.getOrDefault("align", "left"));
-            sb.append(alignSep(align)).append('|');
-        }
-        sb.append('\n');
+        // 3. 表格配置
+        Map<String, Object> tableConfig = new HashMap<>();
+        tableConfig.put("columns", arcoColumns);
+        tableConfig.put("data", rows);
+        tableConfig.put("title", title);
 
-        // 数据行
-        for (Map<String, Object> row : rows) {
-            sb.append("|");
-            for (Map<String, Object> col : columns) {
-                String key = String.valueOf(col.get("key"));
-                Object val = row.getOrDefault(key, "");
-                boolean markdown = "markdown".equals(col.get("render"));
-                String cell = markdown ? String.valueOf(val) : escapeMd(String.valueOf(val));
-                sb.append(cell).append('|');
-            }
-            sb.append('\n');
-        }
-        return sb.toString();
+        return tableConfig;
     }
 
     private Map<String, Object> buildEchartsOption(JsonNode cfg, List<Map<String, Object>> rows) {
         // 1. 基础信息
         String chartType = cfg.path("chartType").asText("bar");
         String titleText = cfg.path("meta").path("title").asText("");
-        String subtitle = cfg.path("meta").path("description").asText("");
+        String description = cfg.path("meta").path("description").asText("");
 
         // 2. options 节点
         JsonNode opt = cfg.path("options");
         boolean smooth = opt.path("smooth").asBoolean(false);
         boolean legend = opt.path("legend").asBoolean(true);
-        boolean toolbox = opt.path("toolbox").asBoolean(false);
-        String unit = opt.path("unit").asText("");
 
         // 3. 坐标轴标题
         JsonNode axisName = opt.path("axisName");
@@ -102,19 +108,35 @@ public class ChartRenderer {
         // 5. 公共 title
         Map<String, Object> title = Map.of(
                 "text", titleText,
-                "subtext", subtitle
+                "description", description
         );
 
         // 6. 图例
         Map<String, Object> legendMap = Map.of("show", legend, "data", List.of());
 
         // 7. 工具箱
-        Map<String, Object> toolboxMap = toolbox
-                ? Map.of("feature", Map.of("saveAsImage", Map.of()))
-                : null;
-
-        // 8. 坐标轴格式化
-        String axisFmt = unit.isEmpty() ? "{value}" : "{value}" + unit;
+        Map<String, Object> toolboxFeature = new LinkedHashMap<>();
+        toolboxFeature.put("restore", Map.of("show", true));
+        toolboxFeature.put("saveAsImage", Map.of(
+                "show", true,
+                "type", "png",
+                "name", titleText,
+                "backgroundColor", "#fff",
+                "pixelRatio", 2
+        ));
+        toolboxFeature.put("magicType", Map.of(
+                "show", true,
+                "type", List.of("line", "bar")
+        ));
+        Map<String, Object> toolboxMap = Map.of(
+                "show", true,
+                "orient", "horizontal",
+                "itemSize", 15,
+                "itemGap", 10,
+                "left", "right",
+                "top", "yop",
+                "feature", toolboxFeature
+        );
 
         // 9. 系列数据
         List<Map<String, Object>> seriesData;
@@ -137,13 +159,11 @@ public class ChartRenderer {
             xAxis = Map.of(
                     "type", "category",
                     "name", xName,
-                    "data", xData,
-                    "axisLabel", Map.of("formatter", axisFmt)
+                    "data", xData
             );
             yAxis = Map.of(
                     "type", "value",
-                    "name", yName,
-                    "axisLabel", Map.of("formatter", axisFmt)
+                    "name", yName
             );
 
             Map<String, Object> series = Map.ofEntries(
@@ -155,8 +175,7 @@ public class ChartRenderer {
             seriesData = List.of(series);
         }
 
-        Map<String, Object> option = new HashMap<>();
-        option.put("title", title);
+        Map<String, Object> option = new LinkedHashMap<>();
         option.put("tooltip", Map.of("trigger", "axis"));
         option.put("legend", legendMap);
         option.put("toolbox", toolboxMap);
@@ -164,20 +183,7 @@ public class ChartRenderer {
         option.put("yAxis", yAxis);
         option.put("series", seriesData);
 
-        return option;
-    }
-
-    private String alignSep(String align) {
-        return switch (align) {
-            case "center" -> ":-:|";
-            case "right" -> "-:|";
-            default -> ":--|";
-        };
-    }
-
-    private String escapeMd(String s) {
-        return s.replace("|", "\\|")
-                .replace("\n", "<br/>");
+        return Map.of("title", title, "option", option);
     }
 
     private List<Object> extractColumn(List<Map<String, Object>> rows, Object key) {

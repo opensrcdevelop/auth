@@ -95,7 +95,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBILoading(emitter, "正在生成 SQL...");
         Map<String, Object> sqlResult = sqlAgent.generateSql(chatClient, requestDto.getQuestion(), relevantTables, dataSourceId);
         if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
-            SseUtil.sendChatBIText(emitter, "无法生成 SQL，原因：%s".formatted(tableResult.get("error")));
+            SseUtil.sendChatBIText(emitter, "无法生成 SQL，原因：%s".formatted(sqlResult.get("error")));
             return;
         }
         String sql = (String) sqlResult.get("sql");
@@ -135,13 +135,20 @@ public class ChatBIServiceImpl implements ChatBIService {
         chartConf.setChartId(CommonUtil.getUUIDV7String());
         chartConf.setDataSourceId(dataSourceId);
         chartConf.setChatId(chatId);
+        chartConf.setQuestionId(requestDto.getQuestionId());
+        chartConf.setQuestion(requestDto.getQuestion());
         chartConf.setSql(sql);
         chartConf.setConfig(CommonUtil.serializeObject(chartConfResult.get("config")));
         chartConfService.save(chartConf);
 
         // 7. 生成图表
         SseUtil.sendChatBIText(emitter, "已生成的图表：");
-        SseUtil.sendChatBIChart(emitter, ChartRenderer.render(chartConf, queryResult));
+        var renderResult = ChartRenderer.render(chartConf, queryResult);
+        if ("table".equals(renderResult._1)) {
+            SseUtil.sendChatBITable(emitter, renderResult._2);
+        } else {
+            SseUtil.sendChatBIChart(emitter, renderResult._2);
+        }
     }
 
     @SuppressWarnings("all")

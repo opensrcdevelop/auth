@@ -1,6 +1,7 @@
 <template>
   <div class="chat-container">
     <div class="message-container" ref="messageContainer">
+      <div class="empty-container" v-if="!messages.length">{{ greeting() }}</div>
       <div
         v-for="(message, index) in messages"
         :key="index"
@@ -37,11 +38,34 @@
             v-html="renderMarkdown(message.content)"
             class="markdown-body"
           ></div>
-          <div
-            v-if="message.type === 'ECHARTS'"
-            class="echarts-container"
-            :ref="(el) => initChart(el, message.content)"
-          ></div>
+          <div v-if="message.type === 'CHART'" class="echarts-container">
+            <div class="title">
+              {{ message.content.title.text }}
+            </div>
+            <div class="description">
+              {{ message.content.title.description }}
+            </div>
+            <div
+              class="chart"
+              :ref="(el) => initChart(el, message.content.option)"
+            ></div>
+          </div>
+          <div v-if="message.type === 'TABLE'">
+            <div class="table-container">
+              <div class="title">
+                {{ message.content.title.text }}
+              </div>
+              <div class="description">
+                {{ message.content.title.description }}
+              </div>
+              <a-table
+                column-resizable
+                stripe
+                :columns="message.content.columns"
+                :data="message.content.data"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -57,7 +81,44 @@
         @keyup.enter.ctrl="sendMessage"
       />
       <div class="bottom-bar">
-        <div class="option"></div>
+        <div class="option">
+          <a-space>
+            <a-select
+              placeholder="请选择数据源"
+              size="mini"
+              allow-search
+              :bordered="false"
+              v-model="selectedDataSource"
+            >
+              <a-option
+                v-for="item in dataSourceList"
+                :key="item.id"
+                :value="item.id"
+                >{{ item.name }}</a-option
+              >
+            </a-select>
+            <a-select
+              placeholder="请选择大模型"
+              size="mini"
+              allow-search
+              :bordered="false"
+              v-model="selectedModel"
+            >
+              <a-optgroup
+                v-for="item in modelProviderList"
+                :key="item.id"
+                :label="item.name"
+              >
+                <a-option
+                  v-for="(model, index) in item.optionModels"
+                  :key="index"
+                  :value="`${item.id}:${model}`"
+                  >{{ model }}</a-option
+                >
+              </a-optgroup>
+            </a-select>
+          </a-space>
+        </div>
         <div>
           <a-button
             type="primary"
@@ -87,12 +148,311 @@
 
 <script setup lang="ts">
 import {userEventSource} from "@/hooks/useEventSource";
-import {nextTick, onUnmounted, reactive, ref} from "vue";
+import {nextTick, onMounted, onUnmounted, reactive, ref} from "vue";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import * as echarts from "echarts";
-import {generateRandomString} from "@/util/tool";
+import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
+import {getDataSourceConfList, getModelProviderList} from "@/api/chatbi";
+import {Message} from "@arco-design/web-vue";
+
+const { abort, fetchStream } = userEventSource();
+const messageContainer = ref(null);
+const messages = reactive([]);
+const userInput = ref("");
+const loading = ref(false);
+const questionId = ref("");
+const dataSourceList = reactive([]);
+const modelProviderList = reactive([]);
+const selectedDataSource = ref("");
+const selectedModel = ref("");
+
+onMounted(() => {
+  // 获取数据源列表
+  getDataSourceConfList({
+    page: 1,
+    size: -1,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        dataSourceList.push(...data.list);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取数据源列表");
+    });
+
+  // 获取模型提供商列表
+  getModelProviderList({
+    page: 1,
+    size: -1,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        modelProviderList.push(...data.list);
+
+        if (modelProviderList.length > 0) {
+          const firstProvider = modelProviderList[0];
+          selectedModel.value = `${firstProvider.id}:${firstProvider.defaultModel}`;
+        }
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取模型提供商列表");
+    });
+});
+
+onUnmounted(() => {
+  // 销毁 ECharts 实例
+  chartRefs.forEach((value, key) => {
+    if (typeof key === "string" && key.endsWith("_observer")) {
+      value.disconnect();
+    } else {
+      value.dispose();
+    }
+  });
+  chartRefs.clear();
+});
+
+/**
+ * 问候语
+ */
+const greeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 6) return "夜深了，注意休息！有什么我可以帮助你的吗？";
+  if (hour < 9) return "早上好！有什么我可以帮助你的吗？";
+  if (hour < 12) return "上午好！有什么我可以帮助你的吗？";
+  if (hour < 14) return "中午好！有什么我可以帮助你的吗？";
+  if (hour < 17) return "下午好！有什么我可以帮助你的吗？";
+  if (hour < 19) return "傍晚好！有什么我可以帮助你的吗？";
+  return "晚上好！有什么我可以帮助你的吗？";
+};
+
+/**
+ * 发送消息
+ */
+const sendMessage = async () => {
+  if (!selectedDataSource.value) {
+    Message.warning("请选择数据源");
+    return;
+  }
+
+  if (!selectedModel.value) {
+    Message.warning("请选择大模型");
+    return;
+  }
+  if (!userInput.value.trim() || loading.value) return;
+  questionId.value = generateRandomString(12);
+  messages.push({
+    role: "user",
+    type: "TEXT",
+    content: userInput.value,
+    questionId: questionId.value,
+  });
+  messages.push({
+    role: "assistant",
+    type: "LOADING",
+    loading: true,
+    content: "回答生成中...",
+    questionId: questionId.value,
+  });
+
+  const question = userInput.value;
+  userInput.value = "";
+  loading.value = true;
+
+  fetchStream({
+    url: "/chatbi/chat/stream",
+    body: {
+      question,
+      questionId: questionId.value,
+      modelProviderId: selectedModel.value.split(":")[0],
+      model: selectedModel.value.split(":")[1],
+      dataSourceId: selectedDataSource.value,
+    },
+    onMessage: (message) => handleMessage(message),
+    onError: (error) => {
+      loading.value = false;
+      abort();
+    },
+    onClose: () => {
+      loading.value = false;
+    },
+  });
+
+  nextTick(() => {
+    scrollToBottom();
+  });
+};
+
+/**
+ * 处理消息
+ */
+const handleMessage = (message) => {
+  const { questionId, chatId, type, content } = message;
+
+  if (type === "DONE") {
+    const loadingItem = messages.find(
+      (item) => item.questionId === questionId && item.type === "LOADING"
+    );
+    if (loadingItem) {
+      loadingItem.loading = false;
+      loadingItem.content = "回答完成";
+    }
+    stopGenerating();
+    scrollToBottom();
+    return;
+  }
+
+  if (type === "LOADING") {
+    const loadingItem = messages.find(
+      (item) => item.questionId === questionId && item.type === "LOADING"
+    );
+    if (loadingItem) {
+      loadingItem.content = content;
+    }
+    return;
+  }
+
+  if (
+    messages.length > 0 &&
+    messages[messages.length - 1].role === "assistant"
+  ) {
+    const last = messages[messages.length - 1];
+
+    // 类型相同，合并内容
+    if (last.type === type) {
+      if (type === "MARKDOWN" || type === "TEXT") {
+        last.content += content;
+      } else if (type === "ECHARTS" || type === "TABLE") {
+        last.content = content;
+      }
+    } else {
+      // 类型不同追加新消息
+      messages.push({
+        role: "assistant",
+        type,
+        content,
+        questionId,
+        chatId,
+      });
+    }
+  } else {
+    messages.push({
+      role: "assistant",
+      type,
+      content,
+      questionId,
+      chatId,
+    });
+  }
+  nextTick(() => {
+    if (type === "MARKDOWN") {
+      // 添加复制按钮事件监听
+      const copyButtons = document.querySelectorAll(".copy-code-button");
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const code = decodeURIComponent(button.getAttribute("data-code"));
+
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard
+              .writeText(code)
+              .then(() => {
+                button.textContent = "已复制";
+                setTimeout(() => {
+                  button.textContent = "复制";
+                }, 2000);
+              })
+              .catch((err) => {
+                console.error("复制失败:", err);
+              });
+          } else {
+            fallbackCopyTextToClipboard(code, button);
+          }
+        });
+      });
+
+      // 添加折叠按钮事件监听
+      const foldButtons = document.querySelectorAll(".fold-code-button");
+      foldButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const container = button.closest(".code-block-container");
+          const content = container.querySelector(
+            ".code-block-content"
+          ) as HTMLElement;
+          // 切换折叠类
+          content.classList.toggle("folded");
+
+          // 更新按钮文本
+          if (content.classList.contains("folded")) {
+            button.textContent = "展开";
+          } else {
+            button.textContent = "折叠";
+          }
+        });
+      });
+    }
+  });
+};
+
+/**
+ * 停止生成
+ */
+const stopGenerating = (qId: string = questionId.value) => {
+  abort();
+  loading.value = false;
+  if (messages.length > 0) {
+    const loadingItem = messages.find(
+      (item) => item.questionId === qId && item.type === "LOADING"
+    );
+    if (loadingItem && loadingItem.loading) {
+      loadingItem.loading = false;
+      loadingItem.content = "回答已取消";
+    }
+  }
+};
+
+/**
+ * 将消息容器滚动到底部
+ */
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }
+  });
+};
+
+/**
+ * 复制文本到剪切板
+ */
+const fallbackCopyTextToClipboard = (text: string, button: Element) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    const successful = document.execCommand("copy");
+    if (successful) {
+      button.textContent = "已复制";
+      setTimeout(() => {
+        button.textContent = "复制";
+      }, 2000);
+    } else {
+      console.error("复制失败");
+    }
+  } catch (err) {
+    console.error("复制失败:", err);
+  }
+
+  document.body.removeChild(textArea);
+};
 
 /**
  * Markdown
@@ -141,12 +501,9 @@ md.renderer.rules.code_inline = (tokens, idx) => {
   const token = tokens[idx];
   return [
     `<div class="inline-code-container">`,
-    `<code class="inline-code">${md.utils.escapeHtml(
-    token.content
-  )}</code>`,
-  `</div>`,
-  ]
-  .join("");
+    `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`,
+    `</div>`,
+  ].join("");
 };
 const renderMarkdown = (text) => md.render(text);
 
@@ -160,14 +517,18 @@ const initChart = (el, option) => {
   // 检查是否已存在图表实例
   const existingChart = chartRefs.get(el);
   if (existingChart) {
-    // 销毁已存在的图表实例
-    existingChart.dispose();
-    // 移除对应的 observer
-    const existingObserver = chartRefs.get(el + "_observer");
-    if (existingObserver) {
-      existingObserver.disconnect();
-      chartRefs.delete(el + "_observer");
+    const existingOption = existingChart.getOption();
+    const isOptionChanged =
+      JSON.stringify(existingOption) !== JSON.stringify(option);
+
+    if (!isOptionChanged) {
+      // 选项未变化，不重新渲染
+      return;
     }
+
+    // 选项变化，更新图表
+    existingChart.setOption(option, true);
+    return;
   }
 
   // 延迟初始化确保 DOM 已完全渲染
@@ -175,7 +536,6 @@ const initChart = (el, option) => {
     const chart = echarts.init(el);
     chart.setOption(option);
 
-    // 立即执行一次 resize
     chart.resize();
 
     const resizeObserver = new ResizeObserver(() => {
@@ -186,238 +546,6 @@ const initChart = (el, option) => {
     chartRefs.set(el, chart);
     chartRefs.set(el + "_observer", resizeObserver);
   }, 0);
-};
-
-/**
- * 销毁 ECharts 实例
- */
-onUnmounted(() => {
-  chartRefs.forEach((value, key) => {
-    if (typeof key === "string" && key.endsWith("_observer")) {
-      value.disconnect();
-    } else {
-      value.dispose();
-    }
-  });
-  chartRefs.clear();
-});
-
-const { abort, fetchStream } = userEventSource();
-const messageContainer = ref(null);
-const messages = reactive([]);
-const userInput = ref("");
-const loading = ref(false);
-const questionId = ref("");
-
-/**
- * 发送消息
- */
-const sendMessage = async () => {
-  if (!userInput.value.trim() || loading.value) return;
-  questionId.value = generateRandomString(12);
-  messages.push({
-    role: "user",
-    type: "TEXT",
-    content: userInput.value,
-    questionId: questionId.value,
-  });
-  messages.push({
-    role: "assistant",
-    type: "LOADING",
-    loading: true,
-    content: "回答生成中...",
-    questionId: questionId.value,
-  });
-
-  const question = userInput.value;
-  userInput.value = "";
-  loading.value = true;
-
-  fetchStream({
-    url: "/chatbi/chat/stream",
-    body: {
-      question,
-      questionId: questionId.value,
-      modelProviderId: "401572c0-828d-43e8-a497-d3e90d901e86",
-      model: "qwen-coder-plus-latest",
-      dataSourceId: "27058042-ae53-49cd-bd19-64a6e986f179",
-    },
-    onMessage: (message) => handleMessage(message),
-    onError: (error) => {
-      // loading.value = false;
-      console.log(error);
-      abort();
-    },
-    onClose: () => {
-      loading.value = false;
-    },
-  });
-};
-
-/**
- * 处理消息
- */
-const handleMessage = (message) => {
-  const { questionId, chatId, type, content } = message;
-
-  if (type === "DONE") {
-    const loadingItem = messages.find(
-      (item) => item.questionId === questionId && item.type === "LOADING"
-    );
-    if (loadingItem) {
-      loadingItem.loading = false;
-      loadingItem.content = "回答完成";
-    }
-    stopGenerating(questionId);
-    return;
-  }
-
-  if (type === "LOADING") {
-    const loadingItem = messages.find(
-      (item) => item.questionId === questionId && item.type === "LOADING"
-    );
-    if (loadingItem) {
-      loadingItem.content = content;
-    }
-    return;
-  }
-
-  if (
-    messages.length > 0 &&
-    messages[messages.length - 1].role === "assistant"
-  ) {
-    const last = messages[messages.length - 1];
-
-    // 类型相同，合并内容
-    if (last.type === type) {
-      if (type === "MARKDOWN" || type === "TEXT") {
-        last.content += content;
-      } else if (type === "ECHARTS") {
-        last.content = content;
-      }
-    } else {
-      // 类型不同追加新消息
-      messages.push({
-        role: "assistant",
-        type,
-        content,
-        questionId,
-        chatId,
-      });
-    }
-  } else {
-    messages.push({
-      role: "assistant",
-      type,
-      content,
-      questionId,
-      chatId,
-    });
-  }
-  nextTick(() => {
-    // 添加复制按钮事件监听
-    const copyButtons = document.querySelectorAll(".copy-code-button");
-    copyButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const code = decodeURIComponent(button.getAttribute("data-code"));
-
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard
-            .writeText(code)
-            .then(() => {
-              button.textContent = "已复制";
-              setTimeout(() => {
-                button.textContent = "复制";
-              }, 2000);
-            })
-            .catch((err) => {
-              console.error("复制失败:", err);
-            });
-        } else {
-          fallbackCopyTextToClipboard(code, button);
-        }
-      });
-    });
-
-    // 添加折叠按钮事件监听
-    const foldButtons = document.querySelectorAll(".fold-code-button");
-    foldButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const container = button.closest(".code-block-container");
-        const content = container.querySelector(
-          ".code-block-content"
-        ) as HTMLElement;
-        // 切换折叠类
-        content.classList.toggle("folded");
-
-        // 更新按钮文本
-        if (content.classList.contains("folded")) {
-          button.textContent = "展开";
-        } else {
-          button.textContent = "折叠";
-        }
-      });
-    });
-    scrollToBottom();
-  });
-};
-
-/**
- * 停止生成
- */
-const stopGenerating = (qId: string = questionId.value) => {
-  abort();
-  loading.value = false;
-  if (messages.length > 0) {
-    const loadingItem = messages.find(
-      (item) => item.questionId === qId && item.type === "LOADING"
-    );
-    if (loadingItem) {
-      loadingItem.loading = false;
-      loadingItem.loadingMsg = "回答已取消";
-    }
-  }
-};
-
-/**
- * 将消息容器滚动到底部
- */
-const scrollToBottom = () => {
-  nextTick(() => {
-    if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-    }
-  });
-};
-
-/**
- * 复制文本到剪切板
- */
-const fallbackCopyTextToClipboard = (text: string, button: Element) => {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  textArea.style.position = "fixed";
-  textArea.style.left = "-999999px";
-  textArea.style.top = "-999999px";
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-
-  try {
-    const successful = document.execCommand("copy");
-    if (successful) {
-      button.textContent = "已复制";
-      setTimeout(() => {
-        button.textContent = "复制";
-      }, 2000);
-    } else {
-      console.error("复制失败");
-    }
-  } catch (err) {
-    console.error("复制失败:", err);
-  }
-
-  document.body.removeChild(textArea);
 };
 </script>
 
@@ -522,8 +650,65 @@ const fallbackCopyTextToClipboard = (text: string, button: Element) => {
     border-radius: 8px;
     margin-top: 4px;
     width: 100%;
-    height: 330px;
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: 1d2129;
+      padding: 12px 12px 4px 12px;
+    }
+
+    .description {
+      font-size: 12px;
+      color: #86909c;
+      font-weight: 400;
+      padding: 0 12px;
+    }
+
+    .chart {
+      height: 330px;
+      width: 100%;
+    }
   }
+
+  .table-container {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 4px;
+    padding: 0 16px 16px 12px;
+    width: 100%;
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: 1d2129;
+      padding: 12px 12px 4px 0;
+    }
+
+    .description {
+      font-size: 12px;
+      color: #86909c;
+      font-weight: 400;
+      padding: 0 12px 12px 0;
+    }
+  }
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg t="1756736588621" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1736" width="200" height="200"><path d="M239.445333 14.961778c-6.940444-19.911111-17.976889-19.911111-24.917333 0l-38.513778 112.753778c-6.656 19.911111-28.672 41.870222-48.924444 48.810666l-112.071111 38.115556c-20.024889 6.997333-20.024889 17.976889 0 24.917333l111.502222 38.684445c19.911111 6.997333 41.984 28.956444 48.924444 48.924444l39.082667 112.981333c6.940444 19.911111 17.976889 19.911111 24.917333 0l37.944889-112.412444c6.656-19.968 28.672-41.927111 48.64-48.924445l114.119111-38.968888c19.911111-6.940444 19.911111-17.92 0-24.860445L327.68 177.095111c-19.911111-6.599111-41.984-28.615111-48.924444-48.526222-0.284444 0.284444-39.367111-113.607111-39.367112-113.607111z" fill="%23fff" p-id="1737"></path><path d="M512 398.222222h56.888889v170.666667H512zM739.555556 398.222222h56.888888v170.666667h-56.888888z" fill="%23fff" p-id="1738"></path></svg>');
+  background-repeat: no-repeat;
+  background-position: bottom -100px right;
+  background-size: 330px 330px;
+  font-size: 28px;
+  color: #6b5454;
+  text-align: center;
 }
 
 .input-area {

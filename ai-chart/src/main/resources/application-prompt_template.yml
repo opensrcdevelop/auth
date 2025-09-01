@@ -21,10 +21,10 @@ ai:
             "success": true,
             "tables": [
               {
-                "table_id": "table_id",
-                "table_name": "table_name",
-                "description": "description",
-                "additional_info": "additional_info"
+                "table_id": "exact_table_id_from_input",
+                "table_name": "exact_table_name_from_input",
+                "description": "exact_description_from_input",
+                "additional_info": "exact_additional_info_from_input"
               }
             ]
           }
@@ -36,8 +36,11 @@ ai:
           }
           
           Requirements:
-          - All table names must be lowercase.
+          - Use the exact table names, descriptions, and additional_info as provided in the input.
+          - Do not modify, transform, or reformat any of the provided information.
+          - Preserve the exact case, spacing, and formatting of all input data.
           - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
       generate_sql:
         system: |
           You are an expert in generating SQL queries from natural language, specifically for ${sql_syntax} syntax.
@@ -71,10 +74,12 @@ ai:
           1. **Identify the relevant tables**: Determine which tables are needed based on the user question.
           2. **Extract required fields**: Identify the columns that should be included in the query.
           3. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
-          4. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
-          5. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
-          6. **Chart-friendly output**: Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
-          7. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, immediately return: { "success":false,"error":"Only SELECT queries are allowed" }
+          4. **Check for user-specified limits**: Look for explicit row limit requests in the user question.
+          5. **Apply default limit**: If no user limit is specified, add LIMIT 100 as the final clause.
+          6. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
+          7. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
+          8. **Chart-friendly output**: Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
+          9. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, immediately return: { "success":false,"error":"Only SELECT queries are allowed" }
 
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
@@ -94,8 +99,7 @@ ai:
           - Use only the provided tables, columns, and code table values.
           - Do not use any table, column, or value not explicitly listed.
           - Do not wrap the response in Markdown code blocks.
-
-
+          - Do not include any reasoning or thinking process in your response.
       generate_chart:
         system: |
           You are an expert in data visualization.
@@ -135,26 +139,18 @@ ai:
                 "columns?": [
                   {
                     "key": "<col>",
-                    "title": "<display name>",
-                    "width?": 120,
-                    "align?": "left|center|right",
-                    "formatter?": "number|percent|date|currency",
-                    "sortable?": true
+                    "title": "<display name>"
                   }
-                ],
-                "sortBy?": "<col>",
-                "sortOrder?": "asc|desc"
+                ]
               },
               "options": {
                 "smooth?": true | false,
                 "legend?": true | false,
-                "grid?": { "left": "3%", "right": "4%", "bottom": "3%", "containLabel": true },
-                "toolbox?": { "feature": { "saveAsImage": {} } },
-                "axisName?": { "x": "", "y": "" }
+                "axisName?": { "x": "", "y": "" },
               },
               "meta": {
-                "title": "<card title>",
-                "description?": "<subtitle>"
+                "title": "<title>",
+                "description?": "<description>"
               }
             }
           }
@@ -165,6 +161,7 @@ ai:
           Constraints:
           - Use only actual column names.
           - No Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
       repair_sql:
         system: |
           You are an SQL expert, specifically for ${sql_syntax} syntax. Fix the given SQL according to the error message and provided table schema.
@@ -211,3 +208,4 @@ ai:
           - Use only the provided tables, columns, and code table values.
           - Do not use any table, column, or value not explicitly listed.
           - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.

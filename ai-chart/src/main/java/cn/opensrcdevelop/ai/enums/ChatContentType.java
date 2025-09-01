@@ -3,7 +3,8 @@ package cn.opensrcdevelop.ai.enums;
 public enum ChatContentType {
     TEXT,
     MARKDOWN,
-    ECHARTS,
+    CHART,
+    TABLE,
     LOADING,
     DONE
 }

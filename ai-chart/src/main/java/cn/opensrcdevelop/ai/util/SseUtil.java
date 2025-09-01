@@ -65,7 +65,7 @@ public class SseUtil {
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
                         .content(chart)
-                        .type(ChatContentType.ECHARTS)
+                        .type(ChatContentType.CHART)
                         .build(), MediaType.APPLICATION_JSON)
         );
     }
@@ -102,6 +102,25 @@ public class SseUtil {
                         .questionId(ChatContext.getQuestionId())
                         .content(loadingMsg)
                         .type(ChatContentType.LOADING)
+                        .build(), MediaType.APPLICATION_JSON)
+        );
+    }
+
+    /**
+     * 发送 ChatBI 表格
+     *
+     * @param emitter SseEmitter
+     * @param table   表格
+     * @throws IOException IO异常
+     */
+    public static void sendChatBITable(SseEmitter emitter, Object table) throws IOException {
+        emitter.send(SseEmitter
+                .event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(table)
+                        .type(ChatContentType.TABLE)
                         .build(), MediaType.APPLICATION_JSON)
         );
     }
