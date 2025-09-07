@@ -24,4 +24,7 @@ public class ChatBIRequestDto {
 
     @Schema(description = "问题")
     private String question;
+
+    @Schema(description = "图表ID")
+    private String chartId;
 }

@@ -1,7 +1,9 @@
 <template>
   <div class="chat-container">
     <div class="message-container" ref="messageContainer">
-      <div class="empty-container" v-if="!messages.length">{{ greeting() }}</div>
+      <div class="empty-container" v-if="!messages.length">
+        {{ greeting() }}
+      </div>
       <div
         v-for="(message, index) in messages"
         :key="index"
@@ -66,6 +68,38 @@
               />
             </div>
           </div>
+          <div v-if="message.type === 'DONE' && message.actionType === 'GENERATE_CHART'">
+            <div class="operator-container">
+              <a-space>
+                <a-button
+                  type="text"
+                  size="mini"
+                  @click="resendMessage(message.questionId)"
+                >
+                  <template #icon>
+                    <icon-refresh />
+                  </template>
+                  <template #default>重新生成</template>
+                </a-button>
+                <a-button
+                  type="text"
+                  size="mini"
+                  @click="
+                    analyzeData(
+                      message.chartId,
+                      message.chatId,
+                      message.questionId
+                    )
+                  "
+                >
+                  <template #icon size="mini">
+                    <icon-computer />
+                  </template>
+                  <template #default>数据分析</template>
+                </a-button>
+              </a-space>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -78,7 +112,7 @@
           maxRows: 5,
         }"
         v-model="userInput"
-        @keyup.enter.ctrl="sendMessage"
+        @keyup.enter.ctrl="sendMessage(userInput)"
       />
       <div class="bottom-bar">
         <div class="option">
@@ -123,7 +157,7 @@
           <a-button
             type="primary"
             shape="circle"
-            @click="sendMessage"
+            @click="sendMessage(userInput)"
             v-if="!loading"
           >
             <template #icon>
@@ -232,7 +266,7 @@ const greeting = () => {
 /**
  * 发送消息
  */
-const sendMessage = async () => {
+const sendMessage = (input: string) => {
   if (!selectedDataSource.value) {
     Message.warning("请选择数据源");
     return;
@@ -242,12 +276,15 @@ const sendMessage = async () => {
     Message.warning("请选择大模型");
     return;
   }
-  if (!userInput.value.trim() || loading.value) return;
+
+  const question = input || userInput.value;
+
+  if (!question.trim() || loading.value) return;
   questionId.value = generateRandomString(12);
   messages.push({
     role: "user",
     type: "TEXT",
-    content: userInput.value,
+    content: question,
     questionId: questionId.value,
   });
   messages.push({
@@ -258,8 +295,9 @@ const sendMessage = async () => {
     questionId: questionId.value,
   });
 
-  const question = userInput.value;
-  userInput.value = "";
+  if (userInput.value) {
+    userInput.value = "";
+  }
   loading.value = true;
 
   fetchStream({
@@ -287,10 +325,74 @@ const sendMessage = async () => {
 };
 
 /**
+ * 数据分析
+ */
+const analyzeData = (chartId: string, chatId: string, qId: string) => {
+  // 获取用户提问
+  const userQuestion = messages.find(
+    (item) => item.questionId === qId && item.role === "user"
+  );
+  if (!userQuestion) return;
+
+  if (!selectedModel.value) {
+    Message.warning("请选择大模型");
+    return;
+  }
+
+  questionId.value = generateRandomString(12);
+  messages.push({
+    role: "user",
+    type: "TEXT",
+    content: "数据分析：" + userQuestion.content,
+    questionId: questionId.value,
+  });
+  messages.push({
+    role: "assistant",
+    type: "LOADING",
+    loading: true,
+    content: "回答生成中...",
+    questionId: questionId.value,
+  });
+
+  fetchStream({
+    url: "/chatbi/analyze/stream",
+    body: {
+      chatId: chatId,
+      questionId: questionId.value,
+      modelProviderId: selectedModel.value.split(":")[0],
+      model: selectedModel.value.split(":")[1],
+      chartId: chartId,
+    },
+    onMessage: (message) => handleMessage(message),
+    onError: (error) => {
+      loading.value = false;
+      abort();
+    },
+    onClose: () => {
+      loading.value = false;
+    },
+  });
+
+  nextTick(() => {
+    scrollToBottom();
+  });
+};
+
+/**
+ * 重新发送消息
+ */
+const resendMessage = (qId: string) => {
+  const userQuestion = messages.find(
+    (item) => item.questionId === qId && item.role === "user"
+  );
+  sendMessage(userQuestion.content);
+};
+
+/**
  * 处理消息
  */
 const handleMessage = (message) => {
-  const { questionId, chatId, type, content } = message;
+  const { actionType, chartId, questionId, chatId, type, content } = message;
 
   if (type === "DONE") {
     const loadingItem = messages.find(
@@ -300,6 +402,14 @@ const handleMessage = (message) => {
       loadingItem.loading = false;
       loadingItem.content = "回答完成";
     }
+    messages.push({
+      role: "assistant",
+      type,
+      questionId,
+      chatId,
+      chartId,
+      actionType,
+    });
     stopGenerating();
     scrollToBottom();
     return;
@@ -692,6 +802,10 @@ const initChart = (el, option) => {
       padding: 0 12px 12px 0;
     }
   }
+
+  .operator-container {
+    margin-top: 8px;
+  }
 }
 
 .empty-container {
@@ -778,6 +892,10 @@ const initChart = (el, option) => {
   p,
   pre {
     margin-bottom: 0;
+  }
+
+  ul {
+    padding-left: 12px;
   }
 
   /** 代码块容器 */

@@ -6,4 +6,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public interface ChatBIService {
 
     SseEmitter streamChatBI(ChatBIRequestDto requestDto);
+
+    SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto);
 }

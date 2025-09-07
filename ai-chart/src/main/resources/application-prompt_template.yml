@@ -32,7 +32,7 @@ ai:
           Failure schema (when no tables can be determined):
           {
             "success": false,
-            "error": "<reason>"
+            "error": "<language-specific reason>"
           }
           
           Requirements:
@@ -86,13 +86,19 @@ ai:
           Success schema:
           {
             "success": true,
-            "sql": "<generated SQL>"
+            "sql": "<generated SQL>",
+            "columns": [
+              {
+                "column_name": "<column name>",
+                "display_name": "<language-specific display name>"
+              }
+            ]
           }
           
           Failure schema (If the request is not a SELECT or cannot be fulfilled):
           {
             "success": false,
-            "error": "<reason>"
+            "error": "<language-specific reason>"
           }
           
           **Strict Constraints:**
@@ -139,14 +145,14 @@ ai:
                 "columns?": [
                   {
                     "key": "<col>",
-                    "title": "<display name>"
+                    "title": "<language-specific display name>"
                   }
                 ]
               },
               "options": {
                 "smooth?": true | false,
                 "legend?": true | false,
-                "axisName?": { "x": "", "y": "" },
+                "axisName?": { "x": "<language-specific xAxisName>", "y": "<language-specific yAxisName>" },
               },
               "meta": {
                 "title": "<title>",
@@ -156,7 +162,7 @@ ai:
           }
           
           Failure:
-          { "success": false, "error": "<reason>" }
+          { "success": false, "error": "<language-specific reason>" }
           
           Constraints:
           - Use only actual column names.
@@ -201,7 +207,7 @@ ai:
           Failure schema:
           {
             "success": false,
-            "error": "<reason>"
+            "error": "<language-specific reason>"
           }
           
           **Strict Constraints:**
@@ -209,3 +215,45 @@ ai:
           - Do not use any table, column, or value not explicitly listed.
           - Do not wrap the response in Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
+      analyze_data:
+        system: |
+          You are a data analysis expert skilled at identifying patterns, trends, and insights from structured data.
+        user: |
+          Perform data analysis on the provided query result based on the user question.
+          
+          ### Inputs
+          User Question: ${user_query}
+          Query Result: ${query_result}
+          Column Aliases: ${column_aliases}
+          
+          ### Analysis Requirements
+          1. Identify key trends, patterns, or anomalies in the data
+          2. Calculate relevant statistics (sum, average, min, max, etc.) where applicable
+          3. Highlight any significant findings or insights
+          4. Provide a concise summary of the data characteristics
+          5. When analyzing data, consider that column names in the query result may be aliases for physical fields. Use the provided column aliases mapping to understand the relationship between alias names and physical column names.
+          
+          ### Output Format
+          Return ONLY a JSON object containing the analysis results:
+          Success:
+          {
+            "success": true,
+            "insights": [
+              "<key_insight_1>",
+              "<key_insight_2>",
+              "<...>",
+              "<key_insight_n>"
+            ]
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Return only the analysis results without any additional information
+          - Do not include any visualizations or charts
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response

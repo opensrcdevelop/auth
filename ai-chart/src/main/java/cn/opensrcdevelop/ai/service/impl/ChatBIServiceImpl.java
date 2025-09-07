@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.service.impl;
 
+import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.agent.ChartAgent;
 import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatClientManager;
@@ -7,12 +8,15 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
 import cn.opensrcdevelop.ai.entity.ChartConf;
+import cn.opensrcdevelop.ai.enums.ChatActionType;
+import cn.opensrcdevelop.ai.model.ChartRecord;
 import cn.opensrcdevelop.ai.service.ChartConfService;
 import cn.opensrcdevelop.ai.service.ChatBIService;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -39,12 +44,14 @@ import java.util.concurrent.Executor;
 public class ChatBIServiceImpl implements ChatBIService {
 
     private static final Long CHAT_TIMEOUT = Duration.ofMinutes(60).toMillis();
+    private static final String CHART_RECORD_KEY = "chat_record:%s";
 
     private final ChartConfService chartConfService;
     private final DataSourceManager dataSourceManager;
     private final ChatClientManager chatClientManager;
     private final SqlAgent sqlAgent;
     private final ChartAgent chartAgent;
+    private final AnalyzeAgent analyzeAgent;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -58,8 +65,9 @@ public class ChatBIServiceImpl implements ChatBIService {
             try {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
-                processStreamRequest(requestDto, emitter, chatId);
-                SseUtil.sendChatBIDone(emitter);
+                ChatContext.setActionType(ChatActionType.GENERATE_CHART);
+                String chartId = processStreamRequest(requestDto, emitter, chatId);
+                SseUtil.sendChatBIDone(emitter, chartId);
             } catch (Exception ex) {
                 emitter.completeWithError(ex);
             } finally {
@@ -71,8 +79,55 @@ public class ChatBIServiceImpl implements ChatBIService {
         return emitter;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
-    private void  processStreamRequest(ChatBIRequestDto requestDto, SseEmitter emitter, String chatId) throws IOException {
+    public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto) {
+        SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        String chatId = requestDto.getChatId();
+        String questionId = requestDto.getQuestionId();
+
+        executor.execute(() -> {
+            try {
+                ChatContext.setChatId(chatId);
+                ChatContext.setQuestionId(questionId);
+                ChatContext.setActionType(ChatActionType.ANALYZE_DATA);
+
+                // 1. 获取临时图表记录
+                ChartRecord chartRecord = RedisUtil.get(CHART_RECORD_KEY.formatted(requestDto.getChartId()), ChartRecord.class);
+                if (Objects.isNull(chartRecord)) {
+                    SseUtil.sendChatBIText(emitter, "未找到生成的图表，无法进行数据分析。");
+                    SseUtil.sendChatBIDone(emitter);
+                    return;
+                }
+
+                // 2. 获取 ChatClient
+                ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(), chatId);
+
+                // 3. 分析数据
+                SseUtil.sendChatBILoading(emitter, "正在分析数据...");
+                Map<String, Object> analyzeResult = analyzeAgent.analyzeData(chatClient, chartRecord);
+                if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
+                    SseUtil.sendChatBITextSegmented(emitter, "无法分析数据，原因：%s".formatted(analyzeResult.get("error")), 500);
+                    return;
+                }
+                List<String> insights = (List<String>) analyzeResult.get("insights");
+                for (String insight : insights) {
+                    SseUtil.sendChatBIMd(emitter, "- **%s**".formatted(insight));
+                    SseUtil.sendChatBIText(emitter, "\n");
+                }
+                SseUtil.sendChatBIDone(emitter);
+            } catch (Exception ex) {
+                emitter.completeWithError(ex);
+            } finally {
+                emitter.complete();
+                ChatContext.clearChatContext();
+            }
+        });
+        return emitter;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String processStreamRequest(ChatBIRequestDto requestDto, SseEmitter emitter, String chatId) throws IOException {
         String dataSourceId = requestDto.getDataSourceId();
 
         // 1. 获取 ChatClient
@@ -82,8 +137,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBILoading(emitter, "正在匹配相关表信息...");
         Map<String, Object> tableResult = sqlAgent.getRelevantTables(chatClient, requestDto.getQuestion(), dataSourceId);
         if (!Boolean.TRUE.equals(tableResult.get("success"))) {
-            SseUtil.sendChatBIText(emitter, "无法获取相关表信息，原因：%s".formatted(tableResult.get("error")));
-            return;
+            SseUtil.sendChatBITextSegmented(emitter, "无法获取相关表信息，原因：%s".formatted(tableResult.get("error")), 500);
+            return null;
         }
         List<Map<String, Object>> relevantTables = (List<Map<String, Object>>) tableResult.get("tables");
         SseUtil.sendChatBIText(emitter, "匹配到以下表：\n");
@@ -95,8 +150,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBILoading(emitter, "正在生成 SQL...");
         Map<String, Object> sqlResult = sqlAgent.generateSql(chatClient, requestDto.getQuestion(), relevantTables, dataSourceId);
         if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
-            SseUtil.sendChatBIText(emitter, "无法生成 SQL，原因：%s".formatted(sqlResult.get("error")));
-            return;
+            SseUtil.sendChatBITextSegmented(emitter, "无法生成 SQL，原因：%s".formatted(sqlResult.get("error")), 500);
+            return null;
         }
         String sql = (String) sqlResult.get("sql");
 
@@ -108,13 +163,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBIText(emitter, "\n");
         if (!Boolean.TRUE.equals(executeResult._1)) {
             SseUtil.sendChatBIText(emitter, "执行 SQL 失败");
-            return;
+            return null;
         }
 
         List<Map<String, Object>> queryResult = executeResult._2;
         if (CollectionUtils.isEmpty(queryResult)) {
             SseUtil.sendChatBIText(emitter, "查询未返回数据");
-            return;
+            return null;
         }
 
         // 5. 生成图表配置
@@ -126,13 +181,14 @@ public class ChatBIServiceImpl implements ChatBIService {
                 queryResult
         );
         if (!Boolean.TRUE.equals(chartConfResult.get("success"))) {
-            SseUtil.sendChatBIText(emitter, "无法生成图表，原因：%s".formatted(chartConfResult.get("error")));
-            return;
+            SseUtil.sendChatBITextSegmented(emitter, "无法生成图表，原因：%s".formatted(chartConfResult.get("error")), 500);
+            return null;
         }
 
         // 6. 保存图表配置
+        String chartId = CommonUtil.getUUIDV7String();
         ChartConf chartConf = new ChartConf();
-        chartConf.setChartId(CommonUtil.getUUIDV7String());
+        chartConf.setChartId(chartId);
         chartConf.setDataSourceId(dataSourceId);
         chartConf.setChatId(chatId);
         chartConf.setQuestionId(requestDto.getQuestionId());
@@ -149,6 +205,11 @@ public class ChatBIServiceImpl implements ChatBIService {
         } else {
             SseUtil.sendChatBIChart(emitter, renderResult._2);
         }
+
+        // 8. 保存临时图表记录
+        saveTempChartRecord(chartId, chatId, requestDto.getQuestionId(), requestDto.getQuestion(), sql, queryResult, (List<Map<String, Object>>) sqlResult.get("columns"));
+
+        return chartId;
     }
 
     @SuppressWarnings("all")
@@ -183,5 +244,23 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         return Tuple.of(true, queryResult, sql);
+    }
+
+    private void saveTempChartRecord(String chartId,
+                                 String chatId,
+                                 String questionId,
+                                 String question,
+                                 String sql,
+                                 List<Map<String, Object>> data,
+                                 List<Map<String, Object>> columns) {
+        ChartRecord chartRecord = new ChartRecord();
+        chartRecord.setChatId(chatId);
+        chartRecord.setQuestionId(questionId);
+        chartRecord.setQuestion(question);
+        chartRecord.setSql(sql);
+        chartRecord.setData(data);
+        chartRecord.setColumns(columns);
+
+        RedisUtil.set(CHART_RECORD_KEY.formatted(chartId), chartRecord, 7, TimeUnit.DAYS);
     }
 }

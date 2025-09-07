@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.dto;
 
+import cn.opensrcdevelop.ai.enums.ChatActionType;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -23,4 +24,10 @@ public class ChatBIResponseDto {
 
     @Schema(description = "对话ID")
     private String chatId;
+
+    @Schema(description = "图表ID")
+    private String chartId;
+
+    @Schema(description = "操作类型")
+    private ChatActionType actionType;
 }

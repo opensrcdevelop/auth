@@ -32,6 +32,12 @@ public class ChatBIController {
         return chatBIService.streamChatBI(requestDto);
     }
 
+    @Operation(summary = "数据分析", description = "数据分析")
+    @PostMapping(path = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamAnalyzeData(@RequestBody ChatBIRequestDto requestDto) {
+        return chatBIService.streamAnalyzeData(requestDto);
+    }
+
     @Operation(summary = "获取数据源配置列表", description = "获取数据源配置列表")
     @GetMapping("/dataSourceConf/list")
     public PageData<DataSourceConfResponseDto> listDataSourceConf(@RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size) {
