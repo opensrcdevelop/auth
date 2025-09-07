@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 public class ChatBIServiceImpl implements ChatBIService {
 
     private static final Long CHAT_TIMEOUT = Duration.ofMinutes(60).toMillis();
-    private static final String CHART_RECORD_KEY = "chat_record:%s";
+    private static final String CHART_RECORD_KEY = "chart_record:%s";
 
     private final ChartConfService chartConfService;
     private final DataSourceManager dataSourceManager;
