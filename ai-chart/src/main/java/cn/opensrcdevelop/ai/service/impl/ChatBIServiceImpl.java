@@ -7,6 +7,7 @@ import cn.opensrcdevelop.ai.chat.ChatClientManager;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
+import cn.opensrcdevelop.ai.dto.VoteChartRequestDto;
 import cn.opensrcdevelop.ai.entity.ChartConf;
 import cn.opensrcdevelop.ai.enums.ChatActionType;
 import cn.opensrcdevelop.ai.model.ChartRecord;
@@ -17,6 +18,7 @@ import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
@@ -126,6 +128,19 @@ public class ChatBIServiceImpl implements ChatBIService {
         return emitter;
     }
 
+    /**
+     * 投票图表
+     *
+     * @param requestDto 请求
+     */
+    @Override
+    public void voteChart(VoteChartRequestDto requestDto) {
+        // 1. 数据库操作
+        chartConfService.update(Wrappers.<ChartConf>lambdaUpdate()
+                .eq(ChartConf::getChartId, requestDto.getChartId())
+                .set(ChartConf::getFeedBack, requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+    }
+
     @SuppressWarnings("unchecked")
     private String processStreamRequest(ChatBIRequestDto requestDto, SseEmitter emitter, String chatId) throws IOException {
         String dataSourceId = requestDto.getDataSourceId();
@@ -188,6 +203,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 6. 保存图表配置
         String chartId = CommonUtil.getUUIDV7String();
         ChartConf chartConf = new ChartConf();
+        chartConf.setModelProviderId(requestDto.getModelProviderId());
+        chartConf.setModel(requestDto.getModel());
         chartConf.setChartId(chartId);
         chartConf.setDataSourceId(dataSourceId);
         chartConf.setChatId(chatId);

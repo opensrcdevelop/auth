@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.ai.entity;
 
 import cn.opensrcdevelop.common.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -32,4 +31,11 @@ public class ChartConf extends BaseEntity implements Serializable {
     private String config;
 
     private String sql;
+
+    private String modelProviderId;
+
+    private String model;
+
+    @TableField(insertStrategy = FieldStrategy.ALWAYS, updateStrategy = FieldStrategy.ALWAYS)
+    private String feedBack;
 }

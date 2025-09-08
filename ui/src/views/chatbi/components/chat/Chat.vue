@@ -68,7 +68,11 @@
               />
             </div>
           </div>
-          <div v-if="message.type === 'DONE' && message.actionType === 'GENERATE_CHART'">
+          <div
+            v-if="
+              message.type === 'DONE' && message.actionType === 'GENERATE_CHART'
+            "
+          >
             <div class="operator-container">
               <a-space>
                 <a-button
@@ -82,6 +86,7 @@
                   <template #default>重新生成</template>
                 </a-button>
                 <a-button
+                  v-if="message.chartId"
                   type="text"
                   size="mini"
                   @click="
@@ -97,6 +102,25 @@
                   </template>
                   <template #default>数据分析</template>
                 </a-button>
+                <a-divider direction="vertical" />
+                <a-space v-if="message.chartId">
+                  <a-tooltip content="喜欢" position="bottom" mini>
+                    <a-button size="mini" shape="circle" @click="handleVoteChart(message, 'LIKE')">
+                      <template #icon>
+                        <icon-thumb-up-fill v-if="message?.feedback === 'LIKE'" />
+                        <icon-thumb-up v-else />
+                      </template>
+                    </a-button>
+                  </a-tooltip>
+                  <a-tooltip content="不喜欢" position="bottom" mini>
+                    <a-button size="mini" shape="circle" @click="handleVoteChart(message, 'DISLIKE')">
+                      <template #icon>
+                        <icon-thumb-down-fill v-if="message?.feedback === 'DISLIKE'" />
+                        <icon-thumb-down v-else />
+                      </template>
+                    </a-button>
+                  </a-tooltip>
+                </a-space>
               </a-space>
             </div>
           </div>
@@ -188,7 +212,7 @@ import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import * as echarts from "echarts";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getDataSourceConfList, getModelProviderList} from "@/api/chatbi";
+import {getDataSourceConfList, getModelProviderList, voteChart} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 
 const { abort, fetchStream } = userEventSource();
@@ -532,6 +556,21 @@ const scrollToBottom = () => {
       messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
     }
   });
+};
+
+/**
+ * 投票图表
+ */
+const handleVoteChart = (doneMessage: any, feedback: string) => {
+  const { chartId } = doneMessage;
+  voteChart({
+    chartId,
+    feedback: doneMessage?.feedback === feedback ? undefined : feedback,
+  }).then((result: any) => {
+    handleApiSuccess(result, () => {
+      doneMessage.feedback = doneMessage?.feedback === feedback ? undefined : feedback;;
+    })
+  })
 };
 
 /**
