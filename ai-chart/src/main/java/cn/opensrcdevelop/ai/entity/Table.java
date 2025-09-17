@@ -21,9 +21,6 @@ public class Table extends BaseEntity implements Serializable {
     /** 数据源ID */
     private String dataSourceId;
 
-    /** 模式 */
-    private String schemaName;
-
     /** 表ID */
     @TableId(type = IdType.INPUT)
     private String tableId;

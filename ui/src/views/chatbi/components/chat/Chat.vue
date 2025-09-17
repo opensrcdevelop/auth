@@ -2,7 +2,7 @@
   <div class="chat-container">
     <div class="message-container" ref="messageContainer">
       <div class="empty-container" v-if="!messages.length">
-        {{ greeting() }}
+        {{ greetingText }}
       </div>
       <div
         v-for="(message, index) in messages"
@@ -105,17 +105,29 @@
                 <a-divider direction="vertical" />
                 <a-space v-if="message.chartId">
                   <a-tooltip content="喜欢" position="bottom" mini>
-                    <a-button size="mini" shape="circle" @click="handleVoteChart(message, 'LIKE')">
+                    <a-button
+                      size="mini"
+                      shape="circle"
+                      @click="handleVoteChart(message, 'LIKE')"
+                    >
                       <template #icon>
-                        <icon-thumb-up-fill v-if="message?.feedback === 'LIKE'" />
+                        <icon-thumb-up-fill
+                          v-if="message?.feedback === 'LIKE'"
+                        />
                         <icon-thumb-up v-else />
                       </template>
                     </a-button>
                   </a-tooltip>
                   <a-tooltip content="不喜欢" position="bottom" mini>
-                    <a-button size="mini" shape="circle" @click="handleVoteChart(message, 'DISLIKE')">
+                    <a-button
+                      size="mini"
+                      shape="circle"
+                      @click="handleVoteChart(message, 'DISLIKE')"
+                    >
                       <template #icon>
-                        <icon-thumb-down-fill v-if="message?.feedback === 'DISLIKE'" />
+                        <icon-thumb-down-fill
+                          v-if="message?.feedback === 'DISLIKE'"
+                        />
                         <icon-thumb-down v-else />
                       </template>
                     </a-button>
@@ -206,13 +218,13 @@
 
 <script setup lang="ts">
 import {userEventSource} from "@/hooks/useEventSource";
-import {nextTick, onMounted, onUnmounted, reactive, ref} from "vue";
+import {nextTick, onUnmounted, reactive, ref} from "vue";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import * as echarts from "echarts";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getDataSourceConfList, getModelProviderList, voteChart} from "@/api/chatbi";
+import {getEnabledDataSourceConf, getModelProviderList, voteChart,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 
 const { abort, fetchStream } = userEventSource();
@@ -225,20 +237,20 @@ const dataSourceList = reactive([]);
 const modelProviderList = reactive([]);
 const selectedDataSource = ref("");
 const selectedModel = ref("");
+const greetingText = ref("");
 
-onMounted(() => {
-  // 获取数据源列表
-  getDataSourceConfList({
-    page: 1,
-    size: -1,
-  })
+const init = () => {
+  greetingText.value = greeting();
+  // 获取已启用的数据源
+  getEnabledDataSourceConf()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
-        dataSourceList.push(...data.list);
+        dataSourceList.length = 0;
+        dataSourceList.push(...data);
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "获取数据源列表");
+      handleApiError(err, "获取已启用的数据源");
     });
 
   // 获取模型提供商列表
@@ -248,6 +260,7 @@ onMounted(() => {
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
+        modelProviderList.length = 0;
         modelProviderList.push(...data.list);
 
         if (modelProviderList.length > 0) {
@@ -259,6 +272,10 @@ onMounted(() => {
     .catch((err: any) => {
       handleApiError(err, "获取模型提供商列表");
     });
+};
+
+defineExpose({
+  init,
 });
 
 onUnmounted(() => {
@@ -568,9 +585,10 @@ const handleVoteChart = (doneMessage: any, feedback: string) => {
     feedback: doneMessage?.feedback === feedback ? undefined : feedback,
   }).then((result: any) => {
     handleApiSuccess(result, () => {
-      doneMessage.feedback = doneMessage?.feedback === feedback ? undefined : feedback;;
-    })
-  })
+      doneMessage.feedback =
+        doneMessage?.feedback === feedback ? undefined : feedback;
+    });
+  });
 };
 
 /**

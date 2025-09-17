@@ -23,7 +23,7 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 获取模型提供商列表
      *
-     * @param keyword 检索关键字
+     * @param keyword 模型提供商名称检索关键字
      * @param page    页数
      * @param size    条数
      * @return 模型提供商列表

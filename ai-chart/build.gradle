@@ -10,6 +10,7 @@ bootJar {
 
 dependencies {
     implementation project(':common')
+    implementation project(':auth-audit')
     implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
@@ -19,4 +20,9 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
     implementation "com.github.vertical-blank:sql-formatter:$rootProject.sqlFormatterVer"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
 }

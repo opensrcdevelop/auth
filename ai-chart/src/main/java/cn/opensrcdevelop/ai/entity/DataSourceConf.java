@@ -9,6 +9,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,14 +29,20 @@ public class DataSourceConf extends BaseEntity implements Serializable {
     /** 数据源类型 */
     private String dataSourceType;
 
+    /** 数据源描述 */
+    private String description;
+
     /** 数据库名称 */
     private String database;
+
+    /** 模式 */
+    private String schema;
 
     /** 主机地址 */
     private String host;
 
     /** 端口号 */
-    private String port;
+    private Integer port;
 
     /** 用户名 */
     private String username;
@@ -43,6 +50,18 @@ public class DataSourceConf extends BaseEntity implements Serializable {
     /** 密码 */
     private String password;
 
+    /** jdbc参数 */
+    private String jdbcParams;
+
     /** 是否启用 */
     private Boolean enabled;
+
+    /** 最后同步表时间 */
+    private LocalDateTime lastSyncTableTime;
+
+    /** 同步表次数 */
+    private Long syncTableCount;
+
+    /** 是否系统数据源 */
+    private Boolean systemDs;
 }

@@ -11,15 +11,19 @@ import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,14 +36,18 @@ public class DataSourceMetaCollector {
     private final TableService tableService;
     private final TableFieldService tableFieldService;
     private final DataSourceManager dataSourceManager;
-    private final DataSourceConfService dataSourceConfService;
     private final TableFieldTypeConverter tableFieldTypeConverter;
+
+    @Resource
+    @Lazy
+    private DataSourceConfService dataSourceConfService;
 
     /**
      * 收集数据源元信息
      *
      * @param dataSourceId 数据源ID
      */
+    @Transactional
     public void collect(String dataSourceId) {
         // 1. 获取数据源配置
         DataSourceConf dataSourceConf = dataSourceConfService.getById(dataSourceId);
@@ -67,7 +75,6 @@ public class DataSourceMetaCollector {
                 // 5. 添加或更新表信息
                 Table tmpTable = tableService.getOne(Wrappers.<Table>lambdaQuery()
                         .eq(Table::getTableName, table.getTableName())
-                        .eq(Table::getSchemaName, table.getSchemaName())
                         .eq(Table::getDataSourceId, dataSourceId));
 
                 String tableId;
@@ -120,6 +127,13 @@ public class DataSourceMetaCollector {
                     }
                 }
             }
+
+            // 9. 更新数据源同步信息
+            DataSourceConf updateDataSourceConf = new DataSourceConf();
+            updateDataSourceConf.setDataSourceId(dataSourceId);
+            updateDataSourceConf.setLastSyncTableTime(LocalDateTime.now());
+            updateDataSourceConf.setSyncTableCount(dataSourceConf.getSyncTableCount() == null ? 1 : dataSourceConf.getSyncTableCount() + 1);
+            dataSourceConfService.updateById(updateDataSourceConf);
         } catch (SQLException ex) {
             log.error("收集数据库元信息失败，数据源ID：{}", dataSourceId);
             throw new ServerException(ex);
@@ -138,7 +152,6 @@ public class DataSourceMetaCollector {
                 Table table = new Table();
                 table.setTableName(rs.getString("TABLE_NAME"));
                 table.setRemark(rs.getString("REMARKS"));
-                table.setSchemaName(rs.getString("table_schema"));
                 tables.add(table);
             }
         }
@@ -150,7 +163,7 @@ public class DataSourceMetaCollector {
 
         try (ResultSet rs = databaseMetaData.getColumns(
                 null,
-                table.getSchemaName(),
+                null,
                 table.getTableName(),
                 "%"
         )) {

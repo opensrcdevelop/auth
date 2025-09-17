@@ -258,13 +258,29 @@ const pageRoutes: RouteRecordRaw[] = [
       title: "创建限制条件模版",
     },
   },
-    {
+  {
     path: "/permission/expression/template/detail",
     component: () =>
       import("@/views/permission/expression/template/detail/index.vue"),
     meta: {
       parent: "/permission/expression/template",
       title: "限制条件模版详情",
+    },
+  },
+  {
+    path: "/chatbi/datasource/detail",
+    component: () => import("@/views/chatbi/datasource/detail/index.vue"),
+    meta: {
+      parent: "/chatbi",
+      title: "数据源详情",
+    },
+  },
+  {
+    path: "/chatbi/datasource/create",
+    component: () => import("@/views/chatbi/datasource/create/index.vue"),
+    meta: {
+      parent: "/chatbi",
+      title: "创建数据源",
     },
   },
 ];
