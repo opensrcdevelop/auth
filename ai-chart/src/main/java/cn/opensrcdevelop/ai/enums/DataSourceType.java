@@ -33,7 +33,7 @@ public enum DataSourceType {
             "com.microsoft.sqlserver.jdbc.SQLServerDriver"
     );
 
-    private final String name;
+    private final String displayName;
     private final String dialectName;
     private final String jdbcUrlFormat;
     private final String driverClassName;

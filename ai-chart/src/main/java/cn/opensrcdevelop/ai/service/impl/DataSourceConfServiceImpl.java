@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.service.impl;
 
 import cn.opensrcdevelop.ai.constants.MessageConstants;
+import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceMetaCollector;
 import cn.opensrcdevelop.ai.dto.DataSourceConfRequestDto;
 import cn.opensrcdevelop.ai.dto.DataSourceConfResponseDto;
@@ -47,6 +48,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
     private final TableService tableService;
     private final DataSourceMetaCollector dataSourceMetaCollector;
+    private final DataSourceManager dataSourceManager;
 
     /**
      * 获取已启用的数据源配置列表
@@ -115,7 +117,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         List<DataSourceConfResponseDto> data = CommonUtil.stream(dataSourceConfList).map(dataSourceConf -> DataSourceConfResponseDto.builder()
                         .id(dataSourceConf.getDataSourceId())
                         .name(dataSourceConf.getDataSourceName())
-                        .type(DataSourceType.valueOf(dataSourceConf.getDataSourceType()).getName())
+                        .type(DataSourceType.valueOf(dataSourceConf.getDataSourceType()).getDisplayName())
                         .enabled(dataSourceConf.getEnabled())
                         .lastSyncTableTime(dataSourceConf.getLastSyncTableTime())
                         .syncTableCount(dataSourceConf.getSyncTableCount())
@@ -276,6 +278,9 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
         // 4. 数据库操作
         super.updateById(updateDataSourceConf);
+
+        // 5. 删除数据源缓存
+        dataSourceManager.removeDataSource(dataSourceId);
     }
 
     /**

@@ -1,9 +1,9 @@
 import {
-  batchUpdateTable,
-  getDataSourceConfDetail,
-  getTableList,
-  testDataSourceConn,
-  updateDataSourceConf,
+    batchUpdateTable,
+    getDataSourceConfDetail,
+    getTableList,
+    testDataSourceConn,
+    updateDataSourceConf,
 } from "@/api/chatbi";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
@@ -13,6 +13,7 @@ import {Notification} from "@arco-design/web-vue";
 import {usePagination} from "@/hooks/usePagination";
 import TextEditorModal from "../../modal/TextEditorModal.vue";
 import MdEditorModal from "../../modal/MdEditorModal.vue";
+import TableFieldListDrawer from "../../drawer/TableFieldListDrawer.vue";
 
 /**
  * 返回上一级
@@ -370,10 +371,29 @@ const handleSaveTableList = () => {
     });
 };
 
+/** 表字段列表 Drawer */
+const tableFieldListDrawerVisible = ref(false);
+const tableFieldListDrawerTitle = ref("");
+const tableFieldListDrawerTableId = ref("");
+
+const handleOpenTableFieldListDrawer = (record: any) => {
+  tableFieldListDrawerVisible.value = true;
+  tableFieldListDrawerTitle.value = "表字段列表 - " + record.name;
+  tableFieldListDrawerTableId.value = record.id;
+}
+
+const handleCloseTableFieldListDrawer = () => {
+  tableFieldListDrawerVisible.value = false;
+  tableFieldListDrawerTitle.value = "";
+  tableFieldListDrawerTableId.value = "";
+}
+
+
 export default defineComponent({
   components: {
     TextEditorModal,
     MdEditorModal,
+    TableFieldListDrawer,
   },
   setup() {
     const dataSourceId = getQueryString("id");
@@ -424,6 +444,11 @@ export default defineComponent({
       handleCloseMdEditorModal,
       handleMdEditorModalConfirm,
       handleSaveTableList,
+      tableFieldListDrawerVisible,
+      tableFieldListDrawerTitle,
+      tableFieldListDrawerTableId,
+      handleOpenTableFieldListDrawer,
+      handleCloseTableFieldListDrawer
     };
   },
 });

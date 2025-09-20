@@ -1,7 +1,9 @@
 package cn.opensrcdevelop.ai.service.impl;
 
+import cn.opensrcdevelop.ai.dto.BatchUpdateTableFieldRequestDto;
 import cn.opensrcdevelop.ai.dto.TableFieldResponseDto;
 import cn.opensrcdevelop.ai.entity.TableField;
+import cn.opensrcdevelop.ai.enums.TableFieldType;
 import cn.opensrcdevelop.ai.mapper.TableFieldMapper;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.common.response.PageData;
@@ -9,10 +11,12 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableField> implements TableFieldService {
@@ -22,8 +26,8 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
      *
      * @param tableId 表ID
      * @param keyword 字段名称检索关键字
-     * @param page 页数
-     * @param size 条数
+     * @param page    页数
+     * @param size    条数
      * @return 表字段列表
      */
     @Override
@@ -50,14 +54,38 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
         pageData.setSize(pageRequest.getSize());
 
         List<TableFieldResponseDto> data = CommonUtil.stream(tableFieldList).map(tableField -> TableFieldResponseDto.builder()
-                .id(tableField.getFieldId())
-                .name(tableField.getFieldName())
-                .type(tableField.getFieldType())
-                .remark(tableField.getRemark())
-                .additionalInfo(tableField.getAdditionalInfo())
-                .toUse(tableField.getToUse()).build())
+                        .id(tableField.getFieldId())
+                        .name(tableField.getFieldName())
+                        .type(TableFieldType.valueOf(tableField.getFieldType()).getDisplayName())
+                        .remark(tableField.getRemark())
+                        .additionalInfo(tableField.getAdditionalInfo())
+                        .toUse(tableField.getToUse()).build())
                 .toList();
         pageData.setList(data);
         return pageData;
+    }
+
+    /**
+     * 批量更新表字段
+     *
+     * @param requestDto 请求
+     */
+    @Override
+    public void batchUpdate(BatchUpdateTableFieldRequestDto requestDto) {
+        // 1. 属性编辑
+        List<TableField> updateList = CommonUtil.stream(requestDto.getList()).map(tableField -> {
+            TableField updateTableField = new TableField();
+            updateTableField.setFieldId(tableField.getId());
+            updateTableField.setRemark(tableField.getRemark());
+            updateTableField.setAdditionalInfo(tableField.getAdditionalInfo());
+            CommonUtil.callSetWithCheck(Objects::nonNull, updateTableField::setToUse, tableField::getToUse);
+
+            return updateTableField;
+        }).toList();
+
+        // 2. 批量更新
+        if (CollectionUtils.isNotEmpty(updateList)) {
+            super.updateBatchById(updateList);
+        }
     }
 }

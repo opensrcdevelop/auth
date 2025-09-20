@@ -146,8 +146,14 @@ public class ChatBIController {
     }
 
     @Operation(summary = "批量更新表", description = "批量更新表")
-    @PostMapping("/table/batchUpdate")
+    @PutMapping("/table/batchUpdate")
     public void batchUpdateTable(@RequestBody @Valid BatchUpdateTableRequestDto requestDto) {
         tableService.batchUpdate(requestDto);
+    }
+
+    @Operation(summary = "批量更新表字段", description = "批量更新表字段")
+    @PutMapping("/table/field/batchUpdate")
+    public void batchUpdateTableField(@RequestBody @Valid BatchUpdateTableFieldRequestDto requestDto) {
+        tableFieldService.batchUpdate(requestDto);
     }
 }

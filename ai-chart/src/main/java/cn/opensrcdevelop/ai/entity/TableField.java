@@ -18,12 +18,12 @@ public class TableField extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = 6488902898717594612L;
 
-    /** 表ID */
-    @TableId(type = IdType.INPUT)
-    private String tableId;
-
     /** 字段ID */
+    @TableId(type = IdType.INPUT)
     private String fieldId;
+
+    /** 表ID */
+    private String tableId;
 
     /** 字段名 */
     private String fieldName;

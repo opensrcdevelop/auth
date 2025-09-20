@@ -1,0 +1,370 @@
+.chat-container {
+  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  border-radius: 12px;
+}
+
+.message-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  margin-bottom: 20px;
+
+  /* WebKit 浏览器滚动条样式 */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  /* 滚动条滑块 */
+  &::-webkit-scrollbar-thumb {
+    background: rgba(144, 147, 153, 0.3);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(144, 147, 153, 0.5);
+    }
+  }
+
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+
+  &:hover {
+    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+  }
+
+  .avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .avatar-assistant {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: "white";
+    margin-bottom: 16px;
+  }
+
+  .message {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .user-message {
+    flex-direction: row-reverse;
+  }
+
+  .user-message-mt {
+    margin-top: 20px;
+  }
+
+  .assistant-message {
+    margin-bottom: 0;
+  }
+
+  .message-content {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-left: 12px;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #2c3e50;
+  }
+
+  .user-message-content {
+    width: fit-content;
+    background-color: #ecf5ff;
+    margin-right: 12px;
+    margin-left: 0px;
+  }
+
+  .assistant-message-content {
+    padding: 0;
+    margin-bottom: 0;
+  }
+
+  .echarts-container {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 4px;
+    width: 100%;
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: 1d2129;
+      padding: 12px 12px 4px 12px;
+    }
+
+    .description {
+      font-size: 12px;
+      color: #86909c;
+      font-weight: 400;
+      padding: 0 12px;
+    }
+
+    .chart {
+      height: 330px;
+      width: 100%;
+    }
+  }
+
+  .table-container {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-top: 4px;
+    padding: 0 16px 16px 12px;
+    width: 100%;
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: 1d2129;
+      padding: 12px 12px 4px 0;
+    }
+
+    .description {
+      font-size: 12px;
+      color: #86909c;
+      font-weight: 400;
+      padding: 0 12px 12px 0;
+    }
+  }
+
+  .operator-container {
+    margin-top: 8px;
+  }
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  background-image: url('data:image/svg+xml;utf8,<svg t="1756736588621" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1736" width="200" height="200"><path d="M239.445333 14.961778c-6.940444-19.911111-17.976889-19.911111-24.917333 0l-38.513778 112.753778c-6.656 19.911111-28.672 41.870222-48.924444 48.810666l-112.071111 38.115556c-20.024889 6.997333-20.024889 17.976889 0 24.917333l111.502222 38.684445c19.911111 6.997333 41.984 28.956444 48.924444 48.924444l39.082667 112.981333c6.940444 19.911111 17.976889 19.911111 24.917333 0l37.944889-112.412444c6.656-19.968 28.672-41.927111 48.64-48.924445l114.119111-38.968888c19.911111-6.940444 19.911111-17.92 0-24.860445L327.68 177.095111c-19.911111-6.599111-41.984-28.615111-48.924444-48.526222-0.284444 0.284444-39.367111-113.607111-39.367112-113.607111z" fill="%23fff" p-id="1737"></path><path d="M512 398.222222h56.888889v170.666667H512zM739.555556 398.222222h56.888888v170.666667h-56.888888z" fill="%23fff" p-id="1738"></path></svg>');
+  background-repeat: no-repeat;
+  background-position: bottom -100px right;
+  background-size: 330px 330px;
+  font-size: 28px;
+  color: #6b5454;
+  text-align: center;
+}
+
+.input-area {
+  background-color: #ffffff;
+  margin: 0 16px 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  padding: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .no-border-textarea {
+    border: none;
+    background-color: #ffffff;
+
+    &:focus {
+      border: none;
+      box-shadow: none;
+    }
+
+    &:hover {
+      border: none;
+    }
+
+    :deep(.arco-textarea) {
+      /* WebKit 浏览器滚动条样式 */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+      }
+
+      /* 滚动条滑块 */
+      &::-webkit-scrollbar-thumb {
+        background: rgba(144, 147, 153, 0.3);
+        border-radius: 3px;
+
+        &:hover {
+          background: rgba(144, 147, 153, 0.5);
+        }
+      }
+
+      /* Firefox 滚动条样式 */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+
+      &:hover {
+        scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+      }
+    }
+  }
+
+  .bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+:deep(.markdown-body) {
+  p,
+  pre {
+    margin-bottom: 0;
+  }
+
+  ul {
+    padding-left: 12px;
+  }
+
+  /** 代码块容器 */
+  .code-block-container {
+    position: relative;
+    margin: 4px 0;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  /** 代码块头部 */
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f6f8fa;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  /** 代码块内容 */
+  .code-block-content {
+    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-size: 14px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  /** 折叠状态 */
+  .code-block-content.folded {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  /** 代码语言标签 */
+  .code-language {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  /** 代码块按钮组 */
+  .code-block-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  /** 复制按钮 */
+  .copy-code-button {
+    padding: 2px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+  }
+
+  /** 折叠按钮 */
+  .fold-code-button {
+    padding: 2px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+  }
+
+  /** 代码块 */
+  pre.hljs {
+    margin: 0;
+    padding: 12px;
+    background: transparent;
+    overflow-x: auto;
+
+    /* WebKit 浏览器滚动条样式 */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    /* 滚动条滑块 */
+    &::-webkit-scrollbar-thumb {
+      background: rgba(144, 147, 153, 0.3);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(144, 147, 153, 0.5);
+      }
+    }
+
+    /* Firefox 滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+
+    &:hover {
+      scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+    }
+  }
+
+  /** 行内代码 */
+  .inline-code-container {
+    margin: 4px 0;
+  }
+
+  .inline-code {
+    padding: 2px 6px;
+    font-size: 0.9em;
+    color: #e83e8c;
+    background-color: rgba(27, 31, 35, 0.05);
+    border-radius: 3px;
+    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  }
+}

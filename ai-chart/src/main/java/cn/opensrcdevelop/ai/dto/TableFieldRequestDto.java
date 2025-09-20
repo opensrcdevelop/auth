@@ -4,13 +4,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-@Schema(description = "表请求")
+@Schema(description = "表字段请求")
 @Data
-public class TableRequestDto {
+public class TableFieldRequestDto {
 
-    @Schema(description = "表ID")
+    @Schema(description = "表字段ID")
     @NotBlank
-    public String id;
+    private String id;
 
     @Schema(description = "注释")
     public String remark;

@@ -5,6 +5,7 @@ import cn.opensrcdevelop.ai.agent.ChartAgent;
 import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatClientManager;
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
 import cn.opensrcdevelop.ai.dto.VoteChartRequestDto;
@@ -17,11 +18,14 @@ import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import com.zaxxer.hikari.pool.HikariPool;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
+import io.vavr.control.Try;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +52,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private static final Long CHAT_TIMEOUT = Duration.ofMinutes(60).toMillis();
     private static final String CHART_RECORD_KEY = "chart_record:%s";
 
+    private final MessageUtil messageUtil;
     private final ChartConfService chartConfService;
     private final DataSourceManager dataSourceManager;
     private final ChatClientManager chatClientManager;
@@ -58,6 +63,12 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
 
+    /**
+     * 流式生成图表
+     *
+     * @param requestDto 请求
+     * @return SseEmitter
+     */
     @Override
     public SseEmitter streamChatBI(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
@@ -70,6 +81,8 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContext.setActionType(ChatActionType.GENERATE_CHART);
                 String chartId = processStreamRequest(requestDto, emitter, chatId);
                 SseUtil.sendChatBIDone(emitter, chartId);
+            } catch (HikariPool.PoolInitializationException ex) {
+                Try.run(() -> SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003)));
             } catch (Exception ex) {
                 emitter.completeWithError(ex);
             } finally {
@@ -81,6 +94,12 @@ public class ChatBIServiceImpl implements ChatBIService {
         return emitter;
     }
 
+    /**
+     * 流式分析数据
+     *
+     * @param requestDto 请求
+     * @return SseEmitter
+     */
     @Override
     @SuppressWarnings("unchecked")
     public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto) {

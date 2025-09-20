@@ -6,5 +6,6 @@ public enum ChatContentType {
     CHART,
     TABLE,
     LOADING,
+    ERROR,
     DONE
 }

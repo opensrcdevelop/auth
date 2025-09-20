@@ -83,3 +83,11 @@
 .fade-leave-from {
   opacity: 1;
 }
+
+.ellipsis-text {
+  display: inline-block;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -52,10 +52,12 @@ watch(
 );
 
 const hadleCloseModal = () => {
+  text.value = "";
   emits("close");
 };
 
 const handleConfirm = () => {
   emits("confirm", text.value);
+  text.value = "";
 };
 </script>

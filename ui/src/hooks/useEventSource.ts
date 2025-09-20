@@ -58,6 +58,7 @@ export function userEventSource() {
       },
       onerror: (err) => {
         options.onError?.(err);
+        throw err;
       },
       onclose: () => {
         options.onClose?.();
@@ -68,6 +69,7 @@ export function userEventSource() {
   const abort = () => {
     if (controller) {
       controller.abort();
+      controller = null;
     }
   };
 

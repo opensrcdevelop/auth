@@ -135,8 +135,35 @@ export function getTableList(dataSourceId: string, params: any) {
  * @returns 响应结果
  */
 export function batchUpdateTable(data: any) {
-  return apiRequest.post({
+  return apiRequest.put({
     url: "/chatbi/table/batchUpdate",
+    data,
+  });
+}
+
+/**
+ * 获取表字段列表
+ *
+ * @param tableId 表ID
+ * @param params 请求参数
+ * @returns 表字段列表
+ */
+export function getTableFieldList(tableId: string, params: any) {
+  return apiRequest.get({
+    url: `/chatbi/table/${tableId}/field/list`,
+    params,
+  });
+}
+
+/**
+ * 批量更新表字段
+ *
+ * @param data 请求数据
+ * @returns 响应结果
+ */
+export function batchUpdateTableField(data: any) {
+  return apiRequest.put({
+    url: "/chatbi/table/field/batchUpdate",
     data,
   });
 }

@@ -190,15 +190,18 @@ export default indexTs;
                 }"
               >
                 <template #cell="{ record }">
-                  <span class="table-column-name">
+                  <span
+                    class="table-column-name"
+                    @click="handleOpenTableFieldListDrawer(record)"
+                  >
                     {{ record.name }}
                   </span>
                 </template>
               </a-table-column>
-              <a-table-column title="表注释" ellipsis tooltip>
+              <a-table-column title="表注释">
                 <template #cell="{ record }">
                   <a-space>
-                    <span>
+                    <span class="ellipsis-text">
                       {{ record.remark ? record.remark : "-" }}
                     </span>
                     <a-button
@@ -213,10 +216,10 @@ export default indexTs;
                   </a-space>
                 </template>
               </a-table-column>
-              <a-table-column title="补充信息" ellipsis>
+              <a-table-column title="补充信息">
                 <template #cell="{ record }">
                   <a-space>
-                    <span>
+                    <span class="ellipsis-text">
                       {{ record.additionalInfo ? record.additionalInfo : "-" }}
                     </span>
                     <a-button
@@ -256,6 +259,13 @@ export default indexTs;
       :title="mdEditorModalTitle"
       @close="handleCloseMdEditorModal"
       @confirm="handleMdEditorModalConfirm"
+    />
+
+    <TableFieldListDrawer
+      :visible="tableFieldListDrawerVisible"
+      :tableId="tableFieldListDrawerTableId"
+      :title="tableFieldListDrawerTitle"
+      @close="handleCloseTableFieldListDrawer"
     />
   </div>
 </template>

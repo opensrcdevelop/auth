@@ -40,8 +40,8 @@ public class SseUtil {
     /**
      * 随机分段发送文本消息
      *
-     * @param emitter SseEmitter
-     * @param text 文本消息
+     * @param emitter  SseEmitter
+     * @param text     文本消息
      * @param maxDelay 最大延迟时间（毫秒）
      * @throws IOException IO异常
      */
@@ -181,7 +181,7 @@ public class SseUtil {
     /**
      * 发送 ChatBI Loading
      *
-     * @param emitter SseEmitter
+     * @param emitter    SseEmitter
      * @param loadingMsg 加载消息
      * @throws IOException IO异常
      */
@@ -212,6 +212,24 @@ public class SseUtil {
                         .questionId(ChatContext.getQuestionId())
                         .content(table)
                         .type(ChatContentType.TABLE)
+                        .build(), MediaType.APPLICATION_JSON)
+        );
+    }
+
+    /**
+     * 发送 ChatBI 错误消息
+     *
+     * @param emitter  SseEmitter
+     * @param errorMsg 错误消息
+     * @throws IOException IO异常
+     */
+    public static void sendChatBIError(SseEmitter emitter, String errorMsg) throws IOException {
+        emitter.send(SseEmitter.event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContext.getChatId())
+                        .questionId(ChatContext.getQuestionId())
+                        .content(errorMsg)
+                        .type(ChatContentType.ERROR)
                         .build(), MediaType.APPLICATION_JSON)
         );
     }
