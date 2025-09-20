@@ -257,3 +257,65 @@ ai:
           - Do not include any visualizations or charts
           - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response
+      generate_report:
+        system: |
+          You are a professional data analyst and technical writer skilled at creating comprehensive, visually appealing, and insightful data reports.
+        user: |
+          Create a comprehensive HTML report based on the data analysis results and user requirements.
+          
+          ### Inputs
+          User Question: ${user_query}
+          Query Result: ${query_result}
+          Data Analysis Results:
+          <#list analysis_results as item>
+             - ${item}
+          </#list>
+          Column Aliases: ${column_aliases}
+          Current Time: ${current_time}
+          
+          ### Report Requirements
+          1. **Content Structure**:
+             - Executive Summary
+             - Data Analysis Process
+             - Detailed Analysis Results
+             - Business Insights
+             - Recommendations and Action Plan
+             - Generated Time Footer (format: YYYY-MM-DD HH:MM:SS)
+          
+          2. **Design Requirements**:
+             - Implement light mode only, without dark mode toggle
+             - Apply glass morphism effects (backdrop-filter, blur, sophisticated shadows)
+             - Use modern gradient colors and color hierarchy
+             - Add micro-interactions (card hover effects, smooth transitions)
+             - Responsive grid layout system
+             - Modern card design with rounded corners and shadows
+             - 3D effect interactive elements
+             - Loading animations for data visualization components
+          
+          3. **Technical Specifications**:
+             - Use CSS variables for color system definition
+             - Apply modern CSS features (clamp(), aspect-ratio, gap)
+             - Add transition effects to all interactive elements
+             - Remove all buttons and interactive elements that require JavaScript
+          
+          4. **Content Requirements**:
+             - All data and conclusions must be based on provided information
+             - Include all important content information from the analysis
+             - Maintain logical connections between report sections
+             - Create static elements for data exploration
+             - Use CDN for required resources (Tailwind CSS, ECharts)
+             - Embed all styles directly in the HTML file
+             - Ensure HTML code meets W3C standards
+          
+          5. **Output Format**:
+             ## Output format - Output format
+             Html:
+             {HTML PAGE}
+          
+          **Strict Constraints**:
+          - Return only the generated HTML report without any additional information
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+          - Ensure all data visualizations are clear and properly labeled
+          - Do not include empty DOM nodes
+          - Do not fabricate or hallucinate any data

@@ -69,6 +69,19 @@
               />
             </div>
           </div>
+          <div v-if="message.type === 'HTML_REPORT'">
+            <div class="html-report-container">
+              <div class="content">
+                <iframe
+                  :ref="(el) => addHtmlReportRef(message.questionId, el)"
+                  :srcdoc="message.content"
+                  frameborder="0"
+                  width="100%"
+                  height="100%"
+                />
+              </div>
+            </div>
+          </div>
           <div
             v-if="
               message.type === 'DONE' && message.actionType === 'GENERATE_CHART'
@@ -134,6 +147,36 @@
                     </a-button>
                   </a-tooltip>
                 </a-space>
+              </a-space>
+            </div>
+          </div>
+          <div
+            v-if="
+              message.type === 'DONE' && message.actionType === 'ANALYZE_DATA'
+            "
+          >
+            <div class="operator-container">
+              <a-space>
+                <a-button
+                  type="text"
+                  size="mini"
+                  @click="toggleFullscreen(message.questionId)"
+                >
+                  <template #icon>
+                    <icon-fullscreen />
+                  </template>
+                  <template #default>全屏显示</template>
+                </a-button>
+                <a-button
+                  type="text"
+                  size="mini"
+                  @click="downloadAsPDF(message.questionId)"
+                >
+                  <template #icon>
+                    <icon-download />
+                  </template>
+                  <template #default>下载</template>
+                </a-button>
               </a-space>
             </div>
           </div>
@@ -228,6 +271,8 @@ import * as echarts from "echarts";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
 import {getEnabledDataSourceConf, getModelProviderList, voteChart,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const { abort, fetchStream } = userEventSource();
 const messageContainer = ref(null);
@@ -361,7 +406,7 @@ const sendMessage = (input: string) => {
         (item) =>
           item.questionId === questionId.value && item.type === "LOADING"
       );
-      if (loadingItem && loadingItem.loading) {
+      if (loadingItem) {
         loadingItem.loading = false;
         loadingItem.error = true;
         loadingItem.content = "发生了未知错误";
@@ -423,9 +468,10 @@ const analyzeData = (chartId: string, chatId: string, qId: string) => {
       console.error(error);
       loading.value = false;
       const loadingItem = messages.find(
-        (item) => item.questionId === qId && item.type === "LOADING"
+        (item) =>
+          item.questionId === questionId.value && item.type === "LOADING"
       );
-      if (loadingItem && loadingItem.loading) {
+      if (loadingItem) {
         loadingItem.loading = false;
         loadingItem.error = true;
         loadingItem.content = "发生了未知错误";
@@ -459,6 +505,7 @@ const handleMessage = (message) => {
   const { actionType, chartId, questionId, chatId, type, content } = message;
 
   if (type === "DONE") {
+    loading.value = false;
     const loadingItem = messages.find(
       (item) => item.questionId === questionId && item.type === "LOADING"
     );
@@ -474,7 +521,6 @@ const handleMessage = (message) => {
       chartId,
       actionType,
     });
-    stopGenerating();
     scrollToBottom();
     return;
   }
@@ -509,9 +555,9 @@ const handleMessage = (message) => {
 
     // 类型相同，合并内容
     if (last.type === type) {
-      if (type === "MARKDOWN" || type === "TEXT") {
+      if (["MARKDOWN", "TEXT", "HTML_REPORT"].includes(type)) {
         last.content += content;
-      } else if (type === "ECHARTS" || type === "TABLE") {
+      } else if (["ECHARTS", "TABLE"].includes(type)) {
         last.content = content;
       }
     } else {
@@ -592,7 +638,7 @@ const stopGenerating = (qId: string = questionId.value) => {
     const loadingItem = messages.find(
       (item) => item.questionId === qId && item.type === "LOADING"
     );
-    if (loadingItem && loadingItem.loading) {
+    if (loadingItem) {
       loadingItem.loading = false;
       loadingItem.content = "回答已取消";
     }
@@ -748,6 +794,60 @@ const initChart = (el, option) => {
     chartRefs.set(el, chart);
     chartRefs.set(el + "_observer", resizeObserver);
   }, 0);
+};
+
+/**
+ * HTML Report
+ */
+const htmlReportRefs = new Map<string, HTMLElement>();
+const addHtmlReportRef = (qId, el) => {
+  if (!el) return;
+  htmlReportRefs.set(qId, el);
+};
+/**
+ * 切换全屏
+ */
+const toggleFullscreen = (qId: string) => {
+  const el = htmlReportRefs.get(qId);
+  if (!el) return;
+
+  if (el?.requestFullscreen) {
+    el.requestFullscreen();
+  }
+};
+const downloadAsPDF = async (qId: string) => {
+  const el = htmlReportRefs.get(qId);
+  if (!el) return;
+
+  try {
+    const document =
+      (el as HTMLIFrameElement).contentDocument ||
+      (el as HTMLIFrameElement).contentWindow?.document;
+    if (!document) {
+      console.error("无法获取 iframe 的 document 对象");
+      return;
+    }
+    const title = document.title || `report_${new Date().getTime()}`;
+    const canvas = await html2canvas(document.body, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      width: document.body.scrollWidth,
+      height: document.body.scrollHeight,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? "landscape" : "portrait",
+      unit: "px",
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    pdf.save(`${title}.pdf`);
+  } catch (error) {
+    console.error("下载PDF失败:", error);
+  }
 };
 </script>
 

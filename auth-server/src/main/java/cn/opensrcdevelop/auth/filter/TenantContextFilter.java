@@ -27,13 +27,11 @@ import java.net.URL;
 @Slf4j
 public class TenantContextFilter extends RestFilter {
 
-    private static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
-
     @Override
     protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             // 1. 根据域名获取租户标识
-            URL baseUrl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER)).toURL();
+            URL baseUrl = URI.create(SpringContextUtil.getProperty(CommonConstants.PROP_DEFAULT_ISSUER)).toURL();
             URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
             // 1.1 默认租户
             if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
@@ -64,7 +62,7 @@ public class TenantContextFilter extends RestFilter {
             }
             WebUtil.sendJsonResponse(response, R.optFail(MessageConstants.TENANT_MSG_1000, tenantCode), HttpStatus.NOT_FOUND);
         } finally {
-            // 3. 清空租户线程上下文
+            // 3. 清空租户线程上下文和 session 属性
             TenantHelper.clearTenantContext();
             TenantHelper.clearTenantDsContext();
         }

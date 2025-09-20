@@ -60,4 +60,7 @@ public class DataSourceConfResponseDto {
 
     @Schema(description = "同步表次数")
     private Long syncTableCount;
+
+    @Schema(description = "是否系统数据源")
+    private Boolean systemDs;
 }

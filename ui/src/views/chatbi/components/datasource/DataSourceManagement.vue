@@ -9,7 +9,9 @@
       @keyup.enter.native="handleGetDataSourceList(1, 15)"
       @clear="handleGetDataSourceList(1, 15)"
     />
-    <a-button type="primary" @click="handleToCreateDataSource">创建数据源</a-button>
+    <a-button type="primary" @click="handleToCreateDataSource"
+      >创建数据源</a-button
+    >
   </div>
   <div class="datasource-list">
     <a-table
@@ -49,6 +51,17 @@
           <template #cell="{ record }">
             <span>
               {{ record.type }}
+            </span>
+          </template>
+        </a-table-column>
+         <a-table-column
+          title="数据源描述"
+          ellipsis
+          tooltip
+        >
+          <template #cell="{ record }">
+            <span>
+              {{ record.desc ? record.desc : "-" }}
             </span>
           </template>
         </a-table-column>
@@ -122,7 +135,10 @@
                   </template>
                   同步表</a-doption
                 >
-                <a-doption style="color: #e8353e">
+                <a-doption
+                  style="color: #e8353e"
+                  @click="handleDeleteDataSource(record)"
+                >
                   <template #icon>
                     <icon-delete />
                   </template>
@@ -137,11 +153,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import {getDataSourceConfList, syncTable, updateDataSourceConf,} from "@/api/chatbi";
+import {deleteDataSourceConf, getDataSourceConfList, syncTable, updateDataSourceConf,} from "@/api/chatbi";
 import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
-import {Notification} from "@arco-design/web-vue";
+import {Modal, Notification} from "@arco-design/web-vue";
 import {reactive, ref} from "vue";
 
 /** 数据源列表 */
@@ -198,7 +214,7 @@ const handleToDataSourceDetail = (dataSource: any) => {
  */
 const handleToCreateDataSource = () => {
   router.push({
-    path: "/chatbi/datasource/create"
+    path: "/chatbi/datasource/create",
   });
 };
 
@@ -234,6 +250,32 @@ const handleUpdateDataSourceState = (dataSource: any) => {
     .catch((err: any) => {
       handleApiError(err, "更新数据源启用状态");
     });
+};
+
+/**
+ * 删除数据源
+ */
+const handleDeleteDataSource = (dataSource: any) => {
+  Modal.warning({
+    title: `确定删除数据源「${dataSource.name}」吗？`,
+    content: "此操作将删除该数据源及包含的所有表，请谨慎操作。",
+    hideCancel: false,
+    okButtonProps: {
+      status: "danger",
+    },
+    onOk: () => {
+      deleteDataSourceConf(dataSource.id)
+        .then((result: any) => {
+          handleApiSuccess(result, () => {
+            Notification.success("删除成功");
+            handleGetDataSourceList();
+          });
+        })
+        .catch((err: any) => {
+          handleApiError(err, "删除资源组");
+        });
+    },
+  });
 };
 
 /**

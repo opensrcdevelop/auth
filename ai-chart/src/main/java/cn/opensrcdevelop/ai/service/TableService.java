@@ -11,4 +11,6 @@ public interface TableService extends IService<Table> {
     PageData<TableResponseDto> list(String dataSourceId, String keyword, int page, int size);
 
     void batchUpdate(BatchUpdateTableRequestDto requestDto);
+
+    void removeTables(String dataSourceId);
 }

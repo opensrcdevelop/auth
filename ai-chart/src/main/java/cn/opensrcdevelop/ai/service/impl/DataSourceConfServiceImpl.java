@@ -59,7 +59,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     public List<DataSourceConfResponseDto> enabledList() {
         // 1. 查询数据库
         List<DataSourceConf> dataSourceConfList = super.list(Wrappers.<DataSourceConf>lambdaQuery()
-                .select(DataSourceConf::getDataSourceId, DataSourceConf::getDataSourceName, DataSourceConf::getDescription)
+                .select(DataSourceConf::getDataSourceId, DataSourceConf::getDataSourceName)
                 .eq(DataSourceConf::getEnabled, true)
                 .orderByAsc(DataSourceConf::getDataSourceName));
 
@@ -67,7 +67,6 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         return CommonUtil.stream(dataSourceConfList).map(dataSourceConf -> DataSourceConfResponseDto.builder()
                 .id(dataSourceConf.getDataSourceId())
                 .name(dataSourceConf.getDataSourceName())
-                .desc(dataSourceConf.getDescription())
                 .build()).toList();
     }
 
@@ -91,7 +90,9 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                             DataSourceConf::getDataSourceType,
                             DataSourceConf::getEnabled,
                             DataSourceConf::getLastSyncTableTime,
-                            DataSourceConf::getSyncTableCount)
+                            DataSourceConf::getSyncTableCount,
+                            DataSourceConf::getDescription,
+                            DataSourceConf::getSystemDs)
                     .like(DataSourceConf::getDataSourceName, keyword)
                     .orderByAsc(DataSourceConf::getDataSourceName)
             );
@@ -102,7 +103,9 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                             DataSourceConf::getDataSourceType,
                             DataSourceConf::getEnabled,
                             DataSourceConf::getLastSyncTableTime,
-                            DataSourceConf::getSyncTableCount)
+                            DataSourceConf::getSyncTableCount,
+                            DataSourceConf::getDescription,
+                            DataSourceConf::getSystemDs)
                     .orderByAsc(DataSourceConf::getDataSourceName)
             );
         }
@@ -121,6 +124,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                         .enabled(dataSourceConf.getEnabled())
                         .lastSyncTableTime(dataSourceConf.getLastSyncTableTime())
                         .syncTableCount(dataSourceConf.getSyncTableCount())
+                        .desc(dataSourceConf.getDescription())
+                        .systemDs(dataSourceConf.getSystemDs())
                         .build())
                 .toList();
 
@@ -240,6 +245,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         dataSourceConf.setPassword(requestDto.getPassword());
         dataSourceConf.setJdbcParams(requestDto.getJdbcParams());
         dataSourceConf.setEnabled(true);
+        dataSourceConf.setSystemDs(false);
 
         // 3. 数据库操作
         super.save(dataSourceConf);
@@ -261,10 +267,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
             return;
         }
 
-        // 2. 检查数据源名称是否存在
+        // 2. 检查是否为系统数据源
+        checkIsSystemDataSource(dataSourceId);
+
+        // 3. 检查数据源名称是否存在
         checkDataSourceName(requestDto, rawDataSourceConf);
 
-        // 3. 属性设置
+        // 4. 属性设置
         DataSourceConf updateDataSourceConf = new DataSourceConf();
         updateDataSourceConf.setDataSourceId(dataSourceId);
         updateDataSourceConf.setDataSourceName(requestDto.getName());
@@ -276,10 +285,10 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         updateDataSourceConf.setJdbcParams(requestDto.getJdbcParams());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateDataSourceConf::setEnabled, requestDto::getEnabled);
 
-        // 4. 数据库操作
+        // 5. 数据库操作
         super.updateById(updateDataSourceConf);
 
-        // 5. 删除数据源缓存
+        // 6. 删除数据源缓存
         dataSourceManager.removeDataSource(dataSourceId);
     }
 
@@ -319,6 +328,48 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         }
     }
 
+    /**
+     * 删除数据源配置
+     *
+     * @param id 数据源ID
+     */
+    @Transactional
+    @Override
+    public void removeDataSourceConf(String id) {
+        // 1. 检查是否为系统数据源
+        checkIsSystemDataSource(id);
+
+        // 2. 删除数据源配置
+        super.removeById(id);
+
+        // 3. 删除数据源缓存
+        dataSourceManager.removeDataSource(id);
+
+        // 4. 删除数据下的所有表
+        tableService.removeTables(id);
+    }
+
+    /**
+     * 检查数据源是否已同步
+     *
+     * @param id 数据源ID
+     * @return 是否已同步
+     */
+    @Override
+    public boolean isSynced(String id) {
+        DataSourceConf dataSourceConf = super.getOne(
+                Wrappers.<DataSourceConf>lambdaQuery()
+                        .select(DataSourceConf::getSyncTableCount)
+                        .eq(DataSourceConf::getDataSourceId, id)
+                        .eq(DataSourceConf::getEnabled, true)
+        );
+        if (Objects.isNull(dataSourceConf)) {
+            return false;
+        }
+
+        return Objects.nonNull(dataSourceConf.getSyncTableCount()) && dataSourceConf.getSyncTableCount() > 0;
+    }
+
     private void checkDataSourceName(DataSourceConfRequestDto requestDto, DataSourceConf rawDataSourceConf) {
         if (Objects.nonNull(rawDataSourceConf) && StringUtils.equals(requestDto.getName(), rawDataSourceConf.getDataSourceName())) {
             return;
@@ -326,6 +377,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
         if (Objects.nonNull(super.getOne(Wrappers.<DataSourceConf>lambdaQuery().eq(DataSourceConf::getDataSourceName, requestDto.getName())))) {
             throw new BizException(MessageConstants.AI_DATASOURCE_MSG_1002, requestDto.getName());
+        }
+    }
+
+    private void checkIsSystemDataSource(String dataSourceId) {
+        DataSourceConf dataSourceConf = super.getById(dataSourceId);
+        if (Objects.nonNull(dataSourceConf) && Boolean.TRUE.equals(dataSourceConf.getSystemDs())) {
+            throw new BizException(MessageConstants.AI_DATASOURCE_MSG_1004);
         }
     }
 }

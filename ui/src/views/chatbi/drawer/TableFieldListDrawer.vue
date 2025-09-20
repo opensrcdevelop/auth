@@ -11,7 +11,7 @@
       tip="处理中，请稍后..."
       :loading="globalVariables.apiLoading"
     >
-      <div id="list-container">
+      <div class="list-container">
         <div class="list-header">
           <a-input-search
             :style="{ width: '320px' }"
@@ -415,6 +415,11 @@ const handleSaveTableFieldList = () => {
 .spin {
   width: 100%;
   height: 100%;
+}
+
+.list-container {
+  width: 100%;
+  height: calc(100% - 48px);
 }
 
 .list-header {

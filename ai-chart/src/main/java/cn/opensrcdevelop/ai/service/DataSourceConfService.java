@@ -25,4 +25,8 @@ public interface DataSourceConfService extends IService<DataSourceConf> {
     void updateDataSourceConf(DataSourceConfRequestDto requestDto);
 
     TestDataSourceConnResponseDto testConn(TestDataSourceConnRequestDto requestDto);
+
+    void removeDataSourceConf(String id);
+
+    boolean isSynced(String id);
 }

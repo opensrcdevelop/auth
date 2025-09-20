@@ -4,29 +4,35 @@ import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.mapper.TableMapper;
+import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements TableService {
+
+    private final TableFieldService tableFieldService;
 
     /**
      * 获取数据源下的表列表
      *
      * @param dataSourceId 数据源ID
-     * @param keyword 表名检索关键字
-     * @param page 页数
-     * @param size 条数
+     * @param keyword      表名检索关键字
+     * @param page         页数
+     * @param size         条数
      * @return 数据源下的表列表
      */
     @Override
@@ -53,11 +59,11 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
         pageData.setSize(pageRequest.getSize());
 
         List<TableResponseDto> data = CommonUtil.stream(tableList).map(table -> TableResponseDto.builder()
-                .id(table.getTableId())
-                .name(table.getTableName())
-                .remark(table.getRemark())
-                .additionalInfo(table.getAdditionalInfo())
-                .toUse(table.getToUse()).build())
+                        .id(table.getTableId())
+                        .name(table.getTableName())
+                        .remark(table.getRemark())
+                        .additionalInfo(table.getAdditionalInfo())
+                        .toUse(table.getToUse()).build())
                 .toList();
         pageData.setList(data);
         return pageData;
@@ -84,6 +90,26 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
         // 2. 批量更新
         if (CollectionUtils.isNotEmpty(updateList)) {
             super.updateBatchById(updateList);
+        }
+    }
+
+    /**
+     * 删除数据源下的所有表
+     *
+     * @param dataSourceId 数据源ID
+     */
+    @Transactional
+    @Override
+    public void removeTables(String dataSourceId) {
+        // 1. 查询数据源下的所有表ID
+        List<String> tableIds = CommonUtil.stream(super.list(Wrappers.<Table>lambdaQuery()
+                .select(Table::getTableId)
+                .eq(Table::getDataSourceId, dataSourceId))).map(Table::getTableId).toList();
+
+        // 2. 删除表及字段
+        if (CollectionUtils.isNotEmpty(tableIds)) {
+            super.remove(Wrappers.<Table>lambdaQuery().in(Table::getTableId, tableIds));
+            tableFieldService.removeTableFields(tableIds);
         }
     }
 }

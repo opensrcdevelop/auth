@@ -7,5 +7,6 @@ public enum ChatContentType {
     TABLE,
     LOADING,
     ERROR,
+    HTML_REPORT,
     DONE
 }

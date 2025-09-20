@@ -167,3 +167,15 @@ export function batchUpdateTableField(data: any) {
     data,
   });
 }
+
+/**
+ * 删除数据源配置
+ * 
+ * @param id 数据源ID
+ * @returns 响应结果
+ */
+export function deleteDataSourceConf(id: string) {
+  return apiRequest.delete({
+    url: `/chatbi/dataSourceConf/${id}`,
+  });
+}

@@ -167,7 +167,7 @@ public class ChartRenderer {
             );
 
             Map<String, Object> series = Map.ofEntries(
-                    Map.entry("name", titleText),
+                    Map.entry("name", yName),
                     Map.entry("type", chartType),
                     Map.entry("data", yData),
                     Map.entry("smooth", smooth)

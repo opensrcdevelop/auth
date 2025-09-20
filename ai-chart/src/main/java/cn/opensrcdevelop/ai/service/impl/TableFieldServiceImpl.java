@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -86,6 +87,19 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
         // 2. 批量更新
         if (CollectionUtils.isNotEmpty(updateList)) {
             super.updateBatchById(updateList);
+        }
+    }
+
+    /**
+     * 删除表中的所有字段
+     *
+     * @param tableIds 表ID集合
+     */
+    @Transactional
+    @Override
+    public void removeTableFields(List<String> tableIds) {
+        if (CollectionUtils.isNotEmpty(tableIds)) {
+            super.remove(Wrappers.<TableField>lambdaQuery().in(TableField::getTableId, tableIds));
         }
     }
 }

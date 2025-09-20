@@ -41,8 +41,8 @@ public class ChatBIController {
 
     @Operation(summary = "数据分析", description = "数据分析")
     @PostMapping(path = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamAnalyzeData(@RequestBody ChatBIRequestDto requestDto) {
-        return chatBIService.streamAnalyzeData(requestDto);
+    public SseEmitter streamAnalyzeDataAndGenerateReport(@RequestBody ChatBIRequestDto requestDto) {
+        return chatBIService.streamAnalyzeDataAndGenerateReport(requestDto);
     }
 
     @Operation(summary = "获取已启用的数据源配置", description = "获取已启用的数据源配置")
@@ -155,5 +155,14 @@ public class ChatBIController {
     @PutMapping("/table/field/batchUpdate")
     public void batchUpdateTableField(@RequestBody @Valid BatchUpdateTableFieldRequestDto requestDto) {
         tableFieldService.batchUpdate(requestDto);
+    }
+
+    @Operation(summary = "删除数据源配置", description = "删除数据源配置")
+    @Parameters({
+            @Parameter(name = "id", description = "数据源ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/dataSourceConf/{id}")
+    public void removeDataSourceConf(@PathVariable @NotBlank String id) {
+        dataSourceConfService.removeDataSourceConf(id);
     }
 }
