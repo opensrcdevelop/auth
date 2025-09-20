@@ -113,3 +113,30 @@ export function testDataSourceConn(data: any) {
     data,
   });
 }
+
+/**
+ * 获取数据源下的表列表
+ *
+ * @param dataSourceId 数据源ID
+ * @param params 请求参数
+ * @returns 数据源下的表列表
+ */
+export function getTableList(dataSourceId: string, params: any) {
+  return apiRequest.get({
+    url: `/chatbi/dataSourceConf/${dataSourceId}/table/list`,
+    params,
+  });
+}
+
+/**
+ * 批量更新表
+ *
+ * @param data 请求数据
+ * @returns 响应结果
+ */
+export function batchUpdateTable(data: any) {
+  return apiRequest.post({
+    url: "/chatbi/table/batchUpdate",
+    data,
+  });
+}

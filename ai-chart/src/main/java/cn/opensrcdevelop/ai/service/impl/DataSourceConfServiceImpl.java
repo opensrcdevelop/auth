@@ -57,7 +57,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     public List<DataSourceConfResponseDto> enabledList() {
         // 1. 查询数据库
         List<DataSourceConf> dataSourceConfList = super.list(Wrappers.<DataSourceConf>lambdaQuery()
-                .select(DataSourceConf::getDataSourceId, DataSourceConf::getDataSourceName)
+                .select(DataSourceConf::getDataSourceId, DataSourceConf::getDataSourceName, DataSourceConf::getDescription)
                 .eq(DataSourceConf::getEnabled, true)
                 .orderByAsc(DataSourceConf::getDataSourceName));
 
@@ -65,6 +65,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         return CommonUtil.stream(dataSourceConfList).map(dataSourceConf -> DataSourceConfResponseDto.builder()
                 .id(dataSourceConf.getDataSourceId())
                 .name(dataSourceConf.getDataSourceName())
+                .desc(dataSourceConf.getDescription())
                 .build()).toList();
     }
 

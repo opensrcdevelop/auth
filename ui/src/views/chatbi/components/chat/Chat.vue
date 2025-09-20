@@ -164,8 +164,9 @@
                 v-for="item in dataSourceList"
                 :key="item.id"
                 :value="item.id"
-                >{{ item.name }}</a-option
               >
+                {{ item.name }}
+              </a-option>
             </a-select>
             <a-select
               placeholder="请选择大模型"

@@ -123,9 +123,139 @@ export default indexTs;
           </a-form>
         </div>
       </a-tab-pane>
-      <a-tab-pane key="table_list" title="数据表列表">
-        <div class="tab-container"></div>
+      <a-tab-pane key="table_list" title="表列表">
+        <div class="tab-container">
+          <div class="table-list-header">
+            <a-input-search
+              :style="{ width: '320px' }"
+              placeholder="输入表名称进行搜索"
+              allow-clear
+              v-model="tableSearchKeyword"
+              @search="handleGetTableList(dataSourceId, 1, 15)"
+              @keyup.enter.native="handleGetTableList(dataSourceId, 1, 15)"
+              @clear="handleGetTableList(dataSourceId, 1, 15)"
+            />
+            <a-button
+              type="primary"
+              :disabled="saveBtnDisabled"
+              @click="handleSaveTableList"
+              >保存</a-button
+            >
+          </div>
+          <a-table
+            class="table-list"
+            :data="tableList"
+            :bordered="false"
+            :scroll="{ y: '100%' }"
+            :pagination="tableListPagination.pagination"
+            @page-change="handleTableListPageChange"
+            @page-size-change="handleTableListPageSizeChange"
+          >
+            <template #columns>
+              <a-table-column title="编辑状态" :width="100">
+                <template #cell="{ record }">
+                  <div class="edit-status-container">
+                    <transition name="fade">
+                      <a-tag
+                        v-if="!record._isHovering || !isRowModified(record)"
+                        class="status-tag"
+                        :class="{ modified: isRowModified(record) }"
+                        @mouseenter="handleHoverIn(record)"
+                      >
+                        {{ isRowModified(record) ? "已编辑" : "未编辑" }}
+                      </a-tag>
+                    </transition>
+                    <transition name="fade">
+                      <a-button
+                        v-if="record._isHovering && isRowModified(record)"
+                        class="status-btn"
+                        type="outline"
+                        size="mini"
+                        status="warning"
+                        @mouseleave="handleHoverOut(record)"
+                        @click="handleResetRow(record)"
+                      >
+                        还原
+                      </a-button>
+                    </transition>
+                  </div>
+                </template>
+              </a-table-column>
+              <a-table-column
+                title="表名称"
+                ellipsis
+                tooltip
+                :sortable="{
+                  sortDirections: ['ascend', 'descend'],
+                }"
+              >
+                <template #cell="{ record }">
+                  <span class="table-column-name">
+                    {{ record.name }}
+                  </span>
+                </template>
+              </a-table-column>
+              <a-table-column title="表注释" ellipsis tooltip>
+                <template #cell="{ record }">
+                  <a-space>
+                    <span>
+                      {{ record.remark ? record.remark : "-" }}
+                    </span>
+                    <a-button
+                      shape="circle"
+                      size="mini"
+                      @click="handleOpenTextEditorModal(record)"
+                    >
+                      <template #icon>
+                        <icon-edit />
+                      </template>
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-table-column>
+              <a-table-column title="补充信息" ellipsis>
+                <template #cell="{ record }">
+                  <a-space>
+                    <span>
+                      {{ record.additionalInfo ? record.additionalInfo : "-" }}
+                    </span>
+                    <a-button
+                      shape="circle"
+                      size="mini"
+                      @click="handleOpenMdEditorModal(record)"
+                    >
+                      <template #icon>
+                        <icon-edit />
+                      </template>
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-table-column>
+              <a-table-column title="是否使用" :width="100">
+                <template #cell="{ record }">
+                  <a-switch type="round" size="small" v-model="record.toUse" />
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </div>
       </a-tab-pane>
     </a-tabs>
+
+    <TextEditorModal
+      :visible="textEditorModalVisible"
+      :content="textEditorModalContent"
+      :title="textEditorModalTitle"
+      @close="handleCloseTextEditorModal"
+      @confirm="handleTextEditorModalConfirm"
+    />
+
+    <MdEditorModal
+      :visible="mdEditorModalVisible"
+      :content="mdEditorModalContent"
+      :title="mdEditorModalTitle"
+      @close="handleCloseMdEditorModal"
+      @confirm="handleMdEditorModalConfirm"
+    />
   </div>
 </template>

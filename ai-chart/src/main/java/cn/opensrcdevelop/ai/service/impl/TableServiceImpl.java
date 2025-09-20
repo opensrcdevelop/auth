@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.service.impl;
 
+import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.mapper.TableMapper;
@@ -9,10 +10,12 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements TableService {
@@ -58,5 +61,29 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 .toList();
         pageData.setList(data);
         return pageData;
+    }
+
+    /**
+     * 批量更新表
+     *
+     * @param requestDto 请求
+     */
+    @Override
+    public void batchUpdate(BatchUpdateTableRequestDto requestDto) {
+        // 1. 属性编辑
+        List<Table> updateList = CommonUtil.stream(requestDto.getList()).map(table -> {
+            Table updateTable = new Table();
+            updateTable.setTableId(table.getId());
+            updateTable.setRemark(table.getRemark());
+            updateTable.setAdditionalInfo(table.getAdditionalInfo());
+            CommonUtil.callSetWithCheck(Objects::nonNull, updateTable::setToUse, table::getToUse);
+
+            return updateTable;
+        }).toList();
+
+        // 2. 批量更新
+        if (CollectionUtils.isNotEmpty(updateList)) {
+            super.updateBatchById(updateList);
+        }
     }
 }

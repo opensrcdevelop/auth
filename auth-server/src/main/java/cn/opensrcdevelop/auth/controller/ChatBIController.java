@@ -144,4 +144,10 @@ public class ChatBIController {
     public TestDataSourceConnResponseDto testDataSourceConn(@RequestBody @Valid TestDataSourceConnRequestDto requestDto) {
         return dataSourceConfService.testConn(requestDto);
     }
+
+    @Operation(summary = "批量更新表", description = "批量更新表")
+    @PostMapping("/table/batchUpdate")
+    public void batchUpdateTable(@RequestBody @Valid BatchUpdateTableRequestDto requestDto) {
+        tableService.batchUpdate(requestDto);
+    }
 }
