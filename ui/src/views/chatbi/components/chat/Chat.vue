@@ -521,6 +521,12 @@ const handleMessage = (message) => {
       chartId,
       actionType,
     });
+
+    if (actionType === "ANALYZE_DATA") {
+      if (!checkHtmlReportIframeReady(questionId)) {
+        reloadHtmlReportIframe(questionId);
+      }
+    }
     scrollToBottom();
     return;
   }
@@ -804,6 +810,34 @@ const addHtmlReportRef = (qId, el) => {
   if (!el) return;
   htmlReportRefs.set(qId, el);
 };
+
+/**
+ * 检查 iframe 是否加载完成
+ */
+const checkHtmlReportIframeReady = (qId: string) => {
+  const el = htmlReportRefs.get(qId);
+  if (!el) return false;
+  const iframeWindow = (el as HTMLIFrameElement).contentWindow;
+  try {
+    if (iframeWindow.document.readyState === "complete") {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error("检查 iframe 是否加载完成失败:", e);
+    return false;
+  }
+};
+
+/**
+ * 重新加载 iframe
+ */
+const reloadHtmlReportIframe = (qId: string) => {
+  const el = htmlReportRefs.get(qId);
+  if (!el) return;
+  (el as HTMLIFrameElement).src = (el as HTMLIFrameElement).src;
+}
+
 /**
  * 切换全屏
  */
@@ -815,6 +849,10 @@ const toggleFullscreen = (qId: string) => {
     el.requestFullscreen();
   }
 };
+
+/**
+ * 下载为 PDF
+ */
 const downloadAsPDF = async (qId: string) => {
   const el = htmlReportRefs.get(qId);
   if (!el) return;
