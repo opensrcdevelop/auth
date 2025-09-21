@@ -116,7 +116,7 @@
                   </template>
                   <template #default>数据分析</template>
                 </a-button>
-                <a-divider direction="vertical" />
+                <a-divider v-if="message.chartId" direction="vertical" />
                 <a-space v-if="message.chartId">
                   <a-tooltip content="喜欢" position="bottom" mini>
                     <a-button
