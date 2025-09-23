@@ -31,13 +31,14 @@ public class AnalyzeAgent {
     public Map<String, Object> analyzeData(ChatClient chatClient, ChartRecord chartRecord) {
         // 1. 分析图表数据
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.ANALYZE_DATA)
-                .param("user_query", chartRecord.getQuestion())
+                .param("question", chartRecord.getQuestion())
                 .param("query_result", CommonUtil.serializeObject(chartRecord.getData()))
                 .param("column_aliases", CommonUtil.serializeObject(chartRecord.getColumns()));
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.ANALYZE_DATA))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
@@ -54,15 +55,16 @@ public class AnalyzeAgent {
     public Map<String, Object> generateAnalysisReport(ChatClient chatClient, ChartRecord chartRecord, List<String> analysisResults) {
         // 1. 生成分析报告
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_REPORT)
-                .param("user_query", chartRecord.getQuestion())
+                .param("question", chartRecord.getQuestion())
                 .param("query_result", CommonUtil.serializeObject(chartRecord.getData()))
                 .param("column_aliases", CommonUtil.serializeObject(chartRecord.getColumns()))
-                .param("analysis_results", CommonUtil.serializeObject(analysisResults))
+                .param("analysis_results", analysisResults)
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)));
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_REPORT))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });

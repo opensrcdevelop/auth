@@ -35,11 +35,11 @@ public class SqlAgent {
      * 从表描述中获取相关表
      *
      * @param chatClient ChatClient
-     * @param userQuery 用户查询
+     * @param userQuestion 用户问题
      * @param dataSourceId 数据源ID
      * @return 相关表
      */
-    public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuery, String dataSourceId) {
+    public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuestion, String dataSourceId) {
         // 1. 获取数据源中的表信息
         List<Table> candidateTables = tableService.list(Wrappers.<Table>lambdaQuery()
                 .eq(Table::getDataSourceId, dataSourceId)
@@ -62,13 +62,14 @@ public class SqlAgent {
         }).toList();
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
-                .param("user_query", userQuery)
+                .param("question", userQuestion)
                 .param("table_descriptions", tableDescriptions);
 
         // 2. 推测关联表
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -77,25 +78,26 @@ public class SqlAgent {
      * 生成 SQL
      *
      * @param chatClient ChatClient
-     * @param userQuery 用户查询
+     * @param userQuestion 用户问题
      * @param relevantTables 相关表
      * @param dataSourceId 数据源ID
      * @return SQL
      */
-    public Map<String, Object> generateSql(ChatClient chatClient, String userQuery, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> generateSql(ChatClient chatClient, String userQuestion, List<Map<String, Object>> relevantTables, String dataSourceId) {
         // 1. 获取关联表的字段信息
         List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .param("user_query", userQuery)
+                .param("question", userQuestion)
                 .param("relevant_tables", newRelevantTables);
 
         // 2. 生成 SQL
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -122,8 +124,9 @@ public class SqlAgent {
 
         // 2. 修复 SQL
         return chatClient.prompt()
-               .system(prompt.buildUserPrompt())
-               .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

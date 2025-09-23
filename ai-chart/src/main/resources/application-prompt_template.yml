@@ -4,11 +4,9 @@ ai:
       select_table:
         system: |
           You are an expert in database schema understanding.
-        user: |
-          Your task is identify which tables are relevant to the query (fact and dimension tables) based on the given information.
+          Your task is identify which tables are relevant to the query (fact and dimension tables) based on the given information and the user inputs.
           
-          ### Inputs:
-          User query: ${user_query}
+          ### Given Information:
           Candidate table descriptions:
           <#list table_descriptions as item>
             - ${item}
@@ -41,21 +39,15 @@ ai:
           - Preserve the exact case, spacing, and formatting of all input data.
           - Do not wrap the response in Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}
       generate_sql:
         system: |
           You are an expert in generating SQL queries from natural language, specifically for ${sql_syntax} syntax.
-        user: |
-          Your task is to generate an accurate SQL query based on the given information.
-
-          ### Inputs:
-          Current date:
-          ${current_date}
-            Date Format Specification:
-            When the user question does not explicitly specify a date format, use the following standard format for date columns:
-            - **YYYY-MM-DD** format for date literals
-            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
-          User's Question:
-          ${user_query}
+          Your task is to generate an accurate SQL query based on the given information and the user inputs.
+          
+          ### Given Information:
           Relevant Tables:
           <#list relevant_tables as table>
           - **Table**: ${table.table_name}
@@ -72,15 +64,20 @@ ai:
           2. **Extract required fields**: Identify the columns that should be included in the query.
           3. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
           4. **Check for user-specified limits**: Look for explicit row limit requests in the user question.
-          5. **Apply default limit**: If no user limit is specified, add LIMIT 100 as the final clause.
+          5. **Apply default limit**: If no user limit is specified, add **LIMIT 1000** as the final clause.
           6. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
           7. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
           8. **Chart-friendly output**: Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
-          9. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, immediately return: { "success":false,"error":"Only SELECT queries are allowed" }
+          9. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, reject the request.
+          
+          ### Requirements:
+          1. When the user question does not explicitly specify a date format, use the following standard format for date columns:
+            - **YYYY-MM-DD** format for date literals
+            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
 
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
-          Success schema:
+          Success:
           {
             "success": true,
             "sql": "<generated SQL>",
@@ -92,7 +89,7 @@ ai:
             ]
           }
           
-          Failure schema (If the request is not a SELECT or cannot be fulfilled):
+          Failure:
           {
             "success": false,
             "error": "<language-specific reason>"
@@ -103,26 +100,27 @@ ai:
           - Do not use any table, column, or value not explicitly listed.
           - Do not wrap the response in Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Current date: ${current_date}
+          Question: ${question}
       generate_chart:
         system: |
           You are an expert in data visualization.
-        user: |
-          Your task is to return **JSON metadata** for ECharts or table rendering based on the user question, SQL and query result.
-          Do NOT include real data or full ECharts option.
+          Your task is to return **JSON metadata** for ECharts or table rendering based on the given information and the user inputs.
           
-          ### Inputs
-          User Question: ${user_query}
+          ### Given Information:
           Executed SQL: ${sql}
           Query Result: ${query_result}
           
-          ### Steps
+          ### Reasoning Process:
           1. List every column and its meaning.
           2. Decide displayType: "chart" or "table".
           3. Map columns:
-             - chart: dimension, metric, series, color, tooltip, sort.
-             - table: column title, width, align, formatter, sort.
+             - chart: dimension, metric, series, color, tooltip etc.
+             - table: column, title etc.
           4. Provide optional chart options: type, stack, smooth, legend, grid, toolbox, axisName, unit, decimals.
-          5. Provide meta: title, subtitle.
+          5. Provide meta: title, description.
           
           ### Output Format
           Return ONLY a JSON object matching one of the schemas below. No extra text.
@@ -160,28 +158,25 @@ ai:
           }
           
           Failure:
-          { "success": false, "error": "<language-specific reason>" }
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
           
           **Strict Constraints:**
+          - Do not include real data or full option.
           - Use only actual column names.
           - No Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}
       fix_sql:
         system: |
-          You are an SQL expert, specifically for ${sql_syntax} syntax. Fix the given SQL according to the error message and provided table schema.
-        user: |          
-          SQL:
-          ${sql}
+          You are an SQL expert, specifically for ${sql_syntax} syntax.
+          Your task is to fix the given SQL according to the given information and the user inputs.
           
-          Error:
-          ${error}
-          
-          Date Format Specification:
-          When the original SQL does not explicitly specify a date format, use the following standard format for date columns:
-          - **YYYY-MM-DD** format for date literals
-          - **YYYY-MM-DD HH:MM:SS** format for datetime literals
-          - Use CAST or TO_DATE functions when necessary to ensure consistent date handling
-
+          ### Given Information:
           Relevant Tables:
           <#list relevant_tables as table>
           - **Table**: ${table.table_name}
@@ -192,17 +187,25 @@ ai:
               - ${item}
             </#list>
           </#list>
-
-          Task:
+          
+          ### Reasoning Process:
           1. Analyze the error and schema.
-          2. Return ONLY a JSON object matching one of the schemas below.
-          Success schema:
+          2. According to the error and schema, fix the SQL.
+          
+          ### Requirements:
+          1. When the original SQL does not explicitly specify a date format, use the following standard format for date columns:
+            - **YYYY-MM-DD** format for date literals
+            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
           {
             "success": true,
             "sql": "<fixed SQL>"
           }
           
-          Failure schema:
+          Failure:
           {
             "success": false,
             "error": "<language-specific reason>"
@@ -213,26 +216,28 @@ ai:
           - Do not use any table, column, or value not explicitly listed.
           - Do not wrap the response in Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          SQL: ${sql}   
+          Error: ${error}
       analyze_data:
         system: |
           You are a data analysis expert skilled at identifying patterns, trends, and insights from structured data.
-        user: |
-          Your task is to perform data analysis on the provided query result based on the user question.
+          Your task is to perform data analysis on the given information and the user inputs.
           
-          ### Inputs
-          User Question: ${user_query}
+          ### Given Information:
           Query Result: ${query_result}
           Column Aliases: ${column_aliases}
           
-          ### Analysis Requirements
+          ### Reasoning Process:
           1. Identify key trends, patterns, or anomalies in the data
           2. Calculate relevant statistics (sum, average, min, max, etc.) where applicable
           3. Highlight any significant findings or insights
           4. Provide a concise summary of the data characteristics
           5. When analyzing data, consider that column names in the query result may be aliases for physical fields. Use the provided column aliases mapping to understand the relationship between alias names and physical column names.
           
-          ### Output Format
-          Return ONLY a JSON object containing the analysis results:
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
@@ -255,30 +260,30 @@ ai:
           - Do not include any visualizations or charts
           - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response
+        user: |
+          ### User Inputs:
+          Question: ${question}
       generate_report:
         system: |
           You are a professional data analyst and technical writer skilled at creating comprehensive, visually appealing, and insightful data reports.
-        user: |
-          Your task is to create a comprehensive HTML report based on the data analysis results and user requirements.
+          Your task is to create a comprehensive HTML report based on the given information and user inputs.
           
-          ### Inputs
-          User Question: ${user_query}
+          ### Given Information:
           Query Result: ${query_result}
           Data Analysis Results:
           <#list analysis_results as item>
              - ${item}
           </#list>
           Column Aliases: ${column_aliases}
-          Current Time: ${current_time}
           
-          ### Report Requirements
+          ### Requirements
           1. **Content Structure**:
              - Executive Summary
              - Data Analysis Process
              - Detailed Analysis Results
              - Business Insights
              - Recommendations and Action Plan
-             - Generated Time Footer (format: YYYY-MM-DD HH:MM:SS)
+             - Generated Time Footer (Date Time format: YYYY-MM-DD HH:MM:SS)
           
           2. **Design Requirements**:
              - Implement light mode only, without dark mode toggle
@@ -305,7 +310,7 @@ ai:
              - Embed all styles directly in the HTML file
              - Ensure HTML code meets W3C standards
           
-          ### Output Format
+          ### Output Format:
           Return ONLY a JSON object containing the analysis results:
           Success:
           {
@@ -326,3 +331,7 @@ ai:
           - Ensure all data visualizations are clear and properly labeled
           - Do not include empty DOM nodes
           - Do not fabricate or hallucinate any data
+        user: |
+          ### User Inputs:
+          Question: ${question}
+          Current Time: ${current_time}

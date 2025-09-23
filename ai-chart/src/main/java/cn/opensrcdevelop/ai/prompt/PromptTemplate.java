@@ -13,6 +13,7 @@ import java.util.Map;
 @Setter
 public class PromptTemplate {
 
+    public static final String PROMPT_TEMPLATE = "prompt_template";
     public static final String SELECT_TABLE = "select_table";
     public static final String GENERATE_SQL = "generate_sql";
     public static final String GENERATE_CHART = "generate_chart";

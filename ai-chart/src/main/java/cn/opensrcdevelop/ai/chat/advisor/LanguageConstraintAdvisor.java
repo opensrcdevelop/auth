@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.ai.chat;
+package cn.opensrcdevelop.ai.chat.advisor;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;

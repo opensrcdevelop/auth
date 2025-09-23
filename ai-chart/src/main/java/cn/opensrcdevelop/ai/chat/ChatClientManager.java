@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.ai.chat;
 
+import cn.opensrcdevelop.ai.chat.advisor.LanguageConstraintAdvisor;
+import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
@@ -35,8 +37,8 @@ public class ChatClientManager {
     private final RetryTemplate retryTemplate;
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
-    private final ChatMemory chatMemory;
     private final LanguageConstraintAdvisor languageConstraintAdvisor;
+    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
     /**
      * 获取 ChatClient
@@ -74,6 +76,7 @@ public class ChatClientManager {
                 .defaultOptions(ChatOptions.builder().model(model).build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .defaultAdvisors(languageConstraintAdvisor)
+                .defaultAdvisors(multiMessageChatMemoryAdvisor)
                 .build();
     }
 

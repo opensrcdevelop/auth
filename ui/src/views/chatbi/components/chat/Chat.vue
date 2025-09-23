@@ -89,18 +89,19 @@
 </template>
 
 <script setup lang="ts">
-import {userEventSource} from "@/hooks/useEventSource";
+import {useEventSource} from "@/hooks/useEventSource";
 import {nextTick, reactive, ref} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
 import {getEnabledDataSourceConf, getModelProviderList} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
 
-const { abort, fetchStream } = userEventSource();
+const { abort, fetchStream } = useEventSource();
 const messageContainer = ref(null);
 const messages = reactive([]);
 const userInput = ref("");
 const loading = ref(false);
+const chatId = ref("");
 const questionId = ref("");
 const dataSourceList = reactive([]);
 const modelProviderList = reactive([]);
@@ -184,6 +185,7 @@ const sendMessage = (input: string) => {
     type: "TEXT",
     content: question,
     questionId: questionId.value,
+    chatId: chatId.value,
   });
   messages.push({
     role: "assistant",
@@ -192,6 +194,7 @@ const sendMessage = (input: string) => {
     content: "回答生成中...",
     questionId: questionId.value,
     error: false,
+    chatId: chatId.value,
   });
 
   if (userInput.value) {
@@ -259,7 +262,7 @@ const analyzeData = (chartId: string, chatId: string, question: string) => {
   });
 
   fetchStream({
-    url: "/chatbi/analyze/stream",
+    url: "/chatbi/analyze/stream?generateReport=true",
     body: {
       chatId: chatId,
       questionId: questionId.value,
@@ -306,8 +309,9 @@ const resendMessage = (qId: string) => {
  * 处理消息
  */
 const handleMessage = (message) => {
-  const { actionType, chartId, questionId, chatId, type, content } = message;
+  const { actionType, chartId, questionId, type, content } = message;
 
+  chatId.value = message.chatId;
   if (type === "DONE") {
     loading.value = false;
     const loadingItem = messages.find(
@@ -321,7 +325,7 @@ const handleMessage = (message) => {
       role: "assistant",
       type,
       questionId,
-      chatId,
+      chatId: chatId.value,
       chartId,
       actionType,
     });
@@ -371,7 +375,7 @@ const handleMessage = (message) => {
         type,
         content,
         questionId,
-        chatId,
+        chatId: chatId.value,
       });
     }
   } else {
@@ -380,7 +384,7 @@ const handleMessage = (message) => {
       type,
       content,
       questionId,
-      chatId,
+      chatId: chatId.value,
     });
   }
 };

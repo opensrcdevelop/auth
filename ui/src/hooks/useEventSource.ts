@@ -14,7 +14,7 @@ interface EventSourceOptions {
   onClose?: () => void;
 }
 
-export function userEventSource() {
+export function useEventSource() {
   let controller: AbortController | null = null;
 
   const fetchStream = async (options: EventSourceOptions) => {

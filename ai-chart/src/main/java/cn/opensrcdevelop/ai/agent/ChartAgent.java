@@ -33,13 +33,14 @@ public class ChartAgent {
                                 List<Map<String, Object>> queryResult) {
         // 1. 生成图表配置
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_CHART)
-                .param("user_query", question)
+                .param("question", question)
                 .param("sql", sql)
                 .param("query_result", CommonUtil.serializeObject(queryResult));
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_CHART))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

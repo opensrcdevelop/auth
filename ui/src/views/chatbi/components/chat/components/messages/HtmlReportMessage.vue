@@ -75,4 +75,37 @@ defineExpose({
 });
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.html-report-container {
+  .content {
+    height: 600px;
+    background: none;
+    border-radius: 8px;
+    overflow-y: hidden;
+
+    /* WebKit 浏览器滚动条样式 */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    /* 滚动条滑块 */
+    &::-webkit-scrollbar-thumb {
+      background: rgba(144, 147, 153, 0.3);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(144, 147, 153, 0.5);
+      }
+    }
+
+    /* Firefox 滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+  }
+}
+</style>

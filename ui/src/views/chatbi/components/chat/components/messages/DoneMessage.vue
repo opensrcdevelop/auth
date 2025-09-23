@@ -132,4 +132,8 @@ const handleVoteChart = (doneMessage: any, feedback: string) => {
 };
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.operator-container {
+  margin-top: 8px;
+}
+</style>  
