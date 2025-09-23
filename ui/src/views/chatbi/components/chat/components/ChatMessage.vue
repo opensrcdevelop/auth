@@ -89,7 +89,6 @@ const handleAnalyzeData = (
 const handleFullscreen = (questionId: string) => {
   const htmlReportMessageRef = htmlReportMessageRefs.get(questionId);
   if (!htmlReportMessageRef) return;
-  console.log(111);
   htmlReportMessageRef.toFullscreen();
 };
 
