@@ -1,3 +1,5 @@
 @use './main.scss';
 @use './variables.scss';
 @use './layout.scss';
+@use './markdown.scss';
+@use 'highlight.js/styles/github.css';

@@ -34,7 +34,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -81,7 +80,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
                 ChatContext.setActionType(ChatActionType.GENERATE_CHART);
-                String chartId = processStreamChatBIRequest(requestDto, emitter, chatId);
+                String chartId = processStreamChatBIRequest(emitter, requestDto, chatId);
                 SseUtil.sendChatBIDone(emitter, chartId);
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
@@ -101,69 +100,24 @@ public class ChatBIServiceImpl implements ChatBIService {
      * 流式分析数据并生成报告
      *
      * @param requestDto 请求
+     * @param generateReport 是否生成报告
      * @return SseEmitter
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public SseEmitter streamAnalyzeDataAndGenerateReport(ChatBIRequestDto requestDto) {
+    public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto, boolean generateReport) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
-        String chatId = requestDto.getChatId();
-        String questionId = requestDto.getQuestionId();
-        ChatActionType actionType = ChatActionType.ANALYZE_DATA;
 
         executor.execute(() -> {
+            String chatId = Objects.isNull(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
             try {
                 ChatContext.setChatId(chatId);
-                ChatContext.setQuestionId(questionId);
-                ChatContext.setActionType(actionType);
-
-                // 1. 获取临时图表记录
-                ChartRecord chartRecord = RedisUtil.get(CHART_RECORD_KEY.formatted(requestDto.getChartId()), ChartRecord.class);
-                if (Objects.isNull(chartRecord)) {
-                    SseUtil.sendChatBIText(emitter, "未找到生成的图表，无法进行数据分析。");
-                    SseUtil.sendChatBIDone(emitter);
-                    emitter.complete();
-                    ChatContext.clearChatContext();
-                    return;
-                }
-
-                // 2. 获取 ChatClient
-                ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(), chatId);
-
-                // 3. 分析数据
-                SseUtil.sendChatBILoading(emitter, "正在分析数据...");
-                Map<String, Object> analyzeResult = analyzeAgent.analyzeData(chatClient, chartRecord);
-                if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
-                    SseUtil.sendChatBITextSegmented(emitter, "无法分析数据，原因：%s".formatted(analyzeResult.get("error")), 500);
-                    SseUtil.sendChatBIDone(emitter);
-                    emitter.complete();
-                    ChatContext.clearChatContext();
-                    return;
-                }
-
-                // 4. 生成分析报告
-                SseUtil.sendChatBILoading(emitter, "正在生成分析报告...");
-                Flux<String> reportFlux = analyzeAgent.generateAnalysisReport(chatClient, chartRecord, (List<String>) analyzeResult.get("insights"));
-                reportFlux.subscribe(
-                        content -> {
-                            ChatContext.setChatId(chatId);
-                            ChatContext.setQuestionId(questionId);
-                            ChatContext.setActionType(actionType);
-                            SseUtil.sendChatBIHtmlReport(emitter, content);
-                        },
-                        emitter::completeWithError,
-                        () -> {
-                            ChatContext.setChatId(chatId);
-                            ChatContext.setQuestionId(questionId);
-                            ChatContext.setActionType(actionType);
-                            SseUtil.sendChatBIDone(emitter);
-                            emitter.complete();
-                            ChatContext.clearChatContext();
-                        }
-                );
+                ChatContext.setQuestionId(requestDto.getQuestionId());
+                ChatContext.setActionType(ChatActionType.ANALYZE_DATA);
+                processStreamAnalyzeDataRequest(emitter, requestDto, generateReport, chatId);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
+            } finally {
                 emitter.complete();
                 ChatContext.clearChatContext();
             }
@@ -185,7 +139,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     }
 
     @SuppressWarnings("unchecked")
-    private String processStreamChatBIRequest(ChatBIRequestDto requestDto, SseEmitter emitter, String chatId) throws IOException {
+    private String processStreamChatBIRequest(SseEmitter emitter, ChatBIRequestDto requestDto, String chatId) throws IOException {
         String dataSourceId = requestDto.getDataSourceId();
 
         // 1. 获取 ChatClient
@@ -221,7 +175,7 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 4. 执行 SQL
         SseUtil.sendChatBILoading(emitter, "正在执行 SQL...");
-        var executeResult = executeSqlWithRepair(chatClient, emitter, sql, dataSourceId, relevantTables, 5);
+        var executeResult = executeSqlWithFix(chatClient, emitter, sql, dataSourceId, relevantTables, 5);
         SseUtil.sendChatBIText(emitter, "执行的 SQL：\n");
         SseUtil.sendChatBIMd(emitter, "```sql%n%s%n```".formatted(SqlFormatter.standard().format(executeResult._3)));
         SseUtil.sendChatBIText(emitter, "\n");
@@ -278,8 +232,59 @@ public class ChatBIServiceImpl implements ChatBIService {
         return chartId;
     }
 
+    @SuppressWarnings("unchecked")
+    private void processStreamAnalyzeDataRequest(SseEmitter emitter,ChatBIRequestDto requestDto, boolean generateReport, String chatId) {
+        // 1. 获取临时图表记录
+        ChartRecord chartRecord = RedisUtil.get(CHART_RECORD_KEY.formatted(requestDto.getChartId()), ChartRecord.class);
+        if (Objects.isNull(chartRecord)) {
+            SseUtil.sendChatBIText(emitter, "未找到生成的图表，无法进行数据分析。");
+            SseUtil.sendChatBIDone(emitter);
+            return;
+        }
+
+        // 2. 获取 ChatClient
+        ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(), chatId);
+
+        // 3. 分析数据
+        SseUtil.sendChatBILoading(emitter, "正在分析数据...");
+        Map<String, Object> analyzeResult = analyzeAgent.analyzeData(chatClient, chartRecord);
+        if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
+            SseUtil.sendChatBITextSegmented(emitter, "无法分析数据，原因：%s".formatted(analyzeResult.get("error")), 500);
+            SseUtil.sendChatBIDone(emitter);
+            return;
+        }
+        List<String> insights = (List<String>) analyzeResult.get("insights");
+        if (CollectionUtils.isNotEmpty(insights)) {
+            SseUtil.sendChatBIText(emitter, "分析结果：\n");
+            for (String insight : insights) {
+                SseUtil.sendChatBIMd(emitter, "- **%s**".formatted(insight));
+                SseUtil.sendChatBIText(emitter, "\n");
+            }
+        }
+
+        // 4. 判断是否生成报告
+        if (!generateReport) {
+            // 4.1 分析数据完成，不生成报告
+            SseUtil.sendChatBIDone(emitter);
+            return;
+        }
+
+        // 4.2 生成分析报告
+        ChatContext.setActionType(ChatActionType.GENERATE_REPORT);
+        SseUtil.sendChatBILoading(emitter, "正在生成分析报告...");
+        Map<String, Object> report = analyzeAgent.generateAnalysisReport(chatClient, chartRecord, (List<String>) analyzeResult.get("insights"));
+        if (!Boolean.TRUE.equals(report.get("success"))) {
+            SseUtil.sendChatBITextSegmented(emitter, "无法生成分析报告，原因：%s".formatted(report.get("error")), 500);
+            SseUtil.sendChatBIDone(emitter);
+            return;
+        }
+        SseUtil.sendChatBIText(emitter, "分析报告：\n");
+        SseUtil.sendChatBIHtmlReport(emitter, (String) report.get("html"));
+        SseUtil.sendChatBIDone(emitter);
+    }
+
     @SuppressWarnings("all")
-    private Tuple3<Boolean, List<Map<String, Object>>, String> executeSqlWithRepair(ChatClient chatClient,
+    private Tuple3<Boolean, List<Map<String, Object>>, String> executeSqlWithFix(ChatClient chatClient,
                                                                                     SseEmitter emitter,
                                                                                     String sql,
                                                                                     String dataSourceId,
@@ -301,7 +306,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 if (attempt > maxAttempts) {
                     return Tuple.of(false, queryResult, sql);
                 }
-                Map<String, Object> sqlResult = sqlAgent.repairSql(chatClient, sql, ex.getCause().getMessage(), relevantTables, dataSourceId);
+                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, ex.getCause().getMessage(), relevantTables, dataSourceId);
                 if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
                     return Tuple.of(false, queryResult, sql);
                 }

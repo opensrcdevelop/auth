@@ -3,10 +3,10 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
+import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
-import cn.opensrcdevelop.ai.util.PromptTemplateUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
@@ -61,15 +61,14 @@ public class SqlAgent {
             return CommonUtil.serializeObject(tableDescription);
         }).toList();
 
-        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("select_table");
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
+                .param("user_query", userQuery)
+                .param("table_descriptions", tableDescriptions);
 
         // 2. 推测关联表
         return chatClient.prompt()
-                .system(prompt.getSystem())
-                .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
-                        "user_query", userQuery,
-                        "table_descriptions", tableDescriptions
-                )))
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -87,16 +86,16 @@ public class SqlAgent {
         // 1. 获取关联表的字段信息
         List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
 
-        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("generate_sql");
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
+                .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
+                .param("current_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .param("user_query", userQuery)
+                .param("relevant_tables", newRelevantTables);
 
         // 2. 生成 SQL
         return chatClient.prompt()
-                .system(PromptTemplateUtil.getPrompt(prompt.getSystem(), Map.of("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())))
-                .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
-                        "current_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                        "user_query", userQuery,
-                        "relevant_tables", newRelevantTables
-                )))
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -111,20 +110,20 @@ public class SqlAgent {
      * @param dataSourceId 数据源ID
      * @return 修复后的 SQL
      */
-    public Map<String, Object> repairSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> fixSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
         // 1. 获取关联表的字段信息
         List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
 
-        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("repair_sql");
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FIX_SQL)
+                .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
+                .param("sql", sql)
+                .param("error", error)
+                .param("relevant_tables", newRelevantTables);
 
         // 2. 修复 SQL
         return chatClient.prompt()
-               .system(PromptTemplateUtil.getPrompt(prompt.getSystem(), Map.of("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())))
-               .user(PromptTemplateUtil.getPrompt(prompt.getUser(), Map.of(
-                       "sql", sql,
-                       "error", error,
-                       "relevant_tables", newRelevantTables
-               )))
+               .system(prompt.buildUserPrompt())
+               .user(prompt.buildUserPrompt())
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

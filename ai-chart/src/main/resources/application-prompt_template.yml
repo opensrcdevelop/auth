@@ -5,18 +5,18 @@ ai:
         system: |
           You are an expert in database schema understanding.
         user: |
-          User query: ${user_query}
+          Your task is identify which tables are relevant to the query (fact and dimension tables) based on the given information.
           
+          ### Inputs:
+          User query: ${user_query}
           Candidate table descriptions:
           <#list table_descriptions as item>
-          - ${item}
+            - ${item}
           </#list>
           
-          Task:
-          1. Identify which tables are relevant to the query (fact and dimension tables).
-          2. Return ONLY a JSON object matching one of the schemas below. No extra text.
-          
-          Success schema:
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
           {
             "success": true,
             "tables": [
@@ -29,13 +29,13 @@ ai:
             ]
           }
           
-          Failure schema (when no tables can be determined):
+          Failure:
           {
             "success": false,
             "error": "<language-specific reason>"
           }
           
-          Requirements:
+          **Strict Constraints:**
           - Use the exact table names, descriptions, and additional_info as provided in the input.
           - Do not modify, transform, or reformat any of the provided information.
           - Preserve the exact case, spacing, and formatting of all input data.
@@ -45,21 +45,18 @@ ai:
         system: |
           You are an expert in generating SQL queries from natural language, specifically for ${sql_syntax} syntax.
         user: |
-          You are an expert in SQL query generation.
-          Your task is to generate an accurate SQL query based strictly on the given information.
+          Your task is to generate an accurate SQL query based on the given information.
 
-          ### Current date:
+          ### Inputs:
+          Current date:
           ${current_date}
-          
-          ### Date Format Specification:
-          When the user question does not explicitly specify a date format, use the following standard format for date columns:
-          - **YYYY-MM-DD** format for date literals
-          - **YYYY-MM-DD HH:MM:SS** format for datetime literals
-
-          ### User's Question:
+            Date Format Specification:
+            When the user question does not explicitly specify a date format, use the following standard format for date columns:
+            - **YYYY-MM-DD** format for date literals
+            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          User's Question:
           ${user_query}
-
-          ### Relevant Tables:
+          Relevant Tables:
           <#list relevant_tables as table>
           - **Table**: ${table.table_name}
             - **Description**: ${table.description}
@@ -110,7 +107,7 @@ ai:
         system: |
           You are an expert in data visualization.
         user: |
-          Return **JSON metadata** for ECharts or table rendering based on the user question, SQL and query result.
+          Your task is to return **JSON metadata** for ECharts or table rendering based on the user question, SQL and query result.
           Do NOT include real data or full ECharts option.
           
           ### Inputs
@@ -127,7 +124,8 @@ ai:
           4. Provide optional chart options: type, stack, smooth, legend, grid, toolbox, axisName, unit, decimals.
           5. Provide meta: title, subtitle.
           
-          ### Output (ONLY JSON)
+          ### Output Format
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
@@ -164,11 +162,11 @@ ai:
           Failure:
           { "success": false, "error": "<language-specific reason>" }
           
-          Constraints:
+          **Strict Constraints:**
           - Use only actual column names.
           - No Markdown code blocks.
           - Do not include any reasoning or thinking process in your response.
-      repair_sql:
+      fix_sql:
         system: |
           You are an SQL expert, specifically for ${sql_syntax} syntax. Fix the given SQL according to the error message and provided table schema.
         user: |          
@@ -219,7 +217,7 @@ ai:
         system: |
           You are a data analysis expert skilled at identifying patterns, trends, and insights from structured data.
         user: |
-          Perform data analysis on the provided query result based on the user question.
+          Your task is to perform data analysis on the provided query result based on the user question.
           
           ### Inputs
           User Question: ${user_query}
@@ -261,7 +259,7 @@ ai:
         system: |
           You are a professional data analyst and technical writer skilled at creating comprehensive, visually appealing, and insightful data reports.
         user: |
-          Create a comprehensive HTML report based on the data analysis results and user requirements.
+          Your task is to create a comprehensive HTML report based on the data analysis results and user requirements.
           
           ### Inputs
           User Question: ${user_query}
@@ -307,10 +305,19 @@ ai:
              - Embed all styles directly in the HTML file
              - Ensure HTML code meets W3C standards
           
-          5. **Output Format**:
-             ## Output format - Output format
-             Html:
-             {HTML PAGE}
+          ### Output Format
+          Return ONLY a JSON object containing the analysis results:
+          Success:
+          {
+            "success": true,
+            "html": "<html page>"
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
           
           **Strict Constraints**:
           - Return only the generated HTML report without any additional information

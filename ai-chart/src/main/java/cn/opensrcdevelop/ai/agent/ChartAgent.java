@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.ai.agent;
 
+import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
-import cn.opensrcdevelop.ai.util.PromptTemplateUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -32,17 +32,14 @@ public class ChartAgent {
                                 String question,
                                 List<Map<String, Object>> queryResult) {
         // 1. 生成图表配置
-        PromptTemplate.Prompt prompt = promptTemplate.getTemplates().get("generate_chart");
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_CHART)
+                .param("user_query", question)
+                .param("sql", sql)
+                .param("query_result", CommonUtil.serializeObject(queryResult));
+
         return chatClient.prompt()
-                .system(prompt.getSystem())
-                .user(PromptTemplateUtil.getPrompt(
-                        prompt.getUser(),
-                        Map.of(
-                                "user_query", question,
-                                "sql", sql,
-                                "query_result", CommonUtil.serializeObject(queryResult)
-                        )
-                ))
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

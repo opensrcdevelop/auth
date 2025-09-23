@@ -40,9 +40,12 @@ public class ChatBIController {
     }
 
     @Operation(summary = "数据分析", description = "数据分析")
+    @Parameters({
+            @Parameter(name = "generateReport", description = "是否生成报告", in = ParameterIn.QUERY, required = true),
+    })
     @PostMapping(path = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamAnalyzeDataAndGenerateReport(@RequestBody ChatBIRequestDto requestDto) {
-        return chatBIService.streamAnalyzeDataAndGenerateReport(requestDto);
+    public SseEmitter streamAnalyzeDataAndGenerateReport(@RequestBody ChatBIRequestDto requestDto, @RequestParam(defaultValue = "false") boolean generateReport) {
+        return chatBIService.streamAnalyzeData(requestDto, generateReport);
     }
 
     @Operation(summary = "获取已启用的数据源配置", description = "获取已启用的数据源配置")
