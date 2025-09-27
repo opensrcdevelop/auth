@@ -3,8 +3,8 @@ package cn.opensrcdevelop.ai.service.impl;
 import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.agent.ChartAgent;
 import cn.opensrcdevelop.ai.agent.SqlAgent;
-import cn.opensrcdevelop.ai.chat.ChatClientManager;
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.client.ChatClientManager;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
@@ -30,6 +30,7 @@ import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
 
         executor.execute(() -> {
-            String chatId = Objects.isNull(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
+            String chatId = StringUtils.isEmpty(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
             try {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
@@ -100,20 +101,19 @@ public class ChatBIServiceImpl implements ChatBIService {
      * 流式分析数据并生成报告
      *
      * @param requestDto 请求
-     * @param generateReport 是否生成报告
      * @return SseEmitter
      */
     @Override
-    public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto, boolean generateReport) {
+    public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
 
         executor.execute(() -> {
-            String chatId = Objects.isNull(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
+            String chatId = StringUtils.isEmpty(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
             try {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
                 ChatContext.setActionType(ChatActionType.ANALYZE_DATA);
-                processStreamAnalyzeDataRequest(emitter, requestDto, generateReport, chatId);
+                processStreamAnalyzeDataRequest(emitter, requestDto, chatId);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
@@ -233,7 +233,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     }
 
     @SuppressWarnings("unchecked")
-    private void processStreamAnalyzeDataRequest(SseEmitter emitter,ChatBIRequestDto requestDto, boolean generateReport, String chatId) {
+    private void processStreamAnalyzeDataRequest(SseEmitter emitter,ChatBIRequestDto requestDto, String chatId) {
         // 1. 获取临时图表记录
         ChartRecord chartRecord = RedisUtil.get(CHART_RECORD_KEY.formatted(requestDto.getChartId()), ChartRecord.class);
         if (Objects.isNull(chartRecord)) {
@@ -253,17 +253,11 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIDone(emitter);
             return;
         }
-        List<String> insights = (List<String>) analyzeResult.get("insights");
-        if (CollectionUtils.isNotEmpty(insights)) {
-            SseUtil.sendChatBIText(emitter, "分析结果：\n");
-            for (String insight : insights) {
-                SseUtil.sendChatBIMd(emitter, "- **%s**".formatted(insight));
-                SseUtil.sendChatBIText(emitter, "\n");
-            }
-        }
+        String summary = (String) analyzeResult.get("summary");
+        SseUtil.sendChatBITextSegmented(emitter, summary, 500);
 
         // 4. 判断是否生成报告
-        if (!generateReport) {
+        if (!requestDto.isGenerateReport()) {
             // 4.1 分析数据完成，不生成报告
             SseUtil.sendChatBIDone(emitter);
             return;
@@ -272,7 +266,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 4.2 生成分析报告
         ChatContext.setActionType(ChatActionType.GENERATE_REPORT);
         SseUtil.sendChatBILoading(emitter, "正在生成分析报告...");
-        Map<String, Object> report = analyzeAgent.generateAnalysisReport(chatClient, chartRecord, (List<String>) analyzeResult.get("insights"));
+        Map<String, Object> report = analyzeAgent.generateAnalysisReport(chatClient, chartRecord,
+                (List<Map<String, Object>>) analyzeResult.get("analysis_result"), summary);
         if (!Boolean.TRUE.equals(report.get("success"))) {
             SseUtil.sendChatBITextSegmented(emitter, "无法生成分析报告，原因：%s".formatted(report.get("error")), 500);
             SseUtil.sendChatBIDone(emitter);

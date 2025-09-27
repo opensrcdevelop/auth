@@ -1,7 +1,6 @@
-package cn.opensrcdevelop.ai.chat;
+package cn.opensrcdevelop.ai.chat.client;
 
 import cn.opensrcdevelop.ai.chat.advisor.LanguageConstraintAdvisor;
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
@@ -13,9 +12,10 @@ import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -38,7 +38,6 @@ public class ChatClientManager {
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
     private final LanguageConstraintAdvisor languageConstraintAdvisor;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
     /**
      * 获取 ChatClient
@@ -72,12 +71,11 @@ public class ChatClientManager {
         }
 
         // 4. 返回 ChatClient
-        return ChatClient.builder(chatModel)
-                .defaultOptions(ChatOptions.builder().model(model).build())
+        ChatClient.Builder builder = ChatClient.builder(chatModel)
+                .defaultOptions(ToolCallingChatOptions.builder().model(model).build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
-                .defaultAdvisors(languageConstraintAdvisor)
-                .defaultAdvisors(multiMessageChatMemoryAdvisor)
-                .build();
+                .defaultAdvisors(languageConstraintAdvisor, new SimpleLoggerAdvisor());
+        return builder.build();
     }
 
     private ChatModel createOpenAiChatModel(ModelProvider modelProvider) {

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
+import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
@@ -7,6 +8,7 @@ import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class SqlAgent {
     private final TableService tableService;
     private final TableFieldService tableFieldService;
     private final PromptTemplate promptTemplate;
+    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
@@ -70,6 +73,7 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
+                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -89,7 +93,7 @@ public class SqlAgent {
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
-                .param("current_date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("question", userQuestion)
                 .param("relevant_tables", newRelevantTables);
 
@@ -98,6 +102,7 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
+                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -127,6 +132,7 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
+                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

@@ -27,4 +27,7 @@ public class ChatBIRequestDto {
 
     @Schema(description = "图表ID")
     private String chartId;
+
+    @Schema(description = "是否生成报告")
+    private boolean generateReport;
 }

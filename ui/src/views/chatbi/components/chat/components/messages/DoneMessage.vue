@@ -1,26 +1,28 @@
 <template>
-  <div
-    v-if="message.type === 'DONE' && message.actionType === 'GENERATE_CHART'"
-  >
+  <div v-if="message.type === 'DONE'">
     <div class="operator-container">
-      <a-space>
+      <a-space v-if="message.actionType === 'GENERATE_CHART'">
         <a-button type="text" size="mini" @click="handleResendMessage">
           <template #icon>
             <icon-refresh />
           </template>
           <template #default>重新生成</template>
         </a-button>
-        <a-button
-          v-if="message.chartId"
-          type="text"
-          size="mini"
-          @click="handleAnalyzeData"
+        <a-popconfirm
+          content="是否需要生成分析报告（此操作耗时较长）？"
+          okText="需要"
+          cancelText="不需要"
+          position="rt"
+          @ok="handleAnalyzeData(true)"
+          @cancel="handleAnalyzeData(false)"
         >
-          <template #icon size="mini">
-            <icon-computer />
-          </template>
-          <template #default>数据分析</template>
-        </a-button>
+          <a-button v-if="message.chartId" type="text" size="mini">
+            <template #icon size="mini">
+              <icon-computer />
+            </template>
+            <template #default>数据分析</template>
+          </a-button>
+        </a-popconfirm>
         <a-divider v-if="message.chartId" direction="vertical" />
         <a-space v-if="message.chartId">
           <a-tooltip content="喜欢" position="bottom" mini>
@@ -49,13 +51,7 @@
           </a-tooltip>
         </a-space>
       </a-space>
-    </div>
-  </div>
-  <div
-    v-if="message.type === 'DONE' && message.actionType === 'GENERATE_REPORT'"
-  >
-    <div class="operator-container">
-      <a-space>
+      <a-space v-if="message.actionType === 'GENERATE_REPORT'">
         <a-button type="text" size="mini" @click="handleFullscreen">
           <template #icon>
             <icon-fullscreen />
@@ -68,6 +64,9 @@
           </template>
           <template #default>下载</template>
         </a-button>
+      </a-space>
+      <a-space>
+        <span class="time">{{ message.time }}</span>
       </a-space>
     </div>
   </div>
@@ -88,7 +87,13 @@ const props = withDefaults(
 
 const emits = defineEmits<{
   (e: "resendMessage", questionId: string): void;
-  (e: "analyzeData", chartId: string, chatId: string, questionId: string): void;
+  (
+    e: "analyzeData",
+    chartId: string,
+    chatId: string,
+    questionId: string,
+    generateReport: boolean
+  ): void;
   (e: "fullScreen", questionId: string): void;
   (e: "downloadReport", questionId: string): void;
 }>();
@@ -97,12 +102,13 @@ const handleResendMessage = () => {
   emits("resendMessage", props.message.questionId);
 };
 
-const handleAnalyzeData = () => {
+const handleAnalyzeData = (generateReport: boolean) => {
   emits(
     "analyzeData",
     props.message.chartId,
     props.message.chatId,
-    props.message.questionId
+    props.message.questionId,
+    generateReport
   );
 };
 
@@ -134,6 +140,14 @@ const handleVoteChart = (doneMessage: any, feedback: string) => {
 
 <style scoped lang="scss">
 .operator-container {
+  display: flex;
   margin-top: 8px;
+  justify-content: space-between;
+  align-items: center;
+
+  .time {
+    font-size: 12px;
+    color: var(--color-text-3);
+  }
 }
-</style>  
+</style>

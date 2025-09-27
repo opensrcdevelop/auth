@@ -8,7 +8,7 @@ public interface ChatBIService {
 
     SseEmitter streamChatBI(ChatBIRequestDto requestDto);
 
-    SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto, boolean generateReport);
+    SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto);
 
     void voteChart(VoteChartRequestDto requestDto);
 }

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
+import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class ChartAgent {
 
     private final PromptTemplate promptTemplate;
+    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
@@ -41,6 +43,7 @@ public class ChartAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_CHART))
+                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

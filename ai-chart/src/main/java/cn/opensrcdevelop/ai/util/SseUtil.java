@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Random;
 
 public class SseUtil {
@@ -152,6 +153,7 @@ public class SseUtil {
                         .questionId(ChatContext.getQuestionId())
                         .chartId(chartId)
                         .type(ChatContentType.DONE)
+                        .time(LocalDateTime.now())
                         .build(), MediaType.APPLICATION_JSON)
         ));
     }
@@ -169,6 +171,7 @@ public class SseUtil {
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
                         .type(ChatContentType.DONE)
+                        .time(LocalDateTime.now())
                         .build(), MediaType.APPLICATION_JSON)
         ));
     }

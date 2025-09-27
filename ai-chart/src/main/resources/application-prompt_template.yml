@@ -67,13 +67,15 @@ ai:
           5. **Apply default limit**: If no user limit is specified, add **LIMIT 1000** as the final clause.
           6. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
           7. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
-          8. **Chart-friendly output**: Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
-          9. **Reject non-query requests**: If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, reject the request.
           
           ### Requirements:
           1. When the user question does not explicitly specify a date format, use the following standard format for date columns:
             - **YYYY-MM-DD** format for date literals
             - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          2. Chart-friendly output
+            - Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
+          3. Reject non-query requests
+            - If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, reject the request.
 
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
@@ -102,8 +104,8 @@ ai:
           - Do not include any reasoning or thinking process in your response.
         user: |
           ### User Inputs:
-          Current date: ${current_date}
           Question: ${question}
+          Current Time: ${current_time}
       generate_chart:
         system: |
           You are an expert in data visualization.
@@ -134,9 +136,6 @@ ai:
                 // chart
                 "xAxis?": "<col>",
                 "yAxis?": "<col>",
-                "series?": "<col>",
-                "color?": "<col>",
-                "tooltip?": "<col>",
                 // table
                 "columns?": [
                   {
@@ -166,7 +165,7 @@ ai:
           **Strict Constraints:**
           - Do not include real data or full option.
           - Use only actual column names.
-          - No Markdown code blocks.
+          - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response.
         user: |
           ### User Inputs:
@@ -222,31 +221,51 @@ ai:
           Error: ${error}
       analyze_data:
         system: |
-          You are a data analysis expert skilled at identifying patterns, trends, and insights from structured data.
-          Your task is to perform data analysis on the given information and the user inputs.
-          
+          You are a data analysis expert skilled at generating Python code for comprehensive data analysis.
+          Your task is to generate Python code based on the given information and the user inputs, then analyze the execution results.
           ### Given Information:
-          Query Result: ${query_result}
+          Data File Path: ${data_file_path}
           Column Aliases: ${column_aliases}
+          Sample Data: ${sample_data}
+          
+          ### Analysis Requirements:
+          1. **Generate Python Code**:
+             - Create complete Python code that reads the data file
+             - Include at least two data analysis methods (descriptive statistics, correlation analysis, etc.)
+             - **Handle JSON format specifically**: json.load() for List[Dict] structure
+             - Include proper error handling and data validation
+             - **Code must be stateless** (no global variables, no side effects)
+             - **Prohibit visualization output** (no matplotlib, seaborn, plotly imports or plotting functions)
+             
+          2. **Analysis Methods** (must include at least two):
+             - Descriptive Statistics (mean, median, mode, std, etc.)
+             - Correlation Analysis (Pearson, Spearman, etc.)
+             - Distribution Analysis (statistical measures only)
+             - Trend Analysis (numerical analysis only)
+             - Group Analysis (group by operations)
+             - Outlier Detection (IQR, Z-score methods)
           
           ### Reasoning Process:
-          1. Identify key trends, patterns, or anomalies in the data
-          2. Calculate relevant statistics (sum, average, min, max, etc.) where applicable
-          3. Highlight any significant findings or insights
-          4. Provide a concise summary of the data characteristics
-          5. When analyzing data, consider that column names in the query result may be aliases for physical fields. Use the provided column aliases mapping to understand the relationship between alias names and physical column names.
+          1. Design appropriate Python code for data loading and preprocessing
+          2. Select relevant analysis methods based on data characteristics
+          3. Generate executable Python code with proper libraries
+          4. Execute the code using ${execute_python_tool_name} tool
+          5. Analyze execution results and extract insights
+          6. If execution fails, analyze error messages, fix the code and re-execute, up to ${max_execution_attempts} times
+          7. Base on the analysis results, provide comprehensive summary of findings
           
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
-            "insights": [
-              "<key_insight_1>",
-              "<key_insight_2>",
-              "<...>",
-              "<key_insight_n>"
-            ]
+            "analysis_result": [
+              {
+                "<metric_name>": "<value>",
+              },
+              <...>
+            ],
+            "summary": "<comprehensive summary>"
           }
           
           Failure:
@@ -256,8 +275,10 @@ ai:
           }
           
           **Strict Constraints:**
-          - Return only the analysis results without any additional information
-          - Do not include any visualizations or charts
+          - **Prohibit raw data in results**: do not include original data records or sample data in the analysis_result
+          - **Summary length requirement**: summary must contain at least 100 words
+          - **Focus on insights**: analysis_result should only contain calculated metrics and insights, not raw data
+          - **Do not fabricate data**: use only actual data from provided sources
           - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response
         user: |
@@ -270,15 +291,12 @@ ai:
           
           ### Given Information:
           Query Result: ${query_result}
-          Data Analysis Results:
-          <#list analysis_results as item>
-             - ${item}
-          </#list>
           Column Aliases: ${column_aliases}
+          Data Analysis Results: ${analysis_results}
+          Data Analysis Summary: ${analysis_summary}
           
           ### Requirements
           1. **Content Structure**:
-             - Executive Summary
              - Data Analysis Process
              - Detailed Analysis Results
              - Business Insights
@@ -311,10 +329,11 @@ ai:
              - Ensure HTML code meets W3C standards
           
           ### Output Format:
-          Return ONLY a JSON object containing the analysis results:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
+            "name": "<report name>",
             "html": "<html page>"
           }
           

@@ -23,7 +23,7 @@
       <TableMessage :message="message" />
       <HtmlReportMessage
         :message="message"
-        :ref="(el) => addHtmlReportMessageRef(message.questionId, el)"
+        @ready="handleAddHtmlReportIframe(message.questionId, $event)"
       />
       <DoneMessage
         :message="message"
@@ -56,15 +56,14 @@ const props = withDefaults(
 
 const emits = defineEmits<{
   (e: "sendMessage", text: string): void;
-  (e: "analyzeData", chartId: string, chatId: string, question: string): void;
+  (
+    e: "analyzeData",
+    chartId: string,
+    chatId: string,
+    question: string,
+    generateReport: boolean
+  ): void;
 }>();
-
-const htmlReportMessageRefs = new Map<any, any>();
-
-const addHtmlReportMessageRef = (questionId, el) => {
-  if (!el) return;
-  htmlReportMessageRefs.set(questionId, el);
-};
 
 const handleResendMessage = (questionId: string) => {
   const userQuestion = props.messages.find(
@@ -77,25 +76,51 @@ const handleResendMessage = (questionId: string) => {
 const handleAnalyzeData = (
   chartId: string,
   chatId: string,
-  questionId: string
+  questionId: string,
+  generateReport: boolean
 ) => {
   const userQuestion = props.messages.find(
     (item) => item.questionId === questionId && item.role === "user"
   );
   if (!userQuestion) return;
-  emits("analyzeData", chartId, chatId, userQuestion.content);
+  emits("analyzeData", chartId, chatId, userQuestion.content, generateReport);
+};
+
+const htmlReportIFrame = new Map<string, HTMLIFrameElement>();
+
+const handleAddHtmlReportIframe = (
+  questionId: string,
+  el: HTMLIFrameElement
+) => {
+  if (!el) return;
+  htmlReportIFrame.set(questionId, el);
 };
 
 const handleFullscreen = (questionId: string) => {
-  const htmlReportMessageRef = htmlReportMessageRefs.get(questionId);
-  if (!htmlReportMessageRef) return;
-  htmlReportMessageRef.toFullscreen();
+  const el = htmlReportIFrame.get(questionId);
+  if (!el) return;
+  el.requestFullscreen();
 };
 
 const handleDownloadReport = (questionId: string) => {
-  const htmlReportMessageRef = htmlReportMessageRefs.get(questionId);
-  if (!htmlReportMessageRef) return;
-  htmlReportMessageRef.downloadAsPdf();
+  const el = htmlReportIFrame.get(questionId);
+  if (!el) return;
+  const iframeDoc = el.contentDocument || el.contentWindow?.document;
+
+  if (iframeDoc) {
+    const htmlContent = iframeDoc.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = iframeDoc.title || `report_${new Date().getTime()}`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
 };
 </script>
 

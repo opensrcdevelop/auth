@@ -2,10 +2,14 @@ package cn.opensrcdevelop.ai.dto;
 
 import cn.opensrcdevelop.ai.enums.ChatActionType;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Schema(description = "ChatBI 响应")
 @Builder
@@ -30,4 +34,8 @@ public class ChatBIResponseDto {
 
     @Schema(description = "操作类型")
     private ChatActionType actionType;
+
+    @Schema(description = "时间")
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime time;
 }

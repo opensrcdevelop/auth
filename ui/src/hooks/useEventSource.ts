@@ -37,6 +37,7 @@ export function useEventSource() {
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
+      openWhenHidden: true,
       onopen: async (response) => {
         if (response.ok) {
           options.onOpen?.(response);

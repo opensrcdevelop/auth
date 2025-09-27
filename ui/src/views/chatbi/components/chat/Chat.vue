@@ -210,6 +210,7 @@ const sendMessage = (input: string) => {
       modelProviderId: selectedModel.value.split(":")[0],
       model: selectedModel.value.split(":")[1],
       dataSourceId: selectedDataSource.value,
+      chatId: chatId.value,
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
@@ -239,7 +240,12 @@ const sendMessage = (input: string) => {
 /**
  * 数据分析
  */
-const analyzeData = (chartId: string, chatId: string, question: string) => {
+const analyzeData = (
+  chartId: string,
+  chatId: string,
+  question: string,
+  generateReport: boolean
+) => {
   if (!selectedModel.value) {
     Message.warning("请选择大模型");
     return;
@@ -260,15 +266,17 @@ const analyzeData = (chartId: string, chatId: string, question: string) => {
     questionId: questionId.value,
     error: false,
   });
+  console.log(generateReport);
 
   fetchStream({
-    url: "/chatbi/analyze/stream?generateReport=true",
+    url: `/chatbi/analyze/stream`,
     body: {
-      chatId: chatId,
+      chatId,
       questionId: questionId.value,
       modelProviderId: selectedModel.value.split(":")[0],
       model: selectedModel.value.split(":")[1],
       chartId: chartId,
+      generateReport,
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
@@ -309,13 +317,12 @@ const resendMessage = (qId: string) => {
  * 处理消息
  */
 const handleMessage = (message) => {
-  const { actionType, chartId, questionId, type, content } = message;
-
   chatId.value = message.chatId;
-  if (type === "DONE") {
+  if (message.type === "DONE") {
     loading.value = false;
     const loadingItem = messages.find(
-      (item) => item.questionId === questionId && item.type === "LOADING"
+      (item) =>
+        item.questionId === message.questionId && item.type === "LOADING"
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -323,34 +330,37 @@ const handleMessage = (message) => {
     }
     messages.push({
       role: "assistant",
-      type,
-      questionId,
-      chatId: chatId.value,
-      chartId,
-      actionType,
+      type: message.type,
+      questionId: message.questionId,
+      chatId: message.chatId,
+      chartId: message.chartId,
+      actionType: message.actionType,
+      time: message.time,
     });
     scrollToBottom();
     return;
   }
 
-  if (type === "LOADING") {
+  if (message.type === "LOADING") {
     const loadingItem = messages.find(
-      (item) => item.questionId === questionId && item.type === "LOADING"
+      (item) =>
+        item.questionId === message.questionId && item.type === "LOADING"
     );
     if (loadingItem) {
-      loadingItem.content = content;
+      loadingItem.content = message.content;
     }
     return;
   }
 
-  if (type === "ERROR") {
+  if (message.type === "ERROR") {
     const loadingItem = messages.find(
-      (item) => item.questionId === questionId && item.type === "LOADING"
+      (item) =>
+        item.questionId === message.questionId && item.type === "LOADING"
     );
     if (loadingItem) {
       loadingItem.loading = false;
       loadingItem.error = true;
-      loadingItem.content = content;
+      loadingItem.content = message.content;
     }
     return;
   }
@@ -362,29 +372,29 @@ const handleMessage = (message) => {
     const last = messages[messages.length - 1];
 
     // 类型相同，合并内容
-    if (last.type === type) {
-      if (["MARKDOWN", "TEXT", "HTML_REPORT"].includes(type)) {
-        last.content += content;
-      } else if (["ECHARTS", "TABLE"].includes(type)) {
-        last.content = content;
+    if (last.type === message.type) {
+      if (["MARKDOWN", "TEXT", "HTML_REPORT"].includes(message.type)) {
+        last.content += message.content;
+      } else if (["ECHARTS", "TABLE"].includes(message.type)) {
+        last.content = message.content;
       }
     } else {
       // 类型不同追加新消息
       messages.push({
         role: "assistant",
-        type,
-        content,
-        questionId,
-        chatId: chatId.value,
+        type: message.type,
+        content: message.content,
+        questionId: message.questionId,
+        chatId: message.chatId,
       });
     }
   } else {
     messages.push({
       role: "assistant",
-      type,
-      content,
-      questionId,
-      chatId: chatId.value,
+      type: message.type,
+      content: message.content,
+      questionId: message.questionId,
+      chatId: message.chatId,
     });
   }
 };
