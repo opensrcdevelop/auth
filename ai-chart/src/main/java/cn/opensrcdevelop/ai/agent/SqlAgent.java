@@ -3,10 +3,8 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.Table;
-import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
-import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -29,7 +27,6 @@ public class SqlAgent {
 
     private final DataSourceManager dataSourceManager;
     private final TableService tableService;
-    private final TableFieldService tableFieldService;
     private final PromptTemplate promptTemplate;
     private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
@@ -88,14 +85,14 @@ public class SqlAgent {
      * @return SQL
      */
     public Map<String, Object> generateSql(ChatClient chatClient, String userQuestion, List<Map<String, Object>> relevantTables, String dataSourceId) {
-        // 1. 获取关联表的字段信息
-        List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
+        // 1. 获取关联表的 Schema
+        List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("question", userQuestion)
-                .param("relevant_tables", newRelevantTables);
+                .param("relevant_tables", schemas);
 
         // 2. 生成 SQL
         return chatClient.prompt()
@@ -118,14 +115,14 @@ public class SqlAgent {
      * @return 修复后的 SQL
      */
     public Map<String, Object> fixSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
-        // 1. 获取关联表的字段信息
-        List<Map<String, Object>> newRelevantTables = getTableWithField(relevantTables);
+        // 1. 获取关联表的 Schema
+        List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FIX_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("sql", sql)
                 .param("error", error)
-                .param("relevant_tables", newRelevantTables);
+                .param("relevant_tables", schemas);
 
         // 2. 修复 SQL
         return chatClient.prompt()
@@ -135,26 +132,5 @@ public class SqlAgent {
                 .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
-    }
-
-    private List<Map<String, Object>> getTableWithField(List<Map<String, Object>> tables) {
-        List<String> tableIds = CommonUtil.stream(tables).map(x -> x.get("table_id").toString()).toList();
-        List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .in(TableField::getTableId, tableIds));
-
-        return CommonUtil.stream(tables).map(table -> {
-            Map<String, Object> newTableInfo = new HashMap<>(table);
-            List<TableField> tableFields = CommonUtil.stream(allTableFields).filter(x -> x.getTableId().equals(table.get("table_id"))).toList();
-            List<String> fieldDescriptions = CommonUtil.stream(tableFields).map(x -> {
-                Map<String, String> fieldDescription = new HashMap<>();
-                fieldDescription.put("field_name", x.getFieldName());
-                fieldDescription.put("field_data_type", x.getFieldType());
-                fieldDescription.put("description", x.getRemark() == null ? "No description available":  x.getRemark());
-                fieldDescription.put("additional_info", x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
-                return CommonUtil.serializeObject(fieldDescription);
-            }).toList();
-            newTableInfo.put("fields", fieldDescriptions);
-            return newTableInfo;
-        }).toList();
     }
 }

@@ -1,6 +1,60 @@
 ai:
   prompt:
     templates:
+      rewrite_question:
+        system: |
+          You are an expert in natural language processing and user intent analysis.
+          Your task is to analyze both historical user data and the current user question to identify the complete user intent, then rewrite the question accordingly.
+          
+          ### Given Information:
+          Historical User Questions:
+          <#list historical_questions as question>
+            - ${question}
+          </#list>
+          
+          ### Intent Analysis Process:
+          1. **Analyze Current Question**: Deeply understand the explicit requirements, implicit needs, and underlying intent of the current user question.
+          2. **Review Historical Patterns**: Examine historical user questions to identify recurring patterns, common phrasing, and typical user behavior.
+          3. **Correlate Context**: Connect the current question with historical context to identify potential unstated requirements or implicit assumptions.
+          4. **Identify Intent Evolution**: Analyze how user intent may have evolved or become more specific based on historical interactions.
+          5. **Extract Complete Intent**: Synthesize all information to formulate a comprehensive understanding of the user's complete intent.
+          
+          ### Rewriting Strategy:
+          1. **Preserve Core Intent**: Maintain the fundamental meaning and requirements of the original question.
+          2. **Enhance Clarity**: Make the question more precise, specific, and easier to understand for downstream processing.
+          3. **Incorporate Context**: Include relevant context from historical patterns that helps clarify the intent.
+          4. **Resolve Ambiguity**: Address any ambiguities by leveraging historical user behavior patterns.
+          
+          ### Requirements:
+          1. **Comprehensive Intent Analysis**: The rewritten question must reflect a complete understanding of user intent based on both current and historical data.
+          2. **Contextual Enhancement**: Incorporate relevant historical context to make the question more informative and precise.
+          3. **Natural Language Preservation**: Keep the question in natural, conversational language while improving clarity.
+          4. **No Assumption Addition**: Do not add new conditions or requirements not supported by historical patterns or current question.
+          5. **Intent Consistency**: Ensure the rewritten question maintains consistency with the user's historical query patterns.
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "rewritten_question": "<rewritten question>"
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - The intent analysis must be based on concrete evidence from historical user data and current question.
+          - Do not fabricate historical patterns that are not present in the provided data.
+          - Maintain the original question's fundamental requirements while enhancing clarity.
+          - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Original Question: ${original_question}
       select_table:
         system: |
           You are an expert in database schema understanding.
@@ -219,24 +273,32 @@ ai:
           ### User Inputs:
           SQL: ${sql}   
           Error: ${error}
-      analyze_data:
+      generate_python_code:
         system: |
-          You are a data analysis expert skilled at generating Python code for comprehensive data analysis.
-          Your task is to generate Python code based on the given information and the user inputs, then analyze the execution results.
+          You are a Python expert skilled at generating Python code for comprehensive data analysis.
+          Your task is to generate Python code based on the given information and the user inputs.
+
           ### Given Information:
           Data File Path: ${data_file_path}
+          Data File Format: JSON File (List[Dict])
+          One data of the data file: ${sample_data}
           Column Aliases: ${column_aliases}
-          Sample Data: ${sample_data}
-          
-          ### Analysis Requirements:
+
+          ### Reasoning Process:
+          1. Design appropriate Python code for data loading and preprocessing
+          2. Select relevant analysis methods based on data characteristics
+          3. Generate executable Python code with proper libraries
+          4. Ensure code follows Python best practices and syntax standards
+
+          ### Code Requirements:
           1. **Generate Python Code**:
              - Create complete Python code that reads the data file
-             - Include at least two data analysis methods (descriptive statistics, correlation analysis, etc.)
-             - **Handle JSON format specifically**: json.load() for List[Dict] structure
+             - Include at least two data analysis methods (descriptive statistics, trend analysis, etc.)
              - Include proper error handling and data validation
+             - **Standard Stream Output**: All analysis results must be printed to standard output (stdout) using print() statements
              - **Code must be stateless** (no global variables, no side effects)
              - **Prohibit visualization output** (no matplotlib, seaborn, plotly imports or plotting functions)
-             
+
           2. **Analysis Methods** (must include at least two):
              - Descriptive Statistics (mean, median, mode, std, etc.)
              - Correlation Analysis (Pearson, Spearman, etc.)
@@ -244,27 +306,79 @@ ai:
              - Trend Analysis (numerical analysis only)
              - Group Analysis (group by operations)
              - Outlier Detection (IQR, Z-score methods)
+
+          3. **Code Quality Requirements**:
+             - Follow PEP 8 style guidelines
+             - Include proper error handling
+             - Use appropriate data structures and algorithms
+             - Ensure code is readable and maintainable
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "python_code": "<generated Python code>",
+            "packages": ["<required_package1>", "<required_package2>", "<...>"]
+          }
+
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Generate only Python code, do not execute it
+          - Code must be syntactically correct and follow Python standards
+          - Do not include any execution results or analysis summary
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+        user: |
+          ### User Inputs:
+          Question: ${question}
+      analyze_data:
+        system: |
+          You are a data analysis expert skilled at analyzing Python execution results and generating comprehensive summaries.
+          Your task is to analyze the execution results and provide a comprehensive summary based on the given information and the user inputs.
+          
+          ### Given Information:
+          Python Execution Output: ${python_execution_output}
+          Query Result: ${query_result}
+          Column Aliases: ${column_aliases}
           
           ### Reasoning Process:
-          1. Design appropriate Python code for data loading and preprocessing
-          2. Select relevant analysis methods based on data characteristics
-          3. Generate executable Python code with proper libraries
-          4. Execute the code using ${execute_python_tool_name} tool
-          5. Analyze execution results and extract insights
-          6. If execution fails, analyze error messages, fix the code and re-execute, up to ${max_execution_attempts} times
-          7. Base on the analysis results, provide comprehensive summary of findings
+          1. Analyze the Python execution output and extract key insights
+          2. Identify patterns, trends, and significant findings from the analysis
+          3. Correlate findings with the original query results
+          4. Generate a comprehensive summary of the analysis findings
+          5. Provide actionable insights and recommendations
+          
+          ### Analysis Requirements:
+          1. **Extract Insights**:
+             - Analyze statistical measures from the execution output
+             - Identify correlations and relationships between variables
+             - Detect outliers and anomalies in the data
+             - Understand distribution patterns and trends
+          
+          2. **Summary Requirements**:
+             - Provide comprehensive analysis of the findings
+             - Include key metrics and statistical insights
+             - Explain the significance of the results
+             - Connect findings to the original business question
+             - Suggest potential next steps or recommendations
+          
+          3. **Content Requirements**:
+             - Summary must contain at least 100 words
+             - Focus on insights derived from the Python analysis
+             - Do not include raw data or sample records
+             - Provide clear and actionable conclusions
           
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
-            "analysis_result": [
-              {
-                "<metric_name>": "<value>",
-              },
-              <...>
-            ],
             "summary": "<comprehensive summary>"
           }
           
@@ -275,15 +389,73 @@ ai:
           }
           
           **Strict Constraints:**
-          - **Prohibit raw data in results**: do not include original data records or sample data in the analysis_result
+          - **Analysis from Execution**: All analysis results MUST be derived from Python code execution output
           - **Summary length requirement**: summary must contain at least 100 words
-          - **Focus on insights**: analysis_result should only contain calculated metrics and insights, not raw data
           - **Do not fabricate data**: use only actual data from provided sources
           - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response
         user: |
           ### User Inputs:
           Question: ${question}
+      fix_python_code:
+        system: |
+          You are a Python expert skilled at identifying and fixing Python code syntax errors and logical issues.
+          Your task is to fix the given Python code according to the error information and the user inputs.
+          
+          ### Given Information:
+          Original Python Code: ${python_code}
+          Error Output: ${error_output}
+          Data File Path: ${data_file_path}
+          One data of the data file: ${sample_data}
+          Column Aliases: ${column_aliases}
+          
+          ### Reasoning Process:
+          1. Analyze the error message and identify the root cause
+          2. Examine the Python code for syntax errors and logical issues
+          3. Fix the code while preserving the original analysis intent
+          4. Ensure the fixed code follows Python best practices
+          5. Validate that the fix resolves the reported error
+          
+          ### Fix Requirements:
+          1. **Error Analysis**:
+             - Identify syntax errors (indentation, missing colons, etc.)
+             - Detect logical errors (variable scope, function calls, etc.)
+             - Check for import issues and missing dependencies
+             - Validate data loading and processing logic
+          
+          2. **Fix Strategy**:
+             - Preserve the original analysis methods and intent
+             - Fix only the problematic parts of the code
+             - Ensure code remains stateless and follows best practices
+             - Maintain the required analysis methods and output format
+          
+          3. **Code Quality**:
+             - Ensure fixed code is syntactically correct
+             - Follow PEP 8 style guidelines
+             - Include proper error handling where missing
+             - Maintain readability and maintainability
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "fixed_python_code": "<fixed Python code>",
+            "packages": ["<required_package1>", "<required_package2>", "<...>"]
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Fix only the reported errors, do not rewrite the entire code unnecessarily
+          - Preserve the original analysis methods and intent
+          - Do not execute the code, only fix syntax and logical errors
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
       generate_report:
         system: |
           You are a professional data analyst and technical writer skilled at creating comprehensive, visually appealing, and insightful data reports.

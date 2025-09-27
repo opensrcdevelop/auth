@@ -20,6 +20,9 @@ public class PromptTemplate {
     public static final String FIX_SQL = "fix_sql";
     public static final String ANALYZE_DATA = "analyze_data";
     public static final String GENERATE_REPORT = "generate_report";
+    public static final String REWRITE_QUESTION = "rewrite_question";
+    public static final String GENERATE_PYTHON_CODE = "generate_python_code";
+    public static final String FIX_PYTHON_CODE = "fix_python_code";
 
     private Map<String, Prompt> templates;
 }

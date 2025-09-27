@@ -35,6 +35,9 @@ public class ChatBIResponseDto {
     @Schema(description = "操作类型")
     private ChatActionType actionType;
 
+    @Schema(description = "重写后的问题")
+    private String rewrittenQuestion;
+
     @Schema(description = "时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime time;

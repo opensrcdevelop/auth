@@ -335,6 +335,7 @@ const handleMessage = (message) => {
       chatId: message.chatId,
       chartId: message.chartId,
       actionType: message.actionType,
+      rewrittenQuestion: message.rewrittenQuestion,
       time: message.time,
     });
     scrollToBottom();

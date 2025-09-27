@@ -3,6 +3,7 @@ package cn.opensrcdevelop.ai.service.impl;
 import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
+import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.mapper.TableMapper;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
@@ -17,7 +18,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -111,5 +114,33 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
             super.remove(Wrappers.<Table>lambdaQuery().in(Table::getTableId, tableIds));
             tableFieldService.removeTableFields(tableIds);
         }
+    }
+
+    /**
+     * 获取 Table Schema
+     *
+     * @param tables 表列表
+     * @return Table Schema
+     */
+    @Override
+    public List<Map<String, Object>> getTableSchemas(List<Map<String, Object>> tables) {
+        List<String> tableIds = CommonUtil.stream(tables).map(x -> x.get("table_id").toString()).toList();
+        List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+                .in(TableField::getTableId, tableIds));
+
+        return CommonUtil.stream(tables).map(table -> {
+            Map<String, Object> newTableInfo = new HashMap<>(table);
+            List<TableField> tableFields = CommonUtil.stream(allTableFields).filter(x -> x.getTableId().equals(table.get("table_id"))).toList();
+            List<String> fieldDescriptions = CommonUtil.stream(tableFields).map(x -> {
+                Map<String, String> fieldDescription = new HashMap<>();
+                fieldDescription.put("field_name", x.getFieldName());
+                fieldDescription.put("field_data_type", x.getFieldType());
+                fieldDescription.put("description", x.getRemark() == null ? "No description available":  x.getRemark());
+                fieldDescription.put("additional_info", x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
+                return CommonUtil.serializeObject(fieldDescription);
+            }).toList();
+            newTableInfo.put("fields", fieldDescriptions);
+            return newTableInfo;
+        }).toList();
     }
 }

@@ -144,7 +144,7 @@ public class SseUtil {
      * @param emitter SseEmitter
      * @param chartId 图表ID
      */
-    public static void sendChatBIDone(SseEmitter emitter, String chartId) {
+    public static void sendChatBIDone(SseEmitter emitter, String chartId, String rewrittenQuestion) {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
@@ -152,6 +152,7 @@ public class SseUtil {
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
                         .chartId(chartId)
+                        .rewrittenQuestion(rewrittenQuestion)
                         .type(ChatContentType.DONE)
                         .time(LocalDateTime.now())
                         .build(), MediaType.APPLICATION_JSON)

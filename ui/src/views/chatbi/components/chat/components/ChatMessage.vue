@@ -65,25 +65,17 @@ const emits = defineEmits<{
   ): void;
 }>();
 
-const handleResendMessage = (questionId: string) => {
-  const userQuestion = props.messages.find(
-    (item) => item.questionId === questionId && item.role === "user"
-  );
-  if (!userQuestion) return;
-  emits("sendMessage", userQuestion.content);
+const handleResendMessage = (question: string) => {
+  emits("sendMessage", question);
 };
 
 const handleAnalyzeData = (
   chartId: string,
   chatId: string,
-  questionId: string,
+  question: string,
   generateReport: boolean
 ) => {
-  const userQuestion = props.messages.find(
-    (item) => item.questionId === questionId && item.role === "user"
-  );
-  if (!userQuestion) return;
-  emits("analyzeData", chartId, chatId, userQuestion.content, generateReport);
+  emits("analyzeData", chartId, chatId, question, generateReport);
 };
 
 const htmlReportIFrame = new Map<string, HTMLIFrameElement>();

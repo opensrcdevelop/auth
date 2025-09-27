@@ -6,6 +6,9 @@ import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+import java.util.Map;
+
 public interface TableService extends IService<Table> {
 
     PageData<TableResponseDto> list(String dataSourceId, String keyword, int page, int size);
@@ -13,4 +16,6 @@ public interface TableService extends IService<Table> {
     void batchUpdate(BatchUpdateTableRequestDto requestDto);
 
     void removeTables(String dataSourceId);
+
+    List<Map<String, Object>> getTableSchemas(List<Map<String, Object>> tables);
 }

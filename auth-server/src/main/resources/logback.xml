@@ -117,6 +117,8 @@
         <logger name="org.springframework.core.codec.StringDecoder" level="warn" additivity="false">
             <appender-ref ref="console" />
         </logger>
+        <logger name="org.springframework.web.client.DefaultRestClient" level="warn" additivity="false">
+        </logger>
         <root level="info">
             <appender-ref ref="console" />
         </root>

@@ -91,7 +91,7 @@ const emits = defineEmits<{
     e: "analyzeData",
     chartId: string,
     chatId: string,
-    questionId: string,
+    question: string,
     generateReport: boolean
   ): void;
   (e: "fullScreen", questionId: string): void;
@@ -99,7 +99,8 @@ const emits = defineEmits<{
 }>();
 
 const handleResendMessage = () => {
-  emits("resendMessage", props.message.questionId);
+  console.log(props.message)
+  emits("resendMessage", props.message.rewrittenQuestion);
 };
 
 const handleAnalyzeData = (generateReport: boolean) => {
@@ -107,7 +108,7 @@ const handleAnalyzeData = (generateReport: boolean) => {
     "analyzeData",
     props.message.chartId,
     props.message.chatId,
-    props.message.questionId,
+    props.message.rewrittenQuestion,
     generateReport
   );
 };
