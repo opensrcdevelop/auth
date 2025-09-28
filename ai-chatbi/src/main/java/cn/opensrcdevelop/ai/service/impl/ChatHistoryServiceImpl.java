@@ -3,7 +3,6 @@ package cn.opensrcdevelop.ai.service.impl;
 import cn.opensrcdevelop.ai.dto.ChatHistoryResponseDto;
 import cn.opensrcdevelop.ai.entity.ChatHistory;
 import cn.opensrcdevelop.ai.mapper.ChatHistoryMapper;
-import cn.opensrcdevelop.ai.service.ChartConfService;
 import cn.opensrcdevelop.ai.service.ChatHistoryService;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import cn.opensrcdevelop.ai.service.MultiChatMemoryService;
@@ -22,7 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
-    private final ChartConfService chartConfService;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final MultiChatMemoryService multiChatMemoryService;
 
@@ -106,10 +104,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         // 3. 删除用户对话历史记录中的所有消息
         chatMessageHistoryService.removeUserChatMessageHistory(chatId);
 
-        // 4. 删除图表配置
-        chartConfService.removeChartConf(chatId);
-
-        // 5. 删除对话记忆
+        // 4. 删除对话记忆
         multiChatMemoryService.removeChatMemory(chatId);
     }
 }
