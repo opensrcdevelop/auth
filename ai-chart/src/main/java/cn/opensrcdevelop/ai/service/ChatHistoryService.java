@@ -1,0 +1,16 @@
+package cn.opensrcdevelop.ai.service;
+
+import cn.opensrcdevelop.ai.dto.ChatHistoryResponseDto;
+import cn.opensrcdevelop.ai.entity.ChatHistory;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
+
+public interface ChatHistoryService extends IService<ChatHistory> {
+
+    List<ChatHistoryResponseDto> listUserChatHistory();
+
+    void createChatHistory(String chatId, String title);
+
+    void updateChatHistoryEndTime(String chatId);
+}

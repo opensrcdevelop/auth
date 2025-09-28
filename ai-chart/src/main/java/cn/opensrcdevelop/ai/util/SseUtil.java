@@ -3,6 +3,9 @@ package cn.opensrcdevelop.ai.util;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
+import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
@@ -15,6 +18,7 @@ import java.util.Random;
 public class SseUtil {
 
     private static final Random RANDOM = new SecureRandom();
+    private static final ChatMessageHistoryService chatMessageHistoryService = SpringContextUtil.getBean(ChatMessageHistoryService.class);
 
     private SseUtil() {
     }
@@ -35,6 +39,7 @@ public class SseUtil {
                         .type(ChatContentType.TEXT)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(text, ChatContentType.TEXT);
     }
 
     /**
@@ -100,6 +105,7 @@ public class SseUtil {
                 }
             }
         });
+        chatMessageHistoryService.createChatMessageHistory(text, ChatContentType.TEXT);
     }
 
     /**
@@ -118,6 +124,7 @@ public class SseUtil {
                         .type(ChatContentType.MARKDOWN)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(md, ChatContentType.MARKDOWN);
     }
 
     /**
@@ -136,6 +143,7 @@ public class SseUtil {
                         .type(ChatContentType.CHART)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(CommonUtil.serializeObject(chart), ChatContentType.CHART);
     }
 
     /**
@@ -145,6 +153,7 @@ public class SseUtil {
      * @param chartId 图表ID
      */
     public static void sendChatBIDone(SseEmitter emitter, String chartId, String rewrittenQuestion) {
+        LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
@@ -154,9 +163,10 @@ public class SseUtil {
                         .chartId(chartId)
                         .rewrittenQuestion(rewrittenQuestion)
                         .type(ChatContentType.DONE)
-                        .time(LocalDateTime.now())
+                        .time(now)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, chartId, rewrittenQuestion, now);
     }
 
     /**
@@ -165,6 +175,7 @@ public class SseUtil {
      * @param emitter SseEmitter
      */
     public static void sendChatBIDone(SseEmitter emitter) {
+        LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
@@ -172,9 +183,10 @@ public class SseUtil {
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
                         .type(ChatContentType.DONE)
-                        .time(LocalDateTime.now())
+                        .time(now)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, null, now);
     }
 
     /**
@@ -193,6 +205,7 @@ public class SseUtil {
                         .type(ChatContentType.LOADING)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(loadingMsg, ChatContentType.LOADING);
     }
 
     /**
@@ -211,6 +224,7 @@ public class SseUtil {
                         .type(ChatContentType.TABLE)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(CommonUtil.serializeObject(table), ChatContentType.TABLE);
     }
 
     /**
@@ -228,6 +242,7 @@ public class SseUtil {
                         .type(ChatContentType.ERROR)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(errorMsg, ChatContentType.ERROR);
     }
 
     /**
@@ -245,5 +260,6 @@ public class SseUtil {
                         .type(ChatContentType.HTML_REPORT)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        chatMessageHistoryService.createChatMessageHistory(htmlContent, ChatContentType.HTML_REPORT);
     }
 }

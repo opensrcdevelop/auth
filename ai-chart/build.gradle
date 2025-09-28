@@ -21,6 +21,7 @@ dependencies {
     implementation "com.github.vertical-blank:sql-formatter:$rootProject.sqlFormatterVer"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
+    implementation 'org.springframework.security:spring-security-core'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'

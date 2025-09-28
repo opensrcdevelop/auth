@@ -14,9 +14,7 @@ import cn.opensrcdevelop.ai.dto.VoteChartRequestDto;
 import cn.opensrcdevelop.ai.entity.ChartConf;
 import cn.opensrcdevelop.ai.enums.ChatActionType;
 import cn.opensrcdevelop.ai.model.ChartRecord;
-import cn.opensrcdevelop.ai.service.ChartConfService;
-import cn.opensrcdevelop.ai.service.ChatBIService;
-import cn.opensrcdevelop.ai.service.DataSourceConfService;
+import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
@@ -36,6 +34,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -71,6 +71,8 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final DataSourceConfService dataSourceConfService;
     private final ChatAgent chatAgent;
     private final ExecutePythonTool executePythonTool;
+    private final ChatMessageHistoryService chatMessageHistoryService;
+    private final ChatHistoryService chatHistoryService;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -84,13 +86,24 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Override
     public SseEmitter streamChatBI(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        SecurityContext securityContext = SecurityContextHolder.getContext();
 
         executor.execute(() -> {
-            String chatId = StringUtils.isEmpty(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
+            SecurityContextHolder.setContext(securityContext);
+            String chatId = requestDto.getChatId();
+            if (StringUtils.isEmpty(chatId)) {
+                chatId = CommonUtil.getUUIDV7String();
+                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion());
+            } else {
+                chatHistoryService.updateChatHistoryEndTime(chatId);
+            }
+
             try {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
                 ChatContext.setActionType(ChatActionType.GENERATE_CHART);
+
+                chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, requestDto, chatId);
                 SseUtil.sendChatBIDone(emitter, result._1, result._2);
             } catch (HikariPool.PoolInitializationException ex) {
@@ -116,13 +129,24 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Override
     public SseEmitter streamAnalyzeData(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        SecurityContext securityContext = SecurityContextHolder.getContext();
 
         executor.execute(() -> {
-            String chatId = StringUtils.isEmpty(requestDto.getChatId()) ? CommonUtil.getUUIDV7String() : requestDto.getChatId();
+            SecurityContextHolder.setContext(securityContext);
+            String chatId = requestDto.getChatId();
+            if (StringUtils.isEmpty(chatId)) {
+                chatId = CommonUtil.getUUIDV7String();
+                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion());
+            } else {
+                chatHistoryService.updateChatHistoryEndTime(chatId);
+            }
+
             try {
                 ChatContext.setChatId(chatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
                 ChatContext.setActionType(ChatActionType.ANALYZE_DATA);
+
+                chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
                 processStreamAnalyzeDataRequest(emitter, requestDto, chatId);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
@@ -293,14 +317,14 @@ public class ChatBIServiceImpl implements ChatBIService {
                     (List<String>) pythonCodeResult.get("packages"),
                     3);
             if (!Boolean.TRUE.equals(executeResult._1)) {
-                SseUtil.sendChatBITextSegmented(emitter, "无法执行 Python 代码，原因：%s".formatted(executeResult._3), 500);
+                SseUtil.sendChatBITextSegmented(emitter, "无法执行 Python 代码，原因：%s".formatted(executeResult._2), 500);
                 SseUtil.sendChatBIDone(emitter);
                 return;
             }
 
             // 3.4 分析数据
             SseUtil.sendChatBILoading(emitter, "正在分析数据...");
-            pythonExecutionResult = executeResult._3;
+            pythonExecutionResult = executeResult._2;
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(chatClient, chartRecord, pythonExecutionResult);
             if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
                 SseUtil.sendChatBITextSegmented(emitter, "无法分析数据，原因：%s".formatted(analyzeResult.get("error")), 500);
@@ -371,7 +395,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         return Tuple.of(true, queryResult, sql);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("all")
     private Tuple3<Boolean, String, String> executePythonCodeWithFix(ChatClient chatClient,
                                                                      SseEmitter emitter,
                                                                      ChartRecord chartRecord,
@@ -393,7 +417,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 SseUtil.sendChatBILoading(emitter, "执行 Python 代码失败，修复并重新执行....");
                 Map<String, Object> fixResult = analyzeAgent.fixPythonCode(chatClient, chartRecord, dataFilePath, pythonCode, response.getResult());
                 if (!Boolean.TRUE.equals(fixResult.get("success"))) {
-                    return Tuple.of(false, pythonCode, response.getResult());
+                    return Tuple.of(false, response.getResult(), pythonCode);
                 }
                 pythonCode = (String) fixResult.get("fixed_python_code");
                 packages = (List<String>) fixResult.get("packages");
@@ -403,7 +427,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             }
         }
 
-        return Tuple.of(true, pythonCode, executeOutput);
+        return Tuple.of(true, executeOutput, pythonCode);
     }
 
     private void saveTempChartRecord(String chartId,

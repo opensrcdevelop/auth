@@ -32,6 +32,8 @@ public class ChatBIController {
     private final ModelProviderService modelProviderService;
     private final TableService tableService;
     private final TableFieldService tableFieldService;
+    private final ChatHistoryService chatHistoryService;
+    private final ChatMessageHistoryService chatMessageHistoryService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -167,5 +169,20 @@ public class ChatBIController {
     @DeleteMapping("/dataSourceConf/{id}")
     public void removeDataSourceConf(@PathVariable @NotBlank String id) {
         dataSourceConfService.removeDataSourceConf(id);
+    }
+
+    @Operation(summary = "获取当前用户的对话历史记录", description = "获取当前用户的对话历史记录")
+    @GetMapping("/chat/history")
+    public List<ChatHistoryResponseDto> getChatHistory() {
+        return chatHistoryService.listUserChatHistory();
+    }
+
+    @Operation(summary = "获取当前用户的对话消息历史记录", description = "获取当前用户的对话消息历史记录")
+    @Parameters({
+            @Parameter(name = "id", description = "对话ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/chat/{id}/history")
+    public List<ChatMessageHistoryResponseDto> getChatMessageHistory(@PathVariable @NotBlank String id) {
+        return chatMessageHistoryService.listChatMessageHistory(id);
     }
 }

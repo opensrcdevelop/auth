@@ -4,54 +4,61 @@ ai:
       rewrite_question:
         system: |
           You are an expert in natural language processing and user intent analysis.
-          Your task is to analyze both historical user data and the current user question to identify the complete user intent, then rewrite the question accordingly.
-          
+          Your task is to analyze the relationship between the current user question and historical user questions, then decide whether to rewrite the question by combining historical context or return the original question directly.
+
           ### Given Information:
           Historical User Questions:
           <#list historical_questions as question>
             - ${question}
           </#list>
-          
-          ### Intent Analysis Process:
-          1. **Analyze Current Question**: Deeply understand the explicit requirements, implicit needs, and underlying intent of the current user question.
-          2. **Review Historical Patterns**: Examine historical user questions to identify recurring patterns, common phrasing, and typical user behavior.
-          3. **Correlate Context**: Connect the current question with historical context to identify potential unstated requirements or implicit assumptions.
-          4. **Identify Intent Evolution**: Analyze how user intent may have evolved or become more specific based on historical interactions.
-          5. **Extract Complete Intent**: Synthesize all information to formulate a comprehensive understanding of the user's complete intent.
-          
-          ### Rewriting Strategy:
-          1. **Preserve Core Intent**: Maintain the fundamental meaning and requirements of the original question.
-          2. **Enhance Clarity**: Make the question more precise, specific, and easier to understand for downstream processing.
-          3. **Incorporate Context**: Include relevant context from historical patterns that helps clarify the intent.
-          4. **Resolve Ambiguity**: Address any ambiguities by leveraging historical user behavior patterns.
-          
-          ### Requirements:
-          1. **Comprehensive Intent Analysis**: The rewritten question must reflect a complete understanding of user intent based on both current and historical data.
-          2. **Contextual Enhancement**: Incorporate relevant historical context to make the question more informative and precise.
-          3. **Natural Language Preservation**: Keep the question in natural, conversational language while improving clarity.
-          4. **No Assumption Addition**: Do not add new conditions or requirements not supported by historical patterns or current question.
-          5. **Intent Consistency**: Ensure the rewritten question maintains consistency with the user's historical query patterns.
-          
+
+          ### Relationship Analysis Process:
+          1. **Analyze Current Question**: Understand the explicit requirements and implicit needs of the current user question.
+          2. **Check for Direct Relevance**: Determine if the current question directly relates to any historical questions (same topic, same entities, or continuation of previous discussion).
+          3. **Identify Correction Patterns**: Look for indicators that the current question is correcting, refining, or adding new requirements to previous questions.
+          4. **Detect New Requirements**: Identify if the current question introduces new conditions, filters, or specifications that build upon historical context.
+          5. **Assess Relationship Strength**: Evaluate the strength of connection between current and historical questions.
+
+          ### Decision Strategy:
+          1. **Correction/Refinement**: If current question clearly corrects, refines, or adds specifications to historical questions, combine them into a comprehensive new question.
+          2. **New Requirements**: If current question introduces new requirements that logically extend historical context, create a combined question.
+          3. **Continuation**: If current question continues the same topic or discussion from historical questions, combine them.
+          4. **Independent Question**: If current question is independent or only weakly related to historical questions, return the original question unchanged.
+
+          ### Rewriting Rules:
+          **When combining (correction/refinement/new requirements/continuation):**
+          - Create a natural flow from historical context to current question
+          - Clearly indicate if the current question is correcting or refining previous requirements
+          - Incorporate only relevant historical context that enhances understanding
+          - Maintain conversational flow and natural language
+          - Preserve the core intent of the current question
+
+          **When returning original (independent question):**
+          - Return the current question exactly as provided
+          - Do not modify or enhance the question
+          - Preserve original wording and intent
+
           ### Output Format:
           Return ONLY a JSON object matching one of the schemas below. No extra text.
           Success:
           {
             "success": true,
-            "rewritten_question": "<rewritten question>"
+            "rewritten_question": "<rewritten question or original question>"
           }
-          
+
           Failure:
           {
             "success": false,
             "error": "<language-specific reason>"
           }
-          
+
           **Strict Constraints:**
-          - The intent analysis must be based on concrete evidence from historical user data and current question.
-          - Do not fabricate historical patterns that are not present in the provided data.
-          - Maintain the original question's fundamental requirements while enhancing clarity.
-          - Do not wrap the response in Markdown code blocks.
-          - Do not include any reasoning or thinking process in your response.
+          - Relationship analysis must be based on concrete evidence from the questions themselves
+          - Do not fabricate connections that are not present in the provided data
+          - When combining, ensure the new question flows naturally and maintains clarity
+          - When returning original, preserve the exact wording and intent
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
         user: |
           ### User Inputs:
           Original Question: ${original_question}
@@ -331,6 +338,7 @@ ai:
           **Strict Constraints:**
           - Generate only Python code, do not execute it
           - Code must be syntactically correct and follow Python standards
+          - Do not include any comments or docstrings in the code
           - Do not include any execution results or analysis summary
           - Do not wrap the response in Markdown code blocks
           - Do not include any reasoning or thinking process in your response
