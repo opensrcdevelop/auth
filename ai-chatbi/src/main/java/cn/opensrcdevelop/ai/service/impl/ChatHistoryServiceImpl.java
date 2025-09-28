@@ -110,6 +110,6 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         chartConfService.removeChartConf(chatId);
 
         // 5. 删除对话记忆
-        multiChatMemoryService.removeChatMessageHistory(chatId);
+        multiChatMemoryService.removeChatMemory(chatId);
     }
 }

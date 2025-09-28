@@ -16,7 +16,7 @@ public class MultiChatMemoryServiceImpl extends ServiceImpl<MultiChatMemoryMappe
      * @param chatId 对话ID
      */
     @Override
-    public void removeChatMessageHistory(String chatId) {
+    public void removeChatMemory(String chatId) {
         super.remove(Wrappers.<MultiChatMemory>lambdaQuery().eq(MultiChatMemory::getChatId, chatId));
     }
 }

@@ -38,7 +38,7 @@ public class ChatAgent {
             );
         }
 
-        // 3. 重写用户提问
+        // 2. 重写用户提问
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.REWRITE_QUESTION)
                 .param("historical_questions", new ArrayList<>(userQuestions))
                 .param("original_question", userQuestion);

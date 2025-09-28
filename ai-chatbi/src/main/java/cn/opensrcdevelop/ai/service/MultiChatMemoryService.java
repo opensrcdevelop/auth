@@ -5,5 +5,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface MultiChatMemoryService extends IService<MultiChatMemory> {
 
-    void removeChatMessageHistory(String chatId);
+    void removeChatMemory(String chatId);
 }
