@@ -4,4 +4,6 @@ import cn.opensrcdevelop.ai.entity.MultiChatMemory;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface MultiChatMemoryService extends IService<MultiChatMemory> {
+
+    void removeChatMessageHistory(String chatId);
 }

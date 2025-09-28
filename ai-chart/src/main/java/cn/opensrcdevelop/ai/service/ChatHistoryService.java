@@ -10,7 +10,9 @@ public interface ChatHistoryService extends IService<ChatHistory> {
 
     List<ChatHistoryResponseDto> listUserChatHistory();
 
-    void createChatHistory(String chatId, String title);
+    void createChatHistory(String chatId, String title, String dataSourceId);
 
-    void updateChatHistoryEndTime(String chatId);
+    void updateChatHistory(String chatId, String title);
+
+    void removeUserChatHistory(String chatId);
 }

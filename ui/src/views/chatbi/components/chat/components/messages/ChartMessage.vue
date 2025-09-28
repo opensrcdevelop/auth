@@ -8,7 +8,7 @@
     </div>
     <div
       class="chart"
-      :ref="(el) => initChart(el, message.content.option)"
+      :ref="(el) => initChart(el, message.content?.option)"
     ></div>
   </div>
 </template>
@@ -29,7 +29,7 @@ withDefaults(
 const chartRefs = new Map<any, any>();
 
 const initChart = (el, option) => {
-  if (!el) return;
+  if (!el || !option) return;
 
   const existingChart = chartRefs.get(el);
   if (existingChart) {

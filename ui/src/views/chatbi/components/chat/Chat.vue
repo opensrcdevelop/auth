@@ -90,24 +90,39 @@
 
 <script setup lang="ts">
 import {useEventSource} from "@/hooks/useEventSource";
-import {nextTick, reactive, ref} from "vue";
+import {nextTick, reactive, ref, watch} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getEnabledDataSourceConf, getModelProviderList} from "@/api/chatbi";
+import {getEnabledDataSourceConf, getModelProviderList, getUserChatMessageHistory,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
+
+const props = withDefaults(
+  defineProps<{
+    chatId: string;
+    dataSourceId: string;
+  }>(),
+  {
+    chatId: undefined,
+    dataSourceId: undefined,
+  }
+);
+
+const emits = defineEmits<{
+  (e: "updateChatHistory", id: string): void;
+}>();
 
 const { abort, fetchStream } = useEventSource();
 const messageContainer = ref(null);
 const messages = reactive([]);
 const userInput = ref("");
 const loading = ref(false);
-const chatId = ref("");
 const questionId = ref("");
 const dataSourceList = reactive([]);
 const modelProviderList = reactive([]);
 const selectedDataSource = ref("");
 const selectedModel = ref("");
 const greetingText = ref("");
+const activeChatId = ref("");
 
 const init = () => {
   greetingText.value = greeting();
@@ -148,6 +163,44 @@ defineExpose({
   init,
 });
 
+watch(
+  () => props.chatId,
+  (newVal) => {
+    // 切花
+    if (newVal && newVal !== activeChatId.value) {
+      activeChatId.value = newVal;
+      handleGetChatMessageHistory(newVal);
+    }
+
+    // 开启新对话
+    if (!newVal) {
+      activeChatId.value = "";
+      messages.length = 0;
+    }
+  }
+);
+
+watch(
+  () => props.dataSourceId,
+  (newVal) => {
+    selectedDataSource.value = newVal;
+  }
+);
+
+/**
+ * 获取对话消息历史
+ */
+const handleGetChatMessageHistory = (chatId: string) => {
+  getUserChatMessageHistory(chatId).then((result: any) => {
+    handleApiSuccess(result, (data: any) => {
+      messages.length = 0;
+      data.forEach((item: any) => {
+        handleMessage(item);
+      });
+    });
+  });
+};
+
 /**
  * 问候语
  */
@@ -181,20 +234,20 @@ const sendMessage = (input: string) => {
   if (!question.trim() || loading.value) return;
   questionId.value = generateRandomString(12);
   messages.push({
-    role: "user",
+    role: "USER",
     type: "TEXT",
     content: question,
     questionId: questionId.value,
-    chatId: chatId.value,
+    chatId: activeChatId.value,
   });
   messages.push({
-    role: "assistant",
+    role: "ASSISTANT",
     type: "LOADING",
     loading: true,
     content: "回答生成中...",
     questionId: questionId.value,
     error: false,
-    chatId: chatId.value,
+    chatId: activeChatId.value,
   });
 
   if (userInput.value) {
@@ -210,7 +263,7 @@ const sendMessage = (input: string) => {
       modelProviderId: selectedModel.value.split(":")[0],
       model: selectedModel.value.split(":")[1],
       dataSourceId: selectedDataSource.value,
-      chatId: chatId.value,
+      chatId: activeChatId.value,
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
@@ -253,20 +306,19 @@ const analyzeData = (
 
   questionId.value = generateRandomString(12);
   messages.push({
-    role: "user",
+    role: "USER",
     type: "TEXT",
     content: "数据分析：" + question,
     questionId: questionId.value,
   });
   messages.push({
-    role: "assistant",
+    role: "ASSISTANT",
     type: "LOADING",
     loading: true,
     content: "回答生成中...",
     questionId: questionId.value,
     error: false,
   });
-  console.log(generateReport);
 
   fetchStream({
     url: `/chatbi/analyze/stream`,
@@ -308,7 +360,7 @@ const analyzeData = (
  */
 const resendMessage = (qId: string) => {
   const userQuestion = messages.find(
-    (item) => item.questionId === qId && item.role === "user"
+    (item) => item.questionId === qId && item.role === "USER"
   );
   sendMessage(userQuestion.content);
 };
@@ -317,7 +369,17 @@ const resendMessage = (qId: string) => {
  * 处理消息
  */
 const handleMessage = (message) => {
-  chatId.value = message.chatId;
+  activeChatId.value = message.chatId;
+  // 如果当前对话为全新对话，则更新对话历史
+  if (activeChatId.value !== props.chatId) {
+    emits("updateChatHistory", activeChatId.value);
+  }
+
+  if (message.role === "USER") {
+    messages.push(message);
+    return;
+  }
+
   if (message.type === "DONE") {
     loading.value = false;
     const loadingItem = messages.find(
@@ -349,6 +411,8 @@ const handleMessage = (message) => {
     );
     if (loadingItem) {
       loadingItem.content = message.content;
+    } else {
+      messages.push(message);
     }
     return;
   }
@@ -437,6 +501,35 @@ const scrollToBottom = () => {
   justify-content: space-between;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
   border-radius: 12px;
+  overflow-x: auto;
+
+  /* WebKit 浏览器滚动条样式 */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  /* 滚动条滑块 */
+  &::-webkit-scrollbar-thumb {
+    background: rgba(144, 147, 153, 0.3);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(144, 147, 153, 0.5);
+    }
+  }
+
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+
+  &:hover {
+    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+  }
 }
 
 .message-container {

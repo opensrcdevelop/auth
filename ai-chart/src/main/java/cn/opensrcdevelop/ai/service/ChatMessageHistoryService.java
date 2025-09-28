@@ -21,4 +21,6 @@ public interface ChatMessageHistoryService extends IService<ChatMessageHistory> 
     List<ChatMessageHistoryResponseDto> listChatMessageHistory(String chatId);
 
     List<String> getUserHistoryQuestions(String chatId);
+
+    void removeUserChatMessageHistory(String chatId);
 }

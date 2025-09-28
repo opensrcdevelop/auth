@@ -18,6 +18,9 @@ public class ChatHistory {
     /** 用户ID */
     private String userId;
 
+    /** 数据源ID */
+    private String dataSourceId;
+
     /** 标题 */
     private String title;
 

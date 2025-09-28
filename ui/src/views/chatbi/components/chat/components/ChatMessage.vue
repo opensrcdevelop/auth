@@ -4,14 +4,14 @@
     :key="index"
     :class="[
       'message',
-      message.role === 'user' ? 'user-message' : 'assistant-message',
-      message.role === 'user' && index !== 0 ? 'user-message-mt' : '',
+      message.role === 'USER' ? 'user-message' : 'assistant-message',
+      message.role === 'USER' && index !== 0 ? 'user-message-mt' : '',
     ]"
   >
     <div
       :class="[
         'message-content',
-        message.role === 'user'
+        message.role === 'USER'
           ? 'user-message-content'
           : 'assistant-message-content',
       ]"

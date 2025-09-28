@@ -173,7 +173,7 @@ public class ChatBIController {
 
     @Operation(summary = "获取当前用户的对话历史记录", description = "获取当前用户的对话历史记录")
     @GetMapping("/chat/history")
-    public List<ChatHistoryResponseDto> getChatHistory() {
+    public List<ChatHistoryResponseDto> getUserChatHistory() {
         return chatHistoryService.listUserChatHistory();
     }
 
@@ -182,7 +182,16 @@ public class ChatBIController {
             @Parameter(name = "id", description = "对话ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/chat/{id}/history")
-    public List<ChatMessageHistoryResponseDto> getChatMessageHistory(@PathVariable @NotBlank String id) {
+    public List<ChatMessageHistoryResponseDto> getUserChatMessageHistory(@PathVariable @NotBlank String id) {
         return chatMessageHistoryService.listChatMessageHistory(id);
+    }
+
+    @Operation(summary = "删除当前用户的对话历史记录", description = "删除当前用户的对话历史记录")
+    @Parameters({
+            @Parameter(name = "id", description = "对话ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/chat/{id}")
+    public void removeUserChatHistory(@PathVariable @NotBlank String id) {
+        chatHistoryService.removeUserChatHistory(id);
     }
 }

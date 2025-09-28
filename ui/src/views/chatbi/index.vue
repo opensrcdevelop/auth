@@ -20,7 +20,20 @@ export default indexTs;
     </div>
     <a-tabs :active-key="activeTab" @change="handleTabChange">
       <a-tab-pane key="chat" title="对话问答">
-        <Chat ref="chatRef" />
+        <div class="chat-container">
+          <ChatHistory
+            ref="chatHistoryRef"
+            @switchChat="handleSwitchChat"
+            @addNewChat="handleAddNewChat"
+            @updateDataSourceId="handleUpdateDataSourceId"
+          />
+          <Chat
+            ref="chatRef"
+            :chatId="chatId"
+            :dataSourceId="dataSourceId"
+            @updateChatHistory="handleUpdateChatHistory"
+          />
+        </div>
       </a-tab-pane>
       <a-tab-pane key="data_source_management" title="数据源管理">
         <DataSourceManagement ref="dataSourceManagementRef" />

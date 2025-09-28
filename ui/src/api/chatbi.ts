@@ -170,12 +170,47 @@ export function batchUpdateTableField(data: any) {
 
 /**
  * 删除数据源配置
- * 
+ *
  * @param id 数据源ID
  * @returns 响应结果
  */
 export function deleteDataSourceConf(id: string) {
   return apiRequest.delete({
     url: `/chatbi/dataSourceConf/${id}`,
+  });
+}
+
+/**
+ * 获取当前用户对话记录
+ *
+ * @returns 当前用户对话记录
+ */
+export function getUserChatHistory() {
+  return apiRequest.get({
+    url: "/chatbi/chat/history",
+  });
+}
+
+/**
+ * 获取当前用户对话消息记录
+ *
+ * @param id 对话ID
+ * @returns 当前用户对话消息记录
+ */
+export function getUserChatMessageHistory(id: string) {
+  return apiRequest.get({
+    url: `/chatbi/chat/${id}/history`,
+  });
+}
+
+/**
+ * 删除当前用户对话记录
+ *
+ * @param id 对话ID
+ * @returns 响应结果
+ */
+export function deleteChatHistory(id: string) {
+  return apiRequest.delete({
+    url: `/chatbi/chat/${id}`,
   });
 }

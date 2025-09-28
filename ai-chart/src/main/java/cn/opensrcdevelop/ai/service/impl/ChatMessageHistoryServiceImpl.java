@@ -192,6 +192,20 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                 .toList();
     }
 
+    /**
+     * 删除用户对话消息历史记录
+     *
+     * @param chatId 对话ID
+     */
+    @Override
+    public void removeUserChatMessageHistory(String chatId) {
+        // 1. 删除用户对话历史记录中的所有消息
+        super.remove(Wrappers.<ChatMessageHistory>lambdaQuery()
+                .eq(ChatMessageHistory::getChatId, chatId)
+                .eq(ChatMessageHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
+        );
+    }
+
     private void asyncSaveChatMessageHistory(ChatMessageHistory chatMessageHistory) {
         CompletableFuture.runAsync(() -> super.save(chatMessageHistory));
     }

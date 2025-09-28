@@ -18,6 +18,8 @@ import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
+import cn.opensrcdevelop.common.exception.ValidationException;
+import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
@@ -27,6 +29,7 @@ import com.zaxxer.hikari.pool.HikariPool;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.Tuple3;
+import io.vavr.control.Try;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,14 +91,16 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
+        if (validateRequest(emitter, requestDto, ChatBIRequestDto.GenerateChart.class)) {
+            return emitter;
+        }
+
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             String chatId = requestDto.getChatId();
             if (StringUtils.isEmpty(chatId)) {
                 chatId = CommonUtil.getUUIDV7String();
-                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion());
-            } else {
-                chatHistoryService.updateChatHistoryEndTime(chatId);
+                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion(), requestDto.getDataSourceId());
             }
 
             try {
@@ -131,14 +136,16 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
+        if (validateRequest(emitter, requestDto, ChatBIRequestDto.AnalyzeData.class)) {
+            return emitter;
+        }
+
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             String chatId = requestDto.getChatId();
             if (StringUtils.isEmpty(chatId)) {
                 chatId = CommonUtil.getUUIDV7String();
-                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion());
-            } else {
-                chatHistoryService.updateChatHistoryEndTime(chatId);
+                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion(), requestDto.getDataSourceId());
             }
 
             try {
@@ -186,6 +193,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         if (Boolean.TRUE.equals(rewriteUserQuestionResult.get("success"))) {
             rewrittenQuestion = (String) rewriteUserQuestionResult.get("rewritten_question");
         }
+        chatHistoryService.updateChatHistory(chatId, rewrittenQuestion);
 
         // 3. 根据用户问题获取关联的表信息
         SseUtil.sendChatBILoading(emitter, "正在匹配相关表信息...");
@@ -446,5 +454,26 @@ public class ChatBIServiceImpl implements ChatBIService {
         chartRecord.setColumns(columns);
 
         RedisUtil.set(CHART_RECORD_KEY.formatted(chartId), chartRecord, 7, TimeUnit.DAYS);
+    }
+
+    private boolean validateRequest(SseEmitter emitter, ChatBIRequestDto requestDto, Class<?> validatedClass) {
+        try {
+            CommonUtil.validateBean(requestDto, validatedClass);
+            return false;
+        } catch (ValidationException e) {
+            ValidationErrorResponse response = new ValidationErrorResponse();
+            response.setErrors(CommonUtil.stream(e.getConstraintViolations()).map(c -> {
+                var error = new ValidationErrorResponse.ValidationError();
+                error.setField(c.getPropertyPath().toString());
+                error.setErrorMsg(c.getMessage());
+
+                return error;
+            }).toList());
+            Try.run(() -> {
+                emitter.send(response);
+                emitter.complete();
+            }).toList();
+        }
+        return true;
     }
 }

@@ -24,6 +24,9 @@ public class ChatHistoryResponseDto {
     @Schema(description = "描述")
     private String desc;
 
+    @Schema(description = "数据源ID")
+    private String dataSourceId;
+
     @Schema(description = "开始时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime start;
