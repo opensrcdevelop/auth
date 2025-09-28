@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.ai.entity;
 
 import cn.opensrcdevelop.common.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

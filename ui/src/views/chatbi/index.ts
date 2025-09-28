@@ -64,7 +64,7 @@ const handleUpdateChatHistory = (id: string) => {
 };
 
 /**
- * 更新水数据源ID
+ * 更新数据源ID
  */
 const dataSourceId = ref("");
 const handleUpdateDataSourceId = (id: string) => {
