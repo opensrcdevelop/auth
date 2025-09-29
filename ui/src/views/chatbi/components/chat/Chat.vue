@@ -166,7 +166,7 @@ defineExpose({
 watch(
   () => props.chatId,
   (newVal) => {
-    // 切花
+    // 切换对话
     if (newVal && newVal !== activeChatId.value) {
       activeChatId.value = newVal;
       handleGetChatMessageHistory(newVal);
@@ -175,6 +175,7 @@ watch(
     // 开启新对话
     if (!newVal) {
       activeChatId.value = "";
+      selectedDataSource.value = "";
       messages.length = 0;
     }
   }
@@ -325,6 +326,7 @@ const analyzeData = (
     body: {
       chatId,
       questionId: questionId.value,
+      question,
       modelProviderId: selectedModel.value.split(":")[0],
       model: selectedModel.value.split(":")[1],
       chartId: chartId,

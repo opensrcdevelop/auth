@@ -38,6 +38,17 @@
       <icon-plus-circle />
       <div class="text">开启新对话</div>
     </div>
+    <div class="search-container" v-show="!isCollapsed">
+      <a-input-search
+        :style="{ width: '240px', backgroundColor: '#fff' }"
+        placeholder="搜索历史对话"
+        allow-clear
+        v-model="searchKeyword"
+        @search="handleGetChatHistoryList"
+        @keyup.enter.native="handleGetChatHistoryList"
+        @clear="handleGetChatHistoryList"
+      />
+    </div>
     <div class="chat-history-list">
       <div
         class="chat-history-item"
@@ -50,7 +61,8 @@
         @click="handleSwitchChat(item)"
       >
         <div class="content">
-          <div
+          <a-tooltip :content="item.title">
+                      <div
             class="title"
             :class="{
               active: item.id === activeChatId,
@@ -58,27 +70,22 @@
           >
             {{ item.title }}
           </div>
+          </a-tooltip>
           <div class="time">{{ item.start }}</div>
         </div>
         <div class="operation">
           <a-trigger
-            trigger="click"
+            trigger="hover"
             position="bottom"
             :popup-translate="[-50, 4]"
           >
-            <a-button
-              type="text"
-              shape="circle"
-              style="color: var(--color-text-3)"
-              @click.stop="() => {}"
-            >
-              <template #icon>
-                <icon-more />
-              </template>
-            </a-button>
+            <icon-more style="color: var(--color-text-3)" />
             <template #content>
               <div class="operation-container">
-                <div class="operation-item">
+                <div
+                  class="operation-item"
+                  @click="handleRenameChatHistoryTitle(item)"
+                >
                   <icon-edit />
                   重命名
                 </div>
@@ -97,10 +104,32 @@
       </div>
     </div>
   </div>
+
+  <a-modal
+    v-model:visible="editTitleModalVisible"
+    @ok="handleUpdateTitleFormSubmit"
+    @cancel="() => (editTitleModalVisible = false)"
+  >
+    <template #title> 修改对话标题 </template>
+    <div>
+      <a-form
+        :model="updateTitleForm"
+        :rules="updateTitleFormRules"
+        ref="updateTitleFormRef"
+      >
+        <a-form-item field="title" hide-label>
+          <a-input
+            v-model="updateTitleForm.title"
+            placeholder="请输入对话标题"
+          />
+        </a-form-item>
+      </a-form>
+    </div>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-import {deleteChatHistory, getUserChatHistory} from "@/api/chatbi";
+import {deleteChatHistory, getUserChatHistory, updateChatHistoryTitle,} from "@/api/chatbi";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {onMounted, onUnmounted, reactive, ref} from "vue";
@@ -139,13 +168,18 @@ const toggleCollapse = () => {
 /**
  * 对话历史记录
  */
+const searchKeyword = ref("");
 const chatHistoryList = reactive([]);
 const handleGetChatHistoryList = () => {
-  getUserChatHistory()
+  getUserChatHistory(searchKeyword.value)
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         chatHistoryList.length = 0;
         chatHistoryList.push(...data);
+
+        if (data.length === 0) {
+          handleAddNewChat();
+        }
       });
     })
     .catch((err: any) => {
@@ -196,6 +230,56 @@ const handleDeleteChatHistory = (chatHistory: any) => {
           handleApiError(err, "删除对话历史记录");
         });
     },
+  });
+};
+
+/**
+ * 重命名对话
+ */
+const handleRenameChatHistoryTitle = (chatHistory: any) => {
+  updateTitleForm.id = chatHistory.id;
+  updateTitleForm.title = chatHistory.title;
+
+  editTitleModalVisible.value = true;
+};
+
+/**
+ * 修改对话标题对话框
+ */
+const editTitleModalVisible = ref(false);
+const updateTitleFormRef = ref();
+const updateTitleForm = reactive({
+  id: "",
+  title: "",
+});
+const updateTitleFormRules = {
+  title: [
+    {
+      validator: (value, cb) => {
+        if (!value || value.trim().length === 0) {
+          cb("对话标题不能为空");
+        } else {
+          cb();
+        }
+      },
+    },
+  ],
+};
+const handleUpdateTitleFormSubmit = () => {
+  updateTitleFormRef.value.validate((errors) => {
+    if (!errors) {
+      updateChatHistoryTitle(updateTitleForm)
+        .then((result: any) => {
+          handleApiSuccess(result, () => {
+            Notification.success("修改成功");
+            editTitleModalVisible.value = false;
+            handleGetChatHistoryList();
+          });
+        })
+        .catch((err: any) => {
+          handleApiError(err, "修改对话标题");
+        });
+    }
   });
 };
 
@@ -251,8 +335,9 @@ defineExpose({
   justify-content: center;
   align-items: center;
   padding: 8px;
-  margin: 8px 8px 16px 8px;
-  height: 44px;
+  margin: 8px;
+  height: 36px;
+  width: 240px;
   background-color: #fff;
   border: 1px solid var(--color-neutral-3);
   border-radius: 8px;
@@ -274,10 +359,14 @@ defineExpose({
   }
 }
 
+.search-container {
+  margin: 8px;
+}
+
 .chat-history-list {
   overflow-x: hidden;
   overflow-y: auto;
-  height: calc(100% - 110px);
+  height: calc(100% - 150px);
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -333,6 +422,7 @@ defineExpose({
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      width: 200px;
 
       &.active {
         color: #3964fe;

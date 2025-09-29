@@ -10,9 +10,11 @@ import cn.opensrcdevelop.ai.chat.tool.ExecutePythonTool;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
+import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.dto.VoteChartRequestDto;
 import cn.opensrcdevelop.ai.entity.ChartConf;
 import cn.opensrcdevelop.ai.enums.ChatActionType;
+import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.model.ChartRecord;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
@@ -91,7 +93,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
-        if (validateRequest(emitter, requestDto, ChatBIRequestDto.GenerateChart.class)) {
+        if (isRequestInvalid(emitter, requestDto, ChatBIRequestDto.GenerateChart.class)) {
             return emitter;
         }
 
@@ -136,7 +138,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
-        if (validateRequest(emitter, requestDto, ChatBIRequestDto.AnalyzeData.class)) {
+        if (isRequestInvalid(emitter, requestDto, ChatBIRequestDto.AnalyzeData.class)) {
             return emitter;
         }
 
@@ -153,7 +155,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContext.setQuestionId(requestDto.getQuestionId());
                 ChatContext.setActionType(ChatActionType.ANALYZE_DATA);
 
-                chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
+                chatMessageHistoryService.createUserChatMessageHistory("数据分析：" + requestDto.getQuestion());
                 processStreamAnalyzeDataRequest(emitter, requestDto, chatId);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
@@ -456,7 +458,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         RedisUtil.set(CHART_RECORD_KEY.formatted(chartId), chartRecord, 7, TimeUnit.DAYS);
     }
 
-    private boolean validateRequest(SseEmitter emitter, ChatBIRequestDto requestDto, Class<?> validatedClass) {
+    private boolean isRequestInvalid(SseEmitter emitter, ChatBIRequestDto requestDto, Class<?> validatedClass) {
         try {
             CommonUtil.validateBean(requestDto, validatedClass);
             return false;
@@ -470,7 +472,9 @@ public class ChatBIServiceImpl implements ChatBIService {
                 return error;
             }).toList());
             Try.run(() -> {
-                emitter.send(response);
+                emitter.send(ChatBIResponseDto.builder()
+                        .type(ChatContentType.ERROR)
+                        .content(response));
                 emitter.complete();
             }).toList();
         }

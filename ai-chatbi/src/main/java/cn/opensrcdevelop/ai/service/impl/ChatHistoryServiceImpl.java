@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.service.impl;
 
+import cn.opensrcdevelop.ai.dto.ChatHistoryRequestDto;
 import cn.opensrcdevelop.ai.dto.ChatHistoryResponseDto;
 import cn.opensrcdevelop.ai.entity.ChatHistory;
 import cn.opensrcdevelop.ai.mapper.ChatHistoryMapper;
@@ -10,6 +11,7 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +29,23 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     /**
      * 获取用户历史对话记录列表
      *
+     * @param keyword 对话标题检索关键词
      * @return 用户历史对话记录列表
      */
     @Override
-    public List<ChatHistoryResponseDto> listUserChatHistory() {
+    public List<ChatHistoryResponseDto> listUserChatHistory(String keyword) {
         // 1. 数据库操作
-        List<ChatHistory> chatHistoryList = super.list(Wrappers.<ChatHistory>lambdaQuery()
-                .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
-                .orderByDesc(ChatHistory::getStartTime));
+        List<ChatHistory> chatHistoryList;
+        if (StringUtils.isNotEmpty(keyword)) {
+            chatHistoryList = super.list(Wrappers.<ChatHistory>lambdaQuery()
+                    .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
+                    .like(ChatHistory::getTitle, keyword)
+                    .orderByDesc(ChatHistory::getStartTime));
+        } else {
+            chatHistoryList = super.list(Wrappers.<ChatHistory>lambdaQuery()
+                    .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
+                    .orderByDesc(ChatHistory::getStartTime));
+        }
 
         // 2. 属性设置
         return CommonUtil.stream(chatHistoryList).map(chatHistory -> ChatHistoryResponseDto.builder()
@@ -106,5 +117,18 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
 
         // 4. 删除对话记忆
         multiChatMemoryService.removeChatMemory(chatId);
+    }
+
+    /**
+     * 更新用户对话历史记录
+     *
+     * @param requestDto 对话历史请求
+     */
+    @Override
+    public void updateUserChatHistory(ChatHistoryRequestDto requestDto) {
+        super.update(Wrappers.<ChatHistory>lambdaUpdate()
+                .eq(ChatHistory::getChatId, requestDto.getId())
+                .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
+                .set(ChatHistory::getTitle, requestDto.getTitle()));
     }
 }

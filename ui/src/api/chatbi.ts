@@ -183,11 +183,15 @@ export function deleteDataSourceConf(id: string) {
 /**
  * 获取当前用户对话记录
  *
+ * @param keyword 搜索关键词
  * @returns 当前用户对话记录
  */
-export function getUserChatHistory() {
+export function getUserChatHistory(keyword: string) {
   return apiRequest.get({
     url: "/chatbi/chat/history",
+    params: {
+      keyword,
+    },
   });
 }
 
@@ -212,5 +216,18 @@ export function getUserChatMessageHistory(id: string) {
 export function deleteChatHistory(id: string) {
   return apiRequest.delete({
     url: `/chatbi/chat/${id}`,
+  });
+}
+
+/**
+ * 更新当历史对话标题
+ *
+ * @param data 更新历史对话标题表单
+ * @returns 响应结果
+ */
+export function updateChatHistoryTitle(data: any) {
+  return apiRequest.put({
+    url: "/chatbi/chat/history",
+    data,
   });
 }
