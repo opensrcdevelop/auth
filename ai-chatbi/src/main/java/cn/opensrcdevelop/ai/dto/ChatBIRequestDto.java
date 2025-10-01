@@ -24,20 +24,10 @@ public class ChatBIRequestDto {
     private String model;
 
     @Schema(description = "数据源ID")
-    @NotBlank(groups = ChatBIRequestDto.GenerateChart.class)
+    @NotBlank
     private String dataSourceId;
 
     @Schema(description = "问题")
-    @NotBlank(groups = ChatBIRequestDto.GenerateChart.class)
+    @NotBlank
     private String question;
-
-    @Schema(description = "图表ID")
-    @NotBlank(groups = ChatBIRequestDto.AnalyzeData.class)
-    private String chartId;
-
-    @Schema(description = "是否生成报告")
-    private boolean generateReport;
-
-    public static interface GenerateChart {}
-    public static interface AnalyzeData {}
 }

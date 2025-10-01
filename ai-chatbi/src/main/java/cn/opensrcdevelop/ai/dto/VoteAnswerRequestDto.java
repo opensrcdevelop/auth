@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class VoteChartRequestDto {
+public class VoteAnswerRequestDto {
 
     @NotNull
-    private String chartId;
+    private String answerId;
 
     private Feedback feedback;
 }

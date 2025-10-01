@@ -1,6 +1,32 @@
 <template>
   <div v-if="message.type === 'HTML_REPORT'">
     <div class="html-report-container">
+      <div class="operation-container">
+        <a-space>
+          <a-button
+            type="text"
+            size="mini"
+            :disabled="loading"
+            @click="handleFullscreen"
+          >
+            <template #icon>
+              <icon-fullscreen />
+            </template>
+            <template #default>全屏显示</template>
+          </a-button>
+          <a-button
+            type="text"
+            size="mini"
+            :disabled="loading"
+            @click="handleDownloadReport"
+          >
+            <template #icon>
+              <icon-download />
+            </template>
+            <template #default>下载</template>
+          </a-button>
+        </a-space>
+      </div>
       <div class="content">
         <a-skeleton-line v-if="loading" :rows="6" />
         <a-skeleton-shape v-if="loading" />
@@ -21,7 +47,7 @@
 <script setup lang="ts">
 import {ref} from "vue";
 
-const loading = ref(true)
+const loading = ref(true);
 const htmlReportRef = ref();
 
 withDefaults(
@@ -33,21 +59,46 @@ withDefaults(
   }
 );
 
-const emits = defineEmits<{
-  (e: "ready", element: HTMLIFrameElement): void;
-}>();
-
 const handleIframeLoad = () => {
-  const document = htmlReportRef.value.contentDocument || htmlReportRef.value.contentWindow?.document;
+  const document =
+    htmlReportRef.value.contentDocument ||
+    htmlReportRef.value.contentWindow?.document;
   if (document) {
     loading.value = false;
-    emits("ready", htmlReportRef.value);
+  }
+};
+
+const handleFullscreen = () => {
+  htmlReportRef.value.requestFullscreen();
+};
+
+const handleDownloadReport = () => {
+  const iframeDoc =
+    htmlReportRef.value.contentDocument ||
+    htmlReportRef.value.contentWindow?.document;
+
+  if (iframeDoc) {
+    const htmlContent = iframeDoc.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = iframeDoc.title || `report_${new Date().getTime()}`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
   }
 };
 </script>
 
 <style scoped lang="scss">
 .html-report-container {
+  .operation-container {
+    margin-bottom: 8px;
+  }
   .content {
     height: 600px;
     background: none;

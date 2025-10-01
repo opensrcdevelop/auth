@@ -1,9 +1,14 @@
 package cn.opensrcdevelop.ai.agent;
 
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
+import cn.opensrcdevelop.ai.chat.tool.AnalyzeDataTool;
+import cn.opensrcdevelop.ai.chat.tool.GenerateChartTool;
+import cn.opensrcdevelop.ai.chat.tool.GenerateReportTool;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -20,13 +25,17 @@ public class ChatAgent {
 
     private final PromptTemplate promptTemplate;
     private final ChatMessageHistoryService chatMessageHistoryService;
+    private final AnalyzeDataTool analyzeDataTool;
+    private final GenerateChartTool generateChartTool;
+    private final GenerateReportTool generateReportTool;
+    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
      * 重写用户提问
      *
-     * @param chatClient     ChatClient
-     * @param userQuestion   用户提问
+     * @param chatClient   ChatClient
+     * @param userQuestion 用户提问
      * @return 重写后的用户提问
      */
     public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion) {
@@ -47,6 +56,36 @@ public class ChatAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.REWRITE_QUESTION))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
+
+    /**
+     * 回答用户提问
+     *
+     * @param chatClient   ChatClient
+     * @param userQuestion 用户提问
+     * @param queryResult  查询结果
+     * @param queryColumns 查询列别名
+     * @return 回答用户提问的结果
+     */
+    public Map<String, Object> answerQuestion(ChatClient chatClient,
+                                              String userQuestion,
+                                              List<Map<String, Object>> queryResult,
+                                              List<Map<String, Object>> queryColumns) {
+
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.ANSWER_QUESTION)
+                .param("question", userQuestion)
+                .param("query_result", CommonUtil.serializeObject(queryResult))
+                .param("column_aliases", CommonUtil.serializeObject(queryColumns));
+
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.ANSWER_QUESTION))
+                .advisors(multiMessageChatMemoryAdvisor)
+                .tools(analyzeDataTool, generateChartTool, generateReportTool)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });

@@ -33,8 +33,8 @@ public class ChatMessageHistoryResponseDto {
     @Schema(description = "对话ID")
     private String chatId;
 
-    @Schema(description = "图表ID")
-    private String chartId;
+    @Schema(description = "回答ID")
+    private String answerId;
 
     @Schema(description = "重写后的问题")
     private String rewrittenQuestion;

@@ -23,6 +23,7 @@ public class PromptTemplate {
     public static final String REWRITE_QUESTION = "rewrite_question";
     public static final String GENERATE_PYTHON_CODE = "generate_python_code";
     public static final String FIX_PYTHON_CODE = "fix_python_code";
+    public static final String ANSWER_QUESTION = "answer_question";
 
     private Map<String, Prompt> templates;
 }

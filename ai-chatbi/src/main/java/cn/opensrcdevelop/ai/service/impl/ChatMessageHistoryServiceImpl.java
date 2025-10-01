@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -42,10 +41,6 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setContent(content);
         chatMessageHistory.setType(chatContentType.name());
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
-
-        if (Objects.nonNull(ChatContext.getActionType())) {
-            chatMessageHistory.setActionType(ChatContext.getActionType().name());
-        }
 
         asyncSaveChatMessageHistory(chatMessageHistory);
     }
@@ -71,10 +66,6 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
         chatMessageHistory.setTime(time);
 
-        if (Objects.nonNull(ChatContext.getActionType())) {
-            chatMessageHistory.setActionType(ChatContext.getActionType().name());
-        }
-
         asyncSaveChatMessageHistory(chatMessageHistory);
     }
 
@@ -82,12 +73,12 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      * 创建对话消息历史记录
      *
      * @param chatContentType   消息类型
-     * @param chartId           图表ID
+     * @param answerId          回答ID
      * @param rewrittenQuestion 重写后的问题
      * @param time              时间
      */
     @Override
-    public void createChatMessageHistory(ChatContentType chatContentType, String chartId, String rewrittenQuestion, LocalDateTime time) {
+    public void createChatMessageHistory(ChatContentType chatContentType, String answerId, String rewrittenQuestion, LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
@@ -97,13 +88,9 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatMessageHistory.setType(chatContentType.name());
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
-        chatMessageHistory.setChartId(chartId);
+        chatMessageHistory.setAnswerId(answerId);
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
         chatMessageHistory.setTime(time);
-
-        if (Objects.nonNull(ChatContext.getActionType())) {
-            chatMessageHistory.setActionType(ChatContext.getActionType().name());
-        }
 
         asyncSaveChatMessageHistory(chatMessageHistory);
     }
@@ -125,10 +112,6 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setContent(content);
         chatMessageHistory.setType(ChatContentType.TEXT.name());
         chatMessageHistory.setRole(ChatRole.USER.name());
-
-        if (Objects.nonNull(ChatContext.getActionType())) {
-            chatMessageHistory.setActionType(ChatContext.getActionType().name());
-        }
 
         asyncSaveChatMessageHistory(chatMessageHistory);
     }
@@ -155,10 +138,9 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                     .questionId(chatMessageHistory.getQuestionId())
                     .role(chatMessageHistory.getRole())
                     .type(chatMessageHistory.getType())
-                    .actionType(chatMessageHistory.getActionType())
                     .rewrittenQuestion(chatMessageHistory.getRewrittenQuestion())
                     .time(chatMessageHistory.getTime())
-                    .chartId(chatMessageHistory.getChartId());
+                    .answerId(chatMessageHistory.getAnswerId());
 
             if (List.of(ChatContentType.TABLE, ChatContentType.CHART).contains(ChatContentType.valueOf(chatMessageHistory.getType()))) {
                 builder.content(CommonUtil.deserializeObject(chatMessageHistory.getContent(), new TypeReference<Map<String, Object>>() {

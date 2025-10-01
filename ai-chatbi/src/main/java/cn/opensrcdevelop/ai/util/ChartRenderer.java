@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.util;
 
-import cn.opensrcdevelop.ai.entity.ChartConf;
 import cn.opensrcdevelop.common.exception.ServerException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,15 +16,15 @@ public class ChartRenderer {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
-     * 根据 ChartConf 渲染图表
+     * 根据配置渲染图表
      *
-     * @param conf     配置实体
+     * @param config   配置
      * @param dataRows 查询结果
      * @return 图表
      */
-    public Tuple2<String, Object> render(ChartConf conf, List<Map<String, Object>> dataRows) {
+    public Tuple2<String, Object> render(Map<String, Object> config, List<Map<String, Object>> dataRows) {
         try {
-            JsonNode cfg = MAPPER.readTree(conf.getConfig());
+            JsonNode cfg = MAPPER.valueToTree(config);
             String displayType = cfg.path("displayType").asText("chart");
 
             if ("table".equalsIgnoreCase(displayType)) {
@@ -59,7 +58,8 @@ public class ChartRenderer {
         }
 
         // 2. 列配置
-        List<Map<String, Object>> columns = MAPPER.convertValue(columnsNode, new TypeReference<>() {});
+        List<Map<String, Object>> columns = MAPPER.convertValue(columnsNode, new TypeReference<>() {
+        });
         List<Map<String, Object>> arcoColumns = new ArrayList<>();
         for (Map<String, Object> col : columns) {
             Map<String, Object> column = new HashMap<>();
@@ -102,8 +102,8 @@ public class ChartRenderer {
         String yName = axisName.path("y").asText("");
 
         // 4. 字段映射
-        String xKey = cfg.path("fieldMapping").path("xAxis").asText(null);
-        String yKey = cfg.path("fieldMapping").path("yAxis").asText(null);
+        String dimensionKey = cfg.path("fieldMapping").path("dimension").asText(null);
+        String metricKey = cfg.path("fieldMapping").path("metric").asText(null);
 
         // 5. 公共 title
         Map<String, Object> title = Map.of(
@@ -111,10 +111,7 @@ public class ChartRenderer {
                 "description", description
         );
 
-        // 6. 图例
-        Map<String, Object> legendMap = Map.of("show", legend, "data", List.of());
-
-        // 7. 工具箱
+        // 6. 工具箱
         Map<String, Object> toolboxFeature = new LinkedHashMap<>();
         toolboxFeature.put("restore", Map.of("show", true));
         toolboxFeature.put("saveAsImage", Map.of(
@@ -138,23 +135,59 @@ public class ChartRenderer {
                 "feature", toolboxFeature
         );
 
-        // 9. 系列数据
+        // 7. 系列数据
         List<Map<String, Object>> seriesData;
         Map<String, Object> xAxis = null;
         Map<String, Object> yAxis = null;
+        Map<String, Object> tooltip = null;
+        List<Object> legendData = List.of();
 
-        // 9.1 饼图/漏斗图特殊处理
-        if ("pie".equalsIgnoreCase(chartType) || "funnel".equalsIgnoreCase(chartType)) {
+        // 7.1 饼图特殊处理
+        if ("pie".equalsIgnoreCase(chartType)) {
             seriesData = rows.stream()
-                    .map(r -> Map.of(
-                            "name", r.get(xKey),
-                            "value", r.get(yKey)
-                    ))
+                    .map(r -> {
+                        Map<String, Object> dataItem = new LinkedHashMap<>();
+                        dataItem.put("name", r.get(dimensionKey));
+                        dataItem.put("value", r.get(metricKey));
+                        return dataItem;
+                    })
                     .toList();
+
+            legendData = rows.stream()
+                    .map(r -> r.get(dimensionKey))
+                    .toList();
+
+            tooltip = Map.of(
+                    "trigger", "item",
+                    "formatter", "{a} <br/>{b}: {c} ({d}%)"
+            );
+
+            Map<String, Object> pieSeries = new LinkedHashMap<>();
+            pieSeries.put("type", chartType);
+            pieSeries.put("radius", "50%");
+            pieSeries.put("center", List.of("50%", "60%"));
+            pieSeries.put("data", seriesData);
+
+            Map<String, Object> label = Map.of(
+                    "show", true,
+                    "formatter", "{b}: {c} ({d}%)"
+            );
+            pieSeries.put("label", label);
+
+            Map<String, Object> emphasis = Map.of(
+                    "itemStyle", Map.of(
+                            "shadowBlur", 10,
+                            "shadowOffsetX", 0,
+                            "shadowColor", "rgba(0, 0, 0, 0.5)"
+                    )
+            );
+            pieSeries.put("emphasis", emphasis);
+            
+            seriesData = List.of(pieSeries);
         } else {
-            // 9.2 折线 / 柱形 / 雷达 / 散点
-            List<Object> xData = extractColumn(rows, xKey);
-            List<Object> yData = extractColumn(rows, yKey);
+            // 7.2 折线 / 柱形
+            List<Object> xData = extractColumn(rows, dimensionKey);
+            List<Object> yData = extractColumn(rows, metricKey);
 
             xAxis = Map.of(
                     "type", "category",
@@ -173,10 +206,18 @@ public class ChartRenderer {
                     Map.entry("smooth", smooth)
             );
             seriesData = List.of(series);
+
+            tooltip = Map.of("trigger", "axis");
         }
 
+        // 8. 图例数据
+        Map<String, Object> legendMap = Map.of(
+                "show", legend, 
+                "data", legendData
+        );
+
         Map<String, Object> option = new LinkedHashMap<>();
-        option.put("tooltip", Map.of("trigger", "axis"));
+        option.put("tooltip", tooltip);
         option.put("legend", legendMap);
         option.put("toolbox", toolboxMap);
         option.put("xAxis", xAxis);

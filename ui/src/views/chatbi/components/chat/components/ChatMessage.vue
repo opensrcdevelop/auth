@@ -21,17 +21,8 @@
       <MarkdownMessage :message="message" />
       <ChartMessage :message="message" />
       <TableMessage :message="message" />
-      <HtmlReportMessage
-        :message="message"
-        @ready="handleAddHtmlReportIframe(message.questionId, $event)"
-      />
-      <DoneMessage
-        :message="message"
-        @resend-message="handleResendMessage"
-        @analyze-data="handleAnalyzeData"
-        @full-screen="handleFullscreen"
-        @download-report="handleDownloadReport"
-      />
+      <HtmlReportMessage :message="message" />
+      <DoneMessage :message="message" @resend-message="handleResendMessage" />
     </div>
   </div>
 </template>
@@ -67,52 +58,6 @@ const emits = defineEmits<{
 
 const handleResendMessage = (question: string) => {
   emits("sendMessage", question);
-};
-
-const handleAnalyzeData = (
-  chartId: string,
-  chatId: string,
-  question: string,
-  generateReport: boolean
-) => {
-  emits("analyzeData", chartId, chatId, question, generateReport);
-};
-
-const htmlReportIFrame = new Map<string, HTMLIFrameElement>();
-
-const handleAddHtmlReportIframe = (
-  questionId: string,
-  el: HTMLIFrameElement
-) => {
-  if (!el) return;
-  htmlReportIFrame.set(questionId, el);
-};
-
-const handleFullscreen = (questionId: string) => {
-  const el = htmlReportIFrame.get(questionId);
-  if (!el) return;
-  el.requestFullscreen();
-};
-
-const handleDownloadReport = (questionId: string) => {
-  const el = htmlReportIFrame.get(questionId);
-  if (!el) return;
-  const iframeDoc = el.contentDocument || el.contentWindow?.document;
-
-  if (iframeDoc) {
-    const htmlContent = iframeDoc.documentElement.outerHTML;
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = iframeDoc.title || `report_${new Date().getTime()}`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
-  }
 };
 </script>
 

@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.dto;
 
-import cn.opensrcdevelop.ai.enums.ChatActionType;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -29,11 +28,8 @@ public class ChatBIResponseDto {
     @Schema(description = "对话ID")
     private String chatId;
 
-    @Schema(description = "图表ID")
-    private String chartId;
-
-    @Schema(description = "操作类型")
-    private ChatActionType actionType;
+    @Schema(description = "回答ID")
+    private String answerId;
 
     @Schema(description = "重写后的问题")
     private String rewrittenQuestion;

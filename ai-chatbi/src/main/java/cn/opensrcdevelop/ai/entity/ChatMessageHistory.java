@@ -30,17 +30,14 @@ public class ChatMessageHistory {
     /** 对话ID */
     private String chatId;
 
-    /** 图表ID */
-    private String chartId;
+    /** 回答ID */
+    private String answerId;
 
     /** 重写后的问题 */
     private String rewrittenQuestion;
 
      /** 时间 */
     private LocalDateTime time;
-
-     /** 操作类型 */
-    private String actionType;
 
     /** 用户ID */
     private String userId;

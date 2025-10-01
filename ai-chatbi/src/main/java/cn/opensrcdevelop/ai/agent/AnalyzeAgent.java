@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.model.ChartRecord;
+import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.constants.CommonConstants;
@@ -27,17 +27,16 @@ public class AnalyzeAgent {
      * 生成用户数据分析的 Python 代码
      *
      * @param chatClient ChatClient
-     * @param chartRecord 临时图表记录
      * @param dataFilePath 数据文件路径
      * @return 生成的 Python 代码
      */
-    public Map<String, Object> generatePythonCode(ChatClient chatClient, ChartRecord chartRecord, String dataFilePath) {
+    public Map<String, Object> generatePythonCode(ChatClient chatClient, String dataFilePath) {
         // 1. 生成 Python 代码
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_PYTHON_CODE)
                 .param("data_file_path", dataFilePath)
-                .param("question", chartRecord.getQuestion())
-                .param("sample_data", CommonUtil.serializeObject(chartRecord.getData().getFirst()))
-                .param("column_aliases", CommonUtil.serializeObject(chartRecord.getColumns()));
+                .param("question", ChatContext.getQuestion())
+                .param("sample_data", CommonUtil.serializeObject(ChatContext.getQueryData().getFirst()))
+                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()));
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt())
@@ -52,15 +51,14 @@ public class AnalyzeAgent {
      * 分析图表数据
      *
      * @param chatClient  ChatClient
-     * @param chartRecord 临时图表记录
      * @return 分析结果
      */
-    public Map<String, Object> analyzeData(ChatClient chatClient, ChartRecord chartRecord, String pythonExecutionOutput) {
+    public Map<String, Object> analyzeData(ChatClient chatClient, String pythonExecutionOutput) {
         // 1. 分析图表数据
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.ANALYZE_DATA)
-                .param("question", chartRecord.getQuestion())
-                .param("query_result", CommonUtil.serializeObject(chartRecord.getData()))
-                .param("column_aliases", CommonUtil.serializeObject(chartRecord.getColumns()))
+                .param("question", ChatContext.getQuestion())
+                .param("query_result", CommonUtil.serializeObject(ChatContext.getQueryData()))
+                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()))
                 .param("python_execution_output", pythonExecutionOutput);
 
         return chatClient.prompt()
@@ -76,16 +74,15 @@ public class AnalyzeAgent {
      * 生成分析报告
      *
      * @param chatClient      ChatClient
-     * @param chartRecord     临时图表记录
      * @param analysisResults 分析结果
      * @return 分析报告
      */
-    public Map<String, Object> generateAnalysisReport(ChatClient chatClient, ChartRecord chartRecord, String analysisResults, String analysisSummary) {
+    public Map<String, Object> generateAnalysisReport(ChatClient chatClient, String analysisResults, String analysisSummary) {
         // 1. 生成分析报告
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_REPORT)
-                .param("question", chartRecord.getQuestion())
-                .param("query_result", CommonUtil.serializeObject(chartRecord.getData()))
-                .param("column_aliases", CommonUtil.serializeObject(chartRecord.getColumns()))
+                .param("question", ChatContext.getQuestion())
+                .param("query_result", ChatContext.getQueryData())
+                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()))
                 .param("analysis_results", CommonUtil.serializeObject(analysisResults))
                 .param("analysis_summary", analysisSummary)
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS)));
@@ -103,22 +100,20 @@ public class AnalyzeAgent {
      * 修复 Python 代码
      *
      * @param chatClient ChatClient
-     * @param chartRecord 临时图表记录
      * @param dataFilePath 数据文件路径
      * @param pythonCode Python 代码
      * @param pythonExecutionOutput Python 执行输出
      * @return 修复后的 Python 代码
      */
     public Map<String, Object> fixPythonCode(ChatClient chatClient,
-                                             ChartRecord chartRecord,
                                              String dataFilePath,
                                              String pythonCode,
                                              String pythonExecutionOutput) {
         // 1. 修复 Python 代码
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FIX_PYTHON_CODE)
-                .param("question", chartRecord.getQuestion())
+                .param("question", ChatContext.getQuestion())
                 .param("data_file_path", dataFilePath)
-                .param("sample_data", CommonUtil.serializeObject(chartRecord.getData().getFirst()))
+                .param("sample_data", CommonUtil.serializeObject(ChatContext.getQueryData().getFirst()))
                 .param("python_code", pythonCode)
                 .param("error_output", pythonExecutionOutput);
 

@@ -150,23 +150,22 @@ public class SseUtil {
      * 发送 ChatBI 完成消息
      *
      * @param emitter SseEmitter
-     * @param chartId 图表ID
+     * @param answerId 回答ID
      */
-    public static void sendChatBIDone(SseEmitter emitter, String chartId, String rewrittenQuestion) {
+    public static void sendChatBIDone(SseEmitter emitter, String answerId, String rewrittenQuestion) {
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .actionType(ChatContext.getActionType())
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
-                        .chartId(chartId)
+                        .answerId(answerId)
                         .rewrittenQuestion(rewrittenQuestion)
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)
         ));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, chartId, rewrittenQuestion, now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion, now);
     }
 
     /**
@@ -179,7 +178,6 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .actionType(ChatContext.getActionType())
                         .chatId(ChatContext.getChatId())
                         .questionId(ChatContext.getQuestionId())
                         .type(ChatContentType.DONE)

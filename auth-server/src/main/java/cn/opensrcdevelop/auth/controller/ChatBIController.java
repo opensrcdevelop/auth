@@ -41,15 +41,6 @@ public class ChatBIController {
         return chatBIService.streamChatBI(requestDto);
     }
 
-    @Operation(summary = "数据分析", description = "数据分析")
-    @Parameters({
-            @Parameter(name = "generateReport", description = "是否生成报告", in = ParameterIn.QUERY, required = true),
-    })
-    @PostMapping(path = "/analyze/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamAnalyzeDataAndGenerateReport(@RequestBody ChatBIRequestDto requestDto) {
-        return chatBIService.streamAnalyzeData(requestDto);
-    }
-
     @Operation(summary = "获取已启用的数据源配置", description = "获取已启用的数据源配置")
     @GetMapping("/dataSourceConf/enabled")
     public List<DataSourceConfResponseDto> enabledDataSourceConf() {
@@ -108,10 +99,10 @@ public class ChatBIController {
         return modelProviderService.list(keyword, page, size);
     }
 
-    @Operation(summary = "投票图表", description = "投票图表")
-    @PostMapping("/chart/vote")
-    public void voteChart(@RequestBody @Valid VoteChartRequestDto requestDto) {
-        chatBIService.voteChart(requestDto);
+    @Operation(summary = "投票回答", description = "投票回答")
+    @PostMapping("/answer/vote")
+    public void voteAnswer(@RequestBody @Valid VoteAnswerRequestDto requestDto) {
+        chatBIService.voteAnswer(requestDto);
     }
 
     @Operation(summary = "获取数据源配置详情", description = "获取数据源配置详情")

@@ -4,10 +4,8 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -148,11 +146,6 @@ public class ExecutePythonTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
-    }
-
-    @Override
-    public ToolCallback[] getToolCallbacks() {
-        return  MethodToolCallbackProvider.builder().toolObjects(this).build().getToolCallbacks();
     }
 
     private boolean isVenvAvailable() {

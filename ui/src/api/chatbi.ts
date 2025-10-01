@@ -39,14 +39,14 @@ export function getModelProviderList(params: any) {
 }
 
 /**
- * 投票图表
+ * 投票回答
  *
  * @param data 入参
  * @returns 调用结果
  */
-export function voteChart(data: any) {
+export function voteAnswer(data: any) {
   return noneLoadingApiRequest.post({
-    url: "/chatbi/chart/vote",
+    url: "/chatbi/answer/vote",
     data,
   });
 }

@@ -6,6 +6,7 @@ import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
 import cn.opensrcdevelop.common.exception.BizException;
+import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -74,7 +75,8 @@ public class ChatClientManager {
         ChatClient.Builder builder = ChatClient.builder(chatModel)
                 .defaultOptions(ToolCallingChatOptions.builder().model(model).build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
-                .defaultAdvisors(languageConstraintAdvisor, new SimpleLoggerAdvisor());
+                .defaultAdvisors(languageConstraintAdvisor, SimpleLoggerAdvisor.builder()
+                        .requestToString(CommonUtil::formatJson).build());
         return builder.build();
     }
 

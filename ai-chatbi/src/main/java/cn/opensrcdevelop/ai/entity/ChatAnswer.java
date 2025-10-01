@@ -11,16 +11,20 @@ import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("t_chart_conf")
-public class ChartConf extends BaseEntity implements Serializable {
+@TableName("t_chat_answer")
+public class ChatAnswer extends BaseEntity implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 3772087736568681535L;
 
     @TableId(type = IdType.INPUT)
-    private String chartId;
+    private String answerId;
 
     private String dataSourceId;
+
+    private String modelProviderId;
+
+    private String model;
 
     private String questionId;
 
@@ -28,14 +32,16 @@ public class ChartConf extends BaseEntity implements Serializable {
 
     private String question;
 
-    private String config;
+    private String answer;
 
     private String sql;
 
-    private String modelProviderId;
+    private String chartConfig;
 
-    private String model;
+    private String reportType;
 
-    @TableField(insertStrategy = FieldStrategy.ALWAYS, updateStrategy = FieldStrategy.ALWAYS)
-    private String feedBack;
+    private String report;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String feedback;
 }
