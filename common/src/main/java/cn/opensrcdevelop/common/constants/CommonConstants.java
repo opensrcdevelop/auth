@@ -8,6 +8,7 @@ public class CommonConstants {
     private CommonConstants () {}
 
     public static final String REST_RESPONSE_ATTR = "REST_RESPONSE_ATTR";
+    public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS = "yyyy-MM-dd HH:mm:ss.SSSSSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS = "yyyy-MM-dd HH:mm:ss";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDD = "yyyy-MM-dd";
@@ -34,4 +35,5 @@ public class CommonConstants {
     public static final String REQ_CTX_BROWSER_TYPE = "browserType";
     public static final String REQ_CTX_OS_TYPE = "osType";
     public static final String USER_CTX = "_userCtx";
+    public static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
 }

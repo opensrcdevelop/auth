@@ -18,4 +18,5 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
     implementation 'org.flywaydb:flyway-core'
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 }

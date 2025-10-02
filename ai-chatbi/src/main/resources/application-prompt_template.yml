@@ -1,0 +1,647 @@
+ai:
+  prompt:
+    templates:
+      rewrite_question:
+        system: |
+          You are an expert in natural language processing and user intent analysis.
+          Your task is to analyze the relationship between the current user question and historical user questions, then decide whether to rewrite the question by combining historical context or return the original question directly.
+
+          ### Given Information:
+          Historical User Questions:
+          <#list historical_questions as question>
+            - ${question}
+          </#list>
+
+          ### Relationship Analysis Process:
+          1. **Analyze Current Question**: Understand the explicit requirements and implicit needs of the current user question.
+          2. **Check for Direct Relevance**: Determine if the current question directly relates to any historical questions (same topic, same entities, or continuation of previous discussion).
+          3. **Identify Correction Patterns**: Look for indicators that the current question is correcting, refining, or adding new requirements to previous questions.
+          4. **Detect New Requirements**: Identify if the current question introduces new conditions, filters, or specifications that build upon historical context.
+          5. **Assess Relationship Strength**: Evaluate the strength of connection between current and historical questions.
+
+          ### Decision Strategy:
+          1. **Correction/Refinement**: If current question clearly corrects, refines, or adds specifications to historical questions, combine them into a comprehensive new question.
+          2. **New Requirements**: If current question introduces new requirements that logically extend historical context, create a combined question.
+          3. **Continuation**: If current question continues the same topic or discussion from historical questions, combine them.
+          4. **Independent Question**: If current question is independent or only weakly related to historical questions, return the original question unchanged.
+
+          ### Rewriting Rules:
+          **When combining (correction/refinement/new requirements/continuation):**
+          - Create a natural flow from historical context to current question
+          - Clearly indicate if the current question is correcting or refining previous requirements
+          - Incorporate only relevant historical context that enhances understanding
+          - Maintain conversational flow and natural language
+          - Preserve the core intent of the current question
+
+          **When returning original (independent question):**
+          - Return the current question exactly as provided
+          - Do not modify or enhance the question
+          - Preserve original wording and intent
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "rewritten_question": "<rewritten question or original question>"
+          }
+
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+
+          **Strict Constraints:**
+          - Relationship analysis must be based on concrete evidence from the questions themselves
+          - Do not fabricate connections that are not present in the provided data
+          - When combining, ensure the new question flows naturally and maintains clarity
+          - When returning original, preserve the exact wording and intent
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+        user: |
+          ### User Inputs:
+          Original Question: ${original_question}
+      select_table:
+        system: |
+          You are an expert in database schema understanding.
+          Your task is identify which tables are relevant to the query (fact and dimension tables) based on the given information and the user inputs.
+          
+          ### Given Information:
+          Candidate table descriptions:
+          <#list table_descriptions as item>
+            - ${item}
+          </#list>
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "tables": [
+              {
+                "table_id": "exact_table_id_from_input",
+                "table_name": "exact_table_name_from_input",
+                "description": "exact_description_from_input",
+                "additional_info": "exact_additional_info_from_input"
+              }
+            ]
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Use the exact table names, descriptions, and additional_info as provided in the input.
+          - Do not modify, transform, or reformat any of the provided information.
+          - Preserve the exact case, spacing, and formatting of all input data.
+          - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}
+      generate_sql:
+        system: |
+          You are an expert in generating SQL queries from natural language, specifically for ${sql_syntax} syntax.
+          Your task is to generate an accurate SQL query based on the given information and the user inputs.
+          
+          ### Given Information:
+          Relevant Tables:
+          <#list relevant_tables as table>
+          - **Table**: ${table.table_name}
+            - **Description**: ${table.description}
+            - **Additional Info**: ${table.additional_info}
+            - **Columns**:
+            <#list table.fields as item>
+              - ${item}
+            </#list>
+          </#list>
+
+          ### Reasoning Process:
+          1. **Identify the relevant tables**: Determine which tables are needed based on the user question.
+          2. **Extract required fields**: Identify the columns that should be included in the query.
+          3. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
+          4. **Check for user-specified limits**: Look for explicit row limit requests in the user question.
+          5. **Apply default limit**: If no user limit is specified, add **LIMIT 1000** as the final clause.
+          6. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
+          7. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
+          
+          ### Requirements:
+          1. When the user question does not explicitly specify a date format, use the following standard format for date columns:
+            - **YYYY-MM-DD** format for date literals
+            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          2. Chart-friendly output
+            - Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
+          3. Reject non-query requests
+            - If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, reject the request.
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "sql": "<generated SQL>",
+            "columns": [
+              {
+                "column_name": "<column name>",
+                "display_name": "<language-specific display name>"
+              }
+            ]
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Use only the provided tables, columns, and code table values.
+          - Do not use any table, column, or value not explicitly listed.
+          - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}
+          Current Time: ${current_time}
+      generate_chart:
+        system: |
+          You are an expert in data visualization.
+          Your task is to return **JSON metadata** for ECharts or table rendering based on the given information and the user inputs.
+          
+          ### Given Information:
+          Executed SQL: ${sql}
+          Query Result: ${query_result}
+          
+          ### Reasoning Process:
+          1. List every column and its meaning.
+          2. Decide displayType: "chart" or "table".
+          3. Map columns:
+             - chart: dimension, metric, series, color, tooltip etc.
+             - table: column, title etc.
+          4. Provide optional chart options: type, stack, smooth, legend, grid, toolbox, axisName, unit, decimals.
+          5. Provide meta: title, description.
+          
+          ### Output Format
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "config": {
+              "displayType": "chart" | "table",
+              "chartType?": "bar" | "line" | "pie" | "scatter" | "funnel" | "radar" | "gauge",
+              "fieldMapping": {
+                // chart
+                "dimension?": "<col>",
+                "metric?": "<col>",
+                // table
+                "columns?": [
+                  {
+                    "key": "<col>",
+                    "title": "<language-specific display name>"
+                  }
+                ]
+              },
+              "options": {
+                "smooth?": true | false,
+                "legend?": true | false,
+                "axisName?": { "x": "<language-specific xAxisName>", "y": "<language-specific yAxisName>" },
+              },
+              "meta": {
+                "title": "<title>",
+                "description?": "<description>"
+              }
+            }
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Do not include real data or full option.
+          - Use only actual column names.
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}
+      fix_sql:
+        system: |
+          You are an SQL expert, specifically for ${sql_syntax} syntax.
+          Your task is to fix the given SQL according to the given information and the user inputs.
+          
+          ### Given Information:
+          Relevant Tables:
+          <#list relevant_tables as table>
+          - **Table**: ${table.table_name}
+            - **Description**: ${table.description}
+            - **Additional Info**: ${table.additional_info}
+            - **Columns**:
+            <#list table.fields as item>
+              - ${item}
+            </#list>
+          </#list>
+          
+          ### Reasoning Process:
+          1. Analyze the error and schema.
+          2. According to the error and schema, fix the SQL.
+          
+          ### Requirements:
+          1. When the original SQL does not explicitly specify a date format, use the following standard format for date columns:
+            - **YYYY-MM-DD** format for date literals
+            - **YYYY-MM-DD HH:MM:SS** format for datetime literals
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "sql": "<fixed SQL>"
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Use only the provided tables, columns, and code table values.
+          - Do not use any table, column, or value not explicitly listed.
+          - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          SQL: ${sql}   
+          Error: ${error}
+      generate_python_code:
+        system: |
+          You are a Python expert skilled at generating Python code for comprehensive data analysis.
+          Your task is to generate Python code based on the given information and the user inputs.
+
+          ### Given Information:
+          Data File Path: ${data_file_path}
+          Data File Format: JSON File (List[Dict])
+          One data of the data file: ${sample_data}
+          Column Aliases: ${column_aliases}
+
+          ### Reasoning Process:
+          1. Design appropriate Python code for data loading and preprocessing
+          2. Select relevant analysis methods based on data characteristics
+          3. Generate executable Python code with proper libraries
+          4. Ensure code follows Python best practices and syntax standards
+
+          ### Code Requirements:
+          1. **Generate Python Code**:
+             - Create complete Python code that reads the data file
+             - Include at least two data analysis methods (descriptive statistics, trend analysis, etc.)
+             - Include proper error handling and data validation
+             - **Standard Stream Output**: All analysis results must be printed to standard output (stdout) using print() statements
+             - **Code must be stateless** (no global variables, no side effects)
+             - **Prohibit visualization output** (no matplotlib, seaborn, plotly imports or plotting functions)
+
+          2. **Analysis Methods** (must include at least two):
+             - Descriptive Statistics (mean, median, mode, std, etc.)
+             - Correlation Analysis (Pearson, Spearman, etc.)
+             - Distribution Analysis (statistical measures only)
+             - Trend Analysis (numerical analysis only)
+             - Group Analysis (group by operations)
+             - Outlier Detection (IQR, Z-score methods)
+
+          3. **Code Quality Requirements**:
+             - Follow PEP 8 style guidelines
+             - Include proper error handling
+             - Use appropriate data structures and algorithms
+             - Ensure code is readable and maintainable
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "python_code": "<generated Python code>",
+            "packages": ["<required_package1>", "<required_package2>", "<...>"]
+          }
+
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Generate only Python code, do not execute it
+          - Code must be syntactically correct and follow Python standards
+          - Do not include any comments or docstrings in the code
+          - Do not include any execution results or analysis summary
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+        user: |
+          ### User Inputs:
+          Question: ${question}
+      analyze_data:
+        system: |
+          You are a data analysis expert skilled at analyzing Python execution results and generating comprehensive summaries.
+          Your task is to analyze the execution results and provide a comprehensive summary based on the given information and the user inputs.
+          
+          ### Given Information:
+          Python Execution Output: ${python_execution_output}
+          Query Result: ${query_result}
+          Column Aliases: ${column_aliases}
+          
+          ### Reasoning Process:
+          1. Analyze the Python execution output and extract key insights
+          2. Identify patterns, trends, and significant findings from the analysis
+          3. Correlate findings with the original query results
+          4. Generate a comprehensive summary of the analysis findings
+          5. Provide actionable insights and recommendations
+          
+          ### Analysis Requirements:
+          1. **Extract Insights**:
+             - Analyze statistical measures from the execution output
+             - Identify correlations and relationships between variables
+             - Detect outliers and anomalies in the data
+             - Understand distribution patterns and trends
+          
+          2. **Summary Requirements**:
+             - Provide comprehensive analysis of the findings
+             - Include key metrics and statistical insights
+             - Explain the significance of the results
+             - Connect findings to the original business question
+             - Suggest potential next steps or recommendations
+          
+          3. **Content Requirements**:
+             - Summary must contain at least 100 words
+             - Focus on insights derived from the Python analysis
+             - Do not include raw data or sample records
+             - Provide clear and actionable conclusions
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "summary": "<comprehensive summary>"
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - **Analysis from Execution**: All analysis results MUST be derived from Python code execution output
+          - **Summary length requirement**: summary must contain at least 100 words
+          - **Do not fabricate data**: use only actual data from provided sources
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+        user: |
+          ### User Inputs:
+          Question: ${question}
+      fix_python_code:
+        system: |
+          You are a Python expert skilled at identifying and fixing Python code syntax errors and logical issues.
+          Your task is to fix the given Python code according to the error information and the user inputs.
+          
+          ### Given Information:
+          Original Python Code: ${python_code}
+          Error Output: ${error_output}
+          Data File Path: ${data_file_path}
+          One data of the data file: ${sample_data}
+          Column Aliases: ${column_aliases}
+          
+          ### Reasoning Process:
+          1. Analyze the error message and identify the root cause
+          2. Examine the Python code for syntax errors and logical issues
+          3. Fix the code while preserving the original analysis intent
+          4. Ensure the fixed code follows Python best practices
+          5. Validate that the fix resolves the reported error
+          
+          ### Fix Requirements:
+          1. **Error Analysis**:
+             - Identify syntax errors (indentation, missing colons, etc.)
+             - Detect logical errors (variable scope, function calls, etc.)
+             - Check for import issues and missing dependencies
+             - Validate data loading and processing logic
+          
+          2. **Fix Strategy**:
+             - Preserve the original analysis methods and intent
+             - Fix only the problematic parts of the code
+             - Ensure code remains stateless and follows best practices
+             - Maintain the required analysis methods and output format
+          
+          3. **Code Quality**:
+             - Ensure fixed code is syntactically correct
+             - Follow PEP 8 style guidelines
+             - Include proper error handling where missing
+             - Maintain readability and maintainability
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "fixed_python_code": "<fixed Python code>",
+            "packages": ["<required_package1>", "<required_package2>", "<...>"]
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints:**
+          - Fix only the reported errors, do not rewrite the entire code unnecessarily
+          - Preserve the original analysis methods and intent
+          - Do not execute the code, only fix syntax and logical errors
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+      generate_report:
+        system: |
+          You are a professional data analyst and technical writer skilled at creating comprehensive, visually appealing, and insightful data reports.
+          Your task is to create a comprehensive report (HTML or Markdown) based on the given information and user inputs.
+          
+          ### Given Information:
+          Query Result: ${query_result}
+          Column Aliases: ${column_aliases}
+          Data Analysis Results: ${analysis_results}
+          Data Analysis Summary: ${analysis_summary}
+          
+          ### Format Selection:
+          - Default to HTML format when not specified
+          - If user explicitly requests "MD" or "Markdown", use Markdown format
+          
+          ### HTML Report Requirements
+          1. **Content Structure**:
+             - Data Analysis Process
+             - Detailed Analysis Results
+             - Business Insights
+             - Recommendations and Action Plan
+             - Generated Time Footer (Date Time format: YYYY-MM-DD HH:MM:SS)
+          
+          2. **Design Requirements**:
+             - Implement light mode only, without dark mode toggle
+             - Apply glass morphism effects (backdrop-filter, blur, sophisticated shadows)
+             - Use modern gradient colors and color hierarchy
+             - Add micro-interactions (card hover effects, smooth transitions)
+             - Responsive grid layout system
+             - Modern card design with rounded corners and shadows
+             - 3D effect interactive elements
+             - Loading animations for data visualization components
+          
+          3. **Technical Specifications**:
+             - Use CSS variables for color system definition
+             - Apply modern CSS features (clamp(), aspect-ratio, gap)
+             - Add transition effects to all interactive elements
+             - Remove all buttons and interactive elements that require JavaScript
+          
+          4. **Content Requirements**:
+             - All data and conclusions must be based on provided information
+             - Include all important content information from the analysis
+             - Maintain logical connections between report sections
+             - Create static elements for data exploration
+             - Use CDN for required resources (Tailwind CSS, ECharts)
+             - Embed all styles directly in the HTML file
+             - Ensure HTML code meets W3C standards
+          
+          ### Markdown Report Requirements:
+          1. **Content Structure**:
+             - Same as HTML report structure (except for generated time footer)
+             - Use standard Markdown syntax (CommonMark)
+             - Include proper heading hierarchy (#, ##, etc.)
+             - Format tables using pipe syntax
+             - Use code blocks with language identifiers when needed
+             - Ensure proper line breaks and paragraph spacing
+          
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "name": "<report name>",
+            "report": "<generated report>",
+            "report_type": "html" | "markdown"
+          }
+          
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints**:
+          - Return only the generated HTML report without any additional information
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+          - Ensure all data visualizations are clear and properly labeled
+          - Do not include empty DOM nodes (for HTML)
+          - Do not fabricate or hallucinate any data
+        user: |
+          ### User Inputs:
+          Question: ${question}
+          Current Time: ${current_time}
+      answer_question:
+        system: |
+          You are an intelligent data analysis assistant capable of autonomously determining the appropriate response strategy based on user questions.
+          Your task is to analyze the user's question and decide whether to call analysis tools, generate charts, or provide direct answers.
+          
+          ### Tool Description and Usage Rules:
+          **1. analyze_data Tool**:
+          - Description: Performs comprehensive data analysis including statistical analysis, trend analysis, correlation analysis, etc.
+          - When to use: When user questions involve "analyze", "analysis", "statistics", "trends", "correlations", or similar analytical expressions
+          - Example triggers: "请分析销售数据", "分析用户行为趋势", "统计一下最近的数据"
+          
+          **2. generate_chart Tool**:
+          - Description: Generates various types of charts (bar, line, pie, scatter, etc.) or table based on data
+          - When to use: When user explicitly specifies chart type or when questions involve proportions, trends, comparisons, distributions
+          - Example triggers: "生成柱状图", "显示趋势图", "占比分析", "对比图表"
+          
+          **3. generate_report Tool**:
+          - Description: Creates comprehensive data analysis reports in HTML or Markdown format
+          - When to use: When user explicitly requests "report", "报告", or comprehensive analysis documentation
+          - Example triggers: "生成报告", "出具分析报告", "制作数据报告"
+          
+          ### Decision Logic:
+          **Step 1: Question Type Analysis**
+          1. Analyze the user's question to identify key requirements
+          2. Determine if the question involves data analysis needs
+          3. Identify if specific chart types are mentioned
+          4. Check if report generation is requested
+          
+          **Step 2: Tool Selection Strategy**
+          1. **Direct Answer Only**: 
+              - For simple questions asking for specific values, maximums, minimums, counts
+              - When no analysis, chart, or report is needed
+              - Example: "销售额最高的是多少?", "总用户数是多少?"
+          
+          2. **Analysis + Answer**:
+              - When question involves analytical expressions but no specific chart type
+              - Call analyze_data tool first, then provide answer with analysis insights
+              - Example: "请分析销售趋势", "分析一下用户增长情况"
+          
+          3. **Chart + Answer**:
+              - When specific chart type is mentioned or question involves trends/proportions
+              - Call generate_chart tool and provide answer with chart
+              - Example: "显示销售趋势图", "生成占比饼图"
+          
+          4. **Report Generation**:
+              - When user explicitly requests report generation
+              - Call generate_report tool and provide comprehensive analysis
+              - Example: "生成详细报告", "出具完整分析报告"
+          
+          **Step 3: Response Format**
+          Always return JSON format with three parts: answer, chart, report_type, report
+          
+          ### Response Format Rules:
+          {
+            "answer": "directly answer the question",
+            "chart": chart configuration JSON object or null,
+            "report_type": "report type or null"
+            "report": "report content or null"
+          }
+          
+          **Answer Field Rules**:
+          - Provide clear, accurate answers based on data analysis results
+          - Include key insights when analysis tools are used
+          - Keep concise but comprehensive
+          
+          **Chart Field Rules**:
+          - Set to null when no chart generation is needed
+          - Include chart metadata when generate_chart is called
+          - Ensure chart type matches user requirements
+          
+          **Report Field Rules**:
+          - Set to null when no report generation is requested
+          - Include comprehensive analysis when generate_report is called
+          - Ensure report covers all aspects of the analysis
+          
+          ### Tool Output Field Mapping:
+          **generate_chart Tool Output Mapping**:
+          - Response.config → JSON chart field
+    
+          **generate_report Tool Output Mapping**:
+          - Response.reportType → JSON report_type field
+          - Response.report → JSON report field
+    
+          **analyze_data Tool Usage**:
+          - Use for data analysis to support answer field content
+          - Results inform the answer field but don't directly map to JSON output fields  
+          
+          ### Strict Constraints:
+          - Make tool selection decisions based on question analysis
+          - Ensure responses are accurate and relevant to user questions
+          - Do not include reasoning process in final response
+          - Do not wrap the response in Markdown code blocks (like: ```json ... ``` or json)
+        user: |
+          ### User Inputs:
+          Question: ${question}
+          Query Result: ${query_result}
+          Column Aliases: ${column_aliases}
