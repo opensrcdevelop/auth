@@ -7,7 +7,6 @@
       <ChatMessage
         :messages="messages"
         @send-message="sendMessage"
-        @analyze-data="analyzeData"
       />
     </div>
     <div class="input-area">
@@ -292,72 +291,6 @@ const sendMessage = (input: string) => {
 };
 
 /**
- * 数据分析
- */
-const analyzeData = (
-  chartId: string,
-  chatId: string,
-  question: string,
-  generateReport: boolean
-) => {
-  if (!selectedModel.value) {
-    Message.warning("请选择大模型");
-    return;
-  }
-
-  questionId.value = generateRandomString(12);
-  messages.push({
-    role: "USER",
-    type: "TEXT",
-    content: "数据分析：" + question,
-    questionId: questionId.value,
-  });
-  messages.push({
-    role: "ASSISTANT",
-    type: "LOADING",
-    loading: true,
-    content: "回答生成中...",
-    questionId: questionId.value,
-    error: false,
-  });
-
-  fetchStream({
-    url: `/chatbi/analyze/stream`,
-    body: {
-      chatId,
-      questionId: questionId.value,
-      question,
-      modelProviderId: selectedModel.value.split(":")[0],
-      model: selectedModel.value.split(":")[1],
-      chartId: chartId,
-      generateReport,
-    },
-    onMessage: (message) => handleMessage(message),
-    onError: (error) => {
-      console.error(error);
-      loading.value = false;
-      const loadingItem = messages.find(
-        (item) =>
-          item.questionId === questionId.value && item.type === "LOADING"
-      );
-      if (loadingItem) {
-        loadingItem.loading = false;
-        loadingItem.error = true;
-        loadingItem.content = "发生了未知错误";
-      }
-      abort();
-    },
-    onClose: () => {
-      loading.value = false;
-    },
-  });
-
-  nextTick(() => {
-    scrollToBottom();
-  });
-};
-
-/**
  * 重新发送消息
  */
 const resendMessage = (qId: string) => {
@@ -397,10 +330,11 @@ const handleMessage = (message) => {
       type: message.type,
       questionId: message.questionId,
       chatId: message.chatId,
-      chartId: message.chartId,
+      answerId: message.answerId,
       actionType: message.actionType,
       rewrittenQuestion: message.rewrittenQuestion,
       time: message.time,
+      feedback: message.feedback,
     });
     scrollToBottom();
     return;

@@ -120,7 +120,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     public void voteAnswer(VoteAnswerRequestDto requestDto) {
         // 1. 数据库操作
         chatAnswerService.update(Wrappers.<ChatAnswer>lambdaUpdate()
-                .eq(ChatAnswer::getAnswer, requestDto.getAnswerId())
+                .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
                 .set(ChatAnswer::getFeedback, requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
     }
 

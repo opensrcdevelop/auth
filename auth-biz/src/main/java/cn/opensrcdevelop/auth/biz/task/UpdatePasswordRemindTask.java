@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Component
 @Slf4j
+@ConditionalOnProperty(name = "auth.server.update-pwd-remind-task-enabled", havingValue = "true", matchIfMissing = false)
 public class UpdatePasswordRemindTask {
 
     private final PasswordPolicyService passwordPolicyService;

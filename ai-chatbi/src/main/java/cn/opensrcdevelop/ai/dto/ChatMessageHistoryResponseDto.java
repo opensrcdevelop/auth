@@ -39,8 +39,8 @@ public class ChatMessageHistoryResponseDto {
     @Schema(description = "重写后的问题")
     private String rewrittenQuestion;
 
-    @Schema(description = "操作类型")
-    private String actionType;
+    @Schema(description = "用户反馈")
+    private String feedback;
 
     @Schema(description = "时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)

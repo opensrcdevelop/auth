@@ -6,11 +6,13 @@ import cn.opensrcdevelop.ai.entity.ChatMessageHistory;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.enums.ChatRole;
 import cn.opensrcdevelop.ai.mapper.ChatMessageHistoryMapper;
+import cn.opensrcdevelop.ai.service.ChatAnswerService;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@RequiredArgsConstructor
 public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistoryMapper, ChatMessageHistory> implements ChatMessageHistoryService {
+
+    private final ChatAnswerService chatAnswerService;
 
     /**
      * 创建对话消息历史记录
@@ -147,6 +152,11 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                 }));
             } else {
                 builder.content(chatMessageHistory.getContent());
+            }
+
+            if (StringUtils.isNotEmpty(chatMessageHistory.getAnswerId())) {
+                // 3. 获取回答的用户反馈
+                builder.feedback(chatAnswerService.getAnswerFeedback(chatMessageHistory.getAnswerId()));
             }
 
             return builder.build();

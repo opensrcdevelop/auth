@@ -113,25 +113,56 @@ public class ChartRenderer {
 
         // 6. 工具箱
         Map<String, Object> toolboxFeature = new LinkedHashMap<>();
-        toolboxFeature.put("restore", Map.of("show", true));
+        // 6.1 基础工具：还原和保存图片（所有图表类型都支持）
+        toolboxFeature.put("restore", Map.of(
+                "show", true,
+                "title", "还原"
+        ));
         toolboxFeature.put("saveAsImage", Map.of(
                 "show", true,
                 "type", "png",
                 "name", titleText,
                 "backgroundColor", "#fff",
-                "pixelRatio", 2
+                "pixelRatio", 2,
+                "title", "保存为图片"
         ));
-        toolboxFeature.put("magicType", Map.of(
-                "show", true,
-                "type", List.of("line", "bar")
-        ));
+        // 6.2 根据图表类型添加特定工具
+        if ("pie".equalsIgnoreCase(chartType)) {
+            // 6.2.1 饼图：不支持类型切换，添加数据视图工具
+            toolboxFeature.put("dataView", Map.of(
+                    "show", true,
+                    "title", "数据视图",
+                    "readOnly", true,
+                    "lang", List.of("数据视图", "关闭", "刷新")
+            ));
+        } else {
+            // 6.2.2 柱状图、折线图：支持类型切换
+            toolboxFeature.put("magicType", Map.of(
+                    "show", true,
+                    "type", List.of("line", "bar"),
+                    "title", Map.of(
+                            "line", "切换为折线图",
+                            "bar", "切换为柱状图"
+                    )
+            ));
+            
+            // 6.2.3 坐标轴图表：添加数据缩放工具
+            toolboxFeature.put("dataZoom", Map.of(
+                    "show", true,
+                    "title", Map.of(
+                            "zoom", "区域缩放",
+                            "back", "区域缩放还原"
+                    )
+            ));
+        }
+        
         Map<String, Object> toolboxMap = Map.of(
                 "show", true,
                 "orient", "horizontal",
                 "itemSize", 15,
                 "itemGap", 10,
                 "left", "right",
-                "top", "yop",
+                "top", "top",
                 "feature", toolboxFeature
         );
 
@@ -159,7 +190,7 @@ public class ChartRenderer {
 
             tooltip = Map.of(
                     "trigger", "item",
-                    "formatter", "{a} <br/>{b}: {c} ({d}%)"
+                    "formatter", "{b}: {c} ({d}%)"
             );
 
             Map<String, Object> pieSeries = new LinkedHashMap<>();
