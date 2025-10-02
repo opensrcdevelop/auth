@@ -1,11 +1,13 @@
 import hljs from "highlight.js";
 import MarkdownIt from "markdown-it";
 import {onMounted, onUnmounted} from "vue";
+import MarkdownHandler from "./md/MarkdownHandler";
 
 const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
+  breaks: true,
   highlight: (str, lang) => {
     if (lang && hljs.getLanguage(lang)) {
       try {
@@ -52,8 +54,7 @@ md.renderer.rules.code_inline = (tokens, idx) => {
 };
 
 export function useMarkdown() {
-  let clickHandler: ((event: MouseEvent) => void) | null = null;
-  let isHandlerBound = false;
+  const handlerState = MarkdownHandler.getInstance();
 
   const copyToClipboard = async (text: string): Promise<boolean> => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -154,9 +155,13 @@ export function useMarkdown() {
   };
 
   onMounted(() => {
-    if (isHandlerBound) return;
+    if (handlerState.isBound && handlerState.handler) {
+      document.removeEventListener("click", handlerState.handler, true);
+      handlerState.handler = null;
+      handlerState.isBound = false;
+    };
 
-    clickHandler = (event: MouseEvent) => {
+    handlerState.handler = (event: MouseEvent) => {
       let target = event.target as HTMLElement;
 
       if (target.nodeType !== Node.ELEMENT_NODE) {
@@ -185,15 +190,15 @@ export function useMarkdown() {
       }
     };
 
-    document.addEventListener("click", clickHandler, true);
-    isHandlerBound = true;
+    document.addEventListener("click", handlerState.handler, true);
+    handlerState.isBound = true;
   });
 
   onUnmounted(() => {
-    if (clickHandler) {
-      document.removeEventListener("click", clickHandler, true);
-      clickHandler = null;
-      isHandlerBound = false;
+    if (handlerState.handler) {
+      document.removeEventListener("click", handlerState.handler, true);
+      handlerState.handler = null;
+      handlerState.isBound = false;
     }
   });
 

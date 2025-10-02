@@ -514,7 +514,7 @@ ai:
           
           ### Markdown Report Requirements:
           1. **Content Structure**:
-             - Same as HTML report structure
+             - Same as HTML report structure (except for generated time footer)
              - Use standard Markdown syntax (CommonMark)
              - Include proper heading hierarchy (#, ##, etc.)
              - Format tables using pipe syntax

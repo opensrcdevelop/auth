@@ -112,7 +112,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     }
 
     /**
-     * 投票图表
+     * 投票回答
      *
      * @param requestDto 请求
      */
@@ -155,7 +155,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             return Tuple.of(null, rewrittenQuestion);
         }
         List<Map<String, Object>> relevantTables = (List<Map<String, Object>>) tableResult.get("tables");
-        SseUtil.sendChatBIText(emitter, "匹配到以下表：\n");
+        SseUtil.sendChatBIMd(emitter, "> 匹配到以下表：\n\n");
         for (Map<String, Object> table : relevantTables) {
             SseUtil.sendChatBIMd(emitter, "`%s` ".formatted(table.get("table_name")));
         }
@@ -172,9 +172,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 5. 执行 SQL
         SseUtil.sendChatBILoading(emitter, "正在执行 SQL...");
         var executeResult = executeSqlWithFix(chatClient, emitter, sql, dataSourceId, relevantTables, 5);
-        SseUtil.sendChatBIText(emitter, "执行的 SQL：\n");
+        SseUtil.sendChatBIMd(emitter, "\n> 执行的 SQL：\n\n");
         SseUtil.sendChatBIMd(emitter, "```sql%n%s%n```".formatted(SqlFormatter.standard().format(executeResult._3)));
-        SseUtil.sendChatBIText(emitter, "\n");
         if (!Boolean.TRUE.equals(executeResult._1)) {
             SseUtil.sendChatBIText(emitter, "执行 SQL 失败");
             return Tuple.of(null, rewrittenQuestion);
@@ -203,7 +202,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             return Tuple.of(null, rewrittenQuestion);
         }
 
-        SseUtil.sendChatBIText(emitter, "回答如下：\n");
+        SseUtil.sendChatBIMd(emitter, "\n> 回答如下：\n\n");
 
         String answerId = CommonUtil.getUUIDV7String();
         ChatAnswer chatAnswer = new ChatAnswer();
@@ -226,10 +225,9 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 6.2 图表
         if (answer.containsKey("chart") && Objects.nonNull(answer.get("chart"))) {
 
+            // 6.2.1 生成图表
             Map<String, Object> chartConfig = (Map<String, Object>) answer.get("chart");
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
-
-            // 6.2.2 生成图表
             var renderResult = ChartRenderer.render(chartConfig, queryResult);
             if ("table".equals(renderResult._1)) {
                 SseUtil.sendChatBITable(emitter, renderResult._2);
@@ -240,6 +238,9 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 6.3 报告
         if (answer.containsKey("report") && answer.containsKey("report_type") && Objects.nonNull(answer.get("report_type"))) {
+
+            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
+
             String reportType = (String) answer.get("report_type");
             String reportText = (String) answer.get("report");
             chatAnswer.setReportType(reportType);

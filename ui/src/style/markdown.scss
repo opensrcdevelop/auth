@@ -4,8 +4,9 @@
     margin-bottom: 0;
   }
 
+  ol,
   ul {
-    padding-left: 12px;
+    padding-left: 14px;
   }
 
   /** 代码块容器 */
@@ -139,4 +140,72 @@
     border-radius: 3px;
     font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
   }
+
+  /** 表格样式 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 16px 0;
+    border: 1px solid #dfe2e5;
+    border-radius: 6px;
+  }
+
+  /** 表头样式 */
+  thead {
+    background-color: #f6f8fa;
+  }
+
+  /** 表格行样式 */
+  tr {
+    border-bottom: 1px solid #dfe2e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background-color: #f6f8fa;
+    }
+  }
+
+  /** 表头单元格样式 */
+  th {
+    padding: 8px 16px;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 1px solid #dfe2e5;
+    background-color: #f6f8fa;
+  }
+
+  /** 表格单元格样式 */
+  td {
+    padding: 8px 16px;
+    border-bottom: 1px solid #dfe2e5;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  /** 引用块 */
+blockquote {
+  margin: 8px 0;
+  padding: 0 8px;
+  color: #6a737d;
+  border-left: 2px solid #dfe2e5;
+
+  p {
+    margin: 0;
+  }
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
 }

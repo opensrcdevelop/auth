@@ -1,9 +1,11 @@
 <template>
-  <div v-if="message.type === 'TEXT'" v-text="message.content"></div>
+  <div v-if="message.type === 'TEXT'" v-html="formattedContent"></div>
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import {computed} from 'vue';
+
+const props = withDefaults(
   defineProps<{
     message: any;
   }>(),
@@ -11,6 +13,10 @@ withDefaults(
     message: {},
   }
 );
+
+const formattedContent = computed(() => {
+  return props.message.content.replace(/\n/g, '<br>');
+});
 </script>
 
 <style scoped lang="scss"></style>

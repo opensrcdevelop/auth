@@ -81,7 +81,7 @@ public class AnalyzeAgent {
         // 1. 生成分析报告
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_REPORT)
                 .param("question", ChatContext.getQuestion())
-                .param("query_result", ChatContext.getQueryData())
+                .param("query_result", CommonUtil.serializeObject(ChatContext.getQueryData()))
                 .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()))
                 .param("analysis_results", CommonUtil.serializeObject(analysisResults))
                 .param("analysis_summary", analysisSummary)
