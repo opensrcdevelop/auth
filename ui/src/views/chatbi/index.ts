@@ -4,11 +4,13 @@ import Chat from "./components/chat/Chat.vue";
 import DataSourceManagement from "./components/datasource/DataSourceManagement.vue";
 import {getQueryString} from "@/util/tool";
 import ChatHistory from "./components/chat/ChatHistory.vue";
+import LLMManagement from "./components/llm/LLMManagement.vue";
 
 const activeTab = ref("chat");
 const chatRef = ref();
 const chatHistoryRef = ref();
 const dataSourceManagementRef = ref();
+const llmManagementRef = ref();
 
 /**
  * tab 切换事件
@@ -35,6 +37,9 @@ const handleTabInit = (tabKey: string) => {
       break;
     case "data_source_management":
       dataSourceManagementRef.value?.init();
+      break;
+    case "llm_management":
+      llmManagementRef.value?.init();
       break;
   }
 };
@@ -76,6 +81,7 @@ export default defineComponent({
     Chat,
     ChatHistory,
     DataSourceManagement,
+    LLMManagement,
   },
   setup() {
     onMounted(() => {
@@ -95,6 +101,7 @@ export default defineComponent({
       handleAddNewChat,
       dataSourceId,
       handleUpdateDataSourceId,
+      llmManagementRef
     };
   },
 });

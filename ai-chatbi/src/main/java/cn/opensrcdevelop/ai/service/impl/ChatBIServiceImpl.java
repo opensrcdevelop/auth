@@ -214,6 +214,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setQuestionId(requestDto.getQuestionId());
         chatAnswer.setQuestion(requestDto.getQuestion());
         chatAnswer.setSql(sql);
+        chatAnswer.setReqTokens(ChatContext.getReqTokens());
+        chatAnswer.setRepTokens(ChatContext.getRepTokens());
 
         // 6.1 直接回答
         if (answer.containsKey("answer")) {

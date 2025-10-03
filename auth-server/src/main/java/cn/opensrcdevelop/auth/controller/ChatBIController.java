@@ -88,6 +88,12 @@ public class ChatBIController {
         return tableFieldService.list(id, keyword, page, size);
     }
 
+    @Operation(summary = "获取已启用的模型提供商列表", description = "获取已启用的模型提供商列表")
+    @GetMapping("/modelProvider/enabled")
+    public List<ModelProviderResponseDto> enabledModelProvider() {
+        return modelProviderService.enabledList();
+    }
+
     @Operation(summary = "获取模型提供商列表", description = "获取模型提供商列表")
     @Parameters({
             @Parameter(name = "keyword", description = "模型提供商名称检索关键字", in = ParameterIn.QUERY),
@@ -193,5 +199,35 @@ public class ChatBIController {
     @PutMapping("/chat/history")
     public void updateUserChatHistory(@RequestBody @Valid ChatHistoryRequestDto requestDto) {
         chatHistoryService.updateUserChatHistory(requestDto);
+    }
+
+    @Operation(summary = "获取模型提供商详情", description = "获取模型提供商详情")
+    @Parameters({
+            @Parameter(name = "id", description = "模型提供商ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/modelProvider/{id}")
+    public ModelProviderResponseDto modelProviderDetail(@PathVariable @NotBlank String id) {
+        return modelProviderService.detail(id);
+    }
+
+    @Operation(summary = "创建模型提供商", description = "创建模型提供商")
+    @PostMapping("/modelProvider")
+    public void createModelProvider(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ModelProviderRequestDto requestDto) {
+        modelProviderService.createModelProvider(requestDto);
+    }
+
+    @Operation(summary = "更新模型提供商", description = "更新模型提供商")
+    @PutMapping("/modelProvider")
+    public void updateModelProvider(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ModelProviderRequestDto requestDto) {
+        modelProviderService.updateModelProvider(requestDto);
+    }
+
+    @Operation(summary = "删除模型提供商", description = "删除模型提供商")
+    @Parameters({
+            @Parameter(name = "id", description = "模型提供商ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/modelProvider/{id}")
+    public void removeModelProvider(@PathVariable @NotBlank String id) {
+        modelProviderService.removeModelProvider(id);
     }
 }

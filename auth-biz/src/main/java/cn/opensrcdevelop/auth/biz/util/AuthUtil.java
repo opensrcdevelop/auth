@@ -224,14 +224,14 @@ public class AuthUtil {
         }
         Map<String, Object> userMap = new HashMap<>();
         // 普通字段属性
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getUserId), user.getUserId());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getUsername), user.getUsername());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getPhoneNumber), user.getPhoneNumber());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getEmailAddress), user.getEmailAddress());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getEnableMfa), user.getEnableMfa());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getLocked), user.getLocked());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getConsoleAccess), user.getConsoleAccess());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getCreateTime), user.getCreateTime().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUserId), user.getUserId());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUsername), user.getUsername());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber), user.getPhoneNumber());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getEmailAddress), user.getEmailAddress());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getEnableMfa), user.getEnableMfa());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getLocked), user.getLocked());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getConsoleAccess), user.getConsoleAccess());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getCreateTime), user.getCreateTime().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
 
         // 角色信息
         userMap.put(CommonConstants.ROLES, CommonUtil.stream(user.getRoles()).map(Role::getRoleCode).collect(Collectors.toCollection(ArrayList::new)));

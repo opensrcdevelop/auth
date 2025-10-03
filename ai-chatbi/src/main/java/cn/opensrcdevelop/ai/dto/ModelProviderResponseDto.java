@@ -28,8 +28,8 @@ public class ModelProviderResponseDto {
     @Schema(description = "模型提供商API Key")
     private String apiKey;
 
-    @Schema(description = "模型提供商可选模型")
-    private List<String> optionModels;
+    @Schema(description = "可选模型响应")
+    private List<ModelResponseDto> optionalModels;
 
     @Schema(description = "模型提供商默认模型")
     private String defaultModel;

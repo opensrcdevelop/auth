@@ -229,9 +229,9 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             // 2.1 检查用户属性数据类型为 DICT 的请求是否有效
             checkAttrValueForDict(attributes);
             if (!attributes.isEmpty()) {
-                String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrId));
-                String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getUserId));
-                String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrValue));
+                String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getAttrId));
+                String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getUserId));
+                String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getAttrValue));
 
                 // 2.2 获取已存在的映射关系
                 var existingMappings = userAttrMappingService.list(Wrappers.<UserAttrMapping>lambdaQuery()

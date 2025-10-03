@@ -26,6 +26,17 @@ export function getDataSourceConfList(params: any) {
 }
 
 /**
+ * 获取已启用的模型提供商列表
+ *
+ * @returns 已启用的模型提供商列表
+ */
+export function getEnabledModelProvider() {
+  return apiRequest.get({
+    url: "/chatbi/modelProvider/enabled",
+  });
+}
+
+/**
  * 获取模型提供商列表
  *
  * @param params 请求参数
@@ -229,5 +240,43 @@ export function updateChatHistoryTitle(data: any) {
   return apiRequest.put({
     url: "/chatbi/chat/history",
     data,
+  });
+}
+
+/**
+ * 更新模型提供商
+ *
+ * @param data  更新模型提供商表单
+ * @returns  响应结果
+ */
+export function updateModelProvider(data: any) {
+  return apiRequest.put({
+    url: "/chatbi/modelProvider",
+    data,
+  });
+}
+
+/**
+ * 创建模型提供商
+ *
+ * @param data 创建模型提供商表单
+ * @returns 响应结果
+ */
+export function createModelProvider(data: any) {
+  return apiRequest.post({
+    url: "/chatbi/modelProvider",
+    data,
+  });
+}
+
+/**
+ * 获取模型提供商详情
+ *
+ * @param id 模型提供商ID
+ * @returns 模型提供商详情
+ */
+export function getModelProviderDetail(id: string) {
+  return apiRequest.get({
+    url: `/chatbi/modelProvider/${id}`,
   });
 }

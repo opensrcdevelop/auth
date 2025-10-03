@@ -188,7 +188,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 1. 计算分页偏移量 & 编辑查询条件
         int offset = (page - 1) * size;
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq(CommonUtil.extractFileNameFromGetter(User::getDeleted), false);
+        queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterRequestDto filter : filters) {
                 AuthUtil.editQuery(queryWrapper, filter);

@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.chat.client;
 
 import cn.opensrcdevelop.ai.chat.advisor.LanguageConstraintAdvisor;
+import cn.opensrcdevelop.ai.chat.advisor.TokenCountAdvisor;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
@@ -39,6 +40,7 @@ public class ChatClientManager {
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
     private final LanguageConstraintAdvisor languageConstraintAdvisor;
+    private final TokenCountAdvisor tokenCountAdvisor;
 
     /**
      * 获取 ChatClient
@@ -75,8 +77,9 @@ public class ChatClientManager {
         ChatClient.Builder builder = ChatClient.builder(chatModel)
                 .defaultOptions(ToolCallingChatOptions.builder().model(model).build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
-                .defaultAdvisors(languageConstraintAdvisor, SimpleLoggerAdvisor.builder()
-                        .requestToString(CommonUtil::formatJson).build());
+                .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
+                        SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build()
+                );
         return builder.build();
     }
 

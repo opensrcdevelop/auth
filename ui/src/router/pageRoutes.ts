@@ -283,6 +283,22 @@ const pageRoutes: RouteRecordRaw[] = [
       title: "创建数据源",
     },
   },
+  {
+    path: "/chatbi/llm/detail",
+    component: () => import("@/views/chatbi/llm/detail/index.vue"),
+    meta: {
+      parent: "/chatbi",
+      title: "模型提供商详情",
+    },
+  },
+  {
+    path: "/chatbi/llm/create",
+    component: () => import("@/views/chatbi/llm/create/index.vue"),
+    meta: {
+      parent: "/chatbi",
+      title: "创建模型提供商",
+    },
+  },
 ];
 
 export default pageRoutes;

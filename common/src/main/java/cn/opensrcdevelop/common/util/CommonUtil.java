@@ -278,7 +278,7 @@ public class CommonUtil {
      * @param <R>    R
      * @return 字段名
      */
-    public static <T, R> String extractFileNameFromGetter(Getter<T, R> getter) {
+    public static <T, R> String extractFieldNameFromGetter(Getter<T, R> getter) {
         try {
             // 反射获取 writeReplace 方法
             Method writeReplace = getter.getClass().getDeclaredMethod("writeReplace");

@@ -44,6 +44,7 @@
               allow-search
               :bordered="false"
               v-model="selectedModel"
+              style="width: 260px;"
             >
               <a-optgroup
                 v-for="item in modelProviderList"
@@ -51,10 +52,10 @@
                 :label="item.name"
               >
                 <a-option
-                  v-for="(model, index) in item.optionModels"
+                  v-for="(model, index) in item.optionalModels"
                   :key="index"
-                  :value="`${item.id}:${model}`"
-                  >{{ model }}</a-option
+                  :value="`${item.id}:${model.name}`"
+                  >{{ model.name }}</a-option
                 >
               </a-optgroup>
             </a-select>
@@ -91,7 +92,7 @@
 import {useEventSource} from "@/hooks/useEventSource";
 import {nextTick, reactive, ref, watch} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getEnabledDataSourceConf, getModelProviderList, getUserChatMessageHistory,} from "@/api/chatbi";
+import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
 
@@ -137,15 +138,12 @@ const init = () => {
       handleApiError(err, "获取已启用的数据源");
     });
 
-  // 获取模型提供商列表
-  getModelProviderList({
-    page: 1,
-    size: -1,
-  })
+  // 获取已启用的模型提供商
+  getEnabledModelProvider()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
         modelProviderList.length = 0;
-        modelProviderList.push(...data.list);
+        modelProviderList.push(...data);
 
         if (modelProviderList.length > 0) {
           const firstProvider = modelProviderList[0];

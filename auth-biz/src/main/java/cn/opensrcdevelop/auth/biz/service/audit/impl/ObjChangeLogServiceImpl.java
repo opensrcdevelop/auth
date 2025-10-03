@@ -82,7 +82,7 @@ public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, Obj
                 CommonUtil.stream(userAttrService.list()).forEach(userAttr -> propertyNames.put(userAttr.getAttrKey(), userAttr.getAttrName()));
                 compareObjBuilder.entityName(ResourceType.USER.getName());
                 compareObjBuilder.propertyNames(propertyNames);
-                compareObjBuilder.excludeProperty(List.of(CommonConstants.ROLES, CommonUtil.extractFileNameFromGetter(User::getCreateTime)));
+                compareObjBuilder.excludeProperty(List.of(CommonConstants.ROLES, CommonUtil.extractFieldNameFromGetter(User::getCreateTime)));
             }
 
             return compareObjBuilder.build();

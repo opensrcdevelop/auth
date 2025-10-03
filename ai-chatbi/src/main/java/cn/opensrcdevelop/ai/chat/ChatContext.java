@@ -5,6 +5,7 @@ import org.springframework.ai.chat.client.ChatClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChatContext {
 
@@ -28,6 +29,10 @@ public class ChatContext {
     private static final TransmittableThreadLocal<String> ANALYZE_DATA_SUMMARY = new TransmittableThreadLocal<>();
 
     private static final TransmittableThreadLocal<String> ANALYZE_DATA_RESULT = new TransmittableThreadLocal<>();
+
+    private static final TransmittableThreadLocal<AtomicInteger> REQ_TOKENS = TransmittableThreadLocal.withInitial(AtomicInteger::new);
+
+    private static final TransmittableThreadLocal<AtomicInteger> REP_TOKENS = TransmittableThreadLocal.withInitial(AtomicInteger::new);
 
 
     public static void setChatId(String chatId) {
@@ -100,6 +105,22 @@ public class ChatContext {
 
     public static String getAnalyzeDataResult() {
         return ANALYZE_DATA_RESULT.get();
+    }
+
+    public static void setReqTokens(int reqTokens) {
+        REQ_TOKENS.get().addAndGet(reqTokens);
+    }
+
+    public static int getReqTokens() {
+        return REQ_TOKENS.get().get();
+    }
+
+    public static void setRepTokens(int repTokens) {
+        REP_TOKENS.get().addAndGet(repTokens);
+    }
+
+    public static int getRepTokens() {
+        return REP_TOKENS.get().get();
     }
 
     public static void clearChatContext() {

@@ -38,7 +38,9 @@ export default indexTs;
       <a-tab-pane key="data_source_management" title="数据源管理">
         <DataSourceManagement ref="dataSourceManagementRef" />
       </a-tab-pane>
-      <a-tab-pane key="llm_management" title="LLM 管理"> </a-tab-pane>
+      <a-tab-pane key="llm_management" title="LLM 管理">
+        <LLMManagement ref="llmManagementRef" />
+      </a-tab-pane>
     </a-tabs>
   </div>
 </template>

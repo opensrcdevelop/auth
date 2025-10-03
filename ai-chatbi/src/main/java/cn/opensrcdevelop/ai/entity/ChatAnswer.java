@@ -42,6 +42,10 @@ public class ChatAnswer extends BaseEntity implements Serializable {
 
     private String report;
 
+    private Integer reqTokens;
+
+    private Integer repTokens;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String feedback;
 }
