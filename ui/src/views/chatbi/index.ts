@@ -32,6 +32,7 @@ const handleTabChange = (tabKey: string) => {
 const handleTabInit = (tabKey: string) => {
   switch (tabKey) {
     case "chat":
+      chatId.value = "";
       chatRef.value?.init();
       chatHistoryRef.value?.init();
       break;

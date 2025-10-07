@@ -126,6 +126,7 @@ const activeChatId = ref("");
 
 const init = () => {
   greetingText.value = greeting();
+  activeChatId.value = "";
   messages.length = 0;
   // 获取已启用的数据源
   getEnabledDataSourceConf()
