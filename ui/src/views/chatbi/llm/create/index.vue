@@ -18,6 +18,7 @@ export default indexTs;
         layout="vertical"
         ref="createModelProviderFormRef"
         :rules="createModelProviderFormRules"
+        @submit-success="handleCreateModelProviderFormSubmit"
       >
         <a-row :gutter="24">
           <a-col :span="12">
@@ -76,15 +77,27 @@ export default indexTs;
             </a-form-item>
           </a-col>
           <a-col :span="12">
+            <a-form-item field="optionalModels" label="可选模型">
+              <a-textarea
+                v-model="createModelProviderForm.optionalModels"
+                placeholder="请输入模型名称，多个模型名称用换行分隔"
+                :auto-size="{
+                  minRows: 3,
+                  maxRows: 5,
+                }"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
             <a-form-item field="defaultModel" label="默认模型">
               <a-select
                 v-model="createModelProviderForm.defaultModel"
                 allow-create
               >
                 <a-option
-                  v-for="item of createModelProviderForm.optionalModels"
-                  :value="item.name"
-                  :label="item.name"
+                  v-for="item of selectableModels"
+                  :value="item"
+                  :label="item"
                 />
               </a-select>
             </a-form-item>
@@ -93,7 +106,9 @@ export default indexTs;
         <a-form-item hide-label>
           <a-space>
             <a-button type="primary" html-type="submit">保存</a-button>
-            <a-button>重置</a-button>
+            <a-button @click="handleResetCreateModelProviderForm"
+              >重置</a-button
+            >
           </a-space>
         </a-form-item>
       </a-form>

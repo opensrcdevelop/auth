@@ -280,3 +280,15 @@ export function getModelProviderDetail(id: string) {
     url: `/chatbi/modelProvider/${id}`,
   });
 }
+
+/**
+ * 删除模型提供商
+ *
+ * @param id 模型提供商ID
+ * @returns 响应结果
+ */
+export function deleteModelProvider(id: string) {
+  return apiRequest.delete({
+    url: `/chatbi/modelProvider/${id}`,
+  });
+}

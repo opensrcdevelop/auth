@@ -9,7 +9,9 @@
       @keyup.enter.native="handleGetModelProviderList(1, 15)"
       @clear="handleGetModelProviderList(1, 15)"
     />
-    <a-button type="primary">创建模型提供商</a-button>
+    <a-button type="primary" @click="handleToCreateModelProvider"
+      >创建模型提供商</a-button
+    >
   </div>
   <div class="model-provider-list">
     <a-table
@@ -71,7 +73,10 @@
                 </template>
               </a-button>
               <template #content>
-                <a-doption style="color: #e8353e">
+                <a-doption
+                  style="color: #e8353e"
+                  @click="handleDeleteModelProvider(record)"
+                >
                   <template #icon>
                     <icon-delete />
                   </template>
@@ -87,11 +92,11 @@
 </template>
 
 <script setup lang="ts">
-import {getModelProviderList, updateModelProvider} from "@/api/chatbi";
+import {deleteModelProvider, getModelProviderList, updateModelProvider,} from "@/api/chatbi";
 import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
-import {Notification} from "@arco-design/web-vue";
+import {Modal, Notification} from "@arco-design/web-vue";
 import {reactive, ref} from "vue";
 
 /** 模型提供商列表 */
@@ -150,7 +155,7 @@ const handleUpdateModelProviderState = (modelProvider: any) => {
 };
 
 /**
- * 跳转到数据源详情
+ * 跳转到模型提供商详情
  */
 const handleToModelProviderDetail = (modelProvider: any) => {
   router.push({
@@ -158,6 +163,41 @@ const handleToModelProviderDetail = (modelProvider: any) => {
     query: {
       id: modelProvider.id,
       active_tab: "model_provider_info",
+    },
+  });
+};
+
+/**
+ * 跳转到创建模型提供商
+ */
+const handleToCreateModelProvider = () => {
+  router.push({
+    path: "/chatbi/llm/create",
+  });
+};
+
+/**
+ * 删除模型提供商
+ */
+const handleDeleteModelProvider = (modelProvider: any) => {
+  Modal.warning({
+    title: `确定删除模型提供商「${modelProvider.name}」吗？`,
+    content: "此操作将不可恢复，请谨慎操作。",
+    hideCancel: false,
+    okButtonProps: {
+      status: "danger",
+    },
+    onOk: () => {
+      deleteModelProvider(modelProvider.id)
+        .then((result: any) => {
+          handleApiSuccess(result, () => {
+            Notification.success("删除成功");
+            handleGetModelProviderList();
+          });
+        })
+        .catch((err: any) => {
+          handleApiError(err, "删除模型提供商");
+        });
     },
   });
 };
