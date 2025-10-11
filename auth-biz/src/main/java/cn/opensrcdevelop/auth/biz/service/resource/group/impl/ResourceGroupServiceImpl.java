@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.resource.group.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupRequestDto;
@@ -132,6 +138,13 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
      *
      * @param resourceGroupIds 资源组ID集合
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE_GROUP,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）失败"
+    )
     @Transactional
     @Override
     public void removeResourceGroup(List<String> resourceGroupIds) {
@@ -150,6 +163,13 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE_GROUP,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "创建资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败"
+    )
     @Transactional
     @Override
     public void createResourceGroup(ResourceGroupRequestDto requestDto) {
@@ -157,8 +177,11 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         checkResourceGroupCode(requestDto, null);
 
         // 2. 属性编辑
+        String resourceGroupId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("resourceGroupId", resourceGroupId);
+
         ResourceGroup resourceGroup = new ResourceGroup();
-        resourceGroup.setResourceGroupId(CommonUtil.getUUIDString());
+        resourceGroup.setResourceGroupId(resourceGroupId);
         resourceGroup.setResourceGroupName(requestDto.getName());
         resourceGroup.setResourceGroupCode(requestDto.getCode());
         resourceGroup.setDescription(requestDto.getDesc());
@@ -172,14 +195,27 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.RESOURCE_GROUP,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "修改资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）失败"
+    )
     @Transactional
     @Override
     public void updateResourceGroup(ResourceGroupRequestDto requestDto) {
+        String resourceGroupId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawResourceGroup = super.getById(requestDto.getId());
         if (Objects.isNull(rawResourceGroup)) {
             return;
         }
+        compareObjBuilder.id(resourceGroupId);
+        compareObjBuilder.before(rawResourceGroup);
 
         // 3. 检查资源组标识是否存在
         checkResourceGroupCode(requestDto, rawResourceGroup);
@@ -193,6 +229,9 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
 
         // 5. 数据库操作
         super.updateById(updateResourceGroup);
+
+        compareObjBuilder.after(super.getById(resourceGroupId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     private void checkResourceGroupCode(ResourceGroupRequestDto requestDto, ResourceGroup rawResourceGroup) {

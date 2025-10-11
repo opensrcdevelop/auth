@@ -14,7 +14,7 @@ public interface UserService extends IService<User> {
 
     void createUser(UserRequestDto requestDto);
 
-    User getUserInfo(String userId, String resourceGroupCode);
+    User getUserInfo(String userId);
 
     PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters);
 

@@ -11,6 +11,7 @@ bootJar {
 dependencies {
     implementation project(':common')
     implementation project(':multi-tenant')
+    implementation project(':auth-audit')
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'

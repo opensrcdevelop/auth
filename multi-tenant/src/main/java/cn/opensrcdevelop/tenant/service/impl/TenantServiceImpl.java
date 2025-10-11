@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.tenant.service.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
@@ -34,6 +40,13 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.TENANT,
+            sysOperation = SysOperationType.CREATE,
+            success = "'创建了租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）'",
+            fail = "'创建租户（' + #requestDto.name + '）失败'"
+    )
     @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
@@ -44,8 +57,11 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         TenantHelper.createTenantDatabase(requestDto.getCode());
 
         // 2. 数据库操作
+        String tenantId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("tenantId", tenantId);
+
         Tenant tenant = new Tenant();
-        tenant.setTenantId(CommonUtil.getUUIDString());
+        tenant.setTenantId(tenantId);
         tenant.setTenantCode(requestDto.getCode());
         tenant.setTenantName(requestDto.getName());
         tenant.setDescription(requestDto.getDesc());
@@ -111,14 +127,27 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.TENANT,
+            sysOperation = SysOperationType.UPDATE,
+            success = "'修改了租户（' + @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) + '）'",
+            fail = "'修改租户（' + @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) + '）失败'"
+    )
     @Transactional
     @Override
     public void updateTenant(TenantRequestDto requestDto) {
+        String tenantId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
-        var rawTenant = super.getById(requestDto.getId());
+        var rawTenant = super.getById(tenantId);
         if (Objects.isNull(rawTenant)) {
             return;
         }
+        compareObjBuilder.id(tenantId);
+        compareObjBuilder.before(rawTenant);
 
         // 2. 属性设置
         Tenant updateTenant = new Tenant();
@@ -130,6 +159,9 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
 
         // 3. 数据据操作
         super.updateById(updateTenant);
+
+        compareObjBuilder.after(super.getById(tenantId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -162,6 +194,13 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
      *
      * @param tenantId 租户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.TENANT,
+            sysOperation = SysOperationType.DELETE,
+            success = "'删除了租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）'",
+            fail = "'删除租户（' + @linkGen.toLink(#tenantId, T(ResourceType).TENANT) + '）失败'"
+    )
     @Transactional
     @Override
     public void removeTenant(String tenantId) {

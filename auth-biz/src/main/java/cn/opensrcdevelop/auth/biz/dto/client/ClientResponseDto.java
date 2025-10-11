@@ -38,4 +38,7 @@ public class ClientResponseDto {
 
     @Schema(description = "刷新令牌过期时间")
     private Long refreshTokenTimeToLive;
+
+    @Schema(description = "是否需要 PKCE")
+    private Boolean requireProofKey;
 }

@@ -1,93 +1,63 @@
 package cn.opensrcdevelop.auth.audit.context;
 
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import com.alibaba.ttl.TransmittableThreadLocal;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+@SuppressWarnings("unused")
 public class AuditContext {
 
-    /** 审计内容 */
-    private static final TransmittableThreadLocal<String> CONTENT = new TransmittableThreadLocal<>();
-
-    /** 目标对象 */
-    private static final TransmittableThreadLocal<List<Object>> TARGET_OBJ_LIST = new TransmittableThreadLocal<>();
-
-    /** 额外数据 */
-    private static final TransmittableThreadLocal<Map<String, Object>> ADDITIONAL_DATA = new TransmittableThreadLocal<>();
-
-    public static String getContent() {
-        return CONTENT.get();
+    private AuditContext() {
     }
 
-    public static void setContent(String content) {
-        CONTENT.set(content);
-    }
+    /**
+     * 操作对象列表
+     */
+    private static final TransmittableThreadLocal<List<CompareObj<?>>> COMPARE_OBJ_LIST = new TransmittableThreadLocal<>() {
 
-    public static void removeContent() {
-        CONTENT.remove();
-    }
-
-    public static Object getAdditionalData(String key) {
-        return ADDITIONAL_DATA.get().get(key);
-    }
-
-    public static Map<String, Object> getAdditionalData() {
-        Map<String, Object> data = ADDITIONAL_DATA.get();
-        if (MapUtils.isEmpty(data)) {
-            ADDITIONAL_DATA.set(new HashMap<>());
+        @Override
+        protected List<CompareObj<?>> initialValue() {
+            return new ArrayList<>();
         }
-        return data;
-    }
+    };
 
-    public static void putAdditionalData(String key, Object value) {
-        Map<String, Object> data = ADDITIONAL_DATA.get();
-        if (MapUtils.isEmpty(data)) {
-            Map<String, Object> map = new HashMap<>();
-            map.put(key, value);
-            ADDITIONAL_DATA.set(map);
-            return;
+    /**
+     * SPEL 变量
+     */
+    private static final TransmittableThreadLocal<Map<String, Object>> SPEL_VARIABLES = new TransmittableThreadLocal<>() {
+
+        @Override
+        protected Map<String, Object> initialValue() {
+            return new HashMap<>();
         }
-        data.put(key, value);
+    };
+
+    public static void addCompareObj(CompareObj<?> operationObj) {
+        COMPARE_OBJ_LIST.get().add(operationObj);
     }
 
-    public static void putAdditionalData(Map<String, Object> value) {
-        ADDITIONAL_DATA.set(value);
+    public static void clearCompareObjList() {
+        COMPARE_OBJ_LIST.get().clear();
     }
 
-    public static void removeAdditionalData() {
-        ADDITIONAL_DATA.remove();
+    public static List<CompareObj<?>> getCompareObjList() {
+        return COMPARE_OBJ_LIST.get();
     }
 
-    public static List<Object> getTargetObj() {
-        return TARGET_OBJ_LIST.get();
+    public static void setSpelVariable(String key, Object value) {
+        SPEL_VARIABLES.get().put(key, value);
     }
 
-    public static void setTargetObj(List<Object> targetObjList) {
-        if (CollectionUtils.isNotEmpty(targetObjList)) {
-            TARGET_OBJ_LIST.set(targetObjList);
-        }
+    public static Map<String, Object> getSpelVariables() {
+        return SPEL_VARIABLES.get();
     }
 
-    public static void addTargetObj(Object targetObj) {
-        if (Objects.nonNull(targetObj)) {
-            List<Object> targetObjList = TARGET_OBJ_LIST.get();
-            if (CollectionUtils.isEmpty(targetObjList)) {
-                targetObjList = new ArrayList<>();
-            }
-            targetObjList.add(targetObj);
-            TARGET_OBJ_LIST.set(targetObjList);
-        }
-    }
-
-    public static void removeTargetObj() {
-        TARGET_OBJ_LIST.remove();
-    }
-
-    public static void removeAuditContext() {
-        removeContent();
-        removeTargetObj();
-        removeAdditionalData();
+    public static void clearAuditContext() {
+        COMPARE_OBJ_LIST.remove();
+        SPEL_VARIABLES.remove();
     }
 }

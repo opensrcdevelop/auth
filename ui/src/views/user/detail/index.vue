@@ -528,10 +528,17 @@ export default detailTs;
                       bordered
                     >
                       <a-descriptions-item label="限制条件名称">
-                        {{ condition.name }}
+                        <a-link>
+                          <a
+                            :href="`/ui/permission/expression/detail?id=${condition.id}`"
+                            target="_blank"
+                            >{{ condition.name }}</a
+                          >
+                          <icon-launch style="margin-left: 4px" />
+                        </a-link>
                       </a-descriptions-item>
-                      <a-descriptions-item label="SpringEL 表达式">
-                        {{ condition.expression }}
+                      <a-descriptions-item label="限制条件描述">
+                        {{ condition.desc ? condition.desc : "-" }}
                       </a-descriptions-item>
                     </a-descriptions>
                   </div>
@@ -822,14 +829,19 @@ export default detailTs;
       >
         <a-form-item field="password" label="密码">
           <password-checker
-              ref="passwordCheckerRef"
-              type="password"
-              placeholder="请输入密码"
-              :loading="checkPasswordLoading"
-              @check="handleCheckPassword"
-              :checkRes="checkPasswordRes"
-            />
-          <a-button type="text" @click="handleGeneratePassword" style="margin-left: 4px;">生成密码</a-button>
+            ref="passwordCheckerRef"
+            type="password"
+            placeholder="请输入密码"
+            :loading="checkPasswordLoading"
+            @check="handleCheckPassword"
+            :checkRes="checkPasswordRes"
+          />
+          <a-button
+            type="text"
+            @click="handleGeneratePassword"
+            style="margin-left: 4px"
+            >生成密码</a-button
+          >
         </a-form-item>
         <a-row :gutter="24">
           <a-col :span="12">

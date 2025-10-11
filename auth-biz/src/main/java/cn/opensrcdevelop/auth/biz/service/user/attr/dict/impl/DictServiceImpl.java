@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.user.attr.dict.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
@@ -44,6 +50,13 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
+            fail = "创建字典（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createDict(DictRequestDto requestDto) {
@@ -51,8 +64,11 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         checkDictCode(requestDto, null);
 
         // 2. 属性设置
+        String dictId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("dictId", dictId);
+
         Dict dict = new Dict();
-        dict.setDictId(CommonUtil.getUUIDString());
+        dict.setDictId(dictId);
         dict.setDictName(requestDto.getName());
         dict.setDictCode(requestDto.getCode());
         dict.setDescription(requestDto.getDesc());
@@ -66,27 +82,43 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）",
+            fail = "修改字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）失败"
+    )
     @Transactional
     @Override
     public void updateDict(DictRequestDto requestDto) {
+        String dictId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
-        var rawDict = super.getById(requestDto.getId());
+        var rawDict = super.getById(dictId);
         if (Objects.isNull(rawDict)) {
             return;
         }
+        compareObjBuilder.id(dictId);
+        compareObjBuilder.before(rawDict);
 
         // 2. 检查字典标识是否存在
         checkDictCode(requestDto, rawDict);
 
         // 3. 属性设置
         Dict updateDict = new Dict();
-        updateDict.setDictId(requestDto.getId());
+        updateDict.setDictId(dictId);
         updateDict.setDictName(requestDto.getName());
         updateDict.setDictCode(requestDto.getCode());
         updateDict.setDescription(requestDto.getDesc());
 
         // 4. 数据库操作
         super.updateById(updateDict);
+
+        compareObjBuilder.after(super.getById(dictId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -157,6 +189,13 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
      *
      * @param dictId 字典ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
+            fail = "删除字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）失败"
+    )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
             key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0])"

@@ -19,8 +19,6 @@ export const useGlobalVariablesStore = defineStore("globalVariables", {
       resourceGroupId: undefined,
       /** 字典ID */
       dictId: undefined,
-      /** 权限表达式 */
-      permissionExp: undefined,
       /** 身份提供商 */
       identitySourceProvider: {
         id: undefined,

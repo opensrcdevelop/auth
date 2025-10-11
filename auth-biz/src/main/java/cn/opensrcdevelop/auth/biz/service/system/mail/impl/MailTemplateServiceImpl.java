@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.system.mail.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateParamResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.system.mail.MailTemplateRequestDto;
@@ -85,22 +91,46 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
      *
      * @param requestDto 更新邮件模版请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.MESSAGE_SETTING,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了邮件模版（{{ #templateName }}）",
+            fail = "修改邮件模版（{{ #templateName }}）失败"
+    )
     @Transactional
     @Override
     public void update(MailTemplateRequestDto requestDto) {
-        // 1. 编辑更新实体
+        String templateId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        // 1. 获取原邮件模版
+        MailTemplate rawMailTemplate = super.getById(templateId);
+        if (Objects.isNull(rawMailTemplate)) {
+            return;
+        }
+        AuditContext.setSpelVariable("templateName", rawMailTemplate.getTemplateName());
+        compareObjBuilder.id(templateId);
+        compareObjBuilder.before(rawMailTemplate);
+
+        // 2. 编辑更新实体
         MailTemplate updateMailTemplate = new MailTemplate();
         updateMailTemplate.setTemplateId(requestDto.getId());
         updateMailTemplate.setSubject(requestDto.getSubject());
         updateMailTemplate.setSender(requestDto.getSender());
         updateMailTemplate.setTemplateContent(requestDto.getContent());
+        updateMailTemplate.setVersion(rawMailTemplate.getVersion());
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.updateById(updateMailTemplate);
 
-        // 3. 删除缓存
+        // 4. 删除缓存
         MailTemplate mailTemplate = super.getById(updateMailTemplate.getTemplateId());
         RedisUtil.delete(getCacheKey(mailTemplate.getTemplateCode()));
+
+        compareObjBuilder.after(super.getById(templateId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**

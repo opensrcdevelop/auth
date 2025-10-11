@@ -1,0 +1,29 @@
+jar {
+    enabled = true
+    archiveClassifier = ''
+    version = project.version
+}
+
+bootJar {
+    enabled = false
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':auth-audit')
+    implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
+    implementation 'org.springframework.boot:spring-boot-starter-freemarker'
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
+    implementation "com.github.vertical-blank:sql-formatter:$rootProject.sqlFormatterVer"
+    implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
+    implementation 'org.springframework.security:spring-security-core'
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+}

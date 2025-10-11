@@ -19,8 +19,11 @@ import Verify from "@/components/verifition/Verify.vue";
 import MonacoEditor from "@/components/MonacoEditor.vue";
 import PriorityTag from "@/components/PriorityTag.vue";
 import PasswordChecker from "@/components/PasswordChecker.vue";
+import dayjs from 'dayjs'
 
 const app = createApp(App);
+
+app.config.globalProperties.$dayjs = dayjs
 
 app.use(pina);
 app.use(router);
@@ -29,7 +32,7 @@ app.use(ArcoVueIcon);
 app.use(QRCode);
 
 const IconFont = Icon.addFromIconFontCn({
-  src: "https://at.alicdn.com/t/c/font_4594700_sam0ufe6x2b.js",
+  src: "https://at.alicdn.com/t/c/font_4594700_0xf4afv63ol.js",
 });
 app.component("icon-font", IconFont);
 app.component("page-header", PageHeader);

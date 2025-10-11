@@ -24,6 +24,7 @@ public class MessageConstants {
     public static final String DICT_DATA_MSG_1001 = "dict.data.msg.1001";
     public static final String DICT_MSG_1000 = "dict.msg.1000";
     public static final String CLIENT_MSG_1000 = "client.msg.1000";
+    public static final String CLIENT_MSG_1001 = "client.msg.1001";
     public static final String PERMISSION_MSG_1000 = "permission.msg.1000";
     public static final String PERMISSION_MSG_1001 = "permission.msg.1001";
     public static final String RESOURCE_MSG_1000 = "resource.msg.1000";
@@ -36,6 +37,10 @@ public class MessageConstants {
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
     public static final String PERMISSION_EXP_MSG_1000 = "permission.exp.msg.1000";
+    public static final String PERMISSION_EXP_MSG_1001 = "permission.exp.msg.1001";
+    public static final String PERMISSION_EXP_MSG_1002 = "permission.exp.msg.1002";
+    public static final String PERMISSION_EXP_MSG_1003 = "permission.exp.msg.1003";
+    public static final String PERMISSION_EXP_MSG_1004 = "permission.exp.msg.1004";
     public static final String PWD_POLICY_MSG_1000 = "pwd.policy.msg.1000";
     public static final String PWD_POLICY_MSG_1001 = "pwd.policy.msg.1001";
     public static final String PWD_POLICY_MSG_1002 = "pwd.policy.msg.1002";
@@ -51,4 +56,10 @@ public class MessageConstants {
     public static final String IDENTITY_PROVIDER_MSG_1000 = "identity.provider.msg.1000";
     public static final String IDENTITY_REGISTRATION_MSG_1000 = "identity.registration.msg.1000";
     public static final String IDENTITY_REGISTRATION_MSG_1001 = "identity.registration.msg.1001";
+    public static final String OIDC_SCOPE_MSG_1000 = "oidc.scope.msg.1000";
+    public static final String OIDC_CLAIM_MSG_1000 = "oidc.claim.msg.1000";
+    public static final String AUDIT_LOG_MSG_1000 = "audit.log.msg.1000";
+    public static final String AUDIT_LOG_MSG_1001 = "audit.log.msg.1001";
+    public static final String PERMISSION_EXP_TEMPLATE_MSG_1000 = "permission.exp.template.msg.1000";
+    public static final String PERMISSION_EXP_TEMPLATE_MSG_1001 = "permission.exp.template.msg.1001";
 }

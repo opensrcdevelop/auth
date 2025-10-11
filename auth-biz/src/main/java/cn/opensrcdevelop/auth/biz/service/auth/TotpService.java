@@ -6,5 +6,5 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public interface TotpService {
 
-    public TotpCodeCheckResponseDto check(TotpCodeCheckRequestDto requestDto, HttpServletRequest request);
+    TotpCodeCheckResponseDto check(TotpCodeCheckRequestDto requestDto, HttpServletRequest request);
 }

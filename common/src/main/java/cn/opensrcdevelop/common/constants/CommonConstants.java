@@ -8,10 +8,11 @@ public class CommonConstants {
     private CommonConstants () {}
 
     public static final String REST_RESPONSE_ATTR = "REST_RESPONSE_ATTR";
+    public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS = "yyyy-MM-dd HH:mm:ss.SSSSSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS = "yyyy-MM-dd HH:mm:ss";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDD = "yyyy-MM-dd";
-    public static final String UNKNOWN = "unknown";
+    public static final String UNKNOWN = "Unknown";
     public static final String SESSION_ID = "sessionId";
     public static final String CREATE_BY = "createBy";
     public static final String CREATE_TIME = "createTime";
@@ -27,4 +28,12 @@ public class CommonConstants {
     public static final String MDC_USERNAME = "username";
     public static final String REP_HEADER_X_REQUEST_ID = "X-Request-Id";
     public static final String URL_FORMAT = "%s://%s";
+    public static final String COLON = ":";
+    public static final String REQ_CTX = "_reqCtx";
+    public static final String REQ_CTX_IP = "ip";
+    public static final String REQ_CTX_DEVICE_TYPE = "deviceType";
+    public static final String REQ_CTX_BROWSER_TYPE = "browserType";
+    public static final String REQ_CTX_OS_TYPE = "osType";
+    public static final String USER_CTX = "_userCtx";
+    public static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
 }

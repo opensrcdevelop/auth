@@ -33,10 +33,20 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "dict_data") {
-    handleGetDictDataList();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = dictId.value) => {
+  switch (tabKey) {
+    case "dict_info":
+      handleGetDictDetail(id);
+      break;
+    case "dict_data":
+      handleGetDictDetail(id);
+      handleGetDictDataList(id);
+      break;
+  }
+}
 
 /** 字典信息表单 */
 const dictInfoFormRef = ref();
@@ -209,7 +219,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = tab || "dict_info";
-      handleGetDictDetail(dictId);
+      handleTabInit(tab, dictId);
     });
 
     return {

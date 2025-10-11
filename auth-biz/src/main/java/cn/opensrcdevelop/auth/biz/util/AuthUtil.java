@@ -67,8 +67,22 @@ public class AuthUtil {
      *
      * @return 当前用户 ID
      */
-    public static Optional<String> getCurrentUserId() {
-        return Optional.ofNullable(getCurrentJwtClaim(JwtClaimNames.SUB));
+    public static String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() instanceof User user) {
+            return user.getUserId();
+        }
+        return getCurrentJwtClaim(JwtClaimNames.SUB);
+    }
+
+    /**
+     * 获取当前客户端 ID
+     *
+     * @return 当前客户端 ID
+     */
+    public static Optional<String> getCurrentClientId() {
+        List<String> aud = getCurrentJwtClaim(JwtClaimNames.AUD);
+        return Optional.ofNullable(CollectionUtils.isNotEmpty(aud) ? aud.getFirst() : null);
     }
 
     /**
@@ -210,14 +224,14 @@ public class AuthUtil {
         }
         Map<String, Object> userMap = new HashMap<>();
         // 普通字段属性
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getUserId), user.getUserId());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getUsername), user.getUsername());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getPhoneNumber), user.getPhoneNumber());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getEmailAddress), user.getEmailAddress());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getEnableMfa), user.getEnableMfa());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getLocked), user.getLocked());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getConsoleAccess), user.getConsoleAccess());
-        userMap.put(CommonUtil.extractFileNameFromGetter(User::getCreateTime), user.getCreateTime().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUserId), user.getUserId());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUsername), user.getUsername());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber), user.getPhoneNumber());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getEmailAddress), user.getEmailAddress());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getEnableMfa), user.getEnableMfa());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getLocked), user.getLocked());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getConsoleAccess), user.getConsoleAccess());
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getCreateTime), user.getCreateTime().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
 
         // 角色信息
         userMap.put(CommonConstants.ROLES, CommonUtil.stream(user.getRoles()).map(Role::getRoleCode).collect(Collectors.toCollection(ArrayList::new)));
@@ -249,6 +263,10 @@ public class AuthUtil {
      * @return 用户扩展属性值
      */
     public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType, boolean withDictDataId, boolean withTimestamp) {
+        if (Objects.isNull(value)) {
+            return null;
+        }
+
         return switch (dataType) {
             case NUMBER -> new BigDecimal(value);
             case BOOLEAN -> Boolean.valueOf(value);
@@ -286,7 +304,7 @@ public class AuthUtil {
                 WHERE
                     t_user_attr_mapping.attr_id = t_user_attr.attr_id
                     AND
-                    user_id = t1.user_id
+                    t_user_attr_mapping.user_id = t_user.user_id
                     AND
                     %s
                 """;
@@ -334,7 +352,7 @@ public class AuthUtil {
     }
 
     private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
-        String queryKey = "t1." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
+        String queryKey = "t_user." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
         Object queryValue = switch (valueDataType) {
             case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
             case BOOLEAN -> Boolean.valueOf(value.toString());

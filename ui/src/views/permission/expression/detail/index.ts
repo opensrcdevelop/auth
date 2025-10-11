@@ -1,13 +1,17 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  getPermissionExpDetail,
-  removeAuthorizeCondition,
-  updatePermissionExp,
+    debugPermissionExp,
+    getPermissionExpDetail,
+    getPermissionExpPermissions,
+    getPermissionExpTemplateList,
+    getPremissionExpTemplateParamConfigs,
+    removeAuthorizeCondition,
+    updatePermissionExp,
 } from "@/api/permission";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import ParamInput from "../components/ParamInput.vue";
 
 /**
  * 返回上一级
@@ -20,8 +24,6 @@ const activeTab = ref("condition_info");
 
 /**
  * tab 切换事件
- *
- * @param tabKey tabKey
  */
 const handleTabChange = (tabKey: string) => {
   router.replace({
@@ -31,58 +33,152 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
+  handleTabInit(tabKey);
+};
+
+/**
+ * tab 初始化
+ */
+const handleTabInit = (tabKey: string, id: string = permissionExpId.value) => {
+  switch (tabKey) {
+    case "condition_info":
+      handleGetPermissionExpDetail(id);
+      break;
+    case "permission_list":
+      if (!permissionExpId.value) {
+        handleGetPermissionExpDetail(id);
+      }
+      handleGetPermissionExpPermissions(id);
+      break;
+  }
+};
+
+/** 模板列表 */
+const templateList = reactive([]);
+const handleGetTemplateList = () => {
+  getPermissionExpTemplateList({
+    page: 1,
+    size: -1,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        templateList.length = 0;
+        templateList.push(...data.list);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取限制条件模板列表");
+    });
 };
 
 const permissionExpId = ref("");
 const permissionExpName = ref("");
 
 /** 权限表达式表单 */
+const templateParamsRef = ref(null);
 const permissionExpInfoFormRef = ref();
 const permissionExpInfoForm = reactive({
   id: undefined,
   name: undefined,
+  templateId: undefined,
+  templateParams: undefined,
   expression: undefined,
   desc: undefined,
 });
 const permissionExpInfoFormRules = {
   name: [{ required: true, message: "限制条件名称未填写" }],
-  expression: [{ required: true, message: "SpringEL 表达式未填写" }],
+  expression: [{ required: true, message: "JEXL 表达式未填写" }],
+};
+
+/**
+ * 获取权限表达式详情
+ */
+const handleGetPermissionExpDetail = async (id: string) => {
+  try {
+    const result = await getPermissionExpDetail(id);
+    handleApiSuccess(result, (data: any) => {
+      permissionExpId.value = data.id;
+      permissionExpName.value = data.name;
+
+      permissionExpInfoForm.id = data.id;
+      permissionExpInfoForm.name = data.name;
+      permissionExpInfoForm.templateId = data.templateId;
+      permissionExpInfoForm.templateParams = data.templateParams;
+      permissionExpInfoForm.expression = data.expression;
+      permissionExpInfoForm.desc = data.desc;
+    });
+  } catch (err: any) {
+    handleApiError(err, "获取权限表达式详情");
+  }
+
+  if (permissionExpInfoForm.templateId) {
+    await handleGetParamConfigs(permissionExpInfoForm.templateId);
+  }
 };
 
 /** 权限 */
 const permissions = reactive([]);
 
 /**
- * 获取权限表达式详情
- *
- * @param id 权限表达式ID
+ * 获取权限表达式关联的权限表达式
  */
-const handleGetPermissionExpDetail = (id: string) => {
-  getPermissionExpDetail(id)
+const handleGetPermissionExpPermissions = (id: string) => {
+  getPermissionExpPermissions(id)
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
-        permissionExpId.value = data.id;
-        permissionExpName.value = data.name;
-
-        permissionExpInfoForm.id = data.id;
-        permissionExpInfoForm.name = data.name;
-        permissionExpInfoForm.expression = data.expression;
-        permissionExpInfoForm.desc = data.desc;
-
         permissions.length = 0;
-        permissions.push(...data.permissions);
+        permissions.push(...data);
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "获取权限表达式详情");
+      handleApiError(err, "获取权限表达式关联的权限列表");
     });
+};
+
+/** 模板参数配置 */
+const templateParamConfigs = reactive([]);
+const handleGetParamConfigs = async (templateId: string) => {
+  try {
+    const result = await getPremissionExpTemplateParamConfigs(templateId);
+    handleApiSuccess(result, (data: any) => {
+      templateParamConfigs.length = 0;
+      templateParamConfigs.push(...data);
+
+      permissionExpInfoForm.templateParams = data.map((item: any) => {
+        const param = permissionExpInfoForm.templateParams.find(
+          (param: any) => param.code === item.code
+        );
+        return {
+          code: item.code,
+          value: param ? param.value : item.defaultValue,
+        };
+      });
+    });
+  } catch (err: any) {
+    handleApiError(err, "获取限制条件模板参数配置");
+  }
 };
 
 /**
  * 提交权限表达式表单
  */
-const handlePermissionExpInfoFormSubmit = (formData: any) => {
-  updatePermissionExp(formData)
+const handlePermissionExpInfoFormSubmit = async () => {
+  const validateResults = [];
+  validateResults.push(permissionExpInfoFormRef.value.validate());
+
+  const useTemplate = permissionExpInfoForm.templateId ? true : false;
+  if (useTemplate) {
+    validateResults.push(templateParamsRef.value.validate());
+  }
+  const result = await Promise.all(validateResults);
+  const isValid = result.filter((item) => item).length === 0;
+  if (!isValid) {
+    return;
+  }
+  updatePermissionExp({
+    ...permissionExpInfoForm,
+    useTemplate,
+  })
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
@@ -99,6 +195,9 @@ const handlePermissionExpInfoFormSubmit = (formData: any) => {
  */
 const handleResetPermissionExpInfoForm = () => {
   permissionExpInfoFormRef.value.resetFields();
+  if (permissionExpInfoForm.templateId) {
+    templateParamsRef.value.reset();
+  }
   handleGetPermissionExpDetail(permissionExpId.value);
 };
 
@@ -123,7 +222,7 @@ const handleRemoveAuthorizeCondition = (authorizeId: string) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消限制成功");
-            handleGetPermissionExpDetail(permissionExpId.value);
+            handleGetPermissionExpPermissions(permissionExpId.value);
           });
         })
         .catch((err: any) => {
@@ -158,7 +257,7 @@ const hantoToUserGroupDetail = (id: string) => {
     path: "/user/group/detail",
     query: {
       id,
-      active_tab: "user_group_info"
+      active_tab: "user_group_info",
     },
   });
 };
@@ -171,7 +270,7 @@ const handleToUserDetail = (id: string) => {
     path: "/user/detail",
     query: {
       id,
-      active_tab: "user_info"
+      active_tab: "user_info",
     },
   });
 };
@@ -184,7 +283,7 @@ const handleToRoleDetail = (id: string) => {
     path: "/role/detail",
     query: {
       id,
-      active_tab: "role_info"
+      active_tab: "role_info",
     },
   });
 };
@@ -197,7 +296,7 @@ const handleToResourceGroupDetail = (id: string) => {
     path: "/resource/group/detail",
     query: {
       id,
-      active_tab: "resource_group_info"
+      active_tab: "resource_group_info",
     },
   });
 };
@@ -210,7 +309,7 @@ const handleToResourceDetail = (id: string) => {
     path: "/permission/resource/detail",
     query: {
       id,
-      active_tab: "resource_info"
+      active_tab: "resource_info",
     },
   });
 };
@@ -223,40 +322,117 @@ const handleToPermissionDetail = (id: string) => {
     path: "/permission/detail",
     query: {
       id,
-      active_tab: "permission_info"
+      active_tab: "permission_info",
     },
   });
 };
 
+/** 调试运行弹框 */
+const debugDrawerVisible = ref(false);
+const debugFormRef = ref();
+const debugForm = reactive({
+  expressionId: undefined,
+  useTemplate: false,
+  context: undefined,
+});
+const debugFormRules = {
+  context: {
+    validator: (value, cb) => {
+      if (value) {
+        try {
+          const valueObj = JSON.parse(value);
+          if (typeof valueObj !== "object") {
+            cb("上下文 JSON 字符串必须是一个对象");
+          }
+        } catch (err: any) {
+          cb("请检查 JSON 格式是否正确");
+        }
+      } else {
+        cb();
+      }
+    },
+  },
+};
+
 /**
- * 跳转调试权限表达式
+ * 打开调试运行弹框
  */
-const handleToDebugPermissionExp = () => {
-  const globalVariables = useGlobalVariablesStore();
-  globalVariables.permissionExp = {
-    id: permissionExpId.value,
-    name: permissionExpName.value,
-    expression: permissionExpInfoForm.expression,
-  };
-  globalVariables.saveData();
-  router.push({
-    path: "/permission/expression/debug",
-  });
-}
+const handleOpenDebugDrawer = () => {
+  debugForm.expressionId = permissionExpId.value;
+  debugDrawerVisible.value = true;
+};
+
+/**
+ * 关闭调试运行弹框
+ */
+const handleCloseDebugDrawer = () => {
+  debugFormRef.value.resetFields();
+  debugDrawerVisible.value = false;
+};
+
+/** 调试运行结果 */
+const debugResult = reactive({
+  success: undefined,
+  execResult: undefined,
+});
+const debugResultModalVisible = ref(false);
+
+/**
+ * 提交调试运行表单
+ */
+const debugFormSubmitLoading = ref(false);
+const handleDebugFormSubmit = async () => {
+  const validateResults = [];
+  validateResults.push(debugFormRef.value.validate());
+  const result = await Promise.all(validateResults);
+  const isValid = result.filter((item) => item).length === 0;
+  if (!isValid) {
+    return;
+  }
+
+  debugFormSubmitLoading.value = true;
+  debugPermissionExp({
+    expressionId: debugForm.expressionId,
+    useTemplate: debugForm.useTemplate,
+    context: debugForm.context ? JSON.parse(debugForm.context) : {},
+  })
+    .then((result) => {
+      handleApiSuccess(result, (data: any) => {
+        debugResult.success = data.success;
+        debugResult.execResult = data.executeRes;
+
+        debugResultModalVisible.value = true;
+      });
+    })
+    .catch((err) => {
+      handleApiError(err, "调试运行限制条件模板");
+    })
+    .finally(() => {
+      debugFormSubmitLoading.value = false;
+    });
+};
 
 export default defineComponent({
+  components: {
+    ParamInput,
+  },
   setup() {
     onMounted(() => {
-      activeTab.value = getQueryString("activeTab") || "condition_info";
-      handleGetPermissionExpDetail(getQueryString("id"));
+      activeTab.value = getQueryString("active_tab") || "condition_info";
+      templateParamConfigs.length = 0;
+      handleGetTemplateList();
+      handleTabInit(activeTab.value, getQueryString("id"));
     });
 
     return {
       handleBack,
       activeTab,
       handleTabChange,
+      templateList,
+      templateParamConfigs,
       permissionExpId,
       permissionExpName,
+      templateParamsRef,
       permissionExpInfoFormRef,
       permissionExpInfoForm,
       permissionExpInfoFormRules,
@@ -268,7 +444,16 @@ export default defineComponent({
       handleRemoveAuthorizeCondition,
       handlePermissionExpInfoFormSubmit,
       handleResetPermissionExpInfoForm,
-      handleToDebugPermissionExp
+      debugDrawerVisible,
+      debugFormRef,
+      debugForm,
+      debugFormRules,
+      handleOpenDebugDrawer,
+      handleCloseDebugDrawer,
+      handleDebugFormSubmit,
+      debugFormSubmitLoading,
+      debugResult,
+      debugResultModalVisible,
     };
   },
 });

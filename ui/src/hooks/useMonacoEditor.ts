@@ -1,7 +1,9 @@
 import * as monaco from "monaco-editor";
-import { nextTick, onBeforeUnmount, ref } from "vue";
+import {nextTick, onBeforeUnmount, ref} from "vue";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import jexlMonarchConfig from "./monaco-extensions/jexl/jexlMonarchConfig";
+import jexlTheme from "./monaco-extensions/jexl/jexlTheme";
 
 export const useMonacoEditor = (language: string) => {
   let monocaEditor: monaco.editor.IStandaloneCodeEditor | null = null;
@@ -20,6 +22,11 @@ export const useMonacoEditor = (language: string) => {
         return new EditorWorker();
       },
     };
+
+    // 添加 JXEL 扩展语法
+    monaco.languages.register({ id: "jexl" });
+    monaco.languages.setMonarchTokensProvider('jexl', jexlMonarchConfig);
+    monaco.editor.defineTheme('jexl-vs-theme', jexlTheme);
     
     monocaEditor = monaco.editor.create(monacoEditorRef.value, {
       model: monaco.editor.createModel("", language),

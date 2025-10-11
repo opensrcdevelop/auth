@@ -2,10 +2,21 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.*;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamConfigDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateResponseDto;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
-import cn.opensrcdevelop.auth.biz.service.permission.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
+import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
+import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -34,6 +45,7 @@ public class PermissionController {
     private final PermissionService permissionService;
     private final AuthorizeService authorizeService;
     private final PermissionExpService permissionExpService;
+    private final PermissionExpTemplateService permissionExpTemplateService;
 
     @Operation(summary = "创建权限", description = "创建权限")
     @PostMapping
@@ -56,10 +68,10 @@ public class PermissionController {
         permissionExpService.createPermissionExp(requestDto);
     }
 
-    @Operation(summary = "获取当前用户权限", description = "获取当前用户权限")
-    @GetMapping("/me")
-    public List<PermissionResponseDto> getCurrentUserPermissions() {
-        return permissionService.getCurrentUserPermissions();
+    @Operation(summary = "校验权限", description = "校验权限")
+    @PostMapping("/verify")
+    public List<VerifyPermissionResponseDto> verifyPermissions(@RequestBody @Valid VerifyPermissionsRequestDto requestDto) {
+        return permissionService.verifyPermissions(requestDto);
     }
 
     @Operation(summary = "取消授权", description = "取消授权")
@@ -123,6 +135,15 @@ public class PermissionController {
         return permissionExpService.detail(id);
     }
 
+    @Operation(summary = "获取权限表达式关联的权限列表", description = "获取权限表达式关联的权限列表")
+    @Parameters({
+            @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
+    })
+    @GetMapping("/exp/{id}/permissions")
+    public List<PermissionResponseDto> expPermissions(@PathVariable @NotBlank String id) {
+        return permissionExpService.expPermissions(id);
+    }
+
     @Operation(summary = "添加授权条件", description = "添加授权条件")
     @PostMapping("/authorize/cond")
     @Authorize({ "allAuthorizeCondPermissions", "addAuthorizeCondition" })
@@ -170,5 +191,71 @@ public class PermissionController {
     @Authorize({ "allPermPermissions", "updateAuthorizePriority" })
     public void updateAuthorizePriority(@PathVariable @NotBlank String id, @PathVariable @EnumValue({ "-1", "0", "1", "2", "3" }) Integer priority) {
         authorizeService.updateAuthorizePriority(id, priority);
+    }
+
+    @Operation(summary = "创建权限表达式模板", description = "创建权限表达式模板")
+    @PostMapping("/exp/template")
+    @Authorize({ "allPermissionExpTemplatePermissions", "createPermissionExpTemplate" })
+    public void createPermissionExpTemplate(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) PermissionExpTemplateRequestDto requestDto) {
+        permissionExpTemplateService.createPermissionExpTemplate(requestDto);
+    }
+
+    @Operation(summary = "更新权限表达式模板", description = "更新权限表达式模板")
+    @PutMapping("/exp/template")
+    @Authorize({ "allPermissionExpTemplatePermissions", "updatePermissionExpTemplate" })
+    public void updatePermissionExpTemplate(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) PermissionExpTemplateRequestDto requestDto) {
+        permissionExpTemplateService.updatePermissionExpTemplate(requestDto);
+    }
+
+    @Operation(summary = "删除权限表达式模板", description = "删除权限表达式模板")
+    @Parameters({
+            @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
+    })
+    @DeleteMapping("/exp/template/{id}")
+    @Authorize({ "allPermissionExpTemplatePermissions", "deletePermissionExpTemplate" })
+    public void deletePermissionExpTemplate(@PathVariable @NotBlank String id) {
+        permissionExpTemplateService.deletePermissionExpTemplate(id);
+    }
+
+    @Operation(summary = "获取权限表达式模板列表", description = "获取权限表达式模板列表")
+    @Parameters({
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "keyword", description = "权限表达式模板名称检索关键字", in = ParameterIn.QUERY)
+    })
+    @GetMapping("/exp/template/list")
+    @Authorize({ "allPermissionExpTemplatePermissions", "listPermissionExpTemplate" })
+    public PageData<PermissionExpTemplateResponseDto> listPermissionExpTemplate(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+        return permissionExpTemplateService.list(page, size, keyword);
+    }
+
+    @Operation(summary = "获取权限表达式模板详情", description = "获取权限表达式模板详情")
+    @Parameters({
+            @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
+    })
+    @GetMapping("/exp/template/{id}")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateDetail" })
+    public PermissionExpTemplateResponseDto detailPermissionExpTemplate(@PathVariable @NotBlank String id) {
+        return permissionExpTemplateService.detail(id);
+    }
+
+    @Operation(summary = "获取权限表达式模板参数配置", description = "获取权限表达式模板参数配置")
+    @Parameters({
+            @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
+    })
+    @GetMapping("/exp/template/{id}/params")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateParamConfigs" })
+    public List<PermissionExpTemplateParamConfigDto> permissionExpTemplateParamConfigs(@PathVariable @NotBlank String id) {
+        return permissionExpTemplateService.getParamsConfigs(id);
+    }
+
+    @Operation(summary = "获取模板关联的权限表达式列表", description = "获取模板关联的权限表达式列表")
+    @Parameters({
+            @Parameter(name = "id", description = "权限表达式模板ID", in = ParameterIn.PATH, required = true),
+    })
+    @GetMapping("/exp/template/{id}/exps")
+    @Authorize({ "allPermissionExpTemplatePermissions", "getPermissionExpTemplateExps" })
+    public List<PermissionExpResponseDto> listTemplatePermissionExp(@PathVariable @NotBlank String id) {
+        return permissionExpTemplateService.getPermissionExpList(id);
     }
 }

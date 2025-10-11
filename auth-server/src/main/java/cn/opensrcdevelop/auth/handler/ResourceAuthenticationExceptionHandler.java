@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 public class ResourceAuthenticationExceptionHandler implements AuthenticationEntryPoint {
 
-    private static final String ERROR = "error";
+    private static final String ERROR = "fail";
     private static final String ERROR_URI = "error_uri";
     private static final String ERROR_DESC = "error_description";
 

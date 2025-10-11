@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +75,7 @@ public class UserController {
     })
     @PostMapping("/list")
     @Authorize({ "allUserPermissions", "listUser" })
-    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterRequestDto> filters) {
+    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") @Min(1) int page, @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterRequestDto> filters) {
         return userService.list(page, size, filters);
     }
 

@@ -43,7 +43,6 @@ if (code) {
     getToken({
       grant_type: AUTHORIZAION_CODE,
       client_id: import.meta.env.VITE_OAUTH_CLIENT_ID,
-      client_secret: import.meta.env.VITE_OAUTH_CLIENT_SECRET,
       redirect_uri: `${getConsoleUrl()}${
         import.meta.env.VITE_UI_BASE_PATH || ""
       }/oauth2/redirect`,
@@ -74,7 +73,6 @@ if (code) {
           // 获取用户是否有控制台权限
           getCurrentUser().then((result: any) => {
             handleApiSuccess(result, (data: any) => {
-              console.log(data);
               if (data.consoleAccess) {
                 // 跳转到首页
                 router.push({ path: "/" });
@@ -106,7 +104,7 @@ if (code) {
   // 获取授权码
   window.location.href = `${getOAuthIssuer()}/oauth2/authorize?client_id=${
     import.meta.env.VITE_OAUTH_CLIENT_ID
-  }&response_type=code&scope=openid&redirect_uri=${getConsoleUrl()}${
+  }&response_type=code&redirect_uri=${getConsoleUrl()}${
     import.meta.env.VITE_UI_BASE_PATH || ""
   }/oauth2/redirect&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
 }

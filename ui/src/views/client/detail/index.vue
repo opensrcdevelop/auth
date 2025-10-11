@@ -1,5 +1,6 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
@@ -188,6 +189,12 @@ export default detailTs;
                     >
                     <a-checkbox value="none">none</a-checkbox>
                   </a-checkbox-group>
+                </a-form-item>
+                <a-form-item field="requireProofKey" label="是否需要 PKCE">
+                  <a-switch
+                    type="round"
+                    v-model="clientAuthorizeInfoForm.requireProofKey"
+                  />
                 </a-form-item>
                 <a-row :gutter="24">
                   <a-col :span="12">

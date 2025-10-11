@@ -22,7 +22,21 @@
 
 
     <select id="searchUsers" resultMap="userResultMap">
-        SELECT
+        WITH filtered_users AS (
+            SELECT
+                t_user.user_id
+            FROM
+                t_user
+                LEFT JOIN t_user_attr_mapping ON t_user_attr_mapping.user_id = t_user.user_id
+                LEFT JOIN t_user_attr ON t_user_attr.attr_id = t_user_attr_mapping.attr_id
+            ${ew.customSqlSegment}
+            GROUP BY
+                t_user.user_id
+            ORDER BY MAX(t_user.create_time) DESC
+        <if test="limit > 0 and offset > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+        ) SELECT
             t1.user_id,
             t1.username,
             t1.phone_number,
@@ -37,10 +51,26 @@
             t3.attr_data_type,
             t2.attr_value
         FROM
-            t_user t1
+            filtered_users fu
+            JOIN t_user t1 ON t1.user_id = fu.user_id
             LEFT JOIN t_user_attr_mapping t2 ON t2.user_id = t1.user_id
             LEFT JOIN t_user_attr t3 ON t3.attr_id = t2.attr_id
-        ${ew.customSqlSegment}
         ORDER BY t1.create_time DESC
+    </select>
+
+    <select id="countUsers" resultType="long">
+        SELECT
+            COUNT(*)
+        FROM (
+            SELECT
+                t_user.user_id
+            FROM
+                t_user
+                LEFT JOIN t_user_attr_mapping ON t_user_attr_mapping.user_id = t_user.user_id
+                LEFT JOIN t_user_attr ON t_user_attr.attr_id = t_user_attr_mapping.attr_id
+            ${ew.customSqlSegment}
+            GROUP BY
+                t_user.user_id
+        ) AS filtered_users
     </select>
 </mapper>

@@ -11,8 +11,9 @@
     user-select: none;
   }
 
-  .id {
-    width: 380px;
+  .id,
+  .locator {
+    width: fit-content;
     margin-top: 8px;
     display: flex;
     align-items: center;
@@ -49,7 +50,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 12px; 
+    margin-top: 12px;
 
     .expression-remove {
       margin-left: 32px;
@@ -69,5 +70,3 @@
   display: flex;
   justify-content: flex-end;
 }
-
-

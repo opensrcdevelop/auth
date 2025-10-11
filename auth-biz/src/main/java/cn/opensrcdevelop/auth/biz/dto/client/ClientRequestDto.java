@@ -49,6 +49,9 @@ public class ClientRequestDto {
     @Schema(description = "是否需要用户同意授权")
     private Boolean requireAuthorizationConsent;
 
+    @Schema(description = "是否需要 PKCE")
+    private Boolean requireProofKey;
+
     @Schema(description = "授权码存活时间（分钟）")
     @Min(1)
     @Max(Integer.MAX_VALUE)

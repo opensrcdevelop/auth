@@ -19,9 +19,9 @@ export default indexTs;
 
     <div>
       <a-tabs :active-key="activeTab" @change="handleTabChange">
-        <a-tab-pane key="mail_template" title="邮件模版">
+        <a-tab-pane key="mail_template" title="邮件模板">
           <div class="tab-container">
-            <div class="info-title">模版列表</div>
+            <div class="info-title">模板列表</div>
             <div
               class="template-container"
               v-for="item in mailTemplateList"

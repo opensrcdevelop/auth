@@ -16,6 +16,7 @@ import {cancelAuthorization} from "@/api/permission";
 import {useGlobalVariablesStore} from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
 import {usePagination} from "@/hooks/usePagination";
+import {IconFilter} from "@arco-design/web-vue/es/icon";
 
 /**
  * 返回上一级
@@ -39,8 +40,19 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "permission_management") {
-    handleGetRolePermissions();
+  handleTabInit(tabKey);
+};
+
+const handleTabInit = (tabKey: string, id: string = roleId.value) => {
+  switch (tabKey) {
+    case "role_info":
+      handleGetRoleDetail(id);
+      handleGetRolePrincipals(id);
+      break;
+    case "permission_management":
+      handleGetRoleDetail(id);
+      handleGetRolePermissions(id);
+      break;
   }
 };
 
@@ -107,42 +119,37 @@ const authorizeSearchKeywords = reactive({
   // 权限标识检索关键字
   permissionCode: undefined,
 });
+/** 过滤标记 */
+const authorizeFilteredFlags = reactive({
+  resourceGroupName: false,
+  resourceName: false,
+  permissionName: false,
+  permissionCode: false,
+});
 
 // 资源组名称过滤
 const resourceGroupNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceGroupName = value;
-    handleGetRolePermissions();
-  },
   slotName: "resource-group-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceGroupName ? h(IconFilter) : h(IconSearch),
 };
 // 资源名称过滤
 const resourceNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.resourceName = value;
-    handleGetRolePermissions();
-  },
   slotName: "resource-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.resourceName ? h(IconFilter) : h(IconSearch),
 };
-// 资源名称过滤
+// 权限名称过滤
 const permissionNameFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionName = value;
-    handleGetRolePermissions();
-  },
   slotName: "permission-name-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionName ? h(IconFilter) : h(IconSearch),
 };
-// 资源标识过滤
+// 权限标识过滤
 const permissionCodeFilter = {
-  filter: (value, record) => {
-    authorizeSearchKeywords.permissionCode = value;
-    handleGetRolePermissions();
-  },
   slotName: "permission-code-filter",
-  icon: () => h(IconSearch),
+  icon: () =>
+    authorizeFilteredFlags.permissionCode ? h(IconFilter) : h(IconSearch),
 };
 
 /**
@@ -171,6 +178,23 @@ const handleGetRolePermissions = (
           data.total,
           data.size
         );
+
+        // 设置过滤标记
+        if (authorizeSearchKeywords.resourceGroupName) {
+          authorizeFilteredFlags.resourceGroupName = true;
+        }
+
+        if (authorizeSearchKeywords.resourceName) {
+          authorizeFilteredFlags.resourceName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionName) {
+          authorizeFilteredFlags.permissionName = true;
+        }
+
+        if (authorizeSearchKeywords.permissionCode) {
+          authorizeFilteredFlags.permissionCode = true;
+        }
       });
     })
     .catch((err: any) => {
@@ -183,6 +207,7 @@ const handleGetRolePermissions = (
  */
 const handleResetPermissionFilter = (keyword: string) => {
   authorizeSearchKeywords[keyword] = undefined;
+  authorizeFilteredFlags[keyword] = false;
   handleGetRolePermissions();
 };
 
@@ -638,7 +663,7 @@ const handleCancelAuthorization = (permission: any) => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("取消授权成功");
-            handleGetRoleDetail(roleId.value);
+            handleGetRolePermissions(roleId.value);
           });
         })
         .catch((err: any) => {
@@ -749,27 +774,27 @@ const handleToPermissionDetail = (id: string) => {
 
 export default defineComponent({
   setup() {
-    const roleId = getQueryString("id");
+    const id = getQueryString("id");
     rolePrincipalsPagination = usePagination(
-      `${roleId}_rolePrincipals`,
+      `${id}_rolePrincipals`,
       ({ page, size }) => {
         if (getQueryString("active_tab") === "role_info") {
-          handleGetRolePrincipals(roleId, page, size);
+          handleGetRolePrincipals(id, page, size);
         }
       }
     );
     permissionsPagination = usePagination(
-      `${roleId}_rolePermissions`,
+      `${id}_rolePermissions`,
       ({ page, size }) => {
         if (getQueryString("active_tab") === "permission_management") {
-          handleGetRolePermissions(roleId, page, size);
+          handleGetRolePermissions(id, page, size);
         }
       }
     );
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "role_info";
-      handleGetRoleDetail(roleId);
+      handleTabInit(activeTab.value, id);
     });
 
     return {

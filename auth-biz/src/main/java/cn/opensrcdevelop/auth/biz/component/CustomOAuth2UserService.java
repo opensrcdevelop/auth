@@ -114,7 +114,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
              StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
-            Template processor = new Template(CommonUtil.getUUIDString(), reader, cfg, StandardCharsets.UTF_8.name());
+            Template processor = new Template(CommonUtil.getUUIDV7String(), reader, cfg, StandardCharsets.UTF_8.name());
             processor.process(requestCfgValueContext, writer);
             return writer.toString();
         } catch (Exception ex) {

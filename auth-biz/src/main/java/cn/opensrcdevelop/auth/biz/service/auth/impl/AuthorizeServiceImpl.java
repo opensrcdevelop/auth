@@ -1,6 +1,13 @@
 package cn.opensrcdevelop.auth.biz.service.auth.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.component.LinkGenerator;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
+import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeCondition;
@@ -31,12 +38,26 @@ import java.util.stream.Collectors;
 public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, AuthorizeRecord> implements AuthorizeService {
 
     private final AuthorizeConditionService authorizeConditionService;
+    private final LinkGenerator linkGenerator;
 
     /**
      * 授权
      *
      * @param requestDto 授权请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.CREATE,
+            success = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ " +
+                    "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
+                    "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
+                    "）授予了权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）",
+            fail = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ " +
+                    "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
+                    "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
+                    "）授予权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）失败"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -54,7 +75,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         if (CollectionUtils.isNotEmpty(userIds)) {
             userIds.forEach(userId -> permissionIds.forEach(permissionId -> {
                 AuthorizeRecord authorizeRecord = new AuthorizeRecord();
-                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDString());
+                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDV7String());
                 authorizeRecord.setUserId(userId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
@@ -67,7 +88,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         if (CollectionUtils.isNotEmpty(userGroupIds)) {
             userGroupIds.forEach(userGroupId -> permissionIds.forEach(permissionId -> {
                 AuthorizeRecord authorizeRecord = new AuthorizeRecord();
-                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDString());
+                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDV7String());
                 authorizeRecord.setUserGroupId(userGroupId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
@@ -80,7 +101,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         if (CollectionUtils.isNotEmpty(roleIds)) {
             roleIds.forEach(roleId -> permissionIds.forEach(permissionId -> {
                 AuthorizeRecord authorizeRecord = new AuthorizeRecord();
-                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDString());
+                authorizeRecord.setAuthorizeId(CommonUtil.getUUIDV7String());
                 authorizeRecord.setRoleId(roleId);
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
@@ -159,6 +180,13 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param permissionId 权限ID
      * @param principalId  用户 / 用户组 / 角色ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.DELETE,
+            success = "取消了对 {{ #principalPermission }}",
+            fail = "取消对 {{ #principalPermission }} 失败"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -168,6 +196,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         AuthorizeRecord authorizeRecord = super.getOne(query);
 
         if (authorizeRecord != null) {
+            AuditContext.setSpelVariable("principalPermission", getAuditPrincipalPermission(authorizeRecord));
+
             // 2. 删除授权信息
             super.remove(query);
 
@@ -204,6 +234,14 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.CREATE,
+            success = "给 {{ #principalPermissions }} 添加了限制条件（" +
+                    "{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）",
+            fail = "给 {{ #principalPermissions }} 添加限制条件（{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）失败"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -213,6 +251,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         var conditions = getConditions(requestDto);
 
         if (CollectionUtils.isNotEmpty(conditions)) {
+            AuditContext.setSpelVariable("principalPermissions", getAuditPrincipalPermissions(requestDto.getAuthorizeIds()));
+
             // 2. 删除待创建的授权条件，避免重复创建
             SqlHelper.executeBatch(getSqlSessionFactory(), log, conditions, conditions.size(), ((sqlSession, authorizeCondition) -> {
                 AuthorizeConditionMapper mapper = sqlSession.getMapper(AuthorizeConditionMapper.class);
@@ -254,10 +294,22 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param authorizeId 授权ID
      * @param priority 优先级
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PERMISSION,
+            sysOperation = SysOperationType.UPDATE,
+            success = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为了 {{ #newPriority }}",
+            fail = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为 {{ #newPriority }} 失败"
+    )
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Override
     public void updateAuthorizePriority(String authorizeId, Integer priority) {
         if (Objects.nonNull(priority)) {
+            AuthorizeRecord authorizeRecord = super.getById(authorizeId);
+            AuditContext.setSpelVariable("oldPriority", getAuthorizePriorityName(authorizeRecord.getPriority()));
+            AuditContext.setSpelVariable("principalPermission", getAuditPrincipalPermission(authorizeRecord));
+            AuditContext.setSpelVariable("newPriority", getAuthorizePriorityName(priority));
+
             // 1. 数据库操作
             super.update(Wrappers.<AuthorizeRecord>lambdaUpdate()
                     .set(AuthorizeRecord::getPriority, priority)
@@ -281,5 +333,51 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             );
         }
         return conditions;
+    }
+
+    private String getAuditPrincipalPermission(AuthorizeRecord authorizeRecord) {
+        String formatString = "%s（%s）的权限（%s）授权";
+        if (Objects.nonNull(authorizeRecord.getUserId())) {
+            return formatString.formatted(PrincipalTypeEnum.USER.getDisplayName(),
+                    linkGenerator.toLink(authorizeRecord.getUserId(), ResourceType.USER),
+                    linkGenerator.toLink(authorizeRecord.getPermissionId(), ResourceType.PERMISSION));
+        }
+
+        if (Objects.nonNull(authorizeRecord.getUserGroupId())) {
+            return formatString.formatted(PrincipalTypeEnum.USER_GROUP.getDisplayName(),
+                    linkGenerator.toLink(authorizeRecord.getUserGroupId(), ResourceType.USER_GROUP),
+                    linkGenerator.toLink(authorizeRecord.getPermissionId(), ResourceType.PERMISSION));
+        }
+
+        if (Objects.nonNull(authorizeRecord.getRoleId())) {
+            return formatString.formatted(PrincipalTypeEnum.ROLE.getDisplayName(),
+                    linkGenerator.toLink(authorizeRecord.getRoleId(), ResourceType.ROLE),
+                    linkGenerator.toLink(authorizeRecord.getPermissionId(), ResourceType.PERMISSION));
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private String getAuditPrincipalPermissions(List<String> authorizeIds) {
+        if (CollectionUtils.isNotEmpty(authorizeIds)) {
+            var records = super.list(Wrappers.<AuthorizeRecord>lambdaQuery().in(AuthorizeRecord::getAuthorizeId, authorizeIds));
+            return "[ "  + CommonUtil.stream(records).map(this::getAuditPrincipalPermission).collect(Collectors.joining("，")) + " ]";
+        }
+
+        return StringUtils.EMPTY;
+    }
+
+    private String getAuthorizePriorityName(Integer priority) {
+        if (Objects.isNull(priority)) {
+            return StringUtils.EMPTY;
+        }
+
+        return switch (priority) {
+            case -1 -> "最低";
+            case 0 -> "低";
+            case 1 -> "中";
+            case 2 -> "高";
+            case 3 -> "最高";
+            default -> StringUtils.EMPTY;
+        };
     }
 }

@@ -1,0 +1,211 @@
+.markdown-body {
+  p,
+  pre {
+    margin-bottom: 0;
+  }
+
+  ol,
+  ul {
+    padding-left: 14px;
+  }
+
+  /** 代码块容器 */
+  .code-block-container {
+    position: relative;
+    margin: 4px 0;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  /** 代码块头部 */
+  .code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f6f8fa;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  /** 代码块内容 */
+  .code-block-content {
+    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-size: 14px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  /** 折叠状态 */
+  .code-block-content.folded {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  /** 代码语言标签 */
+  .code-language {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  /** 代码块按钮组 */
+  .code-block-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  /** 复制按钮 */
+  .copy-code-button {
+    padding: 2px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+  }
+
+  /** 折叠按钮 */
+  .fold-code-button {
+    padding: 2px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+  }
+
+  /** 代码块 */
+  pre.hljs {
+    margin: 0;
+    padding: 12px;
+    background: transparent;
+    overflow-x: auto;
+
+    /* WebKit 浏览器滚动条样式 */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 3px;
+    }
+
+    /* 滚动条滑块 */
+    &::-webkit-scrollbar-thumb {
+      background: rgba(144, 147, 153, 0.3);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(144, 147, 153, 0.5);
+      }
+    }
+
+    /* Firefox 滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
+
+    &:hover {
+      scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
+    }
+  }
+
+  /** 行内代码 */
+  .inline-code-container {
+    margin: 4px 0;
+  }
+
+  .inline-code {
+    padding: 2px 6px;
+    font-size: 0.9em;
+    color: #e83e8c;
+    background-color: rgba(27, 31, 35, 0.05);
+    border-radius: 3px;
+    font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  }
+
+  /** 表格样式 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 16px 0;
+    border: 1px solid #dfe2e5;
+    border-radius: 6px;
+  }
+
+  /** 表头样式 */
+  thead {
+    background-color: #f6f8fa;
+  }
+
+  /** 表格行样式 */
+  tr {
+    border-bottom: 1px solid #dfe2e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background-color: #f6f8fa;
+    }
+  }
+
+  /** 表头单元格样式 */
+  th {
+    padding: 8px 16px;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 1px solid #dfe2e5;
+    background-color: #f6f8fa;
+  }
+
+  /** 表格单元格样式 */
+  td {
+    padding: 8px 16px;
+    border-bottom: 1px solid #dfe2e5;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  /** 引用块 */
+blockquote {
+  margin: 8px 0;
+  padding: 0 8px;
+  color: #6a737d;
+  border-left: 2px solid #dfe2e5;
+
+  p {
+    margin: 0;
+  }
+
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+}

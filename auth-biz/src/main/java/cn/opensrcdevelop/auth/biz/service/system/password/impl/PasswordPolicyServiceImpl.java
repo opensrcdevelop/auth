@@ -1,5 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.system.password.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.component.LinkGenerator;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.system.password.*;
 import cn.opensrcdevelop.auth.biz.entity.system.password.PasswordPolicy;
@@ -31,10 +38,8 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +49,7 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
 
     private final PasswordPolicyMappingService passwordPolicyMappingService;
     private final PasswordPolicyRepository passwordPolicyRepository;
+    private final LinkGenerator linkGenerator;
 
     @Resource
     @Lazy
@@ -76,6 +82,13 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PWD_POLICY,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了密码策略（{{ @linkGen.toLink(#policyId, T(ResourceType).PWD_POLICY) }}）",
+            fail = "创建密码策略（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createPasswordPolicy(PasswordPolicyRequestDto requestDto) {
@@ -83,7 +96,9 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         checkRequestDto(requestDto);
 
         // 2. 属性编辑
-        String policyId = CommonUtil.getUUIDString();
+        String policyId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("policyId", policyId);
+
         PasswordPolicy passwordPolicy = new PasswordPolicy();
         passwordPolicy.setPolicyId(policyId);
         passwordPolicy.setPolicyName(requestDto.getName());
@@ -190,6 +205,13 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      *
      * @param requestDtoList 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PWD_POLICY,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了密码策略执行顺序，{{ #auditText }}",
+            fail = "修改密码策略执行顺序失败"
+    )
     @Transactional
     @Override
     public void updatePasswordPolicyPriority(List<UpdatePasswordPolicyPriorityRequestDto> requestDtoList) {
@@ -197,6 +219,11 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         if (!StringUtils.equals(getDefaultPasswordPolicy().getPolicyId(), requestDtoList.getLast().getId())) {
             throw new BizException(MessageConstants.PWD_POLICY_MSG_1006);
         }
+
+        AuditContext.setSpelVariable("auditText", getPasswordPriorityAuditText(
+                super.list(Wrappers.<PasswordPolicy>lambdaQuery().select(PasswordPolicy::getPolicyId, PasswordPolicy::getPriority)),
+                requestDtoList)
+        );
 
         // 2. 更新密码策略优先级
         List<PasswordPolicy> updateRecords = CommonUtil.stream(requestDtoList)
@@ -216,12 +243,29 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PWD_POLICY,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}），应用主体变更：{{ #mappingChanges }}",
+            fail = "修改密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}）失败"
+    )
     @Transactional
     @Override
     public void updatePasswordPolicy(PasswordPolicyRequestDto requestDto) {
-        PasswordPolicy defaultPasswordPolicy = getDefaultPasswordPolicy();
-        PasswordPolicy rawPasswordPolicy = super.getById(requestDto.getId());
+        String policyId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        PasswordPolicy rawPasswordPolicy = super.getById(policyId);
+        if (Objects.isNull(rawPasswordPolicy)) {
+            return;
+        }
+        compareObjBuilder.id(policyId);
+        compareObjBuilder.before(rawPasswordPolicy);
+
         // 1. 判断是否更新状态
+        PasswordPolicy defaultPasswordPolicy = getDefaultPasswordPolicy();
         if (Objects.nonNull(requestDto.getEnabled())) {
             // 1.1 判断是否为默认密码策略
             if (requestDto.getId().equals(defaultPasswordPolicy.getPolicyId())) {
@@ -246,7 +290,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         }
 
         // 3. 更新策略应用主体
+        List<PasswordPolicyMapping> beforeMappings = passwordPolicyMappingService.list(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, policyId));
         List<PasswordPolicyMapping> mappings = getMappings(requestDto, requestDto.getId());
+        // 审计
+        AuditContext.setSpelVariable("mappingChanges", getPasswordPolicyMappingChanges(beforeMappings, mappings));
         if (CollectionUtils.isNotEmpty(mappings)) {
             // 3.1 删除原有的策略应用主体
             passwordPolicyMappingService.remove(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, requestDto.getId()));
@@ -276,6 +323,9 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         }
         // 4.3 数据库操作
         super.updateById(updatePasswordPolicy);
+
+        compareObjBuilder.after(updatePasswordPolicy);
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -283,6 +333,13 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      *
      * @param id 密码策略 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.PWD_POLICY,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）",
+            fail = "删除密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）失败"
+    )
     @Transactional
     @Override
     public void deletePasswordPolicy(String id) {
@@ -468,7 +525,7 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     @SuppressWarnings("all")
     private void checkRequestDto(PasswordPolicyRequestDto requestDto) {
         Integer passwordStrength = requestDto.getPasswordStrength();
-        Boolean isUpdate =Objects.nonNull(requestDto.getId());
+        Boolean isUpdate = Objects.nonNull(requestDto.getId());
         if (passwordStrength == PasswordStrength.CUSTOM.ordinal()) {
             CommonUtil.validateBean(requestDto, PasswordPolicyRequestDto.StrengthLevel4.class);
 
@@ -633,5 +690,50 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
                 .eq(User::getPhoneNumber, identity).or()
                 .eq(User::getEmailAddress, identity).or()
                 .eq(User::getUsername, identity));
+    }
+
+    private String getPasswordPolicyMappingChanges(List<PasswordPolicyMapping> beforeMappings, List<PasswordPolicyMapping> afterMappings) {
+        List<String> beforeUserIds = CommonUtil.stream(beforeMappings).map(PasswordPolicyMapping::getUserId).toList();
+        List<String> afterUserIds = CommonUtil.stream(afterMappings).map(PasswordPolicyMapping::getUserId).toList();
+        List<String> addUserIds = afterUserIds.stream().filter(x -> !beforeUserIds.contains(x)).toList();
+        List<String> removeUserIds = beforeUserIds.stream().filter(x -> !afterUserIds.contains(x)).toList();
+
+        List<String> beforeUserGroupIds = CommonUtil.stream(beforeMappings).map(PasswordPolicyMapping::getUserGroupId).toList();
+        List<String> afterUserGroupIds = CommonUtil.stream(afterMappings).map(PasswordPolicyMapping::getUserGroupId).toList();
+        List<String> addUserGroupIds = afterUserGroupIds.stream().filter(x ->!beforeUserGroupIds.contains(x)).toList();
+        List<String> removeUserGroupIds = beforeUserGroupIds.stream().filter(x ->!afterUserGroupIds.contains(x)).toList();
+
+        StringBuilder changes = new StringBuilder();
+        if (CollectionUtils.isNotEmpty(addUserIds)) {
+            changes.append("新增用户：").append(StringUtils.join(linkGenerator.toLinks(addUserIds, ResourceType.USER), "，")).append("；");
+        }
+
+        if (CollectionUtils.isNotEmpty(removeUserIds)) {
+            changes.append("删除用户：").append(StringUtils.join(linkGenerator.toLinks(removeUserIds, ResourceType.USER), "，")).append("；");
+        }
+
+        if (CollectionUtils.isNotEmpty(addUserGroupIds)) {
+            changes.append("新增用户组：").append(StringUtils.join(linkGenerator.toLinks(addUserGroupIds, ResourceType.USER_GROUP), "，")).append("；");
+        }
+
+        if (CollectionUtils.isNotEmpty(removeUserGroupIds)) {
+            changes.append("删除用户组：").append(StringUtils.join(linkGenerator.toLinks(removeUserGroupIds, ResourceType.USER_GROUP), "，")).append("；");
+        }
+
+        String result = changes.toString();
+        return StringUtils.isEmpty(result) ? "无" : result;
+    }
+
+    private String getPasswordPriorityAuditText(List<PasswordPolicy> beforePasswordPolicyList, List<UpdatePasswordPolicyPriorityRequestDto> afterPasswordPolicyPriorityList) {
+        return "原执行顺序：" +
+                CommonUtil.stream(beforePasswordPolicyList)
+                        .sorted(Comparator.comparing(PasswordPolicy::getPolicyId))
+                        .map(policy -> linkGenerator.toLink(policy.getPolicyId(), ResourceType.PWD_POLICY) + "：" + policy.getPriority())
+                        .collect(Collectors.joining("，")) +
+                "；新执行顺序：" +
+                CommonUtil.stream(afterPasswordPolicyPriorityList)
+                        .sorted(Comparator.comparing(UpdatePasswordPolicyPriorityRequestDto::getId))
+                        .map(policy -> linkGenerator.toLink(policy.getId(), ResourceType.PWD_POLICY) + "：" + policy.getPriority())
+                        .collect(Collectors.joining("，"));
     }
 }

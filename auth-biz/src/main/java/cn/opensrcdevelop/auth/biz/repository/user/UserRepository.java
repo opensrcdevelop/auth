@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface UserRepository {
 
-    List<User> searchUsers(QueryWrapper<User> wrapper);
+    List<User> searchUsers(QueryWrapper<User> wrapper, int limit, int offset);
+
+    long countUsers(QueryWrapper<User> wrapper);
 }

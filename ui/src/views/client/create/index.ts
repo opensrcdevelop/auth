@@ -1,8 +1,8 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { createClient } from "@/api/client";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { getOidcScopes } from "@/api/oidc";
+import {createClient} from "@/api/client";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {getOidcScopes} from "@/api/oidc";
 
 /**
  * 返回上一级
@@ -21,6 +21,7 @@ const createClientForm = reactive({
   authorizationCodeTimeToLive: 5,
   accessTokenTimeToLive: 2,
   refreshTokenTimeToLive: 7,
+  requireProofKey: false,
 });
 
 const oidcScopes = reactive([]);
@@ -76,6 +77,7 @@ const createClientFormRules = {
 };
 
 const createClientSuccessModalVisible = ref(false);
+const clientId = ref("");
 const clientSecret = ref("");
 
 /**
@@ -114,9 +116,11 @@ const handleCreateClientFormSubmit = (formData) => {
       formData.accessTokenTimeToLive * accessTokenTimeToLiveUnit.value,
     refreshTokenTimeToLive:
       formData.refreshTokenTimeToLive * refreshTokenTimeToLiveUnit.value,
+    requireProofKey: formData.requireProofKey,
   })
     .then((result: any) => {
       handleApiSuccess(result, () => {
+        clientId.value = result.data.id;
         clientSecret.value = result.data.secret;
         createClientSuccessModalVisible.value = true;
         handleResetCreateClientForm();
@@ -156,6 +160,7 @@ export default defineComponent({
       oidcScopes,
       createClientSuccessModalVisible,
       clientSecret,
+      clientId,
     };
   },
 });

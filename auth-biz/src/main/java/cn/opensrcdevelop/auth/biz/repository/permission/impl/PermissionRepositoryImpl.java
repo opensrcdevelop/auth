@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.repository.permission.impl;
 
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
+import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -98,5 +99,16 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     @Override
     public List<AuthorizeRecord> searchExpPermission(String expressionId) {
         return permissionMapper.searchExpPermissions(expressionId);
+    }
+
+    /**
+     * 获取权限
+     *
+     * @param permissionId 权限ID
+     * @return 权限
+     */
+    @Override
+    public Permission getPermission(String permissionId) {
+        return permissionMapper.getPermission(permissionId);
     }
 }

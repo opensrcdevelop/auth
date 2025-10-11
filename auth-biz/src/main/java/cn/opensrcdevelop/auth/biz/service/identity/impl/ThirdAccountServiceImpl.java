@@ -1,5 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.identity.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.UserBindingResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
@@ -92,7 +96,7 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
                 // 3.2.1 未找到用户，自动注册
                 String randomUsername = CommonUtil.generateRandomString(USERNAME_LENGTH);
                 User newUser = new User();
-                newUser.setUserId(CommonUtil.getUUIDString());
+                newUser.setUserId(CommonUtil.getUUIDV7String());
                 newUser.setUsername(randomUsername);
                 if (EMAIL_ATTR.equals(userMatchAttribute)) {
                     newUser.setEmailAddress(userMatchAttributeValue);
@@ -127,6 +131,14 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
      * @param identitySourceRegistration 身份源
      * @return 用户
      */
+    @Audit(
+            userId = "#userId",
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE,
+            userOperation = UserOperationType.BIND_THIRD_ACCOUNT,
+            success = "绑定了身份源（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）",
+            fail = "绑定身份源失败（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）"
+    )
     @Transactional
     @Override
     public User bind(String userId, List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {

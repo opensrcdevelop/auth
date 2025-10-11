@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.system.password;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -13,6 +15,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_password_policy")
+@EntityName("密码策略")
 public class PasswordPolicy extends BaseEntity implements Serializable {
 
     @Serial
@@ -20,41 +23,54 @@ public class PasswordPolicy extends BaseEntity implements Serializable {
 
     /** 策略 ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("策略ID")
     private String policyId;
 
     /** 策略名称 */
+    @PropertyName("策略名称")
     private String policyName;
 
     /** 策略描述 */
+    @PropertyName("策略描述")
     private String description;
 
     /** 密码强度 */
+    @PropertyName("密码强度")
     private Integer passwordStrength;
 
     /** 自定义密码强度配置 */
+    @PropertyName("自定义密码强度配置")
     private String customStrengthConfig;
 
     /** 是否启用 */
+    @PropertyName("是否启用")
     private Boolean enabled;
 
     /** 优先级 */
+    @PropertyName("优先级")
     private Integer priority;
 
     /** 是否开启用户登录密码强度检查 */
+    @PropertyName("是否开启用户登录密码强度检查")
     private Boolean enablePasswordDetection;
 
     /** 是否开启强制修改密码 */
+    @PropertyName("是否开启强制修改密码")
     private Boolean enableForceChangePassword;
 
     /** 强制修改密码周期 */
+    @PropertyName("强制修改密码周期")
     private Integer forcedCycle;
 
     /** 强制修改密码周期单位 */
+    @PropertyName("强制修改密码周期单位")
     private String forcedCycleUnit;
 
     /** 密码到期提醒周期 */
+    @PropertyName("密码到期提醒周期")
     private Integer remindCycle;
 
     /** 密码到期提醒周期单位 */
+    @PropertyName("密码到期提醒周期单位")
     private String remindCycleUnit;
 }

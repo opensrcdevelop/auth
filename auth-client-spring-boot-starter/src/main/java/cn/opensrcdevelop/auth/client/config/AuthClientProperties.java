@@ -24,20 +24,12 @@ public class AuthClientProperties implements InitializingBean {
     @Data
     public static class ResourcePermission {
 
-        /** 资源 */
-        private String resource;
-
-        /** 权限 */
         private String permission;
     }
 
     private void validateResourcePermission(ResourcePermission resourcePermission) {
-        if (!StringUtils.hasText(resourcePermission.resource)) {
-            throw new IllegalStateException("Resource must not be empty.");
-        }
-
         if (!StringUtils.hasText(resourcePermission.permission)) {
-            throw new IllegalStateException("Permission must not be empty.");
+            throw new IllegalStateException("permission must not be empty.");
         }
     }
 }

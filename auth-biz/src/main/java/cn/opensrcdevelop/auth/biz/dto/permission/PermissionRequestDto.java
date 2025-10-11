@@ -25,7 +25,7 @@ public class PermissionRequestDto {
     private String code;
 
     @Schema(description = "资源ID")
-    @NotBlank
+    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
     private String resourceId;
 
     @Schema(description = "描述")

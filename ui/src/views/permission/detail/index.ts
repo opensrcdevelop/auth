@@ -38,6 +38,7 @@ const handleTabChange = (tabKey: string) => {
 
 const permissionId = ref("");
 const permissionName = ref("");
+const permissionLocator = ref("");
 
 /** 权限基本信息 */
 const permissionInfoFormRef = ref();
@@ -46,7 +47,6 @@ const permissionInfoForm = reactive({
   code: undefined,
   name: undefined,
   desc: undefined,
-  resourceId: undefined,
 });
 const permissionInfoFormRules = {
   name: [{ required: true, message: "权限名称未填写" }],
@@ -106,12 +106,12 @@ const handleGetPermissionDetail = (id: string) => {
       handleApiSuccess(result, (data: any) => {
         permissionId.value = data.permissionId;
         permissionName.value = data.permissionName;
+        permissionLocator.value = data.permissionLocator;
 
         permissionInfoForm.id = data.permissionId;
         permissionInfoForm.code = data.permissionCode;
         permissionInfoForm.name = data.permissionName;
         permissionInfoForm.desc = data.permissionDesc;
-        permissionInfoForm.resourceId = data.resourceId;
 
         authorizeRecords.length = 0;
         authorizeRecords.push(...data.authorizeRecords);
@@ -411,6 +411,7 @@ export default defineComponent({
       handleTabChange,
       permissionId,
       permissionName,
+      permissionLocator,
       permissionInfoFormRef,
       permissionInfoForm,
       permissionInfoFormRules,

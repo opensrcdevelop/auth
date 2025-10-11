@@ -1,5 +1,5 @@
 <template>
-  <a-sub-menu v-if="menu.children?.length > 0" :key="menu.path">
+  <a-sub-menu v-if="menu.children?.length > 0 && visible" :key="menu.path">
     <template #icon>
       <icon-font :type="menu.meta.icon" style="font-size: 16px;"></icon-font>
     </template>
@@ -10,7 +10,7 @@
       :menu="sub"
     ></menu-item>
   </a-sub-menu>
-  <a-menu-item v-if="!menu.children" :key="menu.path" @click="$router.push(menu)">
+  <a-menu-item v-if="!menu.children && visible" :key="menu.path" @click="$router.push(menu)">
     <template #icon>
       <icon-font :type="menu.meta.icon" style="font-size: 16px;"></icon-font>
     </template>
@@ -19,12 +19,16 @@
 </template>
 
 <script setup lang="ts">
-import type { PropType } from "vue";
+import {computed, type PropType} from "vue";
 
-defineProps({
+const props = defineProps({
   menu: {
     type: Object as PropType<any>,
     required: true,
-  },
+  }
 });
+
+const visible = computed(() => {
+  return props.menu.meta.visible();
+})
 </script>

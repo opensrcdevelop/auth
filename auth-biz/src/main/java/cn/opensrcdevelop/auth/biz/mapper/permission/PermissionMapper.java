@@ -37,4 +37,6 @@ public interface PermissionMapper extends BaseMapper<Permission> {
     List<AuthorizeRecord> searchPermissionAuthorizeRecords(@Param("permissionId") String permissionId, @Param("keyword") String keyword);
 
     List<AuthorizeRecord> searchExpPermissions(@Param("expressionId") String expressionId);
+
+    Permission getPermission(@Param("permissionId") String permissionId);
 }

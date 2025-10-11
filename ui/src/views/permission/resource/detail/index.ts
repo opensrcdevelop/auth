@@ -1,15 +1,11 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import {
-  getResourceDetail,
-  getResourcePermissions,
-  updateResource,
-} from "@/api/resource";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { deletePermission } from "@/api/permission";
-import { usePagination } from "@/hooks/usePagination";
+import {getResourceDetail, getResourcePermissions, updateResource,} from "@/api/resource";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {deletePermission} from "@/api/permission";
+import {usePagination} from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -33,10 +29,22 @@ const handleTabChange = (tabKey: string) => {
     },
   });
   activeTab.value = tabKey;
-  if (activeTab.value === "permission_list") {
-    handleGetResourcePermissions();
-  }
+  handleTabInit(tabKey);
 };
+
+const handleTabInit = (tabKey: string, id: string = resourceId.value) => {
+  switch (tabKey) {
+    case "resource_info":
+      handleGetResourceDetail(id);
+      break;
+    case "permission_list":
+      if (!resourceId.value) {
+        handleGetResourceDetail(id);
+      }
+      handleGetResourcePermissions(id);
+      break;
+  }
+}
 
 const resourceId = ref("");
 const resourceName = ref("");
@@ -241,7 +249,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "resource_info";
-      handleGetResourceDetail(resourceId);
+      handleTabInit(activeTab.value, resourceId);
     });
 
     return {

@@ -1,12 +1,16 @@
 package cn.opensrcdevelop.auth.biz.service.user.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
-import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
-import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.constants.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.*;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrMappingRequestDto;
@@ -31,11 +35,13 @@ import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.JwtUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -51,6 +57,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -99,6 +107,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 创建用户请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）",
+            fail = "创建用户（{{ #requestDto.username }}）失败"
+    )
     @Transactional
     @Override
     public void createUser(UserRequestDto requestDto) {
@@ -112,7 +127,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         checkPhoneNumber(requestDto, null);
 
         // 4. 属性设置
-        String userId = CommonUtil.getUUIDString();
+        String userId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("userId", userId);
         User user = new User();
         user.setUserId(userId);
         user.setUsername(requestDto.getUsername());
@@ -138,11 +154,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 获取用户信息
      *
      * @param userId            用户ID
-     * @param resourceGroupCode 资源组码
      * @return 用户信息
      */
     @Override
-    public User getUserInfo(String userId, String resourceGroupCode) {
+    public User getUserInfo(String userId) {
         // 1. 获取用户信息
         User user = super.getById(userId);
         user.setPassword(null);
@@ -170,47 +185,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters) {
-        // 1. 查询数据库
-        List<User> queryRes;
-
-        // 1.1 编辑查询条件
+        // 1. 计算分页偏移量 & 编辑查询条件
+        int offset = (page - 1) * size;
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq(CommonUtil.extractFileNameFromGetter(User::getDeleted), false);
+        queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterRequestDto filter : filters) {
                 AuthUtil.editQuery(queryWrapper, filter);
             }
-            queryRes = userRepository.searchUsers(queryWrapper);
+        }
+
+        // 2. 获取总条数 & 计算总页数
+        long total = userRepository.countUsers(queryWrapper);
+        long pages;
+        if (size > 0) {
+            pages = (long) Math.ceil((double) total / size);
         } else {
-            queryRes = userRepository.searchUsers(queryWrapper);
+            pages = 1;
         }
 
-        // 2. 逻辑分页
+        // 3. 判断请求的页数是否超出范围
+        if (page > pages) {
+            page = 1;
+        }
+
+        // 4. 查询用户列表
+        List<User> queryRes = userRepository.searchUsers(queryWrapper, size, offset);
+
+        // 5. 属性编辑
         PageData<Map<String, Object>> pageData = new PageData<>();
-        List<User> records = queryRes;
-        if (page > 0 && size > 0) {
-            // 2.1 计算分页参数
-            long total = queryRes.size();
-            long pages = (long) Math.ceil((double) total / size);
-            if (page > pages) {
-                page = 1;
-            }
-            pageData.setTotal(total);
-            pageData.setPages(pages);
-            pageData.setSize((long) size);
-            pageData.setCurrent((long) page);
+        pageData.setTotal(total);
+        pageData.setPages(pages);
+        pageData.setSize((long) size);
+        pageData.setCurrent((long) page);
 
-            // 2.2 内存分页
-            records = CommonUtil.stream(queryRes)
-                    .skip((long) (page - 1) * size)
-                    .limit(size)
-                    .toList();
-        }
-
-        // 3. 属性编辑
-        List<Map<String, Object>> userResponses = CommonUtil.stream(records).map(r -> {
-            var userMap = AuthUtil.convertUserMap(r);
-            // 3.1 移除用户 Map 中角色信息
+        List<Map<String, Object>> userResponses = CommonUtil.stream(queryRes).map(u -> {
+            var userMap = AuthUtil.convertUserMap(u);
+            // 5.1 移除用户 Map 中角色信息
             userMap.remove(CommonConstants.ROLES);
             return userMap;
         }).toList();
@@ -224,15 +235,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 更新用户信息请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）",
+            fail = "修改用户（{{ @linkGen.toLink(#requestDto.userId, T(ResourceType).USER) }}）失败"
+    )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey(#requestDto.userId)"
+    )
     @Transactional
     @Override
     public void updateUser(UserRequestDto requestDto) {
         String userId = requestDto.getUserId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
-        var rawUser = super.getById(userId);
+        var rawUser = getUserInfo(userId);
         if (Objects.isNull(rawUser)) {
             return;
         }
+        compareObjBuilder.id(userId);
+        compareObjBuilder.before(AuthUtil.convertUserMap(rawUser));
 
         // 2. 检查用户名是否存在
         checkUsername(requestDto, rawUser);
@@ -286,6 +313,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Boolean.TRUE.equals(requestDto.getLocked())) {
             loginLogService.removeRecentLoginSessions(userId);
         }
+
+        compareObjBuilder.after(AuthUtil.convertUserMap(getUserInfo(userId)));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -313,6 +343,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 变更密码请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UPDATE_PWD,
+            success = "修改了密码",
+            fail = "修改密码失败"
+    )
     @Transactional
     @Override
     public void changePwd(ChangePwdRequestDto requestDto, HttpServletRequest request) {
@@ -368,6 +405,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）",
+            fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）失败"
+    )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey(#userId)"
+    )
     @Transactional
     @Override
     public void removeUser(String userId) {
@@ -395,6 +443,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @return 当前用户信息
      */
+    @Cacheable(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey()"
+    )
+    @CacheExpire("7 * 24 * 3600")
     @Override
     public Map<String, Object> getCurrentUserInfo() {
         // 1. 获取当前用户 ID
@@ -402,7 +455,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 获取当前用户信息
         if (StringUtils.isNotEmpty(userId)) {
-            List<User> queryRes = userRepository.searchUsers(Wrappers.<User>query().eq("t1.user_id", userId).eq("deleted", false));
+            List<User> queryRes = userRepository.searchUsers(Wrappers.<User>query().eq("t_user.user_id", userId).eq("deleted", false), 1, 0);
             if (CollectionUtils.isEmpty(queryRes)) {
                 return Collections.emptyMap();
             }
@@ -425,6 +478,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "重置了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息",
+            fail = "重置用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息失败"
+    )
     @Transactional
     @Override
     public void rebindMfaDevice(String userId) {
@@ -450,6 +510,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userId 用户 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已授权的 Token",
+            fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已授权的 Token 失败"
+    )
     @Transactional
     @Override
     public void clearAuthorizedTokens(String userId) {
@@ -468,6 +535,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            userId = "#userId",
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.RESET_PWD,
+            success = "重置了密码",
+            fail = "重置密码失败"
+    )
     @Transactional
     @Override
     public void resetPwd(ResetPwdRequestDto requestDto) {
@@ -483,6 +558,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (Objects.isNull(user)) {
             throw new BizException(MessageConstants.RESET_PWD_MSG_1000);
         }
+        AuditContext.setSpelVariable("userId", user.getUserId());
 
         // 3. 检查密码强度
         passwordPolicyService.checkPasswordStrength(user.getUserId(), requestDto.getNewPwd());
@@ -501,9 +577,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param userInfo 用户信息
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UPDATE_USER_INFO,
+            success = "修改了个人信息",
+            fail = "修改个人信息失败"
+    )
+    @CacheEvict(
+            cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO,
+            key = "#root.target.generateCurrentUserInfoCacheKey()"
+    )
     @Transactional
     @Override
     public void updateMe(Map<String, Object> userInfo) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取当前用户 ID
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
         if (StringUtils.isBlank(userId)) {
@@ -511,10 +601,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 获取版本号
-        var rawUser = super.getById(userId);
+        var rawUser = getUserInfo(userId);
         if (Objects.isNull(rawUser)) {
             return;
         }
+        compareObjBuilder.id(userId);
+        compareObjBuilder.before(AuthUtil.convertUserMap(rawUser));
 
         // 3. 获取用户可编辑的用户属性
         var editableUserAttrs = CommonUtil.stream(userAttrService.getVisibleUserAttrs()).filter(UserAttrResponseDto::getUserEditable).toList();
@@ -531,6 +623,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 6. 更新用户
         super.updateById(updateUser);
+
+        compareObjBuilder.after(AuthUtil.convertUserMap(getUserInfo(userId)));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -538,6 +633,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.BIND_EMAIL,
+            success = "绑定了邮箱（{{ #requestDto.email }}）",
+            fail = "绑定邮箱（{{ #requestDto.email }}）失败"
+    )
     @Override
     public void bindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, true);
@@ -548,6 +650,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.USER,
+            userOperation = UserOperationType.UNBIND_EMAIL,
+            success = "解绑了邮箱（{{ #requestDto.email }}）",
+            fail = "解绑邮箱（{{ #requestDto.email }}）失败"
+    )
     @Override
     public void unbindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, false);
@@ -599,7 +708,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 PermissionExpResponseDto condition = new PermissionExpResponseDto();
                 condition.setId(exp.getExpressionId());
                 condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
+                condition.setDesc(exp.getDescription());
                 return condition;
             }).toList();
             permissionResponse.setConditions(conditions);
@@ -624,6 +733,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void clearAuthorizedTokensByLoginId(String loginId) {
         dbOAuth2AuthorizationService.removeByLoginId(loginId);
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generateCurrentUserInfoCacheKey() {
+        String userId = AuthUtil.getCurrentUserId();
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId;
+    }
+
+    /**
+     * 生成 Redis 缓存 key
+     *
+     * @return Redis 缓存 key
+     */
+    public String generateCurrentUserInfoCacheKey(String userId) {
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId;
     }
 
     private Tuple4<String, String, String, String> getPermissionPrincipal(AuthorizeRecord authorizeRecord) {
@@ -753,22 +881,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BizException(MessageConstants.BIND_EMAIL_MSG_1000);
         }
 
-        AuthUtil.getCurrentUserId().ifPresent(userId -> {
-            // 3. 获取当前用户
-            User rawUser = super.getById(userId);
+        // 3. 获取当前用户
+        User rawUser = super.getById(AuthUtil.getCurrentUserId());
 
-            // 4. 检查当前用户的邮箱是否与请求的邮箱一致
-            if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
-                throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
-            }
+        // 4. 检查当前用户的邮箱是否与请求的邮箱一致
+        if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
+            throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
+        }
 
-            // 5. 更新用户信息
-            User updateUser = new User();
-            updateUser.setUserId(userId);
-            updateUser.setVersion(rawUser.getVersion());
-            updateUser.setEmailAddress(isBinding ? email : "");
-            super.updateById(updateUser);
-        });
+        // 5. 更新用户信息
+        User updateUser = new User();
+        updateUser.setUserId(rawUser.getUserId());
+        updateUser.setVersion(rawUser.getVersion());
+        updateUser.setEmailAddress(isBinding ? email : "");
+        super.updateById(updateUser);
     }
 
     private void checkUsername(UserRequestDto requestDto, User rawUser) {

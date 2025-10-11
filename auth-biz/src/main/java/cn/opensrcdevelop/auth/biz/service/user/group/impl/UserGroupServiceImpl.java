@@ -1,8 +1,14 @@
 package cn.opensrcdevelop.auth.biz.service.user.group.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.UserResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupMappingRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupRequestDto;
@@ -52,6 +58,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_GROUP,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
+            fail = "创建用户组（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createUserGroup(UserGroupRequestDto requestDto) {
@@ -59,8 +72,11 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         checkUserGroupCode(requestDto, null);
 
         // 2. 属性设置
+        String userGroupId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("userGroupId", userGroupId);
+
         UserGroup userGroup = new UserGroup();
-        userGroup.setUserGroupId(CommonUtil.getUUIDString());
+        userGroup.setUserGroupId(userGroupId);
         userGroup.setUserGroupName(requestDto.getName());
         userGroup.setUserGroupCode(requestDto.getCode());
         userGroup.setDescription(requestDto.getDesc());
@@ -74,6 +90,15 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_GROUP,
+            sysOperation = SysOperationType.CREATE,
+            success = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中添加了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
+            fail = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中添加用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
+    )
     @Transactional
     @Override
     public void createUserGroupMapping(UserGroupMappingRequestDto requestDto) {
@@ -150,6 +175,15 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_GROUP,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
+            fail = "删除用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
+                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
+    )
     @Transactional
     @Override
     public void removeUserGroupMapping(UserGroupMappingRequestDto requestDto) {
@@ -238,21 +272,34 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_GROUP,
+            sysOperation = SysOperationType.DELETE,
+            success = "修改了用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）",
+            fail = "修改用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）失败"
+    )
     @Transactional
     @Override
     public void updateUserGroup(UserGroupRequestDto requestDto) {
+        String userGroupId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+        compareObjBuilder.id(userGroupId);
+
         // 1. 获取版本号
-        var rawUserGroup = super.getById(requestDto.getId());
+        var rawUserGroup = super.getById(userGroupId);
         if (Objects.isNull(rawUserGroup)) {
             return;
         }
+        compareObjBuilder.before(rawUserGroup);
 
         // 2. 检查用户标识是否存在
         checkUserGroupCode(requestDto, rawUserGroup);
 
         // 3. 属性编辑
         UserGroup updateUserGroup = new UserGroup();
-        updateUserGroup.setUserGroupId(requestDto.getId());
+        updateUserGroup.setUserGroupId(userGroupId);
         updateUserGroup.setUserGroupName(requestDto.getName());
         updateUserGroup.setUserGroupCode(requestDto.getCode());
         updateUserGroup.setDescription(requestDto.getDesc());
@@ -260,6 +307,9 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         // 4. 数据库操作
         super.updateById(updateUserGroup);
+
+        compareObjBuilder.after(super.getById(userGroupId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -267,6 +317,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
      *
      * @param userGroupId 用户组 ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_GROUP,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
+            fail = "删除用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）失败"
+    )
     @Transactional
     @Override
     public void removeUserGroup(String userGroupId) {
@@ -329,7 +386,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
                 PermissionExpResponseDto condition = new PermissionExpResponseDto();
                 condition.setId(exp.getExpressionId());
                 condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
+                condition.setDesc(exp.getDescription());
                 return condition;
             }).toList();
             permissionResponse.setConditions(conditions);

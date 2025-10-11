@@ -22,4 +22,6 @@ public interface ClientService extends IService<Client> {
     CreateOrUpdateSecretClientResponseDto updateClientSecret(String id);
 
     void deleteClient(String clientId);
+
+    String rotateConsoleClientSecret();
 }

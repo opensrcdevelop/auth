@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.identity.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceProviderRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceProviderResponseDto;
@@ -40,6 +46,13 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了身份源提供商（{{ #providerId }}）",
+            fail = "创建身份源提供商（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createIdentitySourceProvider(IdentitySourceProviderRequestDto requestDto) {
@@ -50,8 +63,11 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         checkRequestCfg(requestDto);
 
         // 3. 属性编辑
+        String providerId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("providerId", providerId);
+
         IdentitySourceProvider identitySourceProvider = new IdentitySourceProvider();
-        identitySourceProvider.setProviderId(CommonUtil.getUUIDString());
+        identitySourceProvider.setProviderId(providerId);
         identitySourceProvider.setProviderName(requestDto.getName());
         identitySourceProvider.setProviderCode(requestDto.getCode());
         identitySourceProvider.setProviderLogo(requestDto.getLogo());
@@ -93,17 +109,30 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
+            fail = "修改身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
+    )
     @Transactional
     @Override
     public void updateIdentitySourceProvider(IdentitySourceProviderRequestDto requestDto) {
+        String providerId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 检查请求配置
         checkRequestCfg(requestDto);
 
         // 2. 获取版本号
-        var rawProvider = super.getById(requestDto.getId());
+        var rawProvider = super.getById(providerId);
         if (Objects.isNull(rawProvider)) {
             return;
         }
+        compareObjBuilder.id(providerId);
+        compareObjBuilder.before(rawProvider);
 
         // 3. 检查身份源提供商标识是否存在
         checkProviderCode(requestDto, rawProvider);
@@ -157,6 +186,9 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
 
         // 5. 数据库操作
         super.updateById(updateProvider);
+
+        compareObjBuilder.after(super.getById(providerId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -164,6 +196,13 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
      *
      * @param providerId 身份源提供商ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
+            fail = "删除身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
+    )
     @Transactional
     @Override
     public void removeIdentitySourceProvider(String providerId) {

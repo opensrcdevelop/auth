@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -38,7 +39,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -142,6 +146,25 @@ public class CommonUtil {
     }
 
     /**
+     * 序列化对象
+     *
+     * @param obj 对象
+     * @return 序列化字符串
+     */
+    public static String serializeObjectAllowNull(Object obj) {
+        String val = null;
+        try {
+            // json 序列化
+            OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+            val = OBJECT_MAPPER.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            // jdk 序列化
+            val = javaSerialize(obj);
+        }
+        return val;
+    }
+
+    /**
      * 反序列化对象
      *
      * @param value 反序列化字符串
@@ -174,12 +197,12 @@ public class CommonUtil {
     }
 
     /**
-     * 获取UUID字符串
+     * 获取UUID V7字符串
      *
-     * @return UUID字符串
+     * @return UUID V7字符串
      */
-    public static String getUUIDString() {
-        return UUID.randomUUID().toString();
+    public static String getUUIDV7String() {
+        return UuidCreator.getTimeOrderedEpoch().toString();
     }
 
     /**
@@ -255,7 +278,7 @@ public class CommonUtil {
      * @param <R>    R
      * @return 字段名
      */
-    public static <T, R> String extractFileNameFromGetter(Getter<T, R> getter) {
+    public static <T, R> String extractFieldNameFromGetter(Getter<T, R> getter) {
         try {
             // 反射获取 writeReplace 方法
             Method writeReplace = getter.getClass().getDeclaredMethod("writeReplace");
@@ -384,7 +407,7 @@ public class CommonUtil {
              StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
-            Template processor = new Template(CommonUtil.getUUIDString(), reader, cfg, StandardCharsets.UTF_8.name());
+            Template processor = new Template(CommonUtil.getUUIDV7String(), reader, cfg, StandardCharsets.UTF_8.name());
             processor.process(context, writer);
             return writer.toString();
         } catch (Exception ex) {

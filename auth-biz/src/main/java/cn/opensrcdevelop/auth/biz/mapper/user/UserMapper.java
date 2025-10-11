@@ -12,5 +12,7 @@ import java.util.List;
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
 
-    List<User> searchUsers(@Param(Constants.WRAPPER) QueryWrapper<User> wrapper);
+    List<User> searchUsers(@Param(Constants.WRAPPER) QueryWrapper<User> wrapper, @Param("limit") int limit, @Param("offset") int offset);
+
+    long countUsers(@Param(Constants.WRAPPER) QueryWrapper<User> wrapper);
 }

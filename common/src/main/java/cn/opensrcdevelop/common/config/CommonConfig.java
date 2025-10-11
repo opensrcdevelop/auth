@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.common.config;
 
+import cn.opensrcdevelop.common.exression.ExpressionEngine;
+import cn.opensrcdevelop.common.exression.ICustomFunction;
 import jakarta.validation.Validator;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +10,7 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Configuration
 public class CommonConfig {
@@ -33,5 +36,10 @@ public class CommonConfig {
         messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name());
         localValidatorFactoryBean.setValidationMessageSource(messageSource);
         return localValidatorFactoryBean;
+    }
+
+    @Bean
+    public ExpressionEngine expressionEngine(List<ICustomFunction> customFunctionList) {
+        return new ExpressionEngine(1024, customFunctionList);
     }
 }

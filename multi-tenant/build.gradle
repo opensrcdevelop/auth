@@ -10,6 +10,7 @@ bootJar {
 
 dependencies {
     implementation project(':common')
+    implementation project(':auth-audit')
     implementation 'org.springframework.security:spring-security-core'
     // https://github.com/baomidou/dynamic-datasource
     implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
@@ -17,4 +18,5 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
     implementation 'org.flywaydb:flyway-core'
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 }

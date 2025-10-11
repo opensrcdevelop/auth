@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.user.attr.dict.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataRequestDto;
@@ -47,6 +53,15 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT_DATA,
+            sysOperation = SysOperationType.CREATE,
+            success = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中添加了数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）",
+            fail = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中添加数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）失败"
+    )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
             key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)"
@@ -58,9 +73,12 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         checkDictDataValue(requestDto, null);
 
         // 2. 属性设置
+        String dictDataId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("dictDataId", dictDataId);
+
         DictData dictData = new DictData();
         dictData.setDictId(requestDto.getDictId());
-        dictData.setDataId(CommonUtil.getUUIDString());
+        dictData.setDataId(dictDataId);
         dictData.setDataLabel(requestDto.getLabel());
         dictData.setDataValue(requestDto.getValue());
         CommonUtil.callSetWithCheck(Objects::nonNull, dictData::setEnable, requestDto::getEnable);
@@ -75,6 +93,15 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT_DATA,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）",
+            fail = "修改字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
+                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）失败"
+    )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
             key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)"
@@ -82,11 +109,18 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     @Transactional
     @Override
     public void updateDictData(DictDataRequestDto requestDto) {
+        String dictDataId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取原字典数据
-        var rawDictData = super.getById(requestDto.getId());
+        var rawDictData = super.getById(dictDataId);
         if (Objects.isNull(rawDictData)) {
             return;
         }
+        compareObjBuilder.id(dictDataId);
+        compareObjBuilder.before(rawDictData);
+
 
         // 2. 检查字典数据值是否存在
         checkDictDataValue(requestDto, rawDictData);
@@ -105,6 +139,9 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
 
         // 4. 数据库操作
         super.updateById(updateDictData);
+
+        compareObjBuilder.after(super.getById(dictDataId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -173,6 +210,13 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
      *
      * @param dictDataIds 字典数据ID集合
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.DICT_DATA,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）",
+            fail = "删除字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）失败"
+    )
     @CacheEvict(
             cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
             key = "#root.target.generateEnabledDictDataCacheKeyById(#root.args[0])",
@@ -244,7 +288,7 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     }
 
     public String generateEnabledDictDataCacheKeyById(List<String> dictDataIds) {
-        DictData dictData = super.getById(dictDataIds.get(0));
+        DictData dictData = super.getById(dictDataIds.getFirst());
         return Objects.nonNull(dictData) ? TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictData.getDictId() : "";
     }
 

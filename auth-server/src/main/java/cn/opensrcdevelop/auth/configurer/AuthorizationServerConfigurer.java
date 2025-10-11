@@ -2,8 +2,8 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationConverter;
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationProvider;
+import cn.opensrcdevelop.auth.biz.component.OidcUserInfoService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
@@ -11,8 +11,6 @@ import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
-import cn.opensrcdevelop.auth.support.OidcUserInfoService;
-import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,7 +43,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final CaptchaVerificationCheckFilter captchaVerificationCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
-    private final OidcUserInfoService oidcUserInfoService = new OidcUserInfoService(SpringContextUtil.getBean(UserService.class));
+    private final OidcUserInfoService oidcUserInfoService;
     private final OAuth2AuthorizationServerConfigurer oauth2AuthorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
     private final RememberMeServices rememberMeServices;
 

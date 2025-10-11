@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.user.attr.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.SetUserAttrDisplaySeqRequestDto;
@@ -45,6 +51,13 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param requestDto 创建用户属性请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_ATTR,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "创建用户属性（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createUserAttr(UserAttrRequestDto requestDto) {
@@ -54,8 +67,10 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         }
 
         // 2. 属性编辑
+        String userAttrId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("userAttrId", userAttrId);
         UserAttr userAttr = new UserAttr();
-        userAttr.setAttrId(CommonUtil.getUUIDString());
+        userAttr.setAttrId(userAttrId);
         userAttr.setAttrKey(requestDto.getKey());
         userAttr.setAttrName(requestDto.getName());
         userAttr.setAttrDataType(requestDto.getDataType());
@@ -113,17 +128,30 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      * @return 用户的属性
      */
     @Override
-    public List<UserAttr>  getUserAttrs(String userId) {
-        return userAttrRepository.searchUserAttrs(userId);
+    public List<UserAttr> getUserAttrs(String userId) {
+        // 1. 获取全部扩展用户属性
+        List<UserAttr> allUserAttrs = super.list(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getExtAttrFlg, true));
+
+        // 2. 获取用户的扩展属性
+        List<UserAttr> userAttrs = userAttrRepository.searchUserAttrs(userId);
+
+        // 3. 合并值
+        for (UserAttr userAttr : allUserAttrs) {
+            CommonUtil.stream(userAttrs)
+                    .filter(x -> x.getAttrId().equals(userAttr.getAttrId()))
+                    .findFirst()
+                    .ifPresent(x -> userAttr.setAttrValue(x.getAttrValue()));
+        }
+        return allUserAttrs;
     }
 
     /**
      * 获取所有用户属性
      *
-     * @param page 页数
-     * @param size 条数
+     * @param page      页数
+     * @param size      条数
      * @param onDisplay 返回只在用户列表显示的用户属性
-     * @param keyword 用户属性名称或 key 检索关键字
+     * @param keyword   用户属性名称或 key 检索关键字
      * @return 所有用户属性
      */
     @Override
@@ -148,7 +176,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         pageData.setCurrent(pageRequest.getCurrent());
         pageData.setSize(pageRequest.getSize());
 
-        var records =  CommonUtil.stream(userAttrs).map(userAttr -> {
+        var records = CommonUtil.stream(userAttrs).map(userAttr -> {
             UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
             userAttrResponse.setId(userAttr.getAttrId());
             userAttrResponse.setKey(userAttr.getAttrKey());
@@ -201,9 +229,9 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             // 2.1 检查用户属性数据类型为 DICT 的请求是否有效
             checkAttrValueForDict(attributes);
             if (!attributes.isEmpty()) {
-                String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrId));
-                String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getUserId));
-                String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFileNameFromGetter(UserAttrMapping::getAttrValue));
+                String attrIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getAttrId));
+                String userIdColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getUserId));
+                String attrValueColumn = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(CommonUtil.extractFieldNameFromGetter(UserAttrMapping::getAttrValue));
 
                 // 2.2 获取已存在的映射关系
                 var existingMappings = userAttrMappingService.list(Wrappers.<UserAttrMapping>lambdaQuery()
@@ -243,31 +271,52 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param requestDto 更新用户属性请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_ATTR,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "修改用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）失败"
+    )
     @Transactional
     @Override
     public void updateUserAttr(UserAttrRequestDto requestDto) {
-        // 1. 属性设置
+        String userAttrId = requestDto.getId();
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        // 1. 获取原用户属性
+        var rawUserAttr = super.getById(userAttrId);
+        if (Objects.isNull(rawUserAttr)) {
+            return;
+        }
+        compareObjBuilder.id(userAttrId);
+        compareObjBuilder.before(rawUserAttr);
+
+        // 2. 属性设置
         UserAttr updateUserAttr = new UserAttr();
-        updateUserAttr.setAttrId(requestDto.getId());
+        updateUserAttr.setAttrId(userAttrId);
         updateUserAttr.setAttrName(requestDto.getName());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserVisible, requestDto::getUserVisible);
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserEditable, requestDto::getUserEditable);
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setUserLstDisplay, requestDto::getUserLstDisplay);
         CommonUtil.callSetWithCheck(Objects::nonNull, updateUserAttr::setDisplayWidth, requestDto::getDisplayWidth);
 
-        // 1.1 设置显示顺序
+        // 2.1 设置显示顺序
         if (Boolean.TRUE.equals(requestDto.getUserLstDisplay())) {
             updateUserAttr.setDisplaySeq(userAttrRepository.getMaxDisplaySeq());
         }
-        // 1.2 保留原显示顺序
+        // 2.2 保留原显示顺序
         if (Objects.nonNull(requestDto.getDisplayWidth())) {
-            UserAttr rawUserAttr = super.getById(requestDto.getId());
             updateUserAttr.setDisplaySeq(rawUserAttr.getDisplaySeq());
         }
-        // 1.3 显示顺序为null，则不显示
+        // 2.3 显示顺序为null，则不显示
 
-        // 2. 数据库操作
+        // 3. 数据库操作
         super.updateById(updateUserAttr);
+
+        compareObjBuilder.after(super.getById(userAttrId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -333,6 +382,13 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      *
      * @param userAttrId 用户属性ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.USER_ATTR,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）",
+            fail = "删除用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）失败"
+    )
     @Transactional
     @Override
     public void removeUserAttr(String userAttrId) {
@@ -384,7 +440,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
 
         // 1. 获取用户属性数据类型为 DICT 的属性 ID 集合
         var userAttrIds = CommonUtil.stream(super.list(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrDataType, UserAttrDataTypeEnum.DICT.getType())))
-                        .map(UserAttr::getAttrId).toList();
+                .map(UserAttr::getAttrId).toList();
         // 1.1 无 DICT 类型的用户属性
         if (CollectionUtils.isEmpty(userAttrIds)) {
             return;

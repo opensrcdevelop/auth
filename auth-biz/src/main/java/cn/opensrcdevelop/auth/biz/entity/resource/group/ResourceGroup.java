@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.entity.resource.group;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
+import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.auth.biz.entity.resource.Resource;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -19,6 +21,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_resource_group")
+@EntityName("资源组")
 public class ResourceGroup extends BaseEntity implements Serializable {
 
     @Serial
@@ -26,15 +29,19 @@ public class ResourceGroup extends BaseEntity implements Serializable {
 
     /** 资源组ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("资源组ID")
     private String resourceGroupId;
 
-    /** 资源组名 */
+    /** 资源组名称 */
+    @PropertyName("资源组名称")
     private String resourceGroupName;
 
-    /** 资源组码 */
+    /** 资源组标识 */
+    @PropertyName("资源组标识")
     private String resourceGroupCode;
 
     /** 描述 */
+    @PropertyName("描述")
     private String description;
 
     /** 资源集合 */

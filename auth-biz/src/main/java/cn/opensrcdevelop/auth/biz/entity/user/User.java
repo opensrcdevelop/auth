@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.entity.user;
 
+import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr;
@@ -32,6 +33,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_user")
+@EntityName("用户")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class User extends BaseEntity implements UserDetails, OAuth2User, Serializable {
 

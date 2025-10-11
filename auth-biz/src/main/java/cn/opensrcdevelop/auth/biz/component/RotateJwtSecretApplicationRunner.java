@@ -32,6 +32,7 @@ public class RotateJwtSecretApplicationRunner implements ApplicationRunner, Orde
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        TenantHelper.clearTenantDsContext();
         // 1. 获取全部租户
         var tenants = tenantService.list(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getEnabled, Boolean.TRUE));
         // 1.1 添加默认租户

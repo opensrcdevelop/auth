@@ -19,7 +19,11 @@ export default detailTs;
             <copy-text :text="permissionExpId" textColor="#86909c" />
           </div>
         </div>
-        <a-button type="primary" @click="handleToDebugPermissionExp">
+        <a-button
+          type="primary"
+          v-if="!permissionExpInfoForm.templateId"
+          @click="handleOpenDebugDrawer"
+        >
           调试运行
         </a-button>
       </div>
@@ -40,10 +44,36 @@ export default detailTs;
                   placeholder="请输入限制条件名称"
                 />
               </a-form-item>
-              <a-form-item field="expression" label="SpringEL 表达式">
+              <a-form-item
+                v-if="permissionExpInfoForm.templateId"
+                field="templateId"
+                label="限制条件模板"
+              >
+                <a-select
+                  placeholder="请选择限制条件模板"
+                  disabled
+                  v-model="permissionExpInfoForm.templateId"
+                >
+                  <a-option v-for="item in templateList" :value="item.id">
+                    {{ item.name }}
+                  </a-option>
+                </a-select>
+              </a-form-item>
+              <div v-if="templateParamConfigs.length > 0">
+                <ParamInput
+                  ref="templateParamsRef"
+                  :configs="templateParamConfigs"
+                  v-model="permissionExpInfoForm.templateParams"
+                />
+              </div>
+              <a-form-item
+                v-if="!permissionExpInfoForm.templateId"
+                field="expression"
+                label="JEXL 表达式"
+              >
                 <monaco-editor
                   v-model="permissionExpInfoForm.expression"
-                  language="plaintext"
+                  language="jexl"
                   :editorOption="{
                     contextmenu: false,
                   }"
@@ -69,6 +99,10 @@ export default detailTs;
                 </a-space>
               </a-form-item>
             </a-form>
+          </div>
+        </a-tab-pane>
+        <a-tab-pane key="permission_list" title="关联权限">
+          <div class="tab-container">
             <div class="info-title">关联权限</div>
             <a-table :data="permissions" :bordered="false" :pagination="false">
               <template #columns>
@@ -180,5 +214,69 @@ export default detailTs;
         </a-tab-pane>
       </a-tabs>
     </page-header>
+
+    <a-drawer
+      :width="540"
+      :visible="debugDrawerVisible"
+      ok-text="调试运行"
+      :ok-loading="debugFormSubmitLoading"
+      @cancel="handleCloseDebugDrawer"
+      @ok="handleDebugFormSubmit"
+    >
+      <template #title>调试运行限制条件</template>
+      <a-form
+        :model="debugForm"
+        :rules="debugFormRules"
+        ref="debugFormRef"
+        layout="vertical"
+      >
+        <a-form-item field="context" label="上下文">
+          <monaco-editor
+            v-model="debugForm.context"
+            language="json"
+            height="280px"
+            :editorOption="{
+              contextmenu: false,
+            }"
+          />
+          <template #extra>
+            <div>
+              上下文为 JSON 对象格式，请确保输入的上下文符合 JSON 格式要求
+            </div>
+          </template>
+        </a-form-item>
+      </a-form>
+    </a-drawer>
+
+    <a-modal
+      :visible="debugResultModalVisible"
+      :footer="false"
+      :mask-closable="false"
+      @cancel="debugResultModalVisible = false"
+    >
+      <template #title>调试运行结果</template>
+      <a-descriptions :column="1" bordered>
+        <a-descriptions-item label="状态">
+          {{ debugResult.success ? "成功" : "失败" }}
+        </a-descriptions-item>
+        <a-descriptions-item label="结果" v-if="debugResult.success">
+          <a-tag v-if="debugResult.execResult" color="#00b42a">
+            <template #icon>
+              <icon-check-circle-fill style="color: #fff" />
+            </template>
+            允许
+          </a-tag>
+          <a-tag v-else color="#f53f3f">
+            <template #icon>
+              <icon-minus-circle-fill style="color: #fff" />
+            </template>
+            拒绝
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="错误" v-else>
+          {{ debugResult.execResult }}
+        </a-descriptions-item>
+      </a-descriptions>
+    </a-modal>
   </div>
 </template>
