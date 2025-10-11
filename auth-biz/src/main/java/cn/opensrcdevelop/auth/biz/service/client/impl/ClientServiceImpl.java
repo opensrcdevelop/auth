@@ -237,7 +237,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         // 2.1 检查客户端名称是否存在
         checkClientName(requestDto, rawClient);
         // 2.2 检查是否为控制台客户端
-//        checkIsConsoleClient(clientId);
+        checkIsConsoleClient(clientId);
 
         // 3. 更新客户端
         Client client = editUpdateClient(requestDto);
