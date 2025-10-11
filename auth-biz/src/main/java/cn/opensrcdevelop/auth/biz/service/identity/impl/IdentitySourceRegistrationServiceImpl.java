@@ -7,7 +7,7 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2AuthorizationRequestResolver;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2AuthorizationRequestResolver;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.identity.IdentitySourceProviderResponseDto;

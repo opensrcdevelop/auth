@@ -2,11 +2,12 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationConverter;
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationProvider;
-import cn.opensrcdevelop.auth.biz.component.OidcUserInfoService;
+import cn.opensrcdevelop.auth.biz.component.authserver.OidcUserInfoService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
+import cn.opensrcdevelop.auth.filter.OAuth2AuthorizeRememberMeAuthenticationFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
@@ -14,6 +15,7 @@ import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -23,7 +25,6 @@ import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -74,9 +75,6 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
                     )
         );
 
-        // RememberMe 配置
-        http.rememberMe(x -> x.rememberMeServices(rememberMeServices));
-
         // 禁用 csrf 和 cors
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(AbstractHttpConfigurer::disable);
@@ -94,13 +92,14 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
-        // 调整记住我过滤器顺序
-        http.addFilterAfter(new RememberMeAuthenticationFilter(authenticationManager, rememberMeServices), SecurityContextHolderFilter.class);
+        // 添加 OAuth2 Authorize 记住我过滤器
+        http.addFilterAfter(new OAuth2AuthorizeRememberMeAuthenticationFilter(authenticationManager, rememberMeServices), SecurityContextHolderFilter.class);
 
         // 自定义授权类型认证提供
         OAuth2TokenGenerator<?> tokenGenerator =  http.getSharedObject(OAuth2TokenGenerator.class);
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
         http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService, authenticationManager, tokenGenerator));
+        http.authenticationProvider(new RememberMeAuthenticationProvider(authorizationServerProperties.getRememberMeTokenSecret()));
     }
 
     public OAuth2AuthorizationServerConfigurer getCustomAuthorizationServerConfigurer() {

@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.auth.config;
 
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2UserService;
-import cn.opensrcdevelop.auth.biz.component.OidcUserInfoService;
+import cn.opensrcdevelop.auth.biz.component.authserver.OidcUserInfoService;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2UserService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
@@ -100,7 +100,7 @@ public class AuthServerConfig {
                                                                  AuthorizationServerProperties authorizationServerProperties,
                                                                  RememberMeServices rememberMeServices,
                                                                  OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
-        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector, rememberMeServices), x -> {});
+        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector), x -> {});
         http.with(auth2LoginConfigurer, x -> {});
         return http.build();
     }
@@ -234,10 +234,10 @@ public class AuthServerConfig {
 
     @Bean
     public RememberMeServices rememberMeServices(UserDetailsService userDetailsService, AuthorizationServerProperties authorizationServerProperties) {
-        String secret = authorizationServerProperties.getRememberMeTokenSecret();
-        if (StringUtils.isEmpty(secret)) {
-            secret = CommonUtil.getUUIDV7String();
+        if (StringUtils.isEmpty(authorizationServerProperties.getRememberMeTokenSecret())) {
+            authorizationServerProperties.setRememberMeTokenSecret(CommonUtil.getUUIDV7String());
         }
+        String secret = authorizationServerProperties.getRememberMeTokenSecret();
         TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(secret , userDetailsService);
         rememberMeServices.setTokenValiditySeconds(authorizationServerProperties.getRememberMeSeconds());
         rememberMeServices.setParameter(AuthConstants.REMEMBER_ME);

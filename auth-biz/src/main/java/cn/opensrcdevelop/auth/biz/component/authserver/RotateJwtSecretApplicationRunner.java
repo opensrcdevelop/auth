@@ -1,5 +1,6 @@
-package cn.opensrcdevelop.auth.biz.component;
+package cn.opensrcdevelop.auth.biz.component.authserver;
 
+import cn.opensrcdevelop.auth.biz.component.ScheduledTaskService;
 import cn.opensrcdevelop.auth.biz.dto.system.jwt.JwtSecretInfoDto;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.util.SpringContextUtil;

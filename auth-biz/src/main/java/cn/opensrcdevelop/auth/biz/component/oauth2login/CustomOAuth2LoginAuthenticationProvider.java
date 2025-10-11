@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.auth.biz.component;
+package cn.opensrcdevelop.auth.biz.component.oauth2login;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;

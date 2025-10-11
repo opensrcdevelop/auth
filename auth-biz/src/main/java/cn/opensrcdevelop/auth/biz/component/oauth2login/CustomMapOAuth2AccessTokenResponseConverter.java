@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.auth.biz.component;
+package cn.opensrcdevelop.auth.biz.component.oauth2login;
 
 import lombok.Setter;
 import org.springframework.core.convert.converter.Converter;

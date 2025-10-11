@@ -1,0 +1,35 @@
+package cn.opensrcdevelop.auth.filter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+public class OAuth2AuthorizeRememberMeAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final AntPathMatcher MATCHER = new AntPathMatcher();
+
+    private final RememberMeAuthenticationFilter delegateFilter;
+
+    public OAuth2AuthorizeRememberMeAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                         RememberMeServices rememberMeServices) {
+        this.delegateFilter = new RememberMeAuthenticationFilter(authenticationManager, rememberMeServices);
+    }
+
+    @Override
+    @SuppressWarnings("NullableProblems")
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        if (MATCHER.match("/oauth2/authorize", request.getServletPath())) {
+            delegateFilter.doFilter(request, response, filterChain);
+            return;
+        }
+        filterChain.doFilter(request, response);
+    }
+}

@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.auth.biz.component;
+package cn.opensrcdevelop.auth.biz.component.authserver;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.entity.auth.Authorization;

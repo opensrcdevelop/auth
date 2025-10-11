@@ -17,7 +17,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.web.filter.CorsFilter;
@@ -33,7 +32,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OpaqueTokenIntrospector tokenIntrospector;
-    private final RememberMeServices rememberMeServices;
 
     @Override
     public void init(HttpSecurity http) throws Exception {
@@ -50,9 +48,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                         x.failureHandler(new LoginFailureHandler());
                     }
                 });
-
-        // RememberMe 配置
-        http.rememberMe(x -> x.rememberMeServices(rememberMeServices));
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
@@ -94,7 +89,7 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
-        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager, rememberMeServices);
+        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
     }

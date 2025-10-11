@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.configurer;
 
-import cn.opensrcdevelop.auth.biz.component.CustomAuthorizationCodeTokenResponseClient;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2AuthorizationRequestResolver;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2LoginAuthenticationProvider;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2UserService;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomAuthorizationCodeTokenResponseClient;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2AuthorizationRequestResolver;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2LoginAuthenticationProvider;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2UserService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.handler.OAuth2LoginFailureHandler;

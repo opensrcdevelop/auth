@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.auth.biz.component;
+package cn.opensrcdevelop.auth.biz.component.oauth2login;
 
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.mapper.identity.IdentitySourceRegistrationMapper;

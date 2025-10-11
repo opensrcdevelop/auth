@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.listenter;
 
-import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
+import cn.opensrcdevelop.auth.biz.component.authserver.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.auth.biz.event.ClearExpiredTokensEvent;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;

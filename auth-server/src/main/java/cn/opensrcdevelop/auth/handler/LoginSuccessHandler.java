@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
     private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
+    private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -104,6 +106,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
             setChangePwdSessionFlag(request);
         }
+
+        // 6. 记住我
+        rememberMeServices.loginSuccess(request, response, authentication);
 
         WebUtil.sendJsonResponse(R.ok(responseDto), HttpStatus.OK);
     }
