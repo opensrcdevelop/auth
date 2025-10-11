@@ -6,6 +6,12 @@ import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.enums.TableFieldType;
 import cn.opensrcdevelop.ai.mapper.TableFieldMapper;
 import cn.opensrcdevelop.ai.service.TableFieldService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -71,6 +77,13 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "批量更新了数据源中的表字段信息",
+            fail = "批量更新数据源中的表字段信息失败"
+    )
     @Override
     public void batchUpdate(BatchUpdateTableFieldRequestDto requestDto) {
         // 1. 属性编辑
@@ -80,6 +93,13 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
             updateTableField.setRemark(tableField.getRemark());
             updateTableField.setAdditionalInfo(tableField.getAdditionalInfo());
             CommonUtil.callSetWithCheck(Objects::nonNull, updateTableField::setToUse, tableField::getToUse);
+
+            // 审计比较对象
+            AuditContext.addCompareObj(CompareObj.builder()
+                    .id(tableField.getId())
+                    .before(super.getById(tableField.getId()))
+                    .after(updateTableField)
+                    .build());
 
             return updateTableField;
         }).toList();

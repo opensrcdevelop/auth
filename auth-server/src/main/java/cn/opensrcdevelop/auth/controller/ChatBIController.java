@@ -38,6 +38,7 @@ public class ChatBIController {
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Authorize({ "allChatBIPermissions", "chat" })
     public SseEmitter streamChatBI(@RequestBody ChatBIRequestDto requestDto) {
         return chatBIService.streamChatBI(requestDto);
     }
@@ -55,7 +56,7 @@ public class ChatBIController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/dataSourceConf/list")
-    @Authorize({ "allChatBIPermissions", "getDataSourceConfList" })
+    @Authorize({ "allChatBIDataSourcePermissions", "getDataSourceConfList" })
     public PageData<DataSourceConfResponseDto> listDataSourceConf(@RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size) {
         return dataSourceConfService.list(keyword, page, size);
     }
@@ -68,7 +69,7 @@ public class ChatBIController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/dataSourceConf/{id}/table/list")
-    @Authorize({ "allChatBIPermissions", "getDataSourceTableList" })
+    @Authorize({ "allChatBIDataSourcePermissions", "getDataSourceTableList" })
     public PageData<TableResponseDto> listTable(@PathVariable @NotBlank String id,
                                                 @RequestParam(required = false) String keyword,
                                                 @RequestParam(defaultValue = "1") int page,
@@ -84,7 +85,7 @@ public class ChatBIController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/table/{id}/field/list")
-    @Authorize({ "allChatBIPermissions", "getDataSourceTableFieldList" })
+    @Authorize({ "allChatBIDataSourcePermissions", "getDataSourceTableFieldList" })
     public PageData<TableFieldResponseDto> listTableField(@PathVariable @NotBlank String id,
                                                           @RequestParam(required = false) String keyword,
                                                           @RequestParam(defaultValue = "1") int page,
@@ -105,7 +106,7 @@ public class ChatBIController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/modelProvider/list")
-    @Authorize({ "allChatBIPermissions", "getModelProviderList" })
+    @Authorize({ "allChatBIModelProviderPermissions", "getModelProviderList" })
     public PageData<ModelProviderResponseDto> listModelProvider(@RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size) {
         return modelProviderService.list(keyword, page, size);
     }
@@ -121,7 +122,7 @@ public class ChatBIController {
             @Parameter(name = "id", description = "数据源ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/dataSourceConf/{id}")
-    @Authorize({ "allChatBIPermissions", "getDataSourceConfDetail" })
+    @Authorize({ "allChatBIDataSourcePermissions", "getDataSourceConfDetail" })
     public DataSourceConfResponseDto dataSourceConfDetail(@PathVariable @NotBlank String id) {
         return dataSourceConfService.detail(id);
     }
@@ -131,42 +132,42 @@ public class ChatBIController {
             @Parameter(name = "id", description = "数据源ID", in = ParameterIn.PATH, required = true)
     })
     @PostMapping("/dataSourceConf/{id}/syncTable")
-    @Authorize({ "allChatBIPermissions", "syncDataSourceTable" })
+    @Authorize({ "allChatBIDataSourcePermissions", "syncDataSourceTable" })
     public void syncTable(@PathVariable @NotBlank String id) {
         dataSourceConfService.syncTable(id);
     }
 
     @Operation(summary = "创建数据源配置", description = "创建数据源配置")
     @PostMapping("/dataSourceConf")
-    @Authorize({ "allChatBIPermissions", "createDataSourceConf" })
+    @Authorize({ "allChatBIDataSourcePermissions", "createDataSourceConf" })
     public void createDataSourceConf(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) DataSourceConfRequestDto requestDto) {
         dataSourceConfService.createDataSourceConf(requestDto);
     }
 
     @Operation(summary = "更新数据源配置", description = "更新数据源配置")
     @PutMapping("/dataSourceConf")
-    @Authorize({ "allChatBIPermissions", "updateDataSourceConf" })
+    @Authorize({ "allChatBIDataSourcePermissions", "updateDataSourceConf" })
     public void updateDataSourceConf(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) DataSourceConfRequestDto requestDto) {
         dataSourceConfService.updateDataSourceConf(requestDto);
     }
 
     @Operation(summary = "测试数据源连接", description = "测试数据源连接")
     @PostMapping("/dataSourceConf/testConn")
-    @Authorize({ "allChatBIPermissions", "testDataSourceConn" })
+    @Authorize({ "allChatBIDataSourcePermissions", "testDataSourceConn" })
     public TestDataSourceConnResponseDto testDataSourceConn(@RequestBody @Valid TestDataSourceConnRequestDto requestDto) {
         return dataSourceConfService.testConn(requestDto);
     }
 
     @Operation(summary = "批量更新表", description = "批量更新表")
     @PutMapping("/table/batchUpdate")
-    @Authorize({ "allChatBIPermissions", "batchUpdateDataSourceTable" })
+    @Authorize({ "allChatBIDataSourcePermissions", "batchUpdateDataSourceTable" })
     public void batchUpdateTable(@RequestBody @Valid BatchUpdateTableRequestDto requestDto) {
         tableService.batchUpdate(requestDto);
     }
 
     @Operation(summary = "批量更新表字段", description = "批量更新表字段")
     @PutMapping("/table/field/batchUpdate")
-    @Authorize({ "allChatBIPermissions", "batchUpdateDataSourceTableField" })
+    @Authorize({ "allChatBIDataSourcePermissions", "batchUpdateDataSourceTableField" })
     public void batchUpdateTableField(@RequestBody @Valid BatchUpdateTableFieldRequestDto requestDto) {
         tableFieldService.batchUpdate(requestDto);
     }
@@ -176,7 +177,7 @@ public class ChatBIController {
             @Parameter(name = "id", description = "数据源ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/dataSourceConf/{id}")
-    @Authorize({ "allChatBIPermissions", "deleteDataSourceConf" })
+    @Authorize({ "allChatBIDataSourcePermissions", "deleteDataSourceConf" })
     public void removeDataSourceConf(@PathVariable @NotBlank String id) {
         dataSourceConfService.removeDataSourceConf(id);
     }
@@ -226,14 +227,14 @@ public class ChatBIController {
 
     @Operation(summary = "创建模型提供商", description = "创建模型提供商")
     @PostMapping("/modelProvider")
-    @Authorize({ "allChatBIPermissions", "createModelProvider" })
+    @Authorize({ "allChatBIModelProviderPermissions", "createModelProvider" })
     public void createModelProvider(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ModelProviderRequestDto requestDto) {
         modelProviderService.createModelProvider(requestDto);
     }
 
     @Operation(summary = "更新模型提供商", description = "更新模型提供商")
     @PutMapping("/modelProvider")
-    @Authorize({ "allChatBIPermissions", "updateModelProvider" })
+    @Authorize({ "allChatBIModelProviderPermissions", "updateModelProvider" })
     public void updateModelProvider(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ModelProviderRequestDto requestDto) {
         modelProviderService.updateModelProvider(requestDto);
     }
@@ -243,7 +244,7 @@ public class ChatBIController {
             @Parameter(name = "id", description = "模型提供商ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/modelProvider/{id}")
-    @Authorize({ "allChatBIPermissions", "deleteModelProvider" })
+    @Authorize({ "allChatBIModelProviderPermissions", "deleteModelProvider" })
     public void removeModelProvider(@PathVariable @NotBlank String id) {
         modelProviderService.removeModelProvider(id);
     }

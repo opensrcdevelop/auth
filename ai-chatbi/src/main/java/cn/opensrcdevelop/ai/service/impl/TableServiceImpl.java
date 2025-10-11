@@ -7,6 +7,12 @@ import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.mapper.TableMapper;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -77,6 +83,13 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "批量更新了数据源中的表信息",
+            fail = "批量更新数据源中的表信息失败"
+    )
     @Override
     public void batchUpdate(BatchUpdateTableRequestDto requestDto) {
         // 1. 属性编辑
@@ -86,6 +99,13 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
             updateTable.setRemark(table.getRemark());
             updateTable.setAdditionalInfo(table.getAdditionalInfo());
             CommonUtil.callSetWithCheck(Objects::nonNull, updateTable::setToUse, table::getToUse);
+
+            // 审计比较对象
+            AuditContext.addCompareObj(CompareObj.builder()
+                    .id(updateTable.getTableId())
+                    .before(super.getById(updateTable.getTableId()))
+                    .after(updateTable)
+                    .build());
 
             return updateTable;
         }).toList();

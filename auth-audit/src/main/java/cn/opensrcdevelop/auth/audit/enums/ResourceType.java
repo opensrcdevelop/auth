@@ -27,7 +27,10 @@ public enum ResourceType {
     USER("97392350-5214-4dbb-83e8-45b678ce145e", "用户"),
     USER_ATTR("da2c6573-d236-4e4d-96a4-85c517b72c59", "用户属性"),
     USER_GROUP("1624ca73-e656-48d9-800e-b5762b51d7c5", "用户组"),
-    TENANT("055a8115-8be2-498e-a6f9-ab8a34f5dd0e", "租户");
+    TENANT("055a8115-8be2-498e-a6f9-ab8a34f5dd0e", "租户"),
+    CHAT_BI("0199c427-9df0-7fbe-bfe4-de1a8cbebbfa", "ChatBI 问数"),
+    CHAT_BI_DATA_SOURCE("0199c923-b73d-73db-a654-76ddd12dd408", "ChatBI 问数-数据源"),
+    CHAT_BI_MODEL_PROVIDER("0199c926-f7e6-79d2-a864-f234ce930b07", "ChatBI 问数-模型提供商");
 
     private final String id;
 

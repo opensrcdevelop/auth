@@ -10,6 +10,12 @@ import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.ai.mapper.ModelProviderMapper;
 import cn.opensrcdevelop.ai.service.ChatAnswerService;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
@@ -172,12 +178,22 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了模型提供商（{{ @linkGen.toLink(#modelProviderId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
+            fail = "创建模型提供商（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createModelProvider(ModelProviderRequestDto requestDto) {
         // 1. 属性编辑
+        String modelProviderId = CommonUtil.getUUIDV7String();
+        AuditContext.setSpelVariable("modelProviderId", modelProviderId);
+
         ModelProvider modelProvider = new ModelProvider();
-        modelProvider.setProviderId(CommonUtil.getUUIDV7String());
+        modelProvider.setProviderId(modelProviderId);
         modelProvider.setProviderName(requestDto.getName());
         modelProvider.setProviderType(requestDto.getType().name());
         modelProvider.setBaseUrl(requestDto.getBaseUrl());
@@ -199,17 +215,30 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
+            sysOperation = SysOperationType.UPDATE,
+            success = "更新了模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）",
+            fail = "更新模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败"
+    )
     @Transactional
     @Override
     public void updateModelProvider(ModelProviderRequestDto requestDto) {
 
         String modelProviderId = requestDto.getId();
 
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         // 1. 获取版本号
         var rawModelProvider = super.getById(modelProviderId);
         if (Objects.isNull(rawModelProvider)) {
             return;
         }
+
+        compareObjBuilder.id(modelProviderId);
+        compareObjBuilder.before(rawModelProvider);
 
         // 2. 属性编辑
         ModelProvider updateModelProvider = new ModelProvider();
@@ -239,6 +268,9 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
 
         // 3. 数据库操作
         super.updateById(updateModelProvider);
+
+        compareObjBuilder.after(super.getById(modelProviderId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -246,6 +278,14 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
      *
      * @param providerId 模型提供商ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）",
+            fail = "删除模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败"
+    )
+    @Transactional
     @Override
     public void removeModelProvider(String providerId) {
         // 1. 数据库操作

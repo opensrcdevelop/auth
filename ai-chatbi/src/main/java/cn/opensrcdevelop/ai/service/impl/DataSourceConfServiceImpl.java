@@ -13,7 +13,12 @@ import cn.opensrcdevelop.ai.enums.DataSourceType;
 import cn.opensrcdevelop.ai.mapper.DataSourceConfMapper;
 import cn.opensrcdevelop.ai.service.DataSourceConfService;
 import cn.opensrcdevelop.ai.service.TableService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
@@ -174,6 +179,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      *
      * @param id 数据源ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步成功",
+            fail = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步失败"
+    )
     @Override
     @SuppressWarnings({"java:S2222", "java:S3776"})
     public void syncTable(String id) {
@@ -222,6 +234,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.CREATE,
+            success = "创建了数据源（{{ @linkGen.toLink(#dataSourceId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
+            fail = "创建数据源（{{ #requestDto.name }}）失败"
+    )
     @Transactional
     @Override
     public void createDataSourceConf(DataSourceConfRequestDto requestDto) {
@@ -256,16 +275,30 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.UPDATE,
+            success = "修改了数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
+            fail = "修改数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败"
+    )
     @Transactional
     @Override
     public void updateDataSourceConf(DataSourceConfRequestDto requestDto) {
         String dataSourceId = requestDto.getId();
+
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+        compareObjBuilder.excludeProperty(List.of("password"));
 
         // 1. 获取版本号
         var rawDataSourceConf = super.getById(dataSourceId);
         if (Objects.isNull(rawDataSourceConf)) {
             return;
         }
+
+        compareObjBuilder.id(dataSourceId);
+        compareObjBuilder.before(rawDataSourceConf);
 
         // 2. 检查是否为系统数据源
         checkIsSystemDataSource(dataSourceId);
@@ -290,6 +323,9 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
         // 6. 删除数据源缓存
         dataSourceManager.removeDataSource(dataSourceId);
+
+        compareObjBuilder.after(super.getById(dataSourceId));
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -333,6 +369,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      *
      * @param id 数据源ID
      */
+    @Audit(
+            type = AuditType.SYS_OPERATION,
+            resource = ResourceType.CHAT_BI_DATA_SOURCE,
+            sysOperation = SysOperationType.DELETE,
+            success = "删除了数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
+            fail = "删除数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败"
+    )
     @Transactional
     @Override
     public void removeDataSourceConf(String id) {

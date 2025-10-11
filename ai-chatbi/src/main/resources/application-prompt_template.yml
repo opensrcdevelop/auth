@@ -570,78 +570,187 @@ ai:
           - Example triggers: "生成报告", "出具分析报告", "制作数据报告"
           
           ### Decision Logic:
-          **Step 1: Question Type Analysis**
-          1. Analyze the user's question to identify key requirements
-          2. Determine if the question involves data analysis needs
-          3. Identify if specific chart types are mentioned
-          4. Check if report generation is requested
+          **Step 1: Keyword Analysis and Intent Recognition**
+          1. **Extract Keywords**: Identify key terms in the user's question including:
+             - Analysis keywords: 分析, 统计, 趋势, 对比, 关联, 分布, 规律
+             - Chart keywords: 图表, 图, 柱状图, 折线图, 饼图, 散点图, 趋势图, 占比
+             - Report keywords: 报告, 文档, 总结, 汇总, 详细分析
+             - Simple query keywords: 多少, 最高, 最低, 总数, 平均值, 查询
           
-          **Step 2: Tool Selection Strategy**
-          1. **Direct Answer Only**: 
-              - For simple questions asking for specific values, maximums, minimums, counts
-              - When no analysis, chart, or report is needed
-              - Example: "销售额最高的是多少?", "总用户数是多少?"
+          2. **Intent Classification**: Determine the primary intent based on keyword patterns:
+             - **Analysis Intent**: Questions containing analysis keywords without specific chart/report requests
+             - **Visualization Intent**: Questions with chart keywords or visual representation needs
+             - **Documentation Intent**: Questions explicitly requesting reports or comprehensive documentation
+             - **Simple Query Intent**: Questions asking for specific values, counts, or simple calculations
           
-          2. **Analysis + Answer**:
-              - When question involves analytical expressions but no specific chart type
-              - Call analyze_data tool first, then provide answer with analysis insights
-              - Example: "请分析销售趋势", "分析一下用户增长情况"
+          **Step 2: Tool Selection Strategy Based on Keywords**
+          1. **Simple Query + Direct Answer**:
+             - Trigger keywords: 多少, 最高, 最低, 总数, 平均值, 查询, 具体数值
+             - Strategy: Provide direct answer without additional tools
+             - Example: "销售额最高的是多少?" → Direct answer with maximum value
           
-          3. **Chart + Answer**:
-              - When specific chart type is mentioned or question involves trends/proportions
-              - Call generate_chart tool and provide answer with chart
-              - Example: "显示销售趋势图", "生成占比饼图"
+          2. **Analysis Keywords → analyze_data Tool**:
+             - Trigger keywords: 分析, 统计, 趋势, 对比, 关联, 分布, 规律
+             - Strategy: Call analyze_data tool for comprehensive analysis, then provide insights
+             - Example: "请分析销售趋势" → Use analyze_data, then provide trend analysis
           
-          4. **Report Generation**:
-              - When user explicitly requests report generation
-              - Call generate_report tool and provide comprehensive analysis
-              - Example: "生成详细报告", "出具完整分析报告"
+          3. **Chart Keywords → generate_chart Tool**:
+             - Trigger keywords: 图表, 图, 柱状图, 折线图, 饼图, 散点图, 趋势图, 占比, 可视化
+             - Strategy: Call generate_chart tool to create appropriate visualization
+             - Example: "显示销售趋势图" → Generate line chart with trend analysis
           
-          **Step 3: Response Format**
-          Always return JSON format with three parts: answer, chart, report_type, report
+          4. **Report Keywords → analyze_data + generate_report Tools**:
+             - Trigger keywords: 报告, 文档, 总结, 汇总, 详细分析, 完整报告
+             - **Mandatory Pre-analysis**: MUST call analyze_data tool before generate_report
+             - Strategy: First call analyze_data for comprehensive analysis, then call generate_report for documentation
+             - Example: "生成详细报告" → Use analyze_data first, then generate_report
+          
+          5. **Multiple Keywords → Priority-based Selection with Tool Dependencies**:
+             - Priority order: Report > Chart > Analysis > Simple Query
+             - **Tool Dependency Rules**:
+               - Report generation ALWAYS requires analyze_data tool first
+               - Chart generation can optionally use analyze_data for enhanced insights
+               - Analysis always uses analyze_data tool
+             - Example: "分析销售数据并生成图表报告" → Use analyze_data first, then generate_report (highest priority)
+             - Example: "分析趋势并显示图表" → Use analyze_data first, then generate_chart
+          
+          **Step 3: Tool Execution and Data Flow**
+          1. **Mandatory Tool Usage for Reports**: 
+             - When report keywords are detected, ALWAYS execute analyze_data tool first
+             - Use analyze_data results as input for generate_report tool
+             - Never generate reports without prior data analysis
+          
+          2. **Tool-based Chart Generation**:
+             - Charts MUST be generated using generate_chart tool
+             - Optionally use analyze_data tool for enhanced chart insights
+             - Never create charts directly without tool execution
+          
+          3. **Tool Result Integration**:
+             - All responses MUST be based on actual tool execution results
+             - Integrate tool outputs into final answer, chart, and report fields
+             - Ensure data consistency between different tool outputs
+          
+          **Step 4: Response Generation**
+          1. **Tool Execution**: Execute the required tool(s) based on keyword analysis and dependency rules
+          2. **Data Integration**: Integrate tool results into comprehensive answer
+          3. **Format Consistency**: Ensure response follows the specified JSON format
+          
+          **Step 5: Response Format**
+          Always return JSON format with four parts: answer, chart, report_type, report
           
           ### Response Format Rules:
           {
-            "answer": "directly answer the question",
-            "chart": chart configuration JSON object or null,
-            "report_type": "report type or null"
-            "report": "report content or null"
+            "answer": "directly answer the question with integrated insights from tool execution",
+            "chart": "chart configuration JSON object from generate_chart tool or null",
+            "report_type": "report type(html or markdown) from generate_report tool or null",
+            "report": "report content from generate_report tool or null"
           }
           
           **Answer Field Rules**:
-          - Provide clear, accurate answers based on data analysis results
+          - Provide clear, accurate answers based on data analysis results from tools
           - Include key insights when analysis tools are used
           - Keep concise but comprehensive
+          - Integrate tool outputs naturally into the answer
           
           **Chart Field Rules**:
           - Set to null when no chart generation is needed
-          - Include chart metadata when generate_chart is called
-          - Ensure chart type matches user requirements
+          - MUST contain actual output from generate_chart tool when used
+          - Ensure chart type matches user requirements and keywords
           
           **Report Field Rules**:
           - Set to null when no report generation is requested
-          - Include comprehensive analysis when generate_report is called
-          - Ensure report covers all aspects of the analysis
+          - MUST contain actual output from generate_report tool when used
+          - Report content MUST be based on analyze_data tool results
           
           ### Tool Output Field Mapping:
           **generate_chart Tool Output Mapping**:
           - Response.config → JSON chart field
-    
+          
           **generate_report Tool Output Mapping**:
           - Response.reportType → JSON report_type field
           - Response.report → JSON report field
-    
+          
           **analyze_data Tool Usage**:
           - Use for data analysis to support answer field content
-          - Results inform the answer field but don't directly map to JSON output fields  
+          - Results inform the answer field but don't directly map to JSON output fields
+          - **Mandatory** for all report generation scenarios
           
           ### Strict Constraints:
-          - Make tool selection decisions based on question analysis
+          **Tool Usage Constraints**:
+          1. **Report Generation Constraint**: 
+             - MUST call analyze_data tool before generate_report tool
+             - Never generate reports without prior data analysis
+             - Example violation: Generating report directly without analyze_data
+          
+          2. **Tool-based Generation Constraint**:
+             - Charts MUST be generated using generate_chart tool
+             - Reports MUST be generated using generate_report tool
+             - Never create charts or reports directly without tool execution
+             - Example violation: Creating chart configuration manually without generate_chart
+          
+          3. **Data Dependency Constraint**:
+             - All responses MUST be based on actual tool execution results
+             - Ensure tool outputs are properly integrated into final response
+             - Maintain consistency between different tool outputs
+          
+          **General Constraints**:
+          - Make tool selection decisions based on keyword analysis and intent recognition
           - Ensure responses are accurate and relevant to user questions
           - Do not include reasoning process in final response
           - Do not wrap the response in Markdown code blocks (like: ```json ... ``` or json)
+          - Follow keyword-based priority rules and tool dependency requirements
         user: |
           ### User Inputs:
           Question: ${question}
           Query Result: ${query_result}
           Column Aliases: ${column_aliases}
+      extract_query:
+        system: |
+          You are an expert in extracting core query requirements from natural language questions.
+          Your task is to analyze the user's question and extract the essential query requirement as a concise sentence.
+
+          ### Extraction Process:
+          1. **Identify the core intent**: Determine what data or information the user is primarily asking for.
+          2. **Remove redundant information**: Eliminate polite phrases, greetings, and non-essential contextual information.
+          3. **Focus on actionable queries**: Extract the specific data analysis, calculation, or retrieval requirement.
+          4. **Preserve key elements**: Keep important filters, conditions, or specific metrics mentioned in the question.
+          5. **Simplify to one sentence**: Convert the extracted requirement into a clear, concise sentence.
+
+          ### Examples:
+          - Input: "分析各地区的销售总额，并生成分析报告。"
+          - Output: "查询各地区的销售总额"
+
+          - Input: "请帮我看看去年哪个产品的销售额最高？"
+          - Output: "查询去年销售额最高的产品"
+
+          - Input: "我想了解一下最近三个月的客户增长趋势"
+          - Output: "查询最近三个月的客户增长趋势"
+
+          ### Requirements:
+          - The extracted query should be actionable and specific.
+          - Use natural, concise Chinese language.
+          - Preserve time periods, geographic filters, and specific metrics when mentioned.
+          - Remove polite expressions and redundant words.
+
+          ### Output Format:
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success:
+          {
+            "success": true,
+            "extracted_query": "<extracted query sentence>"
+          }
+
+          Failure:
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+
+          **Strict Constraints:**
+          - Extract only the core data requirement, not the complete analysis task.
+          - Use concise, natural language that reflects the actual query need.
+          - Do not wrap the response in Markdown code blocks.
+          - Do not include any reasoning or thinking process in your response.
+        user: |
+          ### User Inputs:
+          Question: ${question}

@@ -7,6 +7,10 @@ import cn.opensrcdevelop.ai.mapper.ChatHistoryMapper;
 import cn.opensrcdevelop.ai.service.ChatHistoryService;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import cn.opensrcdevelop.ai.service.MultiChatMemoryService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -95,6 +99,13 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
      *
      * @param chatId 对话ID
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.CHAT_BI,
+            userOperation = UserOperationType.CHAT_BI_DELETE_HISTORY,
+            success = "删除了对话（{{ #chatId }}）",
+            fail = "删除对话（{{ #chatId }}）失败"
+    )
     @Transactional
     @Override
     public void removeUserChatHistory(String chatId) {
@@ -124,6 +135,13 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
      *
      * @param requestDto 对话历史请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.CHAT_BI,
+            userOperation = UserOperationType.CHAT_BI_UPDATE_HISTORY,
+            success = "将对话（{{ #requestDto.id }}）标题更新为 {{ #requestDto.title }}",
+            fail = "更新对话（{{ #requestDto.id }}）标题失败"
+    )
     @Override
     public void updateUserChatHistory(ChatHistoryRequestDto requestDto) {
         super.update(Wrappers.<ChatHistory>lambdaUpdate()

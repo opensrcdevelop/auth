@@ -19,6 +19,10 @@ const operationTypes = [
   { value: 8, label: "解绑第三方账号" },
   { value: 9, label: "绑定 MFA 设备" },
   { value: 10, label: "重置密码" },
+  { value: 11, label: "ChatBI 对话"},
+  { value: 12, label: "ChatBI 问答反馈"},
+  { value: 13, label: "ChatBI 删除对话历史"},
+  { value: 14, label: "ChatBI 更新对话历史"},
 ];
 
 /**

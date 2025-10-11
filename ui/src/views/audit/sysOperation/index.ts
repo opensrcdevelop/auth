@@ -38,6 +38,9 @@ const resourceTypes = [
   { id: "da2c6573-d236-4e4d-96a4-85c517b72c59", name: "用户属性" },
   { id: "1624ca73-e656-48d9-800e-b5762b51d7c5", name: "用户组" },
   { id: "055a8115-8be2-498e-a6f9-ab8a34f5dd0e", name: "租户" },
+  { id: "0199c427-9df0-7fbe-bfe4-de1a8cbebbfa", name: "ChatBI 问数" },
+  { id: "0199c923-b73d-73db-a654-76ddd12dd408", name: "ChatBI 问数-数据源" },
+  { id: "0199c926-f7e6-79d2-a864-f234ce930b07", name: "ChatBI 问数-模型提供商" },
 ];
 
 /**

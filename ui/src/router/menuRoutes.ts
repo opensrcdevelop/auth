@@ -100,7 +100,7 @@ const menuRoutes: RouteRecordRaw[] = [
         component: () =>
           import("@/views/permission/expression/template/index.vue"),
         meta: {
-          title: "限制条模板",
+          title: "限制条件模板",
           visible: () => true,
         },
       },

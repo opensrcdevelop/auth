@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
 import cn.opensrcdevelop.ai.chat.ChatContext;
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.chat.tool.AnalyzeDataTool;
 import cn.opensrcdevelop.ai.chat.tool.GenerateChartTool;
 import cn.opensrcdevelop.ai.chat.tool.GenerateReportTool;
@@ -28,7 +27,6 @@ public class ChatAgent {
     private final AnalyzeDataTool analyzeDataTool;
     private final GenerateChartTool generateChartTool;
     private final GenerateReportTool generateReportTool;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
@@ -84,10 +82,28 @@ public class ChatAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.ANSWER_QUESTION))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .tools(analyzeDataTool, generateChartTool, generateReportTool)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
+    }
+
+    /**
+     * 提取用户提问中的查询信息
+     *
+     * @param chatClient   ChatClient
+     * @param userQuestion 用户提问
+     * @return 查询信息
+     */
+    public Map<String, Object> extractQuery(ChatClient chatClient, String userQuestion) {
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.EXTRACT_QUERY)
+                .param("question", userQuestion);
+
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt())
+                .user(prompt.buildUserPrompt())
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.EXTRACT_QUERY))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
 }

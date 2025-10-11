@@ -14,6 +14,11 @@ import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
@@ -73,6 +78,13 @@ public class ChatBIServiceImpl implements ChatBIService {
      * @param requestDto 请求
      * @return SseEmitter
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.CHAT_BI,
+            userOperation = UserOperationType.CHAT_BI_CHAT,
+            success = "开启了 ChatBI 对话（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}",
+            fail = "开启 ChatBI 对话失败（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}"
+    )
     @Override
     public SseEmitter streamChatBI(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
@@ -82,20 +94,23 @@ public class ChatBIServiceImpl implements ChatBIService {
             return emitter;
         }
 
+        String chatId = requestDto.getChatId();
+        if (StringUtils.isEmpty(chatId)) {
+            chatId = CommonUtil.getUUIDV7String();
+            chatHistoryService.createChatHistory(chatId, requestDto.getQuestion(), requestDto.getDataSourceId());
+        }
+        AuditContext.setSpelVariable("chatId", chatId);
+        String finalChatId = chatId;
+
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
-            String chatId = requestDto.getChatId();
-            if (StringUtils.isEmpty(chatId)) {
-                chatId = CommonUtil.getUUIDV7String();
-                chatHistoryService.createChatHistory(chatId, requestDto.getQuestion(), requestDto.getDataSourceId());
-            }
 
             try {
-                ChatContext.setChatId(chatId);
+                ChatContext.setChatId(finalChatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
 
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
-                Tuple2<String, String> result = processStreamChatBIRequest(emitter, requestDto, chatId);
+                Tuple2<String, String> result = processStreamChatBIRequest(emitter, requestDto, finalChatId);
                 SseUtil.sendChatBIDone(emitter, result._1, result._2);
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
@@ -116,6 +131,13 @@ public class ChatBIServiceImpl implements ChatBIService {
      *
      * @param requestDto 请求
      */
+    @Audit(
+            type = AuditType.USER_OPERATION,
+            resource = ResourceType.CHAT_BI,
+            userOperation = UserOperationType.CHAT_BI_VOTE,
+            success = "反馈了 ChatBI 回答（ID：{{ #requestDto.answerId }}），反馈：{{ #requestDto.feedback }}",
+            fail = "反馈 ChatBI 回答（ID：{{ #requestDto.answerId }}）失败，反馈：{{ #requestDto.feedback }}"
+    )
     @Override
     public void voteAnswer(VoteAnswerRequestDto requestDto) {
         // 1. 数据库操作
@@ -141,15 +163,24 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
         chatHistoryService.updateChatHistory(chatId, rewrittenQuestion);
 
-        // 3. 根据用户问题获取关联的表信息
+        // 3. 提取用户提问中的查询
+        SseUtil.sendChatBILoading(emitter, "正在提取用户查询...");
+        String userQuery = rewrittenQuestion;
+        Map<String, Object> extractQueryResult = chatAgent.extractQuery(chatClient, rewrittenQuestion);
+        if (Boolean.TRUE.equals(extractQueryResult.get("success"))) {
+            userQuery = (String) extractQueryResult.get("extracted_query");
+            SseUtil.sendChatBIMd(emitter, "> 提取到的查询：%s\n\n".formatted(userQuery));
+        }
+
+        // 4. 根据用户问题获取关联的表信息
         SseUtil.sendChatBILoading(emitter, "正在匹配相关表信息...");
-        // 3.1 检查数据源是否已同步
+        // 4.1 检查数据源是否已同步
         if (Boolean.FALSE.equals(dataSourceConfService.isSynced(dataSourceId))) {
             SseUtil.sendChatBIText(emitter, "数据源未同步，请先执行同步表操作。");
             return Tuple.of(null, rewrittenQuestion);
         }
-        // 3.2 获取相关表信息
-        Map<String, Object> tableResult = sqlAgent.getRelevantTables(chatClient, rewrittenQuestion, dataSourceId);
+        // 4.2 获取相关表信息
+        Map<String, Object> tableResult = sqlAgent.getRelevantTables(chatClient, userQuery, dataSourceId);
         if (!Boolean.TRUE.equals(tableResult.get("success"))) {
             SseUtil.sendChatBITextSegmented(emitter, "无法获取相关表信息，原因：%s".formatted(tableResult.get("error")), 500);
             return Tuple.of(null, rewrittenQuestion);
@@ -160,16 +191,16 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIMd(emitter, "`%s` ".formatted(table.get("table_name")));
         }
 
-        // 4. 生成 SQL
+        // 5. 生成 SQL
         SseUtil.sendChatBILoading(emitter, "正在生成 SQL...");
-        Map<String, Object> sqlResult = sqlAgent.generateSql(chatClient, rewrittenQuestion, relevantTables, dataSourceId);
+        Map<String, Object> sqlResult = sqlAgent.generateSql(chatClient, userQuery, relevantTables, dataSourceId);
         if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
             SseUtil.sendChatBITextSegmented(emitter, "无法生成 SQL，原因：%s".formatted(sqlResult.get("error")), 500);
             return Tuple.of(null, rewrittenQuestion);
         }
         String sql = (String) sqlResult.get("sql");
 
-        // 5. 执行 SQL
+        // 6. 执行 SQL
         SseUtil.sendChatBILoading(emitter, "正在执行 SQL...");
         var executeResult = executeSqlWithFix(chatClient, emitter, sql, dataSourceId, relevantTables, 5);
         SseUtil.sendChatBIMd(emitter, "\n> 执行的 SQL：\n\n");
@@ -189,7 +220,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContext.setQueryData(queryResult);
         ChatContext.setQueryColumns((List<Map<String, Object>>) sqlResult.get("columns"));
 
-        // 6. 回答问题
+        // 7. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
         Map<String, Object> answer = chatAgent.answerQuestion(
                 chatClient,
@@ -217,17 +248,17 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setReqTokens(ChatContext.getReqTokens());
         chatAnswer.setRepTokens(ChatContext.getRepTokens());
 
-        // 6.1 直接回答
+        // 7.1 直接回答
         if (answer.containsKey("answer")) {
             String answerText = (String) answer.get("answer");
             chatAnswer.setAnswer(answerText);
             SseUtil.sendChatBITextSegmented(emitter, answerText, 500);
         }
 
-        // 6.2 图表
+        // 7.2 图表
         if (answer.containsKey("chart") && Objects.nonNull(answer.get("chart"))) {
 
-            // 6.2.1 生成图表
+            // 7.2.1 生成图表
             Map<String, Object> chartConfig = (Map<String, Object>) answer.get("chart");
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
             var renderResult = ChartRenderer.render(chartConfig, queryResult);
@@ -238,7 +269,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             }
         }
 
-        // 6.3 报告
+        // 7.3 报告
         if (answer.containsKey("report") && answer.containsKey("report_type") && Objects.nonNull(answer.get("report_type"))) {
 
             SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
@@ -257,7 +288,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             }
         }
 
-        // 6.4 保存回答
+        // 7.4 保存回答
         chatAnswerService.save(chatAnswer);
 
         return Tuple.of(answerId, rewrittenQuestion);

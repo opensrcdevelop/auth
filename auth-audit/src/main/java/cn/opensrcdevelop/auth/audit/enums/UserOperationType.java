@@ -15,7 +15,11 @@ public enum UserOperationType {
     BIND_THIRD_ACCOUNT("绑定第三方账号"),
     UNBIND_THIRD_ACCOUNT("解绑第三方账号"),
     BIND_MFA("绑定 MFA 设备"),
-    RESET_PWD("重置密码");
+    RESET_PWD("重置密码"),
+    CHAT_BI_CHAT("ChatBI 对话"),
+    CHAT_BI_VOTE("ChatBI 问答反馈"),
+    CHAT_BI_DELETE_HISTORY("ChatBI 删除对话历史"),
+    CHAT_BI_UPDATE_HISTORY("ChatBI 更新对话历史");
 
     private final String name;
 }

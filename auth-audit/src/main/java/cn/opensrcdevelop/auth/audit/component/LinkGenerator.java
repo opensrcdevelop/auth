@@ -32,6 +32,8 @@ public class LinkGenerator {
         LINK_TEMPLATES.put(ResourceType.DICT, LINK_TEMPLATE.formatted("/dict/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.DICT_DATA, LINK_TEMPLATE.formatted("/dict/data/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.PWD_POLICY, LINK_TEMPLATE.formatted("/system_setting/password/", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.CHAT_BI_DATA_SOURCE, LINK_TEMPLATE.formatted("/chatbi/datasource/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.CHAT_BI_MODEL_PROVIDER, LINK_TEMPLATE.formatted("/chatbi/llm/detail", "%s", "%s"));
     }
 
     public String toLink(String id, ResourceType resourceType) {

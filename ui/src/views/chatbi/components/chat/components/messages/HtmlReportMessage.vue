@@ -97,7 +97,13 @@ const handleDownloadReport = () => {
 <style scoped lang="scss">
 .html-report-container {
   .operation-container {
-    margin-bottom: 8px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 2px;
+    background-color: #f6f8fa;
+    border-radius: 4px;
   }
   .content {
     height: 600px;
