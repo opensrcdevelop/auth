@@ -348,7 +348,7 @@ COMMENT ON COLUMN "t_table_field"."field_id" IS '表字段ID';
 COMMENT ON COLUMN "t_table_field"."field_name" IS '表字段名称';
 COMMENT ON COLUMN "t_table_field"."field_type" IS '表字段类型';
 COMMENT ON COLUMN "t_table_field"."remark" IS '表字段注释';
-COMMENT ON COLUMN "t_table_field"."to_use" IS '使用使用';
+COMMENT ON COLUMN "t_table_field"."to_use" IS '是否使用';
 COMMENT ON COLUMN "t_table_field"."additional_info" IS '补充信息';
 COMMENT ON TABLE "t_table_field" IS 'ChatBI 数据源表字段信息记录表';
 
@@ -421,6 +421,25 @@ COMMENT ON TABLE "t_user_group" IS '用户组定义表';
 COMMENT ON COLUMN "t_user_group_mapping"."user_id" IS '用户ID';
 COMMENT ON COLUMN "t_user_group_mapping"."user_group_id" IS '用户组ID';
 COMMENT ON TABLE "t_user_group_mapping" IS '用户与用户组映射关系表';
+
+COMMENT ON COLUMN "t_oidc_claim"."id" IS '主键';
+COMMENT ON COLUMN "t_oidc_claim"."claim_id" IS 'claim ID';
+COMMENT ON COLUMN "t_oidc_claim"."claim_name" IS 'claim 名';
+COMMENT ON COLUMN "t_oidc_claim"."user_attr_id" IS '用户属性ID';
+COMMENT ON TABLE "t_oidc_claim" IS 'OIDC Claim声明表';
+
+COMMENT ON COLUMN "t_oidc_claim_scope_mapping"."claim_id" IS 'OIDC Claim ID';
+COMMENT ON COLUMN "t_oidc_claim_scope_mapping"."scope_id" IS 'OIDC Scope ID';
+COMMENT ON TABLE "t_oidc_claim_scope_mapping" IS 'OIDC Claim与Scope映射表';
+
+COMMENT ON COLUMN "t_oidc_scope"."id" IS '主键';
+COMMENT ON COLUMN "t_oidc_scope"."scope_id" IS 'scope ID';
+COMMENT ON COLUMN "t_oidc_scope"."scope_name" IS 'scope 名';
+COMMENT ON TABLE "t_oidc_scope" IS 'OIDC Scope表';
+
+COMMENT ON COLUMN "t_authorize_cond"."authorize_id" IS '授权ID';
+COMMENT ON COLUMN "t_authorize_cond"."permission_exp_id" IS '权限表达式ID';
+COMMENT ON TABLE "t_authorize_cond" IS '授权条件关联表，关联授权与权限表达式';
 
 
 -- ----------------------------
