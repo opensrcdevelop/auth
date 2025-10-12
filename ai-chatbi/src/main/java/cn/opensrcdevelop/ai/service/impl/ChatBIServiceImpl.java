@@ -109,7 +109,6 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContext.setChatId(finalChatId);
                 ChatContext.setQuestionId(requestDto.getQuestionId());
 
-                chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, requestDto, finalChatId);
                 SseUtil.sendChatBIDone(emitter, result._1, result._2);
             } catch (HikariPool.PoolInitializationException ex) {
@@ -156,17 +155,21 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContext.setChatClient(chatClient);
 
         // 2. 重写用户提问
-        String rewrittenQuestion = question;
-        Map<String, Object> rewriteUserQuestionResult = chatAgent.rewriteUserQuestion(chatClient, question);
-        if (Boolean.TRUE.equals(rewriteUserQuestionResult.get("success"))) {
-            rewrittenQuestion = (String) rewriteUserQuestionResult.get("rewritten_question");
+        if (CollectionUtils.isNotEmpty(chatMessageHistoryService.getUserHistoryQuestions(chatId))) {
+            SseUtil.sendChatBILoading(emitter, "正在重写用户提问...");
+            Map<String, Object> rewriteUserQuestionResult = chatAgent.rewriteUserQuestion(chatClient, question);
+            if (Boolean.TRUE.equals(rewriteUserQuestionResult.get("success"))) {
+                question = (String) rewriteUserQuestionResult.get("rewritten_question");
+                SseUtil.sendChatBIMd(emitter, "> 重写后的用户提问：%s\n\n".formatted(question));
+            }
         }
-        chatHistoryService.updateChatHistory(chatId, rewrittenQuestion);
+        chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
+        chatHistoryService.updateChatHistory(chatId, question);
 
         // 3. 提取用户提问中的查询
         SseUtil.sendChatBILoading(emitter, "正在提取用户查询...");
-        String userQuery = rewrittenQuestion;
-        Map<String, Object> extractQueryResult = chatAgent.extractQuery(chatClient, rewrittenQuestion);
+        String userQuery = question;
+        Map<String, Object> extractQueryResult = chatAgent.extractQuery(chatClient, question);
         if (Boolean.TRUE.equals(extractQueryResult.get("success"))) {
             userQuery = (String) extractQueryResult.get("extracted_query");
             SseUtil.sendChatBIMd(emitter, "> 提取到的查询：%s\n\n".formatted(userQuery));
@@ -177,13 +180,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 4.1 检查数据源是否已同步
         if (Boolean.FALSE.equals(dataSourceConfService.isSynced(dataSourceId))) {
             SseUtil.sendChatBIText(emitter, "数据源未同步，请先执行同步表操作。");
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
         // 4.2 获取相关表信息
         Map<String, Object> tableResult = sqlAgent.getRelevantTables(chatClient, userQuery, dataSourceId);
         if (!Boolean.TRUE.equals(tableResult.get("success"))) {
             SseUtil.sendChatBITextSegmented(emitter, "无法获取相关表信息，原因：%s".formatted(tableResult.get("error")), 500);
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
         List<Map<String, Object>> relevantTables = (List<Map<String, Object>>) tableResult.get("tables");
         SseUtil.sendChatBIMd(emitter, "> 匹配到以下表：\n\n");
@@ -196,7 +199,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         Map<String, Object> sqlResult = sqlAgent.generateSql(chatClient, userQuery, relevantTables, dataSourceId);
         if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
             SseUtil.sendChatBITextSegmented(emitter, "无法生成 SQL，原因：%s".formatted(sqlResult.get("error")), 500);
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
         String sql = (String) sqlResult.get("sql");
 
@@ -207,13 +210,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBIMd(emitter, "```sql%n%s%n```".formatted(SqlFormatter.standard().format(executeResult._3)));
         if (!Boolean.TRUE.equals(executeResult._1)) {
             SseUtil.sendChatBIText(emitter, "执行 SQL 失败");
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
 
         List<Map<String, Object>> queryResult = executeResult._2;
         if (CollectionUtils.isEmpty(queryResult)) {
             SseUtil.sendChatBIText(emitter, "查询未返回数据");
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
 
         ChatContext.setSql(executeResult._3);
@@ -224,13 +227,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
         Map<String, Object> answer = chatAgent.answerQuestion(
                 chatClient,
-                rewrittenQuestion,
+                question,
                 ChatContext.getQueryData(),
                 ChatContext.getQueryColumns()
         );
         if (MapUtils.isEmpty(answer)) {
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
-            return Tuple.of(null, rewrittenQuestion);
+            return Tuple.of(null, question);
         }
 
         SseUtil.sendChatBIMd(emitter, "\n> 回答如下：\n\n");
@@ -291,7 +294,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 7.4 保存回答
         chatAnswerService.save(chatAnswer);
 
-        return Tuple.of(answerId, rewrittenQuestion);
+        return Tuple.of(answerId, question);
     }
 
     @SuppressWarnings("all")

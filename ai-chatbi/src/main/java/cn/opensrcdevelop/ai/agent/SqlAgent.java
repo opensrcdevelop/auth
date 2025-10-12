@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.prompt.Prompt;
@@ -28,7 +27,6 @@ public class SqlAgent {
     private final DataSourceManager dataSourceManager;
     private final TableService tableService;
     private final PromptTemplate promptTemplate;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
@@ -70,7 +68,6 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -99,7 +96,6 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -129,7 +125,6 @@ public class SqlAgent {
                 .system(prompt.buildSystemPrompt())
                 .user(prompt.buildUserPrompt())
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
