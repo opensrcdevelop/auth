@@ -49,7 +49,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 
 @Slf4j
@@ -163,6 +162,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 SseUtil.sendChatBIMd(emitter, "> 重写后的用户提问：%s\n\n".formatted(question));
             }
         }
+        ChatContext.setRawQuestion(question);
         chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
         chatHistoryService.updateChatHistory(chatId, question);
 
@@ -259,10 +259,10 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 7.2 图表
-        if (answer.containsKey("chart") && Objects.nonNull(answer.get("chart"))) {
+        if (answer.containsKey("chart") && Boolean.TRUE.equals(answer.get("chart"))) {
 
             // 7.2.1 生成图表
-            Map<String, Object> chartConfig = (Map<String, Object>) answer.get("chart");
+            Map<String, Object> chartConfig = ChatContext.getChartConfig();
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
             var renderResult = ChartRenderer.render(chartConfig, queryResult);
             if ("table".equals(renderResult._1)) {
@@ -273,12 +273,12 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 7.3 报告
-        if (answer.containsKey("report") && answer.containsKey("report_type") && Objects.nonNull(answer.get("report_type"))) {
+        if (answer.containsKey("report") && Boolean.TRUE.equals(answer.get("report"))) {
 
             SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
 
-            String reportType = (String) answer.get("report_type");
-            String reportText = (String) answer.get("report");
+            String reportType = ChatContext.getReportType();
+            String reportText = ChatContext.getReport();
             chatAnswer.setReportType(reportType);
             chatAnswer.setReport(reportText);
 

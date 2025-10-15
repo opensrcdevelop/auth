@@ -39,7 +39,7 @@ public class AnalyzeDataTool implements MethodTool {
             name = TOOL_NAME,
             description = "Used to analyze data and return the analysis results"
     )
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"all"})
     public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
         Response response = new Response();
 

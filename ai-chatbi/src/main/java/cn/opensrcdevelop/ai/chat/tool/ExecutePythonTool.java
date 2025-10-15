@@ -4,12 +4,14 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,10 +25,7 @@ public class ExecutePythonTool implements MethodTool {
     private static final String PYTHON_COMMAND = "python3";
     private static final String PYTHON_SCRIPT_NAME = "python_script_%s";
     private static final String PYTHON_SCRIPT_EXT = ".py";
-    private static final String VENV_NAME = "ai_chat_venv";
-    private static final String VENV_DIR = System.getProperty("java.io.tmpdir") + File.separator + VENV_NAME;
-    private static final String VENV_PYTHON = VENV_DIR + File.separator + "bin" + File.separator + "python";
-    private static final String VENV_PIP = VENV_DIR + File.separator + "bin" + File.separator + "pip";
+    private static final String VENV_NAME_PREFIX = "ai_chat_venv_";
     private static final int DEFAULT_TIMEOUT_MINUTES = 3;
 
     @Tool(
@@ -36,6 +35,7 @@ public class ExecutePythonTool implements MethodTool {
     @SuppressWarnings({"unused", "java:S3776"})
     public Response execute(@ToolParam(description = "Request to execute Python script") Request request) {
         log.info("Execute Python script: {}", CommonUtil.serializeObject(request));
+        String venvDir = Path.of(System.getProperty("java.io.tmpdir"), VENV_NAME_PREFIX + System.currentTimeMillis()).toString();
         Response response = new Response();
         File tempScriptFile = null;
         Process process = null;
@@ -45,19 +45,16 @@ public class ExecutePythonTool implements MethodTool {
                 StringWriter stderrWriter = new StringWriter()
         ) {
             // 1. 创建 Python 虚拟环境
-            if (!isVenvAvailable()) {
-                log.info("Creating virtual environment at: {}", VENV_DIR);
-                Response venvResponse = createVirtualEnvironment();
-                if (!venvResponse.getSuccess()) {
-                    return venvResponse;
-                }
-                log.info("Virtual environment created successfully");
+            Response venvResponse = createVirtualEnvironment(venvDir);
+            if (!venvResponse.getSuccess()) {
+                return venvResponse;
             }
+            log.info("Virtual environment {} created successfully", venvDir);
 
             // 2. 检查是否需要安装包
             if (CollectionUtils.isNotEmpty(request.packages)) {
                 log.info("Installing required packages: {}", request.getPackages());
-                Response installResponse = installPackages(request.getPackages());
+                Response installResponse = installPackages(venvDir, request.getPackages());
                 if (!installResponse.getSuccess()) {
                     log.error("Package installation failed: {}", installResponse.getResult());
                     return installResponse;
@@ -72,8 +69,7 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             // 4. 使用虚拟环境执行 Python 脚本
-            String pythonCommand = isVenvAvailable() ? VENV_PYTHON : PYTHON_COMMAND;
-            process = Runtime.getRuntime().exec(new String[]{pythonCommand, tempScriptFile.getAbsolutePath()});
+            process = Runtime.getRuntime().exec(new String[]{Path.of(venvDir, "bin", "python").toString(), tempScriptFile.getAbsolutePath()});
 
             // 5. 读取标准输出
             try (
@@ -132,6 +128,7 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             try {
+                FileUtils.deleteDirectory(new File(venvDir));
                 if (tempScriptFile != null) {
                     Files.deleteIfExists(tempScriptFile.toPath());
                 }
@@ -148,17 +145,11 @@ public class ExecutePythonTool implements MethodTool {
         return TOOL_NAME;
     }
 
-    private boolean isVenvAvailable() {
-        File venvDir = new File(VENV_DIR);
-        File venvPython = new File(VENV_PYTHON);
-        return venvDir.exists() && venvPython.exists() && venvPython.canExecute();
-    }
-
-    private Response installPackages(List<String> packages) {
+    private Response installPackages(String venvDir, List<String> packages) {
         Response response = new Response();
         
         try {
-            ProcessBuilder pb = new ProcessBuilder(VENV_PIP, "install");
+            ProcessBuilder pb = new ProcessBuilder(Path.of(venvDir, "bin", "pip").toString(), "install");
             packages.forEach(pb.command()::add);
             pb.redirectErrorStream(true);
             
@@ -213,11 +204,11 @@ public class ExecutePythonTool implements MethodTool {
         return response;
     }
 
-    private Response createVirtualEnvironment() {
+    private Response createVirtualEnvironment(String venvDir) {
         Response response = new Response();
         
         try {
-            ProcessBuilder pb = new ProcessBuilder(PYTHON_COMMAND, "-m", "venv", VENV_DIR);
+            ProcessBuilder pb = new ProcessBuilder(PYTHON_COMMAND, "-m", "venv", venvDir);
             pb.redirectErrorStream(true);
             
             Process process = pb.start();

@@ -34,8 +34,12 @@ public class GenerateChartTool implements MethodTool {
                 ChatContext.getQueryData()
         );
 
-        response.setSuccess((Boolean) result.get("success"));
-        response.setConfig((Map<String, Object>) result.get("config"));
+        Boolean success = (Boolean) result.get("success");
+        if (Boolean.TRUE.equals(success)) {
+            Map<String, Object> chartConfig = (Map<String, Object>) result.get("config");
+            ChatContext.setChartConfig(chartConfig);
+        }
+        response.setSuccess(success);
         response.setError((String) result.get("error"));
 
         return response;
@@ -63,9 +67,6 @@ public class GenerateChartTool implements MethodTool {
 
         @ToolParam(description = "The success of the chart generation")
         private Boolean success;
-
-        @ToolParam(description = "The configuration of the chart")
-        private Map<String, Object> config;
 
         @ToolParam(description = "The error message if the chart generation failed")
         private String error;
