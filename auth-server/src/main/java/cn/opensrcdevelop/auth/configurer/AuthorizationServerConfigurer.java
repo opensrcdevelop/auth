@@ -4,7 +4,6 @@ import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthe
 import cn.opensrcdevelop.auth.authentication.password.ResourceOwnerPasswordAuthenticationProvider;
 import cn.opensrcdevelop.auth.biz.component.authserver.OidcUserInfoService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.OAuth2AuthorizeRememberMeAuthenticationFilter;
@@ -12,6 +11,7 @@ import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -59,12 +59,15 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
 
         // 登录表单处理
         http.formLogin(x -> {
-            x.loginPage("/login");
+            x.loginProcessingUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGIN_URL));
             if (UrlUtils.isAbsoluteUrl(authorizationServerProperties.getLoginPageUrl())) {
                 x.successHandler(new LoginSuccessHandler());
                 x.failureHandler(new LoginFailureHandler());
             }
         });
+
+        // 登出处理
+        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 登录页面重定向
         http.exceptionHandling(exception ->

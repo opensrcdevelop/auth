@@ -3,9 +3,11 @@ package cn.opensrcdevelop.auth.biz.entity.identity;
 import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -97,7 +99,7 @@ public class IdentitySourceRegistration extends BaseEntity implements Serializab
         builder.clientId(clientId);
         builder.clientSecret(clientSecret);
         builder.clientAuthenticationMethod(new ClientAuthenticationMethod(clientAuthenticationMethod));
-        builder.redirectUri(AuthConstants.FEDERATION_LOGIN_REDIRECT_URI);
+        builder.redirectUri(AuthConstants.FEDERATION_LOGIN_REDIRECT_URI_FORMAT.formatted(SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix()));
         builder.authorizationGrantType(new AuthorizationGrantType(authorizationGrantType));
 
         return builder.build();

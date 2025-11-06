@@ -22,9 +22,11 @@ import cn.opensrcdevelop.auth.biz.repository.identity.IdentitySourceRegistration
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -50,8 +52,6 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentitySourceRegistrationMapper, IdentitySourceRegistration> implements IdentitySourceRegistrationService {
-
-    private static final String AUTHORIZATION_URI_FORMAT = "%s" + AuthConstants.FEDERATION_LOGIN_URI + "/%s";
 
     private final IdentitySourceRegistrationRepository identitySourceRegistrationRepository;
     private final ThirdAccountService thirdAccountService;
@@ -284,7 +284,11 @@ public class IdentitySourceRegistrationServiceImpl extends ServiceImpl<IdentityS
         // 2. 属性设置
         return CommonUtil.stream(registrations).map(registration -> {
             String code = registration.getRegistrationCode();
-            String authorizationUri = String.format(AUTHORIZATION_URI_FORMAT, WebUtil.getRootUrl(), code);
+            String authorizationUri = WebUtil.getRootUrl()
+                    .concat(SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix())
+                    .concat(AuthConstants.FEDERATION_LOGIN_URI)
+                    .concat("/")
+                    .concat(code);
             return IdentitySourceRegistrationResponseDto.builder()
                     .id(registration.getRegistrationId())
                     .name(registration.getRegistrationName())

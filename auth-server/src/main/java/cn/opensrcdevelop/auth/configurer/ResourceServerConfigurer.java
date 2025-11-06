@@ -5,10 +5,10 @@ import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvid
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.*;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,12 +42,15 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                     x.anyRequest().authenticated();
                 })
                 .formLogin(x -> {
-                    x.loginPage("/login");
+                    x.loginProcessingUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGIN_URL));
                     if (UrlUtils.isAbsoluteUrl(authorizationServerProperties.getLoginPageUrl())) {
                         x.successHandler(new LoginSuccessHandler());
                         x.failureHandler(new LoginFailureHandler());
                     }
                 });
+
+        // 登出处理
+        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {

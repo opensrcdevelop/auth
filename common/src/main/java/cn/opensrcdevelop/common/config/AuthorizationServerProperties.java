@@ -1,5 +1,6 @@
-package cn.opensrcdevelop.auth.component;
+package cn.opensrcdevelop.common.config;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -39,4 +40,8 @@ public class AuthorizationServerProperties {
 
     /** RememberMe Token Secret */
     private String rememberMeTokenSecret;
+
+    /** API 前缀 */
+    @NotBlank
+    private String apiPrefix = "";
 }

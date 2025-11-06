@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.authentication.email;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import jakarta.servlet.ServletException;
@@ -25,7 +26,7 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
     private static final String PARAMETER_EMAIL = "email";
     private static final String PARAMETER_CODE = "code";
-    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/login/email");
+    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, AuthConstants.EMAIL_LOGIN_URL);
 
     public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager) {
         super(REQUEST_MATCHER, authenticationManager);

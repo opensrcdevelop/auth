@@ -6,6 +6,7 @@ import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceProvider;
 import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.biz.util.HttpExpressionUtil;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -35,11 +36,16 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
 
     private final DefaultOAuth2AuthorizationRequestResolver delegate;
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
-    private final PathPatternRequestMatcher authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(AuthConstants.FEDERATION_LOGIN_URI + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
+    private final PathPatternRequestMatcher authorizationRequestMatcher;
 
-    public CustomOAuth2AuthorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository, IdentitySourceRegistrationService identitySourceRegistrationService) {
-        delegate = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, AuthConstants.FEDERATION_LOGIN_URI);
+    public CustomOAuth2AuthorizationRequestResolver(
+            AuthorizationServerProperties authorizationServerProperties,
+            ClientRegistrationRepository clientRegistrationRepository,
+            IdentitySourceRegistrationService identitySourceRegistrationService) {
+        String federationLoginUri = authorizationServerProperties.getApiPrefix().concat(AuthConstants.FEDERATION_LOGIN_URI);
+        delegate = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, federationLoginUri);
         this.identitySourceRegistrationService = identitySourceRegistrationService;
+        this.authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(federationLoginUri + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
     }
 
     @Override
