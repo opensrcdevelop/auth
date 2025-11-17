@@ -1,7 +1,9 @@
-package cn.opensrcdevelop.ai.chat.tool;
+package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
@@ -23,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
-@Component
+@Component(AnalyzeDataTool.TOOL_NAME)
 @RequiredArgsConstructor
 public class AnalyzeDataTool implements MethodTool {
 
@@ -41,21 +43,24 @@ public class AnalyzeDataTool implements MethodTool {
     )
     @SuppressWarnings({"all"})
     public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
-        ChatContext.setQuestion(request.getQuestion());
+        chatContext.setQuestion(request.getQuestion());
+        chatContext.setAnalyzeDataSummary(null);
+        chatContext.setAnalyzeDataResult(null);
         File tempDataFile = null;
         try {
             // 1. 创建临时数据文件
             tempDataFile = File.createTempFile(ANALYZE_DATA_FILE_NAME.formatted(System.currentTimeMillis()), ANALYZE_DATA_FILE_EXT);
             try (FileWriter writer = new FileWriter(tempDataFile)) {
-                writer.write(CommonUtil.serializeObject(ChatContext.getQueryData()));
+                writer.write(CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()));
             }
 
 
             // 2. 生成 Python 数据分析代码
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
-                    ChatContext.getChatClient(), tempDataFile.getAbsolutePath());
+                    ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath());
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
                 response.setSuccess(false);
                 response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
@@ -64,7 +69,7 @@ public class AnalyzeDataTool implements MethodTool {
 
             // 3. 执行 Python 数据分析代码
             Tuple3<Boolean, String, String> executeResult = executePythonCodeWithFix(
-                    ChatContext.getChatClient(),
+                    ChatContextHolder.getChatContext().getChatClient(),
                     tempDataFile.getAbsolutePath(),
                     (String) pythonCodeResult.get("python_code"),
                     (List<String>) pythonCodeResult.get("packages"),
@@ -78,7 +83,7 @@ public class AnalyzeDataTool implements MethodTool {
 
             // 4. 处理 Python 数据分析代码执行结果
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(
-                    ChatContext.getChatClient(),
+                    ChatContextHolder.getChatContext().getChatClient(),
                     executeResult._2
             );
             if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
@@ -89,8 +94,8 @@ public class AnalyzeDataTool implements MethodTool {
 
             String summary = (String) analyzeResult.get("summary");
 
-            ChatContext.setAnalyzeDataSummary(summary);
-            ChatContext.setAnalyzeDataResult(executeResult._2);
+            chatContext.setAnalyzeDataSummary(summary);
+            chatContext.setAnalyzeDataResult(executeResult._2);
 
             response.setSuccess(true);
             response.setAnalysisResult(executeResult._2);

@@ -25,11 +25,11 @@ public class Prompt {
         return this;
     }
 
-    public String buildSystemPrompt() {
-        return PromptTemplateUtil.getPrompt(this.system, this.params);
+    public String buildSystemPrompt(String name) {
+        return PromptTemplateUtil.getPrompt(name, this.system, this.params);
     }
 
-    public String buildUserPrompt() {
-        return PromptTemplateUtil.getPrompt(this.user, this.params);
+    public String buildUserPrompt(String name) {
+        return PromptTemplateUtil.getPrompt(name, this.user, this.params);
     }
 }

@@ -1,7 +1,9 @@
-package cn.opensrcdevelop.ai.chat.tool;
+package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.agent.ChartAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.ToolCallback;
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
+@Component(GenerateChartTool.TOOL_NAME)
 @RequiredArgsConstructor
 public class GenerateChartTool implements MethodTool {
 
@@ -25,19 +27,21 @@ public class GenerateChartTool implements MethodTool {
     )
     @SuppressWarnings("unchecked")
     public Response execute(@ToolParam(description = "The request to generate the chart") Request request) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
+        chatContext.setChartConfig(null);
         Response response = new Response();
 
         Map<String, Object> result = chartAgent.generateChart(
-                ChatContext.getChatClient(),
-                ChatContext.getSql(),
+                chatContext.getChatClient(),
+                chatContext.getSql(),
                 request.question,
-                ChatContext.getQueryData()
+                chatContext.getQueryData()
         );
 
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             Map<String, Object> chartConfig = (Map<String, Object>) result.get("config");
-            ChatContext.setChartConfig(chartConfig);
+            chatContext.setChartConfig(chartConfig);
         }
         response.setSuccess(success);
         response.setError((String) result.get("error"));

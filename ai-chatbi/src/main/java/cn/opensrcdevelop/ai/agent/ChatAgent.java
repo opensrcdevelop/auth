@@ -1,13 +1,9 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
-import cn.opensrcdevelop.ai.chat.tool.AnalyzeDataTool;
-import cn.opensrcdevelop.ai.chat.tool.GenerateChartTool;
-import cn.opensrcdevelop.ai.chat.tool.GenerateReportTool;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
-import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,9 +19,6 @@ public class ChatAgent {
 
     private final PromptTemplate promptTemplate;
     private final ChatMessageHistoryService chatMessageHistoryService;
-    private final AnalyzeDataTool analyzeDataTool;
-    private final GenerateChartTool generateChartTool;
-    private final GenerateReportTool generateReportTool;
 
 
     /**
@@ -37,7 +30,7 @@ public class ChatAgent {
      */
     public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion) {
         // 1. 获取用户历史提问
-        List<String> userQuestions = chatMessageHistoryService.getUserHistoryQuestions(ChatContext.getChatId());
+        List<String> userQuestions = chatMessageHistoryService.getUserHistoryQuestions(ChatContextHolder.getChatContext().getChatId());
 
         // 2. 重写用户提问
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.REWRITE_QUESTION)
@@ -45,38 +38,9 @@ public class ChatAgent {
                 .param("original_question", userQuestion);
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.REWRITE_QUESTION))
+                .user(prompt.buildUserPrompt(PromptTemplate.REWRITE_QUESTION))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.REWRITE_QUESTION))
-                .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
-                });
-    }
-
-    /**
-     * 回答用户提问
-     *
-     * @param chatClient   ChatClient
-     * @param userQuestion 用户提问
-     * @param queryResult  查询结果
-     * @param queryColumns 查询列别名
-     * @return 回答用户提问的结果
-     */
-    public Map<String, Object> answerQuestion(ChatClient chatClient,
-                                              String userQuestion,
-                                              List<Map<String, Object>> queryResult,
-                                              List<Map<String, Object>> queryColumns) {
-
-        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.ANSWER_QUESTION)
-                .param("question", userQuestion)
-                .param("query_result", CommonUtil.serializeObject(queryResult))
-                .param("column_aliases", CommonUtil.serializeObject(queryColumns));
-
-        return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
-                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.ANSWER_QUESTION))
-                .tools(analyzeDataTool, generateChartTool, generateReportTool)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
@@ -94,8 +58,8 @@ public class ChatAgent {
                 .param("question", userQuestion);
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.EXTRACT_QUERY))
+                .user(prompt.buildUserPrompt(PromptTemplate.EXTRACT_QUERY))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.EXTRACT_QUERY))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});

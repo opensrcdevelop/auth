@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.constants.CommonConstants;
@@ -34,13 +34,13 @@ public class AnalyzeAgent {
         // 1. 生成 Python 代码
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_PYTHON_CODE)
                 .param("data_file_path", dataFilePath)
-                .param("question", ChatContext.getQuestion())
-                .param("sample_data", CommonUtil.serializeObject(ChatContext.getQueryData().getFirst()))
-                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()));
+                .param("question", ChatContextHolder.getChatContext().getQuestion())
+                .param("sample_data", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData().getFirst()))
+                .param("column_aliases", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryColumns()));
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_PYTHON_CODE))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_PYTHON_CODE))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_PYTHON_CODE))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
@@ -56,14 +56,14 @@ public class AnalyzeAgent {
     public Map<String, Object> analyzeData(ChatClient chatClient, String pythonExecutionOutput) {
         // 1. 分析图表数据
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.ANALYZE_DATA)
-                .param("question", ChatContext.getQuestion())
-                .param("query_result", CommonUtil.serializeObject(ChatContext.getQueryData()))
-                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()))
+                .param("question", ChatContextHolder.getChatContext().getQuestion())
+                .param("query_result", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()))
+                .param("column_aliases", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryColumns()))
                 .param("python_execution_output", pythonExecutionOutput);
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.ANALYZE_DATA))
+                .user(prompt.buildUserPrompt(PromptTemplate.ANALYZE_DATA))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.ANALYZE_DATA))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
@@ -80,16 +80,16 @@ public class AnalyzeAgent {
     public Map<String, Object> generateAnalysisReport(ChatClient chatClient, String analysisResults, String analysisSummary) {
         // 1. 生成分析报告
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_REPORT)
-                .param("question", ChatContext.getQuestion())
-                .param("query_result", CommonUtil.serializeObject(ChatContext.getQueryData()))
-                .param("column_aliases", CommonUtil.serializeObject(ChatContext.getQueryColumns()))
+                .param("question", ChatContextHolder.getChatContext().getQuestion())
+                .param("query_result", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()))
+                .param("column_aliases", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryColumns()))
                 .param("analysis_results", CommonUtil.serializeObject(analysisResults))
                 .param("analysis_summary", analysisSummary)
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS)));
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_REPORT))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_REPORT))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_REPORT))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
@@ -111,15 +111,15 @@ public class AnalyzeAgent {
                                              String pythonExecutionOutput) {
         // 1. 修复 Python 代码
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FIX_PYTHON_CODE)
-                .param("question", ChatContext.getQuestion())
+                .param("question", ChatContextHolder.getChatContext().getQuestion())
                 .param("data_file_path", dataFilePath)
-                .param("sample_data", CommonUtil.serializeObject(ChatContext.getQueryData().getFirst()))
+                .param("sample_data", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData().getFirst()))
                 .param("python_code", pythonCode)
                 .param("error_output", pythonExecutionOutput);
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.FIX_PYTHON_CODE))
+                .user(prompt.buildUserPrompt(PromptTemplate.FIX_PYTHON_CODE))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_PYTHON_CODE))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {

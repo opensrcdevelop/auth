@@ -1,5 +1,6 @@
-package cn.opensrcdevelop.ai.chat.tool;
+package cn.opensrcdevelop.ai.chat.tool.impl;
 
+import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-@Component
+@Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
 public class ExecutePythonTool implements MethodTool {
 

@@ -75,7 +75,11 @@ public class ChatClientManager {
 
         // 4. 返回 ChatClient
         ChatClient.Builder builder = ChatClient.builder(chatModel)
-                .defaultOptions(ToolCallingChatOptions.builder().model(model).build())
+                .defaultOptions(ToolCallingChatOptions
+                        .builder()
+                        .model(model)
+                        .toolContext(ChatMemory.CONVERSATION_ID, chatId)
+                        .build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
                         SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build()

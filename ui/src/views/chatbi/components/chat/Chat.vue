@@ -374,7 +374,7 @@ const handleMessage = (message) => {
 
     // 类型相同，合并内容
     if (last.type === message.type) {
-      if (["MARKDOWN", "TEXT", "HTML_REPORT"].includes(message.type)) {
+      if (["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(message.type) && message.content) {
         last.content += message.content;
       } else if (["ECHARTS", "TABLE"].includes(message.type)) {
         last.content = message.content;

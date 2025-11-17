@@ -197,6 +197,18 @@ public class CommonUtil {
     }
 
     /**
+     * 将Map转换为对象
+     *
+     * @param map map
+     * @param clazz 目标类
+     * @return 目标对象
+     * @param <T> 目标类
+     */
+    public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
+        return OBJECT_MAPPER.convertValue(map, clazz);
+    }
+
+    /**
      * 获取UUID V7字符串
      *
      * @return UUID V7字符串

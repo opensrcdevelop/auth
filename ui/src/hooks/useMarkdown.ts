@@ -203,7 +203,10 @@ export function useMarkdown() {
   });
 
   const renderMarkdown = (content: string): string => {
-    const rendered = md.render(content);
+    const rendered = md.render(content, {
+      breaks: true,
+      gfm: true
+    });
     return `<div class="markdown-body">${rendered}</div>`;
   };
 

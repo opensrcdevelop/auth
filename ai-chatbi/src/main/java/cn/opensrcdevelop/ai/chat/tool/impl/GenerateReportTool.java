@@ -1,7 +1,9 @@
-package cn.opensrcdevelop.ai.chat.tool;
+package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.Objects;
 
-@Component
+@Component(GenerateReportTool.TOOL_NAME)
 @RequiredArgsConstructor
 public class GenerateReportTool implements MethodTool {
 
@@ -24,27 +26,29 @@ public class GenerateReportTool implements MethodTool {
             name = TOOL_NAME,
             description = "Generate analysis report for the question"
     )
-    public Response generateReport(@ToolParam(description = "The request to generate report") Request request) {
+    public Response execute(@ToolParam(description = "The request to generate report") Request request) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         // 1. 未分析数据时，先执行分析数据工具
-        if (Objects.isNull(ChatContext.getAnalyzeDataResult()) || Objects.isNull(ChatContext.getAnalyzeDataSummary())) {
+        if (Objects.isNull(chatContext.getAnalyzeDataResult()) ||
+                Objects.isNull(chatContext.getAnalyzeDataSummary())) {
             AnalyzeDataTool.Request analyzeDataRequest = new AnalyzeDataTool.Request();
-            analyzeDataRequest.setQuestion(ChatContext.getRawQuestion());
+            analyzeDataRequest.setQuestion(chatContext.getRawQuestion());
             analyzeDataTool.execute(analyzeDataRequest);
         }
 
         // 2. 生成分析报告
         Response response = new Response();
-        ChatContext.setQuestion(request.getQuestion());
+        chatContext.setQuestion(request.getQuestion());
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
-                ChatContext.getChatClient(),
-                ChatContext.getAnalyzeDataResult(),
-                ChatContext.getAnalyzeDataSummary()
+                chatContext.getChatClient(),
+                chatContext.getAnalyzeDataResult(),
+                chatContext.getAnalyzeDataSummary()
         );
 
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(result.get("success"))) {
-            ChatContext.setReportType(result.get("report_type").toString());
-            ChatContext.setReport(result.get("report").toString());
+            chatContext.setReportType(result.get("report_type").toString());
+            chatContext.setReport(result.get("report").toString());
         }
         response.setSuccess(success);
         response.setError((String) result.get("error"));

@@ -1,13 +1,11 @@
 package cn.opensrcdevelop.ai.agent;
 
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
-import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,34 +36,22 @@ public class SqlAgent {
      */
     public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuestion, String dataSourceId) {
         // 1. 获取数据源中的表信息
-        List<Table> candidateTables = tableService.list(Wrappers.<Table>lambdaQuery()
-                .eq(Table::getDataSourceId, dataSourceId)
-                .eq(Table::getToUse, true));
-
+        List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
         if (CollectionUtils.isEmpty(candidateTables)) {
             return Map.of(
                     "success", false,
-                    "error", "数据源中没有可用的表"
+                    "error", "The data source " + dataSourceId + " does not have any available tables."
             );
         }
 
-        List<String> tableDescriptions = candidateTables.stream().map(table -> {
-            Map<String, String> tableDescription = new HashMap<>();
-            tableDescription.put("table_id", table.getTableId());
-            tableDescription.put("table_name", table.getTableName());
-            tableDescription.put("description", table.getRemark() == null ? "No description available" : table.getRemark());
-            tableDescription.put("additional_info", table.getAdditionalInfo() == null ? "No additional info available" : table.getAdditionalInfo());
-            return CommonUtil.serializeObject(tableDescription);
-        }).toList();
-
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
                 .param("question", userQuestion)
-                .param("table_descriptions", tableDescriptions);
+                .param("table_descriptions", CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList());
 
         // 2. 推测关联表
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.SELECT_TABLE))
+                .user(prompt.buildUserPrompt(PromptTemplate.SELECT_TABLE))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
@@ -93,8 +78,8 @@ public class SqlAgent {
 
         // 2. 生成 SQL
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_SQL))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
@@ -122,8 +107,8 @@ public class SqlAgent {
 
         // 2. 修复 SQL
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.FIX_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.FIX_SQL))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});

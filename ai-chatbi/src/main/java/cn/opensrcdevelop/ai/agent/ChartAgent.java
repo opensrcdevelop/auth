@@ -38,8 +38,8 @@ public class ChartAgent {
                 .param("query_result", CommonUtil.serializeObject(queryResult));
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_CHART))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_CHART))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_CHART))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});

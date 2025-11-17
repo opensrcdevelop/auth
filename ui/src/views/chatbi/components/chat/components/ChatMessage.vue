@@ -22,6 +22,7 @@
       <ChartMessage :message="message" />
       <TableMessage :message="message" />
       <HtmlReportMessage :message="message" />
+      <ThinkingMessage :message="message" />
       <DoneMessage :message="message" @resend-message="handleResendMessage" />
     </div>
   </div>
@@ -35,6 +36,7 @@ import LoadingMessage from "./messages/LoadingMessage.vue";
 import TableMessage from "./messages/TableMessage.vue";
 import TextMessage from "./messages/TextMessage.vue";
 import MarkdownMessage from "./messages/MarkdownMessage.vue";
+import ThinkingMessage from "./messages/ThinkingMessage.vue";
 
 const props = withDefaults(
   defineProps<{
