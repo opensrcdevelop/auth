@@ -5,6 +5,7 @@ import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,12 @@ public class ChatAgent {
     public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion) {
         // 1. 获取用户历史提问
         List<String> userQuestions = chatMessageHistoryService.getUserHistoryQuestions(ChatContextHolder.getChatContext().getChatId());
+        if (CollectionUtils.isEmpty(userQuestions) || userQuestions.size() < 2) {
+            return Map.of(
+                    "success", true,
+                    "rewritten_question", userQuestion
+            );
+        }
 
         // 2. 重写用户提问
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.REWRITE_QUESTION)

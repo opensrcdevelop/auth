@@ -267,7 +267,7 @@ public class SseUtil {
      * @param emitter SseEmitter
      * @param thinkingMsg 思考消息
      */
-    public static void sendChatBIThinking(SseEmitter emitter, String thinkingMsg) {
+    public static void sendChatBIThinking(SseEmitter emitter, String thinkingMsg, boolean saveMessage) {
         Try.run(() -> emitter.send(SseEmitter.event()
                 .data(ChatBIResponseDto.builder()
                         .chatId(ChatContextHolder.getChatContext().getChatId())
@@ -276,5 +276,8 @@ public class SseUtil {
                         .type(ChatContentType.THINKING)
                         .build(), MediaType.APPLICATION_JSON)
         ));
+        if (saveMessage) {
+            chatMessageHistoryService.createChatMessageHistory(thinkingMsg, ChatContentType.THINKING);
+        }
     }
 }

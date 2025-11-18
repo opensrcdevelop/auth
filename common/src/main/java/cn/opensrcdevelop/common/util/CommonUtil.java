@@ -181,6 +181,24 @@ public class CommonUtil {
     }
 
     /**
+     * 反序列化对象（不使用JDK序列化）
+     *
+     * @param value 反序列化字符串
+     * @param clazz 目标类
+     * @param <T>   目标类
+     * @return 对象
+     */
+    @SuppressWarnings("all")
+    public static <T> T nonJdkDeserializeObject(String value, Class<T> clazz) {
+        try {
+            // json 反序列化
+            return OBJECT_MAPPER.readValue(value, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * 反序列化对象
      *
      * @param value 反序列化字符串
@@ -197,12 +215,30 @@ public class CommonUtil {
     }
 
     /**
+     * 反序列化对象（不使用JDK序列化）
+     *
+     * @param value        反序列化字符串
+     * @param valueTypeRef 目标类
+     * @param <T>          目标类
+     * @return 对象
+     */
+    @SuppressWarnings("all")
+    public static <T> T nonJdkDeserializeObject(String value, TypeReference<T> valueTypeRef) {
+        try {
+            // json 反序列化
+            return OBJECT_MAPPER.readValue(value, valueTypeRef);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * 将Map转换为对象
      *
-     * @param map map
+     * @param map   map
      * @param clazz 目标类
+     * @param <T>   目标类
      * @return 目标对象
-     * @param <T> 目标类
      */
     public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
         return OBJECT_MAPPER.convertValue(map, clazz);
@@ -342,7 +378,7 @@ public class CommonUtil {
     /**
      * 校验 Bean
      *
-     * @param bean bean
+     * @param bean   bean
      * @param groups 分组
      */
     public static void validateBean(Object bean, Class<?>... groups) {
@@ -411,10 +447,10 @@ public class CommonUtil {
      * 填充模版
      *
      * @param template 模版
-     * @param context 上下文
+     * @param context  上下文
      * @return 填充后的模版
      */
-    public static String fillTemplate(String template , Map<String, Object> context) {
+    public static String fillTemplate(String template, Map<String, Object> context) {
         try (StringReader reader = new StringReader(template);
              StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);

@@ -615,7 +615,7 @@ ai:
           ### SQL Generation Process
           1. **First Step**: Always execute `get_relevant_tables` tool to obtain relevant table information for the query
           2. **Pass Table Information**: Pass the obtained table information to `generate_sql` tool to generate the SQL query
-          3. **Fallback Strategy**: If `get_relevant_tables` execution fails, execute `recall_tables` tool to get all table definitions, then re-execute `generate_sql` with the complete table information
+          3. **Fallback Strategy**: If `get_relevant_tables` execution result's success field value is false, execute `recall_tables` tool to get all table definitions, then re-execute `generate_sql` with the complete table information
           4. **No Manual Table Analysis**: Do not attempt to analyze table structures or fields manually - rely on the tools
 
           ## Tool Selection Strategy
@@ -662,6 +662,7 @@ ai:
           ```
           
           ### Final Answer Format
+          <Language-specific plain text of the consideration of the final answer.>
           ```json
           {
             "final_answer": "Comprehensive answer integrating all execution results",
@@ -677,6 +678,19 @@ ai:
           4. No fabrication of tool results
           5. Handle tool failures gracefully with retry mechanism
           6. Avoid tool execution loops by tracking retry counts
+          7. **JSON Field Restrictions**: 
+             - Do not add, remove, or modify any JSON fields defined in the output format schemas
+             - Use exactly the field names and structure as specified in the Thinking Result Format and Final Answer Format
+             - Prohibit creating any additional fields not explicitly defined in the schemas
+             - Ensure all required fields are present and no optional fields are included unless specified
+          8. **Schema Compliance**:
+             - Thinking Result Format must contain exactly: "name" and "parameters" fields
+             - Final Answer Format must contain exactly: "final_answer", "chart", and "report" fields
+             - No other fields are permitted in either format
+          9. **Field Validation**:
+             - Validate that all output JSON objects strictly adhere to the defined schemas
+             - Reject any output that contains extra fields or missing required fields
+             - Ensure field types match the specified format (string, boolean, etc.)
         user: |
           <#if question??>
           Based on the following question, consider the execution of the first step.
@@ -684,6 +698,7 @@ ai:
           ${question}
           <#else>
           Analyze the below tool execution results to determine the next step.
+          if all tool execution results are sufficient to answer the question, just output the final answer.
           <#if tool_execution_results??>
           <#list tool_execution_results as item>
           - tool: ${item.tool_name}
@@ -691,9 +706,3 @@ ai:
           </#list>
           </#if>
           </#if>
-          
-          ## Not Final Step
-          Output the result of your consideration.
-
-          ## Final Step
-          When all tool execution results are sufficient to answer the question, output the final answer.

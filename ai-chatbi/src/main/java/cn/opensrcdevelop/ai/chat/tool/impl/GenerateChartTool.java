@@ -6,7 +6,6 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -52,11 +51,6 @@ public class GenerateChartTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
-    }
-
-    @Override
-    public ToolCallback[] getToolCallbacks() {
-        return new ToolCallback[0];
     }
 
     @Data

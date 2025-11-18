@@ -2,7 +2,6 @@ package cn.opensrcdevelop.ai.agent;
 
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
@@ -47,7 +46,6 @@ public class ThinkAnswerAgent {
     private static final Integer MESSAGE_WINDOW_SIZE = 100;
 
     private final PromptTemplate promptTemplate;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
 
@@ -66,9 +64,8 @@ public class ThinkAnswerAgent {
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
-            String stepThinkingMsg = step > 0 ? "\nStep " + (step + 1) + "\n" : "Step " + (step + 1) + "\n";
-            SseUtil.sendChatBIThinking(emitter, stepThinkingMsg);
-            chatMessageHistoryService.createChatMessageHistory(stepThinkingMsg, ChatContentType.THINKING);
+            String stepThinkingMsg = step > 0 ? "\n<strong>Step " + (step + 1) + "</strong>\n" : "<strong>Step " + (step + 1) + "</strong>\n";
+            SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
@@ -95,11 +92,9 @@ public class ThinkAnswerAgent {
         chatClient.prompt(prompt)
                 .advisors(a -> a.params(
                         Map.of(
-                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER,
-                                MultiMessageChatMemoryAdvisor.CHAT_MESSAGE_WINDOW_SIZE, MESSAGE_WINDOW_SIZE
+                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER
                         )
                 ))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .stream()
                 .chatResponse()
                 .subscribe(chatResponse -> {
@@ -112,7 +107,7 @@ public class ThinkAnswerAgent {
                     }
 
                     if (!hasJsonOutput.get()) {
-                        SseUtil.sendChatBIThinking(emitter, outputText);
+                        SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
                 }, error -> {
                     log.error("Error in chat response stream", error);
@@ -162,8 +157,7 @@ public class ThinkAnswerAgent {
             String startThinkMsg = "%s - 开始执行工具【%s】\n".formatted(
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            SseUtil.sendChatBIThinking(emitter, startThinkMsg);
-            chatMessageHistoryService.createChatMessageHistory(startThinkMsg, ChatContentType.THINKING);
+            SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
 
             Object tool= SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -191,12 +185,11 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName
             );
-            SseUtil.sendChatBIThinking(emitter, endThinkingMsg);
-            chatMessageHistoryService.createChatMessageHistory(endThinkingMsg, ChatContentType.THINKING);
+            SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
-            if (ex instanceof JacksonException) {
+            if (ex.getCause() instanceof JacksonException) {
                 errorMsg = errorMsg +", Please check the tool parameters.";
             }
             toolCallResult = Map.of(
@@ -208,8 +201,7 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName
             );
-            SseUtil.sendChatBIThinking(emitter, errorThinkingMsg);
-            chatMessageHistoryService.createChatMessageHistory(errorThinkingMsg, ChatContentType.THINKING);
+            SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         ChatContext chatContext = ChatContextHolder.getChatContext();
         if (CollectionUtils.isEmpty(chatContext.getToolCallResults())) {
@@ -232,7 +224,7 @@ public class ThinkAnswerAgent {
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> toolCall = CommonUtil.deserializeObject(json, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> toolCall = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {});
         return Tuple.of(reason, toolCall);
     }
 }

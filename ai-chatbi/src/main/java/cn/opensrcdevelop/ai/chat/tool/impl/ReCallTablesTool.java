@@ -14,16 +14,16 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
-@Component(ReCallTablesTool.TABLE_NAME)
+@Component(ReCallTablesTool.TOOL_NAME)
 @RequiredArgsConstructor
 public class ReCallTablesTool implements MethodTool {
 
-    public static final String TABLE_NAME = "recall_tables";
+    public static final String TOOL_NAME = "recall_tables";
 
     private final TableService tableService;
 
     @Tool(
-            name = TABLE_NAME,
+            name = TOOL_NAME,
             description = "Recall the tables of data source"
     )
     public Response execute() {
@@ -42,7 +42,7 @@ public class ReCallTablesTool implements MethodTool {
 
     @Override
     public String toolName() {
-        return TABLE_NAME;
+        return TOOL_NAME;
     }
 
     @Data
