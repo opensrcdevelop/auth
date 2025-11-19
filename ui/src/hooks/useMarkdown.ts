@@ -2,6 +2,7 @@ import hljs from "highlight.js";
 import MarkdownIt from "markdown-it";
 import {onMounted, onUnmounted} from "vue";
 import MarkdownHandler from "./md/MarkdownHandler";
+import {copyToClipboard} from "@/util/tool";
 
 const md = new MarkdownIt({
   html: true,
@@ -55,69 +56,6 @@ md.renderer.rules.code_inline = (tokens, idx) => {
 
 export function useMarkdown() {
   const handlerState = MarkdownHandler.getInstance();
-
-  const copyToClipboard = async (text: string): Promise<boolean> => {
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        console.warn("Clipboard API 失败:", err);
-      }
-    }
-
-    try {
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-
-      textArea.style.position = "fixed";
-      textArea.style.top = "0";
-      textArea.style.left = "0";
-      textArea.style.width = "2em";
-      textArea.style.height = "2em";
-      textArea.style.padding = "0";
-      textArea.style.border = "none";
-      textArea.style.outline = "none";
-      textArea.style.boxShadow = "none";
-      textArea.style.background = "transparent";
-      textArea.style.opacity = "0";
-
-      document.body.appendChild(textArea);
-      textArea.select();
-      textArea.setSelectionRange(0, 99999);
-
-      const successful = document.execCommand("copy");
-      document.body.removeChild(textArea);
-
-      if (successful) {
-        return true;
-      }
-    } catch (err) {
-      console.warn("execCommand 方法失败:", err);
-    }
-
-    try {
-      const selection = document.getSelection();
-      const range = document.createRange();
-      const div = document.createElement("div");
-      div.textContent = text;
-
-      document.body.appendChild(div);
-      range.selectNodeContents(div);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-
-      const successful = document.execCommand("copy");
-      selection?.removeAllRanges();
-      document.body.removeChild(div);
-
-      if (successful) {
-        return true;
-      }
-    } catch (err) {
-      console.warn("Selection API 方法失败:", err);
-    }
-  };
 
   const handleCopyCode = async (button: HTMLButtonElement) => {
     const code = decodeURIComponent(button.dataset.code || "");

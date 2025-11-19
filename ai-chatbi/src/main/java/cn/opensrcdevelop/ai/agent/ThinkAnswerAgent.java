@@ -43,8 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class ThinkAnswerAgent {
 
-    private static final Integer MESSAGE_WINDOW_SIZE = 100;
-
     private final PromptTemplate promptTemplate;
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
@@ -52,18 +50,25 @@ public class ThinkAnswerAgent {
     /**
      * 思考并回答用户提问
      *
-     * @param emitter SSE
-     * @param chatClient   ChatClient
-     * @param userQuestion 用户提问
-     * @param maxSteps 最大执行步数
+     * @param emitter       SSE
+     * @param interruptFlag 中断标志
+     * @param chatClient    ChatClient
+     * @param userQuestion  用户提问
+     * @param maxSteps      最大执行步数
      */
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
-                                              ChatClient chatClient,
-                                              String userQuestion,
-                                              int maxSteps) {
+                                           AtomicBoolean interruptFlag,
+                                           ChatClient chatClient,
+                                           String userQuestion,
+                                           int maxSteps) {
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
+            if (interruptFlag.get()) {
+                log.info("ChatBI 对话（{}）被中断", ChatContextHolder.getChatContext().getChatId());
+                break;
+            }
+
             String stepThinkingMsg = step > 0 ? "\n<strong>Step " + (step + 1) + "</strong>\n" : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
@@ -71,7 +76,7 @@ public class ThinkAnswerAgent {
             var parseResult = parseLlmResult(result);
             boolean isFinalAnswer = result.contains("final_answer");
             chatMessageHistoryService.createChatMessageHistory(parseResult._1(), ChatContentType.THINKING);
-            if (isFinalAnswer){
+            if (isFinalAnswer) {
                 return parseResult._2();
             } else {
                 executeToolCall(parseResult._2(), emitter);
@@ -154,19 +159,20 @@ public class ThinkAnswerAgent {
         String parameters = toolCall.get("parameters").toString();
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
-            String startThinkMsg = "%s - 开始执行工具【%s】\n".formatted(
+            String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
                     LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
             SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
 
-            Object tool= SpringContextUtil.getBean(toolName);
+            Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
                     method -> "execute".equals(method.getName())
             ).findFirst().orElse(null);
             Class<?>[] executeMethodParamTypes = executeMethod.getParameterTypes();
             Object executeMethodResult;
             if (executeMethodParamTypes != null && executeMethodParamTypes.length > 0) {
-                Map<String, Object> paramsMap = CommonUtil.deserializeObject(parameters, new TypeReference<Map<String, Object>>() {});
+                Map<String, Object> paramsMap = CommonUtil.deserializeObject(parameters, new TypeReference<Map<String, Object>>() {
+                });
                 Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"), executeMethodParamTypes[0]);
                 executeMethodResult = executeMethod.invoke(tool, request);
             } else {
@@ -190,7 +196,7 @@ public class ThinkAnswerAgent {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
             if (ex.getCause() instanceof JacksonException) {
-                errorMsg = errorMsg +", Please check the tool parameters.";
+                errorMsg = errorMsg + ", Please check the tool parameters.";
             }
             toolCallResult = Map.of(
                     "tool_name", toolName,
@@ -219,12 +225,13 @@ public class ThinkAnswerAgent {
         }
 
         String reason = llmResult.substring(0, startIndex);
-        if (reason.contains("```json")){
+        if (reason.contains("```json")) {
             reason = reason.replace("```json", "");
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> toolCall = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> toolCall = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {
+        });
         return Tuple.of(reason, toolCall);
     }
 }

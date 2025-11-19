@@ -23,6 +23,7 @@ public class GenerateSqlTool implements MethodTool {
 
     private final SqlAgent sqlAgent;
 
+    @SuppressWarnings("unchecked")
     @Tool(
             name = TOOL_NAME,
             description = "Generate SQL from the query"
@@ -50,8 +51,10 @@ public class GenerateSqlTool implements MethodTool {
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             String sql =(String) result.get("sql");
+            List<Map<String, Object>> columns = (List<Map<String, Object>>) result.get("columns");
             response.setSql(sql);
             chatContext.setSql(sql);
+            chatContext.setQueryColumns(columns);
         }
 
         response.setSuccess(success);

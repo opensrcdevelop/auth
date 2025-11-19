@@ -63,7 +63,7 @@ export default indexTs;
               </a-col>
               <a-col :span="12">
                 <a-form-item field="apiKey" label="API Key">
-                  <a-input
+                  <a-input-password
                     v-model="modelProviderInfoForm.apiKey"
                     placeholder="请输入 API Key"
                   />

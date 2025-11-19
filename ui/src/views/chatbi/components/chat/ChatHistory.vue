@@ -62,14 +62,14 @@
       >
         <div class="content">
           <a-tooltip :content="item.title">
-                      <div
-            class="title"
-            :class="{
-              active: item.id === activeChatId,
-            }"
-          >
-            {{ item.title }}
-          </div>
+            <div
+              class="title"
+              :class="{
+                active: item.id === activeChatId,
+              }"
+            >
+              {{ item.title }}
+            </div>
           </a-tooltip>
           <div class="time">{{ item.start }}</div>
         </div>
@@ -224,6 +224,9 @@ const handleDeleteChatHistory = (chatHistory: any) => {
           handleApiSuccess(result, () => {
             Notification.success("删除成功");
             handleGetChatHistoryList();
+            if (chatHistory.id === activeChatId.value) {
+              handleAddNewChat();
+            }
           });
         })
         .catch((err: any) => {

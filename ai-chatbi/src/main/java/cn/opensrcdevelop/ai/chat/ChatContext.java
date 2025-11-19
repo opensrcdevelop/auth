@@ -47,4 +47,6 @@ public class ChatContext {
     private AtomicInteger repTokens = new AtomicInteger(0);
 
     private List<Map<String, Object>> toolCallResults;
+
+    private Boolean terminated = false;
 }

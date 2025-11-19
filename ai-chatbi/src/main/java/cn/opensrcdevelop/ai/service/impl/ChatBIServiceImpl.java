@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -78,6 +79,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Override
     public SseEmitter streamChatBI(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        AtomicBoolean interruptFlag = new AtomicBoolean(false);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
         if (isRequestInvalid(emitter, requestDto)) {
@@ -103,8 +105,12 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContextHolder.setChatContext(chatContext);
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
 
-                Tuple2<String, String> result = processStreamChatBIRequest(emitter, requestDto, finalChatId);
-                SseUtil.sendChatBIDone(emitter, result._1, result._2);
+                Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag,  requestDto, finalChatId);
+                if (!interruptFlag.get()) {
+                    SseUtil.sendChatBIDone(emitter, result._1, result._2);
+                } else {
+                    chatMessageHistoryService.createChatMessageHistory("回答已取消", ChatContentType.LOADING);
+                }
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
             } catch (Exception ex) {
@@ -114,6 +120,11 @@ public class ChatBIServiceImpl implements ChatBIService {
                 emitter.complete();
                 ChatContextHolder.removeChatContext(finalChatId);
             }
+        });
+
+        emitter.onCompletion(() -> {
+            log.info("ChatBI 对话（{}）中断/结束", finalChatId);
+            interruptFlag.set(true);
         });
 
         return emitter;
@@ -140,7 +151,10 @@ public class ChatBIServiceImpl implements ChatBIService {
     }
 
     @SuppressWarnings("all")
-    private Tuple2<String, String> processStreamChatBIRequest(SseEmitter emitter, ChatBIRequestDto requestDto, String chatId) throws IOException {
+    private Tuple2<String, String> processStreamChatBIRequest(SseEmitter emitter,
+                                                              AtomicBoolean interruptFlag,
+                                                              ChatBIRequestDto requestDto,
+                                                              String chatId) throws IOException {
         String dataSourceId = requestDto.getDataSourceId();
         String question = requestDto.getQuestion();
 
@@ -158,10 +172,16 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
         Map<String, Object> answer = thinkAnswerAgent.thinkAnswer(
                 emitter,
+                interruptFlag,
                 chatClient,
                 question,
                 30
         );
+
+        if (interruptFlag.get()) {
+            return Tuple.of(null, question);
+        }
+
         if (MapUtils.isEmpty(answer)) {
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);

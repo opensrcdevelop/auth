@@ -28,8 +28,9 @@
         </a-space>
       </div>
       <div class="content">
-        <a-skeleton-line v-if="loading" :rows="6" />
-        <a-skeleton-shape v-if="loading" />
+        <a-skeleton v-if="loading" animation >
+          <a-skeleton-line :rows="16" />
+        </a-skeleton>
         <iframe
           v-show="!loading"
           ref="htmlReportRef"
