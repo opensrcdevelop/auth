@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.filter;
 
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +30,8 @@ public class OAuth2AuthorizeRememberMeAuthenticationFilter extends OncePerReques
     @Override
     @SuppressWarnings("NullableProblems")
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (MATCHER.match("/oauth2/authorize", request.getServletPath())) {
+        String apiPrefix = SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix();
+        if (MATCHER.match(apiPrefix.concat("/oauth2/authorize"), request.getServletPath())) {
             delegateFilter.doFilter(request, response, filterChain);
             HttpSession session = request.getSession(false);
             if (Objects.nonNull(session)) {
