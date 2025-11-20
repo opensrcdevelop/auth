@@ -19,7 +19,6 @@ import cn.opensrcdevelop.auth.support.CustomOAuth2RefreshTokenGenerator;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.constants.CommonConstants;
-import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
@@ -35,7 +34,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -53,7 +51,6 @@ import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.RememberMeServices;
-import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -240,19 +237,6 @@ public class AuthServerConfig {
                 oAuth2Attributes.setAttribute("browser", WebUtil.getBrowserType());
             }
         };
-    }
-
-    @Bean
-    public RememberMeServices rememberMeServices(UserDetailsService userDetailsService, AuthorizationServerProperties authorizationServerProperties) {
-        if (StringUtils.isEmpty(authorizationServerProperties.getRememberMeTokenSecret())) {
-            authorizationServerProperties.setRememberMeTokenSecret(CommonUtil.getUUIDV7String());
-        }
-        String secret = authorizationServerProperties.getRememberMeTokenSecret();
-        TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(secret , userDetailsService);
-        rememberMeServices.setTokenValiditySeconds(authorizationServerProperties.getRememberMeSeconds());
-        rememberMeServices.setParameter(AuthConstants.REMEMBER_ME);
-
-        return rememberMeServices;
     }
 
     /**

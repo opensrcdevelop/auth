@@ -26,6 +26,7 @@ import cn.opensrcdevelop.auth.biz.repository.role.RoleRepository;
 import cn.opensrcdevelop.auth.biz.repository.user.UserRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleService;
 import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
@@ -95,6 +96,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final VerificationCodeService verificationCodeService;
     private final LoginLogService loginLogService;
     private final PasswordPolicyService passwordPolicyService;
+    private final ThirdAccountService thirdAccountService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -436,6 +438,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 6. 删除用户组信息
         userGroupService.removeUserGroupMapping(userId);
+
+        // 7. 删除用户绑定的第三方账号
+        thirdAccountService.removeUserBindings(userId);
     }
 
     /**
@@ -528,6 +533,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 删除 Token
         dbOAuth2AuthorizationService.removeUserTokens(user.getUsername());
+
+        // 3. 无效 RememberMe Token
+        super.update(Wrappers.<User>lambdaUpdate().set(User::getRememberMeTokenSecret, StringUtils.EMPTY).eq(User::getUserId, userId));
     }
 
     /**

@@ -17,7 +17,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -53,16 +52,12 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             // 1.1 未绑定设备
             if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
                 // 1.1.1 生成 TOTP 密钥（不存在的场合下）
-                String secret = user.getMfaSecret();
-                if (StringUtils.isEmpty(secret)) {
-                    secret = MultiFactorAuthenticator.generateSecretKey();
-
-                    // 1.1.2 更新用户数据
-                    User updateUser = new User();
-                    updateUser.setUserId(user.getUserId());
-                    updateUser.setMfaSecret(secret);
-                    userService.updateById(updateUser);
-                }
+                String secret = MultiFactorAuthenticator.generateSecretKey();
+                // 1.1.2 更新用户数据
+                User updateUser = new User();
+                updateUser.setUserId(user.getUserId());
+                updateUser.setMfaSecret(secret);
+                userService.updateById(updateUser);
 
                 // 1.1.3 生成二维码数据
                 String qrCodeData = MultiFactorAuthenticator.getQrCodeString(user.getUsername(), secret);

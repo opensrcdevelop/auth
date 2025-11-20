@@ -102,7 +102,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         OAuth2TokenGenerator<?> tokenGenerator =  http.getSharedObject(OAuth2TokenGenerator.class);
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
         http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService, authenticationManager, tokenGenerator));
-        http.authenticationProvider(new RememberMeAuthenticationProvider(authorizationServerProperties.getRememberMeTokenSecret()));
+        http.authenticationProvider(new RememberMeAuthenticationProvider(AuthConstants.REMEMBER_ME));
     }
 
     public OAuth2AuthorizationServerConfigurer getCustomAuthorizationServerConfigurer() {

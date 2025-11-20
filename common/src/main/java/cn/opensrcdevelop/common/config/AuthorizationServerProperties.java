@@ -38,9 +38,6 @@ public class AuthorizationServerProperties {
     /** RememberMe 有效时间（默认 14 天） */
     private Integer rememberMeSeconds = 1209600;
 
-    /** RememberMe Token Secret */
-    private String rememberMeTokenSecret;
-
     /** API 前缀 */
     @NotBlank
     private String apiPrefix = "";
