@@ -12,7 +12,7 @@ import java.util.List;
 @Mapper
 public interface RoleMapper extends BaseMapper<Role> {
 
-    List<RoleMapping> searchUserRoles(@Param("userId") String userId);
+    List<RoleMapping> searchUserRoles(@Param("userId") String userId, @Param("dynamicUserGroupIds") List<String> dynamicUserGroupIds);
 
     IPage<RoleMapping> searchRolePrincipals(@Param("page") IPage<RoleMapping> page,  @Param("roleId") String roleId, @Param("keyword") String keyword);
 }

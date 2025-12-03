@@ -16,7 +16,7 @@ public interface UserService extends IService<User> {
 
     User getUserInfo(String userId);
 
-    PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters);
+    PageData<Map<String, Object>> list(int page, int size, List<DataFilterDto> filters);
 
     void updateUser(UserRequestDto requestDto);
 

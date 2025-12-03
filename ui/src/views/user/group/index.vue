@@ -1,5 +1,6 @@
 <script lang="ts">
 import userGroupTs from "./index";
+
 export default userGroupTs;
 </script>
 
@@ -66,6 +67,11 @@ export default userGroupTs;
               {{ record.code }}
             </template>
           </a-table-column>
+          <a-table-column title="用户组类型">
+            <template #cell="{ record }">
+              {{ record.type === "DYNAMIC" ? "动态用户组" : "静态用户组" }}
+            </template>
+          </a-table-column>
           <a-table-column
             title="成员数"
             :width="120"
@@ -74,7 +80,7 @@ export default userGroupTs;
             }"
           >
             <template #cell="{ record }">
-              {{ record.memberNum }}
+              {{ record.memberNum ? record.memberNum : "-" }}
             </template>
           </a-table-column>
           <a-table-column title="操作" :width="60">

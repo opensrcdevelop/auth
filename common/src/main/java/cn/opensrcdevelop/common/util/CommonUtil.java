@@ -146,6 +146,16 @@ public class CommonUtil {
     }
 
     /**
+     * 不使用JDK序列化对象
+     *
+     * @param obj 对象
+     * @return 序列化字符串
+     */
+    public static String nonJdkSerializeObject(Object obj) {
+        return Try.of(() -> OBJECT_MAPPER.writeValueAsString(obj)).getOrElseThrow(ServerException::new);
+    }
+
+    /**
      * 序列化对象
      *
      * @param obj 对象

@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-@Schema(description = "过滤请求")
+@Schema(description = "过滤请求/响应")
 @Data
-public class DataFilterRequestDto {
+public class DataFilterDto {
 
     @Schema(description = "属性键")
     @NotBlank

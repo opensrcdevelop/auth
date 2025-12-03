@@ -1,8 +1,9 @@
-import { defineComponent, reactive, ref } from "vue";
+import {defineComponent, reactive, ref} from "vue";
 import router from "@/router";
-import { createUserGroup } from "@/api/userGroup";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Notification } from "@arco-design/web-vue";
+import {createUserGroup} from "@/api/userGroup";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
+import UserGroupConditions from "../components/UserGroupConditions.vue";
 
 /**
  * 返回上一级
@@ -17,7 +18,21 @@ const handleBack = () => {
 const createUserGroupForm = reactive({
   name: "",
   code: "",
+  type: "STATIC",
   desc: "",
+  conditions: {
+    filters: [
+      {
+        key: undefined,
+        dataType: "STRING",
+        value: undefined,
+        filterType: undefined,
+        extFlg: undefined,
+      },
+    ],
+    conjunction: "AND",
+    groups: [],
+  },
 });
 const createUserGroupFormRef = ref();
 const createUserGroupFormRules = {
@@ -34,7 +49,9 @@ const createUserGroupFormRules = {
       },
     },
   ],
+  type: [{ required: true, message: "用户组类型未选择" }],
 };
+const userGroupConditionsRef = ref();
 
 /**
  * 重置创建用户组表单
@@ -45,11 +62,25 @@ const handleResetCreateUserGroupForm = () => {
 
 /**
  * 提交创建用户组表单
- * 
+ *
  * @param formData 创建用户组表单
  */
-const handleCreateUserGroupFormSubmit = (formData: any) => {
-  createUserGroup(formData)
+const handleCreateUserGroupFormSubmit = async () => {
+  const validateRes1 = await createUserGroupFormRef.value.validate();
+  let validateRes2 = true;
+  if (userGroupConditionsRef.value) {
+    validateRes2 = await userGroupConditionsRef.value.validate();
+  }
+  
+  if (validateRes1 !== undefined || !validateRes2) {
+    return;
+  }
+
+  if (createUserGroupForm.type === "STATIC") {
+    createUserGroupForm.conditions = undefined;
+  }
+
+  createUserGroup(createUserGroupForm)
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("创建成功");
@@ -61,7 +92,28 @@ const handleCreateUserGroupFormSubmit = (formData: any) => {
     });
 };
 
+const handleUserGroupTypeChange = (val: string) => {
+  if (val === "DYNAMIC") {
+    createUserGroupForm.conditions = {
+      filters: [
+        {
+          key: undefined,
+          dataType: "STRING",
+          value: undefined,
+          filterType: undefined,
+          extFlg: undefined,
+        },
+      ],
+      conjunction: "AND",
+      groups: [],
+    };
+  }
+};
+
 export default defineComponent({
+  components: {
+    UserGroupConditions,
+  },
   setup() {
     return {
       handleBack,
@@ -69,7 +121,9 @@ export default defineComponent({
       createUserGroupFormRef,
       createUserGroupFormRules,
       handleResetCreateUserGroupForm,
-      handleCreateUserGroupFormSubmit
+      handleCreateUserGroupFormSubmit,
+      userGroupConditionsRef,
+      handleUserGroupTypeChange,
     };
   },
 });

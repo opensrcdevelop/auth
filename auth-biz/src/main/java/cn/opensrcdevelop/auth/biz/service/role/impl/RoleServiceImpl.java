@@ -25,6 +25,7 @@ import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleService;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -34,9 +35,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +56,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     private final RoleRepository roleRepository;
     private final PermissionService permissionService;
     private final AuthorizeService authorizeService;
+
+    @Resource
+    @Lazy
+    private UserGroupService userGroupService;
 
     /**
      * 创建角色
@@ -131,7 +138,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
      */
     @Override
     public List<Role> getUserRoles(String userId) {
-        return CommonUtil.stream(roleRepository.searchUserRoles(userId)).map(RoleMapping::getRole).toList();
+        List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId)).map(UserGroup::getUserGroupId).collect(Collectors.toList());
+        return CommonUtil.stream(roleRepository.searchUserRoles(userId, dynamicUserGroupIds)).map(RoleMapping::getRole).toList();
     }
 
     /**

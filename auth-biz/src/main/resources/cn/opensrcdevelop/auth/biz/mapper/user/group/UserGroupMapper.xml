@@ -7,7 +7,8 @@
             t1.user_group_id,
             t2.user_group_name,
             t2.user_group_code,
-            t2.description
+            t2.description,
+            t2.user_group_type
         FROM
             t_user_group_mapping t1
             LEFT JOIN t_user_group t2 ON t2.user_group_id = t1.user_group_id

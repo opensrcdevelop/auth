@@ -41,6 +41,11 @@
         WHERE
             t1.user_id = #{userId}
             OR t1.user_group_id IN ( SELECT user_group_id FROM t_user_group_mapping WHERE user_id = #{userId} )
+            <if test="dynamicUserGroupIds != null and dynamicUserGroupIds.size() > 0">
+                <foreach collection="dynamicUserGroupIds" item="dynamicUserGroupId" open="OR t1.user_group_id IN (" close=")" separator=",">
+                    #{dynamicUserGroupId}
+                </foreach>
+            </if>
         ORDER BY t2.role_code
     </select>
 

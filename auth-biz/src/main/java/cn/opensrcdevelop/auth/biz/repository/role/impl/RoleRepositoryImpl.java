@@ -19,11 +19,12 @@ public class RoleRepositoryImpl implements RoleRepository {
      * 检索用户角色
      *
      * @param userId 用户ID
+     * @param dynamicUserGroupIds 动态用户组ID列表
      * @return 用户角色
      */
     @Override
-    public List<RoleMapping> searchUserRoles(String userId) {
-        return roleMapper.searchUserRoles(userId);
+    public List<RoleMapping> searchUserRoles(String userId, List<String> dynamicUserGroupIds) {
+        return roleMapper.searchUserRoles(userId, dynamicUserGroupIds);
     }
 
     /**

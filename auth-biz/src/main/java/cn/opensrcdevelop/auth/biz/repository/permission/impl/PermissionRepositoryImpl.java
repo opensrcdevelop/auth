@@ -21,6 +21,7 @@ public class PermissionRepositoryImpl implements PermissionRepository {
      *
      * @param page                           分页对象
      * @param userId                         用户ID
+     * @param dynamicUserGroupIds            动态用户组ID列表
      * @param resourceGroupCode              资源组标识
      * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
      * @param resourceNameSearchKeyword      资源名称搜索关键字
@@ -30,12 +31,13 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     @Override
     public void searchUserPermissions(IPage<AuthorizeRecord> page,
                                       String userId,
+                                      List<String> dynamicUserGroupIds,
                                       String resourceGroupCode,
                                       String resourceGroupNameSearchKeyword,
                                       String resourceNameSearchKeyword,
                                       String permissionNameSearchKeyword,
                                       String permissionCodeSearchKeyword) {
-        permissionMapper.searchUserPermissions(page, userId, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+        permissionMapper.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
