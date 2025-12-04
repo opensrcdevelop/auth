@@ -46,3 +46,21 @@ a:focus {
 .arco-form-item-extra {
   width: 100%;
 }
+
+::-webkit-scrollbar {
+  width: 9px
+}
+
+::-webkit-scrollbar-track {
+  background: inherit;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-4);
+  border-radius: 6px;
+
+  &:hover {
+    background: var(--color-neutral-6);
+  }
+}

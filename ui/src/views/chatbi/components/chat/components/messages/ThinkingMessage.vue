@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="thinkingContainer"
     class="message-thinking"
     v-if="message.type === 'THINKING'"
     v-html="formattedContent"
@@ -7,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue";
+import {computed, nextTick, ref, watch} from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -19,9 +20,21 @@ const props = withDefaults(
 );
 
 const formattedContent = computed(() => {
-  return props.message.content
-    .replace(/\n+/g, "<br>");
+  return props.message.content.replace(/\n+/g, "<br>");
 });
+
+const thinkingContainer = ref<HTMLElement | null>(null);
+
+watch(
+  () => props.message.content,
+  async () => {
+    await nextTick();
+    if (thinkingContainer.value) {
+      thinkingContainer.value.scrollTop = thinkingContainer.value.scrollHeight;
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped lang="scss">
@@ -33,5 +46,7 @@ const formattedContent = computed(() => {
   padding: 8px 12px;
   background-color: #f6f8fa;
   border-radius: 0 4px 4px 0;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

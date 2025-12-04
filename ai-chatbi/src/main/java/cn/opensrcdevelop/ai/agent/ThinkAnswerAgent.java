@@ -171,7 +171,7 @@ public class ThinkAnswerAgent {
             Class<?>[] executeMethodParamTypes = executeMethod.getParameterTypes();
             Object executeMethodResult;
             if (executeMethodParamTypes != null && executeMethodParamTypes.length > 0) {
-                Map<String, Object> paramsMap = CommonUtil.deserializeObject(parameters, new TypeReference<Map<String, Object>>() {
+                Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters, new TypeReference<Map<String, Object>>() {
                 });
                 Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"), executeMethodParamTypes[0]);
                 executeMethodResult = executeMethod.invoke(tool, request);
@@ -179,7 +179,7 @@ public class ThinkAnswerAgent {
                 executeMethodResult = executeMethod.invoke(tool);
             }
 
-            String result = CommonUtil.serializeObject(executeMethodResult);
+            String result = CommonUtil.nonJdkSerializeObject(executeMethodResult);
             log.info("Tool {} executed: {}", toolName, result);
 
             toolCallResult = Map.of(

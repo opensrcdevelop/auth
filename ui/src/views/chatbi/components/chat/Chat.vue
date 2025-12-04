@@ -438,34 +438,6 @@ const scrollToBottom = () => {
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
   border-radius: 12px;
   overflow-x: auto;
-
-  /* WebKit 浏览器滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  /* 滚动条滑块 */
-  &::-webkit-scrollbar-thumb {
-    background: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(144, 147, 153, 0.5);
-    }
-  }
-
-  /* Firefox 滚动条样式 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-  &:hover {
-    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-  }
 }
 
 .message-container {
@@ -473,34 +445,6 @@ const scrollToBottom = () => {
   overflow-y: auto;
   padding: 20px;
   margin-bottom: 20px;
-
-  /* WebKit 浏览器滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  /* 滚动条滑块 */
-  &::-webkit-scrollbar-thumb {
-    background: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(144, 147, 153, 0.5);
-    }
-  }
-
-  /* Firefox 滚动条样式 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-  &:hover {
-    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-  }
 }
 
 .operator-container {
@@ -547,36 +491,6 @@ const scrollToBottom = () => {
 
     &:hover {
       border: none;
-    }
-
-    :deep(.arco-textarea) {
-      /* WebKit 浏览器滚动条样式 */
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-        border-radius: 3px;
-      }
-
-      /* 滚动条滑块 */
-      &::-webkit-scrollbar-thumb {
-        background: rgba(144, 147, 153, 0.3);
-        border-radius: 3px;
-
-        &:hover {
-          background: rgba(144, 147, 153, 0.5);
-        }
-      }
-
-      /* Firefox 滚动条样式 */
-      scrollbar-width: thin;
-      scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-      &:hover {
-        scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-      }
     }
   }
 
