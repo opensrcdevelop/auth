@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="columnsLoaded">
     <div class="conditions-container">
       <div
         class="conjunction-container"
@@ -167,7 +167,7 @@
                   </a-select>
                   <icon-minus-circle
                     class="remove-filter"
-                    v-if="conditions.filters.length > 1"
+                    v-if="canRemove"
                     @click="handleRemoveFilter(index)"
                   />
                 </a-form-item>
@@ -175,16 +175,18 @@
             </a-row>
           </a-form>
         </div>
-        <div v-if="conditions.groups?.length">
+        <div v-if="conditions.groups.length > 0">
           <div v-for="(group, index) in conditions.groups" :key="index">
             <div class="group">
               <UserGroupConditions
                 class="group-item"
                 :conditions="group"
                 :columns="allUserColumns"
+                :dictDatas="allDictDatas"
                 ref="groupRef"
               />
               <icon-minus-circle
+                v-if="canRemove"
                 class="remove-group"
                 @click="handleRemoveGroup(index)"
               />
@@ -217,11 +219,12 @@
 import {getEnabledDictData} from "@/api/dict";
 import {getUserAttrs} from "@/api/user";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
-import {onMounted, reactive, ref, watch} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 
 const props = defineProps<{
   conditions: any;
   columns?: any[];
+  dictDatas?: any;
 }>();
 
 const emit = defineEmits<{
@@ -236,10 +239,14 @@ watch(
   { deep: true, immediate: true }
 );
 
+const columnsLoaded = ref(false);
 const formRef = ref();
 const groupRef = ref();
-const allUserColumns = reactive([]);
-const allDictDatas = reactive({});
+const allUserColumns = []
+const allDictDatas = {}
+const canRemove = computed(() => {
+  return props.conditions.filters?.length + props.conditions.groups?.length > 1;
+});
 
 const handleGetAllUserColumns = () => {
   getUserAttrs({
@@ -251,12 +258,14 @@ const handleGetAllUserColumns = () => {
         allUserColumns.length = 0;
         allUserColumns.push(...data.list);
 
-        allUserColumns.forEach((item: any) => {
+        allUserColumns.forEach(async (item: any) => {
           if (item.dataType === "DICT" && item.dictId) {
             allDictDatas[item.key] = [];
-            handleGetEnabledDictData(item.key, item.dictId);
+            await handleGetEnabledDictData(item.key, item.dictId);
           }
         });
+
+        columnsLoaded.value = true;
       });
     })
     .catch((err: any) => {
@@ -345,10 +354,14 @@ const handleValidateForm = async () => {
 };
 
 onMounted(() => {
-  if (!props.columns) {
+  if (!props.columns || props.columns.length === 0) {
     handleGetAllUserColumns();
   } else {
+    columnsLoaded.value = true;
     allUserColumns.push(...props.columns);
+    if (props.dictDatas) {
+      Object.assign(allDictDatas, props.dictDatas);
+    }
   }
 });
 

@@ -5,6 +5,7 @@ import cn.opensrcdevelop.common.validation.ValidationGroups;
 import cn.opensrcdevelop.common.validation.constraints.AlphaNum;
 import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -37,7 +38,7 @@ public class UserGroupRequestDto {
 
     @Schema(description = "动态用户组条件")
     @NotNull(groups = { DynamicUserGroup.class })
-    private DynamicUserGroupConditionsDto conditions;
+    private @Valid DynamicUserGroupConditionsDto conditions;
 
     public static interface DynamicUserGroup {}
 

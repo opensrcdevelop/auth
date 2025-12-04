@@ -99,6 +99,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         userGroup.setUserGroupType(requestDto.getType().name());
 
         if (UserGroupType.DYNAMIC.equals(requestDto.getType())) {
+            checkDynamicUserGroupConditions(requestDto);
             userGroup.setDynamicConditions(CommonUtil.nonJdkSerializeObject(requestDto.getConditions()));
         }
 
@@ -409,6 +410,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         // 3. 动态用户组参数校验
         if (UserGroupType.DYNAMIC.name().equals(rawUserGroup.getUserGroupType())) {
+            checkDynamicUserGroupConditions(requestDto);
             CommonUtil.validateBean(requestDto, UserGroupRequestDto.DynamicUserGroup.class);
         }
 
@@ -542,6 +544,12 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         }
     }
 
+    private void checkDynamicUserGroupConditions(UserGroupRequestDto requestDto) {
+        if (CollectionUtils.isEmpty(requestDto.getConditions().getFilters()) && CollectionUtils.isEmpty(requestDto.getConditions().getGroups())) {
+            throw new BizException(MessageConstants.USER_GROUP_MSG_1001);
+        }
+    }
+
     private void editQueryWrapper(QueryWrapper<User> queryWrapper, DynamicUserGroupConditionsDto conditions) {
         if (CollectionUtils.isNotEmpty(conditions.getFilters())) {
             for (DataFilterDto filter : conditions.getFilters()) {
@@ -551,17 +559,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         if (CollectionUtils.isNotEmpty(conditions.getGroups())) {
             if (ConjunctionType.OR.equals(conditions.getConjunction())) {
-                queryWrapper.or(q -> {
-                    for (DynamicUserGroupConditionsDto group : conditions.getGroups()) {
-                        editQueryWrapper(q, group);
-                    }
-                });
+                for (DynamicUserGroupConditionsDto group : conditions.getGroups()) {
+                    queryWrapper.or(q -> editQueryWrapper(q, group));
+                }
             } else {
-                queryWrapper.and(q -> {
-                    for (DynamicUserGroupConditionsDto group : conditions.getGroups()) {
-                        editQueryWrapper(q, group);
-                    }
-                });
+                for (DynamicUserGroupConditionsDto group : conditions.getGroups()) {
+                    queryWrapper.and(q -> editQueryWrapper(q, group));
+                }
             }
         }
     }

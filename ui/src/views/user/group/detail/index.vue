@@ -310,7 +310,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserGroupPermissions(1, 15)"
+                        @click="handleGetUserGroupPermissions()"
                         type="primary"
                         >确认</a-button
                       >

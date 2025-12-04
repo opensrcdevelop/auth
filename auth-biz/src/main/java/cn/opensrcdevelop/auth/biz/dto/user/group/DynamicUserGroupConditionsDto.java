@@ -4,7 +4,6 @@ import cn.opensrcdevelop.auth.biz.constants.ConjunctionType;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -15,7 +14,6 @@ import java.util.List;
 public class DynamicUserGroupConditionsDto {
 
     @Schema(description = "过滤条件")
-    @NotEmpty
     private List<@Valid DataFilterDto> filters;
 
     @Schema(description = "连接类型")
