@@ -25,7 +25,7 @@ public class ExtractUserQueryTool implements MethodTool {
             name = TOOL_NAME,
             description = "Used to extract user query from question"
     )
-    public Response execute() {
+    public Response execute(@ToolParam(description = "The request to extract user query") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setUserQuery(null);
@@ -34,7 +34,7 @@ public class ExtractUserQueryTool implements MethodTool {
         if (StringUtils.isEmpty(question)) {
             question = chatContext.getRawQuestion();
         }
-        Map<String, Object> result = chatAgent.extractQuery(chatContext.getChatClient(), question);
+        Map<String, Object> result = chatAgent.extractQuery(chatContext.getChatClient(), question, request.instruction);
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             String extractedQuery = (String) result.get("extracted_query");
@@ -52,6 +52,13 @@ public class ExtractUserQueryTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
+    }
+
+    @Data
+    public static class Request {
+
+        @ToolParam(description = "The instruction to extract user query", required = false)
+        private String instruction;
     }
 
     @Data

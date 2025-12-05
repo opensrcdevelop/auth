@@ -157,6 +157,7 @@ public class ThinkAnswerAgent {
         Map<String, Object> toolCallResult;
         String toolName = toolCall.get("name").toString();
         String parameters = toolCall.get("parameters").toString();
+        String executeTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
@@ -184,6 +185,7 @@ public class ThinkAnswerAgent {
 
             toolCallResult = Map.of(
                     "tool_name", toolName,
+                    "execute_time", executeTime,
                     "result", result
             );
 
@@ -195,11 +197,16 @@ public class ThinkAnswerAgent {
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
+            if (Objects.isNull(ex.getMessage()) && Objects.nonNull(ex.getCause())) {
+                errorMsg = "Error: " + ex.getCause().getMessage();
+            }
+
             if (ex.getCause() instanceof JacksonException) {
-                errorMsg = errorMsg + ", Please check the tool parameters.";
+                errorMsg = errorMsg + ", Please check the tool parameters format.";
             }
             toolCallResult = Map.of(
                     "tool_name", toolName,
+                    "execute_time", executeTime,
                     "result", errorMsg
             );
 

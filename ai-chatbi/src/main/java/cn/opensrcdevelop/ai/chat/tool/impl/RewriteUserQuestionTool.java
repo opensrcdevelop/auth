@@ -24,13 +24,13 @@ public class RewriteUserQuestionTool implements MethodTool {
             name = TOOL_NAME,
             description = "Used to rewrite user question"
     )
-    public Response execute() {
+    public Response execute(@ToolParam(description = "The request to rewrite user question") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setQuestion(null);
 
         String rawQuestion = chatContext.getRawQuestion();
-        Map<String, Object> result = chatAgent.rewriteUserQuestion(chatContext.getChatClient(), rawQuestion);
+        Map<String, Object> result = chatAgent.rewriteUserQuestion(chatContext.getChatClient(), rawQuestion, request.instruction);
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             String rewriteQuestion = (String) result.get("rewritten_question");
@@ -49,6 +49,13 @@ public class RewriteUserQuestionTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
+    }
+
+    @Data
+    public static class Request {
+
+        @ToolParam(description = "The instruction to rewrite user question", required = false)
+        private String instruction;
     }
 
     @Data

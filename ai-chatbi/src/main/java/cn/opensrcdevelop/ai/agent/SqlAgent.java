@@ -32,9 +32,13 @@ public class SqlAgent {
      * @param chatClient ChatClient
      * @param userQuestion 用户问题
      * @param dataSourceId 数据源ID
+     * @param instruction 指令
      * @return 相关表
      */
-    public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuestion, String dataSourceId) {
+    public Map<String, Object> getRelevantTables(ChatClient chatClient,
+                                                 String userQuestion,
+                                                 String dataSourceId,
+                                                 String instruction) {
         // 1. 获取数据源中的表信息
         List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
         if (CollectionUtils.isEmpty(candidateTables)) {
@@ -46,7 +50,8 @@ public class SqlAgent {
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
                 .param("question", userQuestion)
-                .param("table_descriptions", CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList());
+                .param("table_descriptions", CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList())
+                .param("instruction", instruction);
 
         // 2. 推测关联表
         return chatClient.prompt()
@@ -64,9 +69,14 @@ public class SqlAgent {
      * @param userQuestion 用户问题
      * @param relevantTables 相关表
      * @param dataSourceId 数据源ID
+     * @param instruction 指令
      * @return SQL
      */
-    public Map<String, Object> generateSql(ChatClient chatClient, String userQuestion, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> generateSql(ChatClient chatClient,
+                                           String userQuestion,
+                                           List<Map<String, Object>> relevantTables,
+                                           String dataSourceId,
+                                           String instruction) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -74,7 +84,8 @@ public class SqlAgent {
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("question", userQuestion)
-                .param("relevant_tables", schemas);
+                .param("relevant_tables", schemas)
+                .param("instruction", instruction);
 
         // 2. 生成 SQL
         return chatClient.prompt()
@@ -93,9 +104,15 @@ public class SqlAgent {
      * @param error 错误信息
      * @param relevantTables 相关表
      * @param dataSourceId 数据源ID
+     * @param instruction 指令
      * @return 修复后的 SQL
      */
-    public Map<String, Object> fixSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> fixSql(ChatClient chatClient,
+                                      String sql,
+                                      String error,
+                                      List<Map<String, Object>> relevantTables,
+                                      String dataSourceId,
+                                      String instruction) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -103,7 +120,8 @@ public class SqlAgent {
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("sql", sql)
                 .param("error", error)
-                .param("relevant_tables", schemas);
+                .param("relevant_tables", schemas)
+                .param("instruction", instruction);
 
         // 2. 修复 SQL
         return chatClient.prompt()

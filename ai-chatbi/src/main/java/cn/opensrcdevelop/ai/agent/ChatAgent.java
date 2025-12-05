@@ -27,9 +27,10 @@ public class ChatAgent {
      *
      * @param chatClient   ChatClient
      * @param userQuestion 用户提问
+     * @param instruction 指令
      * @return 重写后的用户提问
      */
-    public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion) {
+    public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion, String instruction) {
         // 1. 获取用户历史提问
         List<String> userQuestions = chatMessageHistoryService.getUserHistoryQuestions(ChatContextHolder.getChatContext().getChatId());
         if (CollectionUtils.isEmpty(userQuestions) || userQuestions.size() < 2) {
@@ -42,7 +43,8 @@ public class ChatAgent {
         // 2. 重写用户提问
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.REWRITE_QUESTION)
                 .param("historical_questions", new ArrayList<>(userQuestions))
-                .param("original_question", userQuestion);
+                .param("original_question", userQuestion)
+                .param("instruction", instruction);
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt(PromptTemplate.REWRITE_QUESTION))
@@ -58,11 +60,13 @@ public class ChatAgent {
      *
      * @param chatClient   ChatClient
      * @param userQuestion 用户提问
+     * @param instruction 指令
      * @return 查询信息
      */
-    public Map<String, Object> extractQuery(ChatClient chatClient, String userQuestion) {
+    public Map<String, Object> extractQuery(ChatClient chatClient, String userQuestion, String instruction) {
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.EXTRACT_QUERY)
-                .param("question", userQuestion);
+                .param("question", userQuestion)
+                .param("instruction", instruction);
 
         return chatClient.prompt()
                 .system(prompt.buildSystemPrompt(PromptTemplate.EXTRACT_QUERY))

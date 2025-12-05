@@ -60,7 +60,7 @@ public class AnalyzeDataTool implements MethodTool {
 
             // 2. 生成 Python 数据分析代码
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
-                    ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath());
+                    ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(), request.generatePythonCodeInstruction);
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
                 response.setSuccess(false);
                 response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
@@ -73,7 +73,8 @@ public class AnalyzeDataTool implements MethodTool {
                     tempDataFile.getAbsolutePath(),
                     (String) pythonCodeResult.get("python_code"),
                     (List<String>) pythonCodeResult.get("packages"),
-                    3
+                    3,
+                    request.fixGeneratePythonCodeInstruction
             );
             if (!Boolean.TRUE.equals(executeResult._1)) {
                 response.setSuccess(false);
@@ -84,7 +85,8 @@ public class AnalyzeDataTool implements MethodTool {
             // 4. 处理 Python 数据分析代码执行结果
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(
                     ChatContextHolder.getChatContext().getChatClient(),
-                    executeResult._2
+                    executeResult._2,
+                    request.analyzeDataInstruction
             );
             if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
                 response.setSuccess(false);
@@ -125,7 +127,8 @@ public class AnalyzeDataTool implements MethodTool {
                                                                      String dataFilePath,
                                                                      String pythonCode,
                                                                      List<String> packages,
-                                                                     int maxAttempts) {
+                                                                     int maxAttempts,
+                                                                     String instruction) {
         int attempt = 0;
         String executeOutput = "";
         while (attempt <= maxAttempts) {
@@ -137,7 +140,13 @@ public class AnalyzeDataTool implements MethodTool {
             ExecutePythonTool.Response response = executePythonTool.execute(request);
             if (!Boolean.TRUE.equals(response.getSuccess())) {
                 log.error("第 {} 次执行 Python 代码失败", attempt);
-                Map<String, Object> fixResult = analyzeAgent.fixPythonCode(chatClient, dataFilePath, pythonCode, response.getResult());
+                Map<String, Object> fixResult = analyzeAgent.fixPythonCode(
+                        chatClient,
+                        dataFilePath,
+                        pythonCode,
+                        response.getResult(),
+                        instruction
+                );
                 if (!Boolean.TRUE.equals(fixResult.get("success"))) {
                     return Tuple.of(false, response.getResult(), pythonCode);
                 }
@@ -157,6 +166,15 @@ public class AnalyzeDataTool implements MethodTool {
 
         @ToolParam(description = "The question to analyze data")
         private String question;
+
+        @ToolParam(description = "The instruction to generate Python code used to analyze data", required = false)
+        private String generatePythonCodeInstruction;
+
+        @ToolParam(description = "The instruction to fix Python code used to analyze data", required = false)
+        private String fixGeneratePythonCodeInstruction;
+
+        @ToolParam(description = "The instruction to analyze data", required = false)
+        private String analyzeDataInstruction;
     }
 
     @Data

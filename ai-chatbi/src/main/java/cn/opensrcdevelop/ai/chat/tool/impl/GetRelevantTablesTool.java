@@ -45,7 +45,8 @@ public class GetRelevantTablesTool implements MethodTool {
         Map<String, Object> result = sqlAgent.getRelevantTables(
                 chatContext.getChatClient(),
                 query,
-                chatContext.getDataSourceId());
+                chatContext.getDataSourceId(),
+                request.instruction);
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             List<Map<String, Object>> tables = (List<Map<String, Object>>) result.get("tables");
@@ -62,6 +63,9 @@ public class GetRelevantTablesTool implements MethodTool {
 
         @ToolParam(description = "The query to get relevant tables", required = false)
         private String query;
+
+        @ToolParam(description = "The instruction to get relevant tables", required = false)
+        private String instruction;
     }
 
     @Data

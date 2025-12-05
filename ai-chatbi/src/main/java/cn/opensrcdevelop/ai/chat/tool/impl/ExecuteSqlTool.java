@@ -35,7 +35,7 @@ public class ExecuteSqlTool implements MethodTool {
             name = TOOL_NAME,
             description = "Used to execute the SQL"
     )
-    public Response execute() {
+    public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         if (StringUtils.isEmpty(chatContext.getSql())) {
@@ -51,7 +51,8 @@ public class ExecuteSqlTool implements MethodTool {
                 chatContext.getSql(),
                 chatContext.getDataSourceId(),
                 chatContext.getRelevantTables(),
-                5);
+                5,
+                request.fixSqlInstruction);
         Boolean success = result._1;
         if (!Boolean.TRUE.equals(success)) {
             response.setError("Failed to execute SQL: %s, error message: %s".formatted(result._3, result._4()));
@@ -68,6 +69,13 @@ public class ExecuteSqlTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
+    }
+
+    @Data
+    public static class Request {
+
+        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is not executable", required = false)
+        private String fixSqlInstruction;
     }
 
     @Data
@@ -88,7 +96,8 @@ public class ExecuteSqlTool implements MethodTool {
                                                                                          String sql,
                                                                                          String dataSourceId,
                                                                                          List<Map<String, Object>> relevantTables,
-                                                                                         int maxAttempts) {
+                                                                                         int maxAttempts,
+                                                                                         String instruction) {
         JdbcTemplate jdbcTemplate = dataSourceManager.getJdbcTemplate(dataSourceId);
         int attempt = 0;
         List<Map<String, Object>> queryResult = new ArrayList<>();
@@ -105,7 +114,7 @@ public class ExecuteSqlTool implements MethodTool {
                 if (attempt > maxAttempts) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId);
+                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId, instruction);
                 if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }

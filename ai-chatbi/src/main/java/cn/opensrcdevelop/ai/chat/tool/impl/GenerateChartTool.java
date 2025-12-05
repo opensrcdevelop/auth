@@ -34,7 +34,8 @@ public class GenerateChartTool implements MethodTool {
                 chatContext.getChatClient(),
                 chatContext.getSql(),
                 request.question,
-                chatContext.getQueryData()
+                chatContext.getQueryData(),
+                request.instruction
         );
 
         Boolean success = (Boolean) result.get("success");
@@ -58,6 +59,9 @@ public class GenerateChartTool implements MethodTool {
 
         @ToolParam(description = "The question to generate the chart")
         private String question;
+
+        @ToolParam(description = "The instruction to generate the chart", required = false)
+        private String instruction;
     }
 
     @Data

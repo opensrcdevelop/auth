@@ -47,7 +47,8 @@ public class GenerateSqlTool implements MethodTool {
                 chatContext.getChatClient(),
                 query,
                 tables,
-                chatContext.getDataSourceId());
+                chatContext.getDataSourceId(),
+                request.instruction);
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             String sql =(String) result.get("sql");
@@ -76,6 +77,8 @@ public class GenerateSqlTool implements MethodTool {
         @ToolParam(description = "The tables to generate SQL", required = false)
         private List<Map<String, Object>> tables;
 
+        @ToolParam(description = "The instruction to generate SQL", required = false)
+        private String instruction;
     }
 
     @Data

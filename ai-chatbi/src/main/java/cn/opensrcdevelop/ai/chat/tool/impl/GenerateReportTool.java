@@ -42,7 +42,8 @@ public class GenerateReportTool implements MethodTool {
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
                 chatContext.getChatClient(),
                 chatContext.getAnalyzeDataResult(),
-                chatContext.getAnalyzeDataSummary()
+                chatContext.getAnalyzeDataSummary(),
+                request.instruction
         );
 
         Boolean success = (Boolean) result.get("success");
@@ -66,6 +67,9 @@ public class GenerateReportTool implements MethodTool {
 
         @ToolParam(description = "The question to generate report")
         private String question;
+
+        @ToolParam(description = "The instruction to generate report", required = false)
+        private String instruction;
     }
 
     @Data
