@@ -10,6 +10,7 @@ import io.vavr.Tuple4;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
@@ -41,6 +42,12 @@ public class ExecuteSqlTool implements MethodTool {
         if (StringUtils.isEmpty(chatContext.getSql())) {
             response.setSuccess(false);
             response.setError("No sql found, please execute generate sql tool first.");
+            return response;
+        }
+
+        if (!isLegalSql(chatContext.getSql())) {
+            response.setSuccess(false);
+            response.setError("Cannot execute the SQL. Please check if it is a query or contains 'SELECT *'.");
             return response;
         }
 
@@ -105,7 +112,29 @@ public class ExecuteSqlTool implements MethodTool {
         while (attempt <= maxAttempts) {
             attempt++;
             try {
+                // 1. 执行 SQL
                 queryResult = jdbcTemplate.queryForList(sql);
+
+                // 2.检查查询数据是否包含禁止字段
+                if (CollectionUtils.isNotEmpty(queryResult)) {
+                    Map<String, Object> checkResult = sqlAgent.checkQueryData(
+                            chatClient,
+                            sql,
+                            relevantTables,
+                            ChatContextHolder.getChatContext().getQueryColumns(),
+                            queryResult
+                    );
+                    Boolean checkSuccess = (Boolean) checkResult.get("success");
+                    if (!Boolean.TRUE.equals(checkSuccess)) {
+                        return Tuple.of(false, queryResult, sql, (String) checkResult.get("error"));
+                    }
+
+                    Boolean valid = (Boolean) checkResult.get("valid");
+                    if (!Boolean.TRUE.equals(valid)) {
+                        return Tuple.of(false, queryResult, sql, (String) checkResult.get("message"));
+                    }
+                }
+
                 break;
             } catch (Exception ex) {
                 String errorMsg = ex.getMessage();
@@ -123,5 +152,27 @@ public class ExecuteSqlTool implements MethodTool {
         }
 
         return Tuple.of(true, queryResult, sql, null);
+    }
+
+    private boolean isLegalSql(String sql) {
+        String lowerSql = sql.toLowerCase().trim();
+
+        String[] illegalKeywords = {
+                "insert", "update", "delete", "drop", "truncate",
+                "alter", "create", "replace", "merge", "execute",
+                "exec", "call", "grant", "revoke", "commit", "rollback"
+        };
+
+        for (String keyword : illegalKeywords) {
+            if (lowerSql.matches("(?i)\\b" + keyword + "\\b.*")) {
+                return false;
+            }
+        }
+
+        if (lowerSql.contains("select *")) {
+            return false;
+        }
+
+        return lowerSql.startsWith("select") || lowerSql.startsWith("with");
     }
 }

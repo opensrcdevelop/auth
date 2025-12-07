@@ -36,7 +36,7 @@ public class GenerateSqlTool implements MethodTool {
         String query = request.getQuery();
         List<Map<String, Object>> tables = request.getTables();
         if (StringUtils.isEmpty(query)) {
-            query = chatContext.getUserQuery();
+            query = StringUtils.isNotEmpty(chatContext.getUserQuery()) ? chatContext.getUserQuery() : chatContext.getQuestion();
         }
 
         if (CollectionUtils.isEmpty(tables)) {

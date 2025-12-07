@@ -101,6 +101,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
                 chatContext.setDataSourceId(requestDto.getDataSourceId());
+                chatContext.setQuestion(requestDto.getQuestion());
                 chatContext.setRawQuestion(requestDto.getQuestion());
                 ChatContextHolder.setChatContext(chatContext);
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());

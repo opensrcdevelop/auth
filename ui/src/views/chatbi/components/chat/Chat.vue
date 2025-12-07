@@ -304,6 +304,7 @@ const resendMessage = (qId: string) => {
  * 处理消息
  */
 const handleMessage = (message) => {
+  scrollToBottom();
   activeChatId.value = message.chatId;
   // 如果当前对话为全新对话，则更新对话历史
   if (activeChatId.value !== props.chatId) {
@@ -336,7 +337,6 @@ const handleMessage = (message) => {
       time: message.time,
       feedback: message.feedback,
     });
-    scrollToBottom();
     return;
   }
 
@@ -398,6 +398,8 @@ const handleMessage = (message) => {
       chatId: message.chatId,
     });
   }
+
+  scrollToBottom();
 };
 
 /**

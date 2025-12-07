@@ -185,4 +185,19 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
             return tableDescription;
         }).toList();
     }
+
+    /**
+     * 获取表的禁止字段
+     *
+     * @param tableId 表ID
+     * @return 表的禁止字段
+     */
+    @Override
+    public List<String> getTableForbiddenFields(String tableId) {
+        List<TableField> forbiddenFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+            .select(TableField::getFieldName)
+            .eq(TableField::getTableId, tableId)
+            .eq(TableField::getToUse, false));
+        return CommonUtil.stream(forbiddenFields).map(TableField::getFieldName).toList();
+    }
 }

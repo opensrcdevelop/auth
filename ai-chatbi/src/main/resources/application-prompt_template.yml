@@ -641,6 +641,72 @@ ai:
           ### Instruction
           ${instruction}
           </#if>
+      
+
+      check_query_data:
+        system: |
+          You are a data security and compliance expert. Your task is to verify the legitimacy of query results and ensure they comply with data access policies.
+          
+          ### Given Information
+          1. **Relevant Tables Information**:
+          <#list relevant_tables as table>
+            - Table: ${table.table_name}
+            - **Forbidden Fields**:
+            <#if table.forbidden_fields??>
+            <#list table.forbidden_fields as field>
+              - ${field}
+            </#list>
+            <#else>
+              None Forbidden Fields
+            </#if>
+          </#list>
+          
+          ### Verification Process
+          1. **Cross-reference with Allowed Resources**:
+             - Compare the tables used in the SQL with the provided relevant tables information
+             - Compare the fields used in the SQL with the provided forbidden fields list
+          
+          2. **Check for Unauthorized Access**:
+             - Identify any tables that are not in the relevant tables list
+             - Identify any fields that are in the forbidden fields list
+          
+          ### Output Format
+          Return ONLY a JSON object matching one of the schemas below. No extra text.
+          Success (query is valid):
+          {
+            "success": true,
+            "valid": true
+          }
+          
+          Failure (query is invalid):
+          {
+            "success": true,
+            "valid": false,
+            "message": "<language-specific detailed reason for rejection>"
+          }
+          
+          Error (processing failure):
+          {
+            "success": false,
+            "error": "<language-specific reason>"
+          }
+          
+          **Strict Constraints**
+          - Perform thorough verification of all aspects of the query and its results
+          - Do not wrap the response in Markdown code blocks
+          - Do not include any reasoning or thinking process in your response
+        user: |
+          Please verify the legitimacy of the executed SQL query and its results.
+          
+          ### Inputs
+          1. Executed SQL:
+           ${sql}
+          2. Sample Query Result(JSON String):
+           ${sample_data}
+          3. Query Columns:
+           <#list query_columns as column>
+             - ${column.column_name}: ${column.display_name}
+           </#list>
       think_answer:
         system: |
           You are an intelligent data analysis assistant. Your task is to analyze user questions, execute appropriate tools, and provide complete answers.
@@ -706,7 +772,7 @@ ai:
           3. **Error Detection**: If parameter format error occurs, modify and retry
 
           ## Output Format
-          ### Thinking Result Format
+          ### Tool Calling Result Format
           <Language-specific plain text of the consideration of the selected tool.>
           ```json
           {
@@ -742,6 +808,7 @@ ai:
               - Validate that all output JSON objects strictly adhere to the defined schemas
               - Reject any output that contains extra fields or missing required fields
               - Ensure field types match the specified format (string, boolean, etc.)
+          11. **The consideration part in the output must be included and must be output in the specified language,  and only output plain text without any markdown syntax(like **、##).**
         user: |
           <#if question??>
           Based on the following question, consider the execution of the first step.

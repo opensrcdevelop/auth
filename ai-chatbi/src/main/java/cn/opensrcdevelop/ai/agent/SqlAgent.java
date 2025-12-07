@@ -29,10 +29,10 @@ public class SqlAgent {
     /**
      * 从表描述中获取相关表
      *
-     * @param chatClient ChatClient
+     * @param chatClient   ChatClient
      * @param userQuestion 用户问题
      * @param dataSourceId 数据源ID
-     * @param instruction 指令
+     * @param instruction  指令
      * @return 相关表
      */
     public Map<String, Object> getRelevantTables(ChatClient chatClient,
@@ -59,17 +59,18 @@ public class SqlAgent {
                 .user(prompt.buildUserPrompt(PromptTemplate.SELECT_TABLE))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 
     /**
      * 生成 SQL
      *
-     * @param chatClient ChatClient
-     * @param userQuestion 用户问题
+     * @param chatClient     ChatClient
+     * @param userQuestion   用户问题
      * @param relevantTables 相关表
-     * @param dataSourceId 数据源ID
-     * @param instruction 指令
+     * @param dataSourceId   数据源ID
+     * @param instruction    指令
      * @return SQL
      */
     public Map<String, Object> generateSql(ChatClient chatClient,
@@ -99,12 +100,12 @@ public class SqlAgent {
     /**
      * 修复 SQL
      *
-     * @param chatClient ChatClient
-     * @param sql SQL
-     * @param error 错误信息
+     * @param chatClient     ChatClient
+     * @param sql            SQL
+     * @param error          错误信息
      * @param relevantTables 相关表
-     * @param dataSourceId 数据源ID
-     * @param instruction 指令
+     * @param dataSourceId   数据源ID
+     * @param instruction    指令
      * @return 修复后的 SQL
      */
     public Map<String, Object> fixSql(ChatClient chatClient,
@@ -129,6 +130,46 @@ public class SqlAgent {
                 .user(prompt.buildUserPrompt(PromptTemplate.FIX_SQL))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
+
+    /**
+     * 检查查询数据是否包含禁止字段
+     *
+     * @param chatClient     ChatClient
+     * @param sql            SQL
+     * @param relevantTables 相关表
+     * @param queryColumns   查询列
+     * @param queryData      查询数据
+     * @return 是否包含禁止字段
+     */
+    public Map<String, Object> checkQueryData(
+            ChatClient chatClient,
+            String sql,
+            List<Map<String, Object>> relevantTables,
+            List<Map<String, Object>> queryColumns,
+            List<Map<String, Object>> queryData) {
+        // 1. 获取表的禁止字段
+        for (Map<String, Object> relevantTable : relevantTables) {
+            String tableId = relevantTable.get("table_id").toString();
+            List<String> forbiddenFields = tableService.getTableForbiddenFields(tableId);
+            relevantTable.put("forbidden_fields", forbiddenFields);
+        }
+
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.CHECK_QUERY_DATA)
+                .param("relevant_tables", relevantTables)
+                .param("sql", sql)
+                .param("query_columns", queryColumns)
+                .param("sample_data", CommonUtil.nonJdkSerializeObject(queryData.getFirst()));
+
+        // 2. 检查查询数据是否包含禁止字段
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt(PromptTemplate.CHECK_QUERY_DATA))
+                .user(prompt.buildUserPrompt(PromptTemplate.CHECK_QUERY_DATA))
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.CHECK_QUERY_DATA))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }
