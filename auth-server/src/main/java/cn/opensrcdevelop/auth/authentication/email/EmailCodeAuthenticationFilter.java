@@ -3,6 +3,8 @@ package cn.opensrcdevelop.auth.authentication.email;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,7 +28,8 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
     private static final String PARAMETER_EMAIL = "email";
     private static final String PARAMETER_CODE = "code";
-    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, AuthConstants.EMAIL_LOGIN_URL);
+    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST,
+            SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix().concat(AuthConstants.EMAIL_LOGIN_URL));
 
     public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager) {
         super(REQUEST_MATCHER, authenticationManager);
