@@ -808,7 +808,7 @@ ai:
               - Validate that all output JSON objects strictly adhere to the defined schemas
               - Reject any output that contains extra fields or missing required fields
               - Ensure field types match the specified format (string, boolean, etc.)
-          11. **The consideration part in the output must be included and must be output in the specified language,  and only output plain text without any markdown syntax(like **、##).**
+          11. **The consideration part in the output must be included and must be output in the specified language,  and only output plain text without any markdown syntax(like ****、##、``).**
         user: |
           <#if question??>
           Based on the following question, consider the execution of the first step.

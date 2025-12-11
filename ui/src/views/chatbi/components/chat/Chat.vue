@@ -313,6 +313,7 @@ const handleMessage = (message) => {
 
   if (message.role === "USER") {
     messages.push(message);
+    scrollToBottom();
     return;
   }
 
@@ -337,6 +338,7 @@ const handleMessage = (message) => {
       time: message.time,
       feedback: message.feedback,
     });
+    scrollToBottom();
     return;
   }
 
@@ -398,8 +400,6 @@ const handleMessage = (message) => {
       chatId: message.chatId,
     });
   }
-
-  scrollToBottom();
 };
 
 /**

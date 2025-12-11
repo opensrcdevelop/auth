@@ -7,6 +7,7 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
+import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
 import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.resource.group.ResourceGroupResponseDto;
@@ -15,12 +16,14 @@ import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.auth.biz.mapper.resource.group.ResourceGroupMapper;
 import cn.opensrcdevelop.auth.biz.service.resource.ResourceService;
 import cn.opensrcdevelop.auth.biz.service.resource.group.ResourceGroupService;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
@@ -31,11 +34,15 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, ResourceGroup> implements ResourceGroupService {
+
+    private final SystemSettingService systemSettingService;
 
     @jakarta.annotation.Resource
     @Lazy
     private ResourceService resourceService;
+
 
     /**
      * 获取资源组列表
@@ -136,23 +143,30 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 删除资源组
      *
-     * @param resourceGroupIds 资源组ID集合
+     * @param resourceGroupId 资源组ID
      */
     @Audit(
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.RESOURCE_GROUP,
             sysOperation = SysOperationType.DELETE,
-            success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）",
-            fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupIds, ResourceType.RESOURCE_GROUP) }}）失败"
+            success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）",
+            fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败"
     )
     @Transactional
     @Override
-    public void removeResourceGroup(List<String> resourceGroupIds) {
-        // 1. 删除资源组
-        super.remove(Wrappers.<ResourceGroup>lambdaQuery().in(ResourceGroup::getResourceGroupId, resourceGroupIds));
+    public void removeResourceGroup(String resourceGroupId) {
+        ResourceGroup resourceGroup = super.getById(resourceGroupId);
+        if (Objects.isNull(resourceGroup)) {
+            return;
+        }
+        // 1. 检查是否为系统资源组
+        checkIsSystemResourceGroup(resourceGroup.getResourceGroupCode());
 
-        // 2. 删除组内资源
-        var resources = resourceService.list(Wrappers.<Resource>lambdaQuery().in(Resource::getResourceGroupId, resourceGroupIds));
+        // 2. 删除资源组
+        super.removeById(resourceGroupId);
+
+        // 3. 删除组内资源
+        var resources = resourceService.list(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceGroupId, resourceGroupId));
         if (CollectionUtils.isNotEmpty(resources)) {
             resourceService.removeResource(resources.stream().map(Resource::getResourceId).toList());
         }
@@ -217,6 +231,9 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         compareObjBuilder.id(resourceGroupId);
         compareObjBuilder.before(rawResourceGroup);
 
+        // 2. 检查是否为系统资源组
+        checkIsSystemResourceGroup(rawResourceGroup.getResourceGroupCode());
+
         // 3. 检查资源组标识是否存在
         checkResourceGroupCode(requestDto, rawResourceGroup);
 
@@ -241,6 +258,13 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
 
         if (Objects.nonNull(super.getOne(Wrappers.<ResourceGroup>lambdaQuery().eq(ResourceGroup::getResourceGroupCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.RESOURCE_GROUP_MSG_1000, requestDto.getCode());
+        }
+    }
+
+    private void checkIsSystemResourceGroup(String resourceGroupCode) {
+        String consoleClientId =  systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+        if (StringUtils.equals(consoleClientId, resourceGroupCode)) {
+            throw new BizException(MessageConstants.RESOURCE_GROUP_MSG_1001);
         }
     }
 }

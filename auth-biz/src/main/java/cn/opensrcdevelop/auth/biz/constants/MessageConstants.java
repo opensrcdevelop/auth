@@ -30,6 +30,7 @@ public class MessageConstants {
     public static final String RESOURCE_MSG_1000 = "resource.msg.1000";
     public static final String RESOURCE_MSG_1001 = "resource.msg.1001";
     public static final String RESOURCE_GROUP_MSG_1000 = "resource.group.msg.1000";
+    public static final String RESOURCE_GROUP_MSG_1001 = "resource.group.msg.1001";
     public static final String ROLE_MSG_1000 = "role.msg.1000";
     public static final String USER_MSG_1000 = "user.msg.1000";
     public static final String USER_MSG_1001 = "user.msg.1001";

@@ -17,9 +17,12 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.http.CacheControl;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.*;
+
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @RequiredArgsConstructor
@@ -103,7 +106,20 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // UI页面静态资源处理
-        registry.addResourceHandler(UI_PATH).addResourceLocations("classpath:/ui/");
+        registry.addResourceHandler("/ui/assets/*.js", "/ui/assets/*.css")
+                .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic())
+                .addResourceLocations("classpath:/ui/assets/");
+
+        registry.addResourceHandler("/ui/logo.png", "/ui/favicon.ico")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
+                .addResourceLocations("classpath:/ui/");
+
+        registry.addResourceHandler("/ui/index.html")
+                .setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
+                .addResourceLocations("classpath:/ui/");
+
+        registry.addResourceHandler("/ui/**")
+                .setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
+                .addResourceLocations("classpath:/ui/");
     }
 }

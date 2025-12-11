@@ -48,7 +48,8 @@ a:focus {
 }
 
 ::-webkit-scrollbar {
-  width: 9px
+  width: 9px;
+  height: 9px;
 }
 
 ::-webkit-scrollbar-track {
@@ -63,4 +64,8 @@ a:focus {
   &:hover {
     background: var(--color-neutral-6);
   }
+}
+
+::-webkit-scrollbar-corner {
+    background: inherit;
 }
