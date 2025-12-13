@@ -81,7 +81,7 @@ public class ExecuteSqlTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is not executable", required = false)
+        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is has syntax error.", required = false)
         private String fixSqlInstruction;
     }
 

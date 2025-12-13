@@ -735,15 +735,15 @@ ai:
 
           ### Keyword-Based Tool Triggering
           #### analyze_data Tool
-          Call ONLY when user question contains these keywords: 分析, 统计, 趋势, 对比, 关联, 分布, 规律
+          Call ONLY when user question contains these keywords: 分析, 统计, 趋势, 对比, 关联, 分布, 规律等
           Do not call if these keywords are not present.
 
           #### generate_chart Tool  
-          Call ONLY when user question contains these keywords: 图表, 图, 柱状图, 折线图, 饼图, 散点图, 趋势图, 占比, 可视化
+          Call ONLY when user question contains these keywords: 图表, 图, 柱状图, 折线图, 饼图, 散点图, 趋势图, 占比, 可视化, 表格等
           Do not call if these keywords are not present.
 
           #### generate_report Tool
-          Call ONLY when user question contains these keywords: 报告, 文档, 总结, 汇总, 详细分析, 完整报告
+          Call ONLY when user question contains these keywords: 报告, 文档, 总结, 汇总, 详细分析, 完整报告等
           Do not call if these keywords are not present.
 
           ### Execution Paths
@@ -816,7 +816,7 @@ ai:
           ${question}
           <#else>
           ## Analysis Process
-          Analyze the below tool execution results to determine the next step.
+          Analyze the below tool execution results and the raw user question to determine the next step.
 
           ### Decision Criteria
           1. **Sufficient Results**: If all tool execution results are sufficient to answer the question, output the final answer.
@@ -853,6 +853,9 @@ ai:
            - result: ${item.result}
           </#list>
           </#if>
+          
+          ### Raw User Question
+          ${raw_question}
 
           ### Decision Output
           Based on the above analysis, either:

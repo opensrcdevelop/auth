@@ -110,9 +110,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic())
                 .addResourceLocations("classpath:/ui/assets/");
 
-        registry.addResourceHandler("/ui/logo.png", "/ui/favicon.ico")
+        registry.addResourceHandler("/ui/logo.png")
                 .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
-                .addResourceLocations("classpath:/ui/");
+                .addResourceLocations("classpath:/ui/logo.png");
+
+        registry.addResourceHandler("/ui/favicon.ico")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
+                .addResourceLocations("classpath:/ui/favicon.ico");
 
         registry.addResourceHandler("/ui/**")
                 .addResourceLocations("classpath:/ui/");

@@ -4,6 +4,7 @@ import cn.opensrcdevelop.ai.agent.ChartAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.util.ChartRenderer;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
@@ -41,6 +42,14 @@ public class GenerateChartTool implements MethodTool {
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             Map<String, Object> chartConfig = (Map<String, Object>) result.get("config");
+
+            try {
+                ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
+            } catch (Exception e) {
+                response.setSuccess(false);
+                response.setError("Failed to render chart: " + e.getMessage() + ", please check the chart config and try again.");
+                return response;
+            }
             chatContext.setChartConfig(chartConfig);
         }
         response.setSuccess(success);

@@ -204,7 +204,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         if (answer.containsKey("final_answer")) {
             String answerText = (String) answer.get("final_answer");
             chatAnswer.setAnswer(answerText);
-            SseUtil.sendChatBITextSegmented(emitter, answerText, 500);
+            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 500);
         }
 
         // 3.2 图表

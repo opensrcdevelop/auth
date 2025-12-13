@@ -49,7 +49,7 @@ public class SseUtil {
      * @param text     文本消息
      * @param maxDelay 最大延迟时间（毫秒）
      */
-    public static void sendChatBITextSegmented(SseEmitter emitter, String text, long maxDelay) {
+    public static void sendChatBITextSegmented(SseEmitter emitter, String text, ChatContentType contentType, long maxDelay) {
         Try.run(() -> {
             if (StringUtils.isEmpty(text)) {
                 return;
@@ -73,7 +73,7 @@ public class SseUtil {
                                     .chatId(ChatContextHolder.getChatContext().getChatId())
                                     .questionId(ChatContextHolder.getChatContext().getQuestionId())
                                     .content(segment)
-                                    .type(ChatContentType.TEXT)
+                                    .type(contentType)
                                     .build(), MediaType.APPLICATION_JSON)
                     );
                     break;
@@ -92,7 +92,7 @@ public class SseUtil {
                                 .chatId(ChatContextHolder.getChatContext().getChatId())
                                 .questionId(ChatContextHolder.getChatContext().getQuestionId())
                                 .content(segment)
-                                .type(ChatContentType.TEXT)
+                                .type(contentType)
                                 .build(), MediaType.APPLICATION_JSON)
                 );
                 startIndex = endIndex;
@@ -105,7 +105,7 @@ public class SseUtil {
                 }
             }
         });
-        chatMessageHistoryService.createChatMessageHistory(text, ChatContentType.TEXT);
+        chatMessageHistoryService.createChatMessageHistory(text, contentType);
     }
 
     /**
