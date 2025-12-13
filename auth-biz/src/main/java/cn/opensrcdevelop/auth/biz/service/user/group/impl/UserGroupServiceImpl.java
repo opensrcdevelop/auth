@@ -386,7 +386,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     @Audit(
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.DELETE,
+            sysOperation = SysOperationType.UPDATE,
             success = "修改了用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）",
             fail = "修改用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）失败"
     )
