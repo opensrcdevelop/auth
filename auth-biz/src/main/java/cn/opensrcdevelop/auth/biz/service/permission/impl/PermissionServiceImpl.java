@@ -429,13 +429,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                     List<PermissionExpResponseDto> conditions = permissions.get(permissionLocator).getConditions();
                     if (CollectionUtils.isNotEmpty(conditions)) {
                         // 2.2.1 执行表达式
+                        responseBuilder.allow(true);
                         for (PermissionExpResponseDto condition : conditions) {
                             if (!Boolean.TRUE.equals(permissionExpService.executePermissionExp(condition.getId(), requestDto.getContext()))) {
                                 responseBuilder.allow(false);
                                 break;
                             }
                         }
-                        responseBuilder.allow(true);
                     } else {
                         responseBuilder.allow(true);
                     }
