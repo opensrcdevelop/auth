@@ -435,6 +435,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                                 break;
                             }
                         }
+                        responseBuilder.allow(true);
                     } else {
                         responseBuilder.allow(true);
                     }
