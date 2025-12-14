@@ -9,6 +9,7 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
+import cn.opensrcdevelop.auth.client.support.PermissionVerifyRequestCustomizer;
 import cn.opensrcdevelop.auth.configurer.AuthorizationServerConfigurer;
 import cn.opensrcdevelop.auth.configurer.OAuth2LoginConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
@@ -22,6 +23,7 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.PostConstruct;
@@ -237,6 +239,11 @@ public class AuthServerConfig {
                 oAuth2Attributes.setAttribute("browser", WebUtil.getBrowserType());
             }
         };
+    }
+
+    @Bean
+    public PermissionVerifyRequestCustomizer systemSettingService() {
+        return httpRequest -> httpRequest.getHeaders().add(CommonConstants.REQ_HEADER_X_TENANT_CODE, TenantContextHolder.getTenantContext().getTenantCode());
     }
 
     /**
