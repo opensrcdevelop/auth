@@ -22,6 +22,7 @@ dependencies {
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     implementation 'org.springframework.security:spring-security-core'
+    implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
