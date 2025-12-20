@@ -42,3 +42,6 @@ ui/node_modules/**
 ui/.frontend-gradle-plugin/**
 auth-server/src/main/resources/ui/**
 ui/package-lock.json
+
+### chatbi ###
+src/main/resources/application-prompt_template.yml
