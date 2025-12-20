@@ -14,7 +14,7 @@ ext {
     // dependencies version
     commonsLang3Ver = '3.14.0'
     springCloudVer = '2025.0.0'
-    mybatisVer = '3.0.4'
+    mybatisVer = '3.0.5'
     zxingVer = '3.5.3'
     commonsCodecVer = '1.18.0'
     vavrVer = '0.10.6'
