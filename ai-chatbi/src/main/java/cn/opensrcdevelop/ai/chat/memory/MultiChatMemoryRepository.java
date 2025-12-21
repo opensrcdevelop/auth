@@ -105,7 +105,7 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
             case USER -> new UserMessage(content);
             case ASSISTANT -> new AssistantMessage(content);
             case SYSTEM -> new SystemMessage(content);
-            case TOOL -> new ToolResponseMessage(CommonUtil.deserializeObject(content, new TypeReference<List<ToolResponseMessage.ToolResponse>>() {}));
+            case TOOL -> ToolResponseMessage.builder().responses(CommonUtil.deserializeObject(content, new TypeReference<List<ToolResponseMessage.ToolResponse>>() {})).build();
         };
     }
 }

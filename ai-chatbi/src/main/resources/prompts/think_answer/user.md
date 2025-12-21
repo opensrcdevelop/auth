@@ -6,13 +6,12 @@ Question: ${question}
 
 <#else>
 
-## Analysis Process
 Analyze the below tool execution results and the raw user question to determine the next step.
 
 ### Decision Criteria
 1. **Sufficient Results**: If all tool execution results are sufficient to answer the question, output the final answer.
 2. **Insufficient Results with No Next Step**: If tool execution results are insufficient to answer the question AND there is no logical next tool to execute, output the final answer with clear explanation of why it cannot be answered.
-3. **Next Step Available**: If results are insufficient but there is a logical next tool to execute, proceed with the next tool.
+3. **Next Step Available**: If results are insufficient but there is a logical next tool to execute, proceed with the next tool .
 
 ### Insufficient Results Assessment
 Consider results insufficient when:
@@ -54,7 +53,10 @@ ${raw_question}
 
 ### Decision Output
 Based on the above analysis, either:
-- Output the final answer if results are sufficient OR insufficient with no next step
-- Select the next tool to execute if results are insufficient but next step is available
+- Output the final answer (use Final Answer Format) if results are sufficient OR insufficient with no next step, 
+- Select the next tool to execute (use Tool Calling Result Format) if results are insufficient but next step is available
 
 </#if>
+
+### Mandatory Matters
+- The thinking part of the output format cannot contain any Markdown characters('`', '*', '#').

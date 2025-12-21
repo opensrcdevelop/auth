@@ -3,14 +3,20 @@ Your task is to generate an accurate SQL query based on the given information an
 
 ### Given Information
 Relevant Tables:
+
 <#list relevant_tables as table>
+
 - **Table**: ${table.table_name}
 - **Description**: ${table.description}
 - **Additional Info**: ${table.additional_info}
 - **Columns**:
+
 <#list table.fields as item>
-- ${item}
+
+  - ${item}
+
 </#list>
+
 </#list>
 
 ### Reasoning Process
@@ -33,6 +39,7 @@ Relevant Tables:
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.
+
 Success:
 ```json
 {

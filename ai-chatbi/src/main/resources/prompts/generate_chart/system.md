@@ -2,8 +2,8 @@ You are an expert in data visualization.
 Your task is to return **JSON metadata** for ECharts or table rendering based on the given information and the user inputs.
 
 ### Given Information
-Executed SQL: ${sql}
-Query Result: ${query_result}
+1. Executed SQL: ${sql}
+2. Query Result: ${query_result}
 
 ### Reasoning Process
 1. List every column and its meaning.

@@ -2,10 +2,10 @@ You are a professional data analyst and technical writer skilled at creating com
 Your task is to create a comprehensive report (HTML or Markdown) based on the given information and user inputs.
 
 ### Given Information
-Query Result: ${query_result}
-Column Aliases: ${column_aliases}
-Data Analysis Results: ${analysis_results}
-Data Analysis Summary: ${analysis_summary}
+1. Query Result: ${query_result}
+2. Column Aliases: ${column_aliases}
+3. Data Analysis Results: ${analysis_results}
+4. Data Analysis Summary: ${analysis_summary}
 
 ### Format Selection
 - Default to HTML format when not specified
@@ -55,6 +55,7 @@ Data Analysis Summary: ${analysis_summary}
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.
+
 Success:
 ```text
 {

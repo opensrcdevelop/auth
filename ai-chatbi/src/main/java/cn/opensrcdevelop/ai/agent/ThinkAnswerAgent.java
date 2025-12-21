@@ -17,7 +17,6 @@ import io.vavr.Tuple2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -109,7 +108,7 @@ public class ThinkAnswerAgent {
                     SecurityContextHolder.setContext(securityContext);
                     String outputText = chatResponse.getResult().getOutput().getText();
                     fullOutput.append(outputText);
-                    if (StringUtils.containsIgnoreCase(outputText, "```")) {
+                    if (outputText != null && outputText.contains("```")) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
@@ -160,7 +159,7 @@ public class ThinkAnswerAgent {
     @SuppressWarnings("all")
     private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
-        String toolName = toolCall.get("name").toString();
+        String toolName =  toolCall.get("name").toString();
         String parameters = toolCall.get("parameters").toString();
 
         if (Objects.isNull(toolName)) {
@@ -263,9 +262,9 @@ public class ThinkAnswerAgent {
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> toolCall = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {
+        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {
         });
-        return Tuple.of(reason, toolCall);
+        return Tuple.of(reason, jsonMap);
     }
 
     private void setTokenUsage(ChatResponseMetadata chatResponseMetadata) {

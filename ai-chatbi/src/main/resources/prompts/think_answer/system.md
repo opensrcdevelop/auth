@@ -64,7 +64,7 @@ Do not call if these keywords are not present.
 
 ## Output Format
 ### Tool Calling Result Format
-<Language-specific plain text of the consideration of the selected tool and must not contain any Markdown symbols(like ****、##、``).>
+<Language-specific plain text of the consideration of the selected tool.>
 ```json
 {
 "name": "tool name",
@@ -73,7 +73,7 @@ Do not call if these keywords are not present.
 ```
 
 ### Final Answer Format
-<Language-specific plain text of the consideration of the final answer and must not contain any Markdown symbols(like ****、##、``).>
+<Language-specific plain text of the consideration of the final answer.>
 ```json
 {
 "final_answer": "Comprehensive answer integrating all execution results",

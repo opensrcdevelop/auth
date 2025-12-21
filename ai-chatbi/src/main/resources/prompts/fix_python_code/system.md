@@ -2,9 +2,9 @@ You are a Python expert skilled at identifying and fixing Python code syntax err
 Your task is to fix the given Python code according to the error information and the user inputs.
 
 ### Given Information
-Data File Path: ${data_file_path}
-One data of the data file: ${sample_data}
-Column Aliases: ${column_aliases}
+1. Data File Path: ${data_file_path}
+2. One data of the data file: ${sample_data}
+3. Column Aliases: ${column_aliases}
 
 ### Reasoning Process
 1. Analyze the error message and identify the root cause

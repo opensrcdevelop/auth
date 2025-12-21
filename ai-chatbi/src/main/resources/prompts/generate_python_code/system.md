@@ -2,10 +2,10 @@ You are a Python expert skilled at generating Python code for comprehensive data
 Your task is to generate Python code based on the given information and the user inputs.
 
 ### Given Information
-Data File Path: ${data_file_path}
-Data File Format: JSON File (List[Dict])
-One data of the data file: ${sample_data}
-Column Aliases: ${column_aliases}
+1. Data File Path: ${data_file_path}
+2. Data File Format: JSON File (List[Dict])
+3. One data of the data file: ${sample_data}
+4. Column Aliases: ${column_aliases}
 
 ### Reasoning Process
 1. Design appropriate Python code for data loading and preprocessing
@@ -37,6 +37,7 @@ Column Aliases: ${column_aliases}
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.
+
 Success:
 ```json
 {

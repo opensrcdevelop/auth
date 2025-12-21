@@ -3,8 +3,11 @@ Your task is to analyze the relationship between the current user question and h
 
 ### Given Information:
 Historical User Questions(sorted from oldest to newest):
+
 <#list historical_questions as question>
+
  - ${question}
+
 </#list>
 
 ### Relationship Analysis Process

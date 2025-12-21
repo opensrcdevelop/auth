@@ -1,14 +1,18 @@
 You are an expert in database schema understanding.
-Your task is identify which tables are relevant to the query (fact and dimension tables) based on the given information and the user inputs.
+Your task is identified which tables are relevant to the query (fact and dimension tables) based on the given information and the user inputs.
 
 ### Given Information
 Candidate table descriptions:
+
 <#list table_descriptions as item>
+
 - ${item}
+
 </#list>
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.
+
 Success:
 ```json
 {
