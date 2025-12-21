@@ -43,7 +43,7 @@ When outputting final answer due to insufficient results:
 - tool: ${item.tool_name}
 - execute time: ${item.execute_time}
 - result: ${item.result}
-- 
+
 </#list>
 
 </#if>
