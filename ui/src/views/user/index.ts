@@ -1,17 +1,10 @@
-import {
-  getUserAttrs,
-  getUserList,
-  removeUser,
-  searchUser,
-  setUserAttrDisplaySeq,
-  updateUserAttr,
-} from "@/api/user";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,} from "@/api/user";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { getEnabledDictData } from "@/api/dict";
-import { usePagination } from "@/hooks/usePagination";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {getEnabledDictData} from "@/api/dict";
+import {usePagination} from "@/hooks/usePagination";
 
 const tableColumns = reactive([]);
 const sortableColumns = reactive([]);
@@ -269,6 +262,7 @@ const userListFilters = reactive({
       value: undefined,
       filterType: undefined,
       extFlg: true,
+      cascadeDict: undefined,
     },
   ],
 });
@@ -284,6 +278,7 @@ const handleUserColumnsSelectChange = (value: any) => {
     );
     filter.dataType = column.dataType;
     filter.extFlg = column.extFlg;
+    filter.cascadeDict = column.cascadeDict;
     filter.value = undefined;
     filter.filterType = undefined;
   }
@@ -299,6 +294,7 @@ const handleAddUserListFilter = () => {
     value: undefined,
     filterType: undefined,
     extFlg: true,
+    cascadeDict: undefined,
   });
 };
 
@@ -312,6 +308,7 @@ const handleRemoveUserListFilter = (index: number) => {
 /**
  * 过滤用户
  */
+const userListFilterd = ref(false);
 const handleFilterUser = () => {
   handleGetUserList(1, userListPagination.pageSize);
 };
@@ -328,10 +325,30 @@ const handleResetFilterUser = () => {
       value: undefined,
       filterType: undefined,
       extFlg: true,
+      cascadeDict: undefined,
     },
   ];
   handleFilterUser();
   handleGetAllUserColumnsForFilter();
+};
+
+/**
+ * 用户列表筛选条件非显示处理
+ */
+const handleUserListFilterHide = () => {
+  if (!userListFilterd.value) {
+    userListFiltersRef.value.resetFields();
+    userListFilters.filters = [
+      {
+        key: undefined,
+        dataType: "STRING",
+        value: undefined,
+        filterType: undefined,
+        extFlg: true,
+        cascadeDict: undefined,
+      },
+    ];
+  }
 };
 
 /**
@@ -344,7 +361,7 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
   }
 
   const filters = userListFilters.filters.filter(
-    (item) => item.key && item.filterType
+    (item) => item.key && item.filterType && item.value
   );
 
   getUserList(
@@ -364,6 +381,12 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
           data.total,
           data.size
         );
+
+        if (filters.length > 0) {
+          userListFilterd.value = true;
+        } else {
+          userListFilterd.value = false;
+        }
       });
     })
     .catch((err: any) => {
@@ -422,7 +445,7 @@ const handleToUserDetail = (user: any) => {
     path: "/user/detail",
     query: {
       id: user.userId,
-      "active_tab": "user_info",
+      active_tab: "user_info",
     },
   });
 };
@@ -532,6 +555,8 @@ export default defineComponent({
       allUserColumnsForFilter,
       allDictDatas,
       handleUserColumnResize,
+      userListFilterd,
+      handleUserListFilterHide,
     };
   },
 });

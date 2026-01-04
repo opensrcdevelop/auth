@@ -28,4 +28,7 @@ public class DictRequestDto {
 
     @Schema(description = "字典描述")
     private String desc;
+
+    @Schema(description = "父字典ID")
+    private String parentId;
 }

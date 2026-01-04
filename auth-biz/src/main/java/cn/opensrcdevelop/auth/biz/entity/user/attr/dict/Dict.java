@@ -3,9 +3,7 @@ package cn.opensrcdevelop.auth.biz.entity.user.attr.dict;
 import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +17,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_dict")
 @EntityName("字典")
-public class Dict extends BaseEntity implements Serializable {
+public class  Dict extends BaseEntity implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -800131729781890772L;
@@ -40,4 +38,14 @@ public class Dict extends BaseEntity implements Serializable {
     /** 描述 */
     @PropertyName("描述")
     private String description;
+
+    /** 父字典ID */
+    @PropertyName("父字典ID")
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String parentDictId;
+
+    /** 关联的字典数据ID */
+    @PropertyName("关联的字典数据ID")
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String relatedDictDataId;
 }

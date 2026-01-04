@@ -39,13 +39,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
@@ -472,6 +468,75 @@ public class CommonUtil {
             throw new ServerException(ex.getMessage(), ex);
         }
     }
+
+    /**
+     * 构建树结构
+     *
+     * @param nodes 节点列表
+     * @param pIdFunc 父节点ID获取函数
+     * @param idFunc  节点ID获取函数
+     * @param rootCheckFunc 根节点检查函数
+     * @param setChildrenFunc 子节点设置函数
+     * @param initLevel 初始层级
+     * @param levelFunc 层级设置函数
+     * @return 根节点列表
+     * @param <T> 节点ID类型
+     * @param <E> 节点类型
+     */
+    public static <T, E>List<E> makeTree(List<E> nodes,
+                                         Function<E, T> pIdFunc,
+                                         Function<E, T> idFunc,
+                                         Predicate<E> rootCheckFunc,
+                                         BiConsumer<E, List<E>> setChildrenFunc,
+                                         Integer initLevel,
+                                         ObjIntConsumer<E> levelFunc) {
+        Map<Optional<T>, List<E>> parentMap = CommonUtil.stream(nodes).collect(Collectors.groupingBy(
+                node -> Optional.ofNullable(pIdFunc.apply(node)),
+                LinkedHashMap::new,
+                Collectors.toList()
+        ));
+
+        List<E> rootNodes = new ArrayList<>();
+        for (E node : nodes) {
+            setChildrenFunc.accept(node, parentMap.get(Optional.ofNullable(idFunc.apply(node))));
+            if (rootCheckFunc.test(node)) {
+                rootNodes.add(node);
+            }
+        }
+
+        if (initLevel == null || levelFunc == null) {
+            return rootNodes;
+        }
+
+        Deque<Map.Entry<E, Integer>> nodeQueue = new ArrayDeque<>();
+
+        // 将根节点加入队列
+        for (E rootNode : rootNodes) {
+            nodeQueue.offerLast(new AbstractMap.SimpleEntry<>(rootNode, initLevel));
+        }
+
+        // 遍历队列中的节点并设置层级
+        while (!nodeQueue.isEmpty()) {
+            Map.Entry<E, Integer> entry = nodeQueue.pollFirst();
+            E parentNode = entry.getKey();
+            Integer currentLevel = entry.getValue();
+            levelFunc.accept(parentNode, currentLevel);
+
+            // 获取父节点的子节点
+            T parentNodeId = idFunc.apply(parentNode);
+            List<E> children = parentMap.get(Optional.ofNullable(parentNodeId));
+
+            if (CollectionUtils.isNotEmpty(children)) {
+                for (E child : children) {
+                    // 将子节点加入队列，用于处理下一层级
+                    nodeQueue.offerLast(new AbstractMap.SimpleEntry<>(child, currentLevel + 1));
+                }
+            }
+        }
+
+        return rootNodes;
+    }
+
 
     @FunctionalInterface
     public interface Getter<T, R> extends Serializable {

@@ -36,20 +36,30 @@ const handleTabChange = (tabKey: string) => {
   handleTabInit(tabKey);
 };
 
+const loading = ref(false);
 const handleTabInit = (tabKey: string) => {
+  loading.value = true;
+  const initPromises = [];
+
   switch (tabKey) {
     case "user_info":
-      handleGetUserInfo();
-      handleGetUserAttrs();
+      initPromises.push(handleGetUserInfo());
+      initPromises.push(handleGetUserAttrs());
       break;
     case "account_binding":
-      handleGetUserInfo();
-      handleGetBoundIdentitySource();
+      initPromises.push(handleGetUserInfo());
+      initPromises.push(handleGetBoundIdentitySource());
       break;
   }
-};
 
-const loading = ref(false);
+  if (initPromises.length > 0) {
+    Promise.all(initPromises).finally(() => {
+      loading.value = false;
+    });
+  } else {
+    loading.value = false;
+  }
+};
 
 // 控制台访问权限
 const consoleAccess = ref(false);
@@ -108,7 +118,6 @@ const allDictDatas = reactive({});
  * 获取用户信息
  */
 const handleGetUserInfo = () => {
-  loading.value = true;
   getCurrentUser()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -120,20 +129,16 @@ const handleGetUserInfo = () => {
     })
     .catch((err: any) => {
       handleApiError(err, "获取用户信息");
-    })
-    .finally(() => {
-      loading.value = false;
     });
 };
 
 /**
  * 获取用户属性
  */
-const handleGetUserAttrs = () => {
-  loading.value = true;
-  getVisibleUserAttrs()
+const handleGetUserAttrs = async () => {
+  await getVisibleUserAttrs()
     .then((result: any) => {
-      handleApiSuccess(result, (data: any) => {
+      handleApiSuccess(result, async (data: any) => {
         userAttrs.length = 0;
         userAttrs.push(...data);
 
@@ -168,21 +173,32 @@ const handleGetUserAttrs = () => {
         if (phoneIndex > -1) {
           userAttrs.splice(3, 0, userAttrs.splice(phoneIndex, 1)[0]);
         }
-
-        userAttrs.forEach((item: any) => {
-          if (item.dataType === "DICT" && item.dictId) {
-            allDictDatas[item.key] = [];
-            handleGetEnabledDictData(item.key, item.dictId);
-          }
-        });
       });
     })
     .catch((err: any) => {
       handleApiError(err, "获取可见的用户属性");
-    })
-    .finally(() => {
-      loading.value = false;
     });
+
+  handleGetAllEnabledDictData();
+};
+
+/**
+ * 获取所有启用的字典数据
+ */
+const handleGetAllEnabledDictData = async () => {
+  const getEnabledDictDataPromises = [];
+  userAttrs.forEach((item: any) => {
+    if (item.dataType === "DICT" && item.dictId) {
+      allDictDatas[item.key] = [];
+      getEnabledDictDataPromises.push(
+        handleGetEnabledDictData(item.key, item.dictId)
+      );
+    }
+  });
+
+  if (getEnabledDictDataPromises.length > 0) {
+    await Promise.all(getEnabledDictDataPromises);
+  }
 };
 
 /**
@@ -190,7 +206,6 @@ const handleGetUserAttrs = () => {
  */
 const handleGetEnabledDictData = async (attrKey: string, dictId: string) => {
   try {
-    loading.value = true;
     const result = await getEnabledDictData(dictId);
     handleApiSuccess(result, (data: any) => {
       allDictDatas[attrKey].length = 0;
@@ -198,8 +213,6 @@ const handleGetEnabledDictData = async (attrKey: string, dictId: string) => {
     });
   } catch (err: any) {
     handleApiError(err, "获取启用的字典数据");
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -449,7 +462,6 @@ const boundIdentitySource = reactive([]);
  * 获取绑定的身份源
  */
 const handleGetBoundIdentitySource = () => {
-  loading.value = true;
   getBoundIdentitySource()
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -459,9 +471,6 @@ const handleGetBoundIdentitySource = () => {
     })
     .catch((err: any) => {
       handleApiError(err, "获取绑定的身份源");
-    })
-    .finally(() => {
-      loading.value = false;
     });
 };
 

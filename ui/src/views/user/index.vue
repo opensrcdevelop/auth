@@ -1,5 +1,6 @@
 <script lang="ts">
 import userTs from "./index";
+
 export default userTs;
 </script>
 
@@ -28,10 +29,11 @@ export default userTs;
             @keyup.enter.native="handleGetUserList(1, 15)"
             @clear="handleSearchUserClear"
           />
-          <a-trigger trigger="click" :popup-offset="8">
+          <a-trigger trigger="click" :popup-offset="8" @hide="handleUserListFilterHide">
             <a-button>
               <template #icon>
-                <icon-filter />
+                <icon-font type="icon-filter-fill" style="font-size: 16px;" v-if="userListFilterd" />
+                <icon-filter v-else />
               </template>
             </a-button>
             <template #content>
@@ -63,7 +65,11 @@ export default userTs;
                             v-for="column in allUserColumnsForFilter"
                             :key="column.key"
                             :value="column.key"
-                            :disabled="userListFilters.filters.some((item) => item.key === column.key)"
+                            :disabled="
+                              userListFilters.filters.some(
+                                (item) => item.key === column.key
+                              )
+                            "
                           >
                             {{ column.name }}</a-option
                           >
@@ -176,7 +182,9 @@ export default userTs;
                           v-model="filter.value"
                         />
                         <a-select
-                          v-if="filter.dataType === 'DICT'"
+                          v-if="
+                            filter.dataType === 'DICT' && !filter.cascadeDict
+                          "
                           v-model="filter.value"
                           placeholder="请选择"
                         >
@@ -187,6 +195,16 @@ export default userTs;
                             >{{ dictData.label }}</a-option
                           >
                         </a-select>
+                        <a-cascader
+                          v-if="
+                            filter.dataType === 'DICT' && filter.cascadeDict
+                          "
+                          v-model="filter.value"
+                          placeholder="请选择"
+                          expand-trigger="hover"
+                          :options="allDictDatas[filter.key]"
+                          :field-names="{ value: 'id', label: 'label' }"
+                        />
                         <icon-minus-circle
                           class="remove-filter"
                           v-if="userListFilters.filters.length > 1"

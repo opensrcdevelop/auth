@@ -154,7 +154,7 @@
                     v-model="filter.value"
                   />
                   <a-select
-                    v-if="filter.dataType === 'DICT'"
+                    v-if="filter.dataType === 'DICT' && !filter.cascadeDict"
                     v-model="filter.value"
                     placeholder="请选择"
                   >
@@ -165,6 +165,14 @@
                       >{{ dictData.label }}</a-option
                     >
                   </a-select>
+                  <a-cascader
+                    v-if="filter.dataType === 'DICT' && filter.cascadeDict"
+                    v-model="filter.value"
+                    placeholder="请选择"
+                    expand-trigger="hover"
+                    :options="allDictDatas[filter.key]"
+                    :field-names="{ value: 'id', label: 'label' }"
+                  />
                   <icon-minus-circle
                     class="remove-filter"
                     v-if="canRemove"
@@ -242,8 +250,8 @@ watch(
 const columnsLoaded = ref(false);
 const formRef = ref();
 const groupRef = ref();
-const allUserColumns = []
-const allDictDatas = {}
+const allUserColumns = [];
+const allDictDatas = {};
 const canRemove = computed(() => {
   return props.conditions.filters?.length + props.conditions.groups?.length > 1;
 });
@@ -258,12 +266,24 @@ const handleGetAllUserColumns = () => {
         allUserColumns.length = 0;
         allUserColumns.push(...data.list);
 
+        const getEnabledDictDataPromises = [];
         allUserColumns.forEach(async (item: any) => {
           if (item.dataType === "DICT" && item.dictId) {
+            if (item.cascadeDict !== undefined) {
+              setFilterCascadeDict(item.key, item.cascadeDict);
+            }
+
             allDictDatas[item.key] = [];
-            await handleGetEnabledDictData(item.key, item.dictId);
+            getEnabledDictDataPromises.push(handleGetEnabledDictData(item.key, item.dictId));
           }
         });
+
+        if (getEnabledDictDataPromises.length > 0) {
+          Promise.all(getEnabledDictDataPromises).then(() => {
+            columnsLoaded.value = true;
+          });
+          return;
+        }
 
         columnsLoaded.value = true;
       });
@@ -271,6 +291,13 @@ const handleGetAllUserColumns = () => {
     .catch((err: any) => {
       handleApiError(err, "获取用户属性");
     });
+};
+
+const setFilterCascadeDict = (key: any, isCascadeDict: boolean) => {
+  const filter = props.conditions.filters.find((item) => item.key === key);
+  if (filter) {
+    filter.cascadeDict = isCascadeDict;
+  }
 };
 
 const handleGetEnabledDictData = async (attrKey: string, dictId: string) => {
@@ -293,6 +320,7 @@ const handleUserColumnsSelectChange = (value: any) => {
     );
     filter.dataType = column.dataType;
     filter.extFlg = column.extFlg;
+    filter.cascadeDict = column.cascadeDict;
     filter.value = undefined;
     filter.filterType = undefined;
   }
@@ -305,6 +333,7 @@ const handleAddFilter = () => {
     value: undefined,
     filterType: undefined,
     extFlg: undefined,
+    cascadeDict: undefined,
   });
 };
 
@@ -330,6 +359,7 @@ const handleAddGroup = () => {
         value: undefined,
         filterType: undefined,
         extFlg: undefined,
+        cascadeDict: undefined,
       },
     ],
     groups: [],
@@ -357,11 +387,11 @@ onMounted(() => {
   if (!props.columns || props.columns.length === 0) {
     handleGetAllUserColumns();
   } else {
-    columnsLoaded.value = true;
     allUserColumns.push(...props.columns);
     if (props.dictDatas) {
       Object.assign(allDictDatas, props.dictDatas);
     }
+    columnsLoaded.value = true;
   }
 });
 
