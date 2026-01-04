@@ -33,7 +33,6 @@ import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -306,8 +305,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT,
             sysOperation = SysOperationType.UPDATE,
-            success = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加了子字典：{{ @linkGen.toLinks(childDictIds, T(ResourceType).DICT) }}" +
-                    ", 关联的字典数据：{{ @linkGen.toLinks(relatedDictDataIds, T(ResourceType).DICT_DATA) }}",
+            success = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加了子字典：{{ @linkGen.toLinks(#childDictIds, T(ResourceType).DICT) }}" +
+                    ", 关联的字典数据：{{ @linkGen.toLinks(#relatedDictDataIds, T(ResourceType).DICT_DATA) }}",
             fail = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加子字典失败"
     )
     @Override
@@ -344,12 +343,15 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         }
         super.saveOrUpdateBatch(updateDicts);
 
+        // 4. 删除启用的字典数据的缓存
+        removeEnabledDictDataCacheWithParents(parentDictId);
+
         AuditContext.setSpelVariable("childDictIds", childDictIds);
         AuditContext.setSpelVariable("relatedDictDataIds", relatedDictDataIds);
     }
 
     /**
-     * 删除子字典
+     * 移除子字典
      *
      * @param requestDto 请求
      */
@@ -357,12 +359,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             type = AuditType.SYS_OPERATION,
             resource = ResourceType.DICT,
             sysOperation = SysOperationType.DELETE,
-            success = "移除了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典：{{ @linkGen.toLinks(requestDto.children, T(ResourceType).DICT) }}",
+            success = "移除了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典：{{ @linkGen.toLink(#requestDto.childId, T(ResourceType).DICT) }}",
             fail = "移除字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典失败"
-    )
-    @CacheEvict(
-            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
-            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].id)"
     )
     @Override
     public void removeChildDict(ChildDictRequestDto requestDto) {
@@ -372,19 +370,15 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
             return;
         }
 
-        // 2. 获取子字典的子字典
-        List<String> childDictIds = new ArrayList<>(CommonUtil.stream(dictRepository.selectByParentId(requestDto.getChildId())).map(Dict::getDictId).toList());
-        childDictIds.add(requestDto.getChildId());
+        // 2. 删除子字典的父字典ID和关联的字典数据ID
+        Dict updateDict = new Dict();
+        updateDict.setDictId(requestDto.getChildId());
+        updateDict.setParentDictId(null);
+        updateDict.setRelatedDictDataId(null);
+        super.updateById(updateDict);
 
-        // 3. 删除子字典的父字典ID和关联的字典数据ID
-        List<Dict> updateDicts = CommonUtil.stream(childDictIds).distinct().map(childId -> {
-            Dict updateDict = new Dict();
-            updateDict.setDictId(childId);
-            updateDict.setParentDictId(null);
-            updateDict.setRelatedDictDataId(null);
-            return updateDict;
-        }).toList();
-        super.saveOrUpdateBatch(updateDicts);
+        // 3. 删除启用的字典数据的缓存
+        removeEnabledDictDataCacheWithParents(parentDict.getDictId());
     }
 
     /**
