@@ -239,14 +239,6 @@ const emit = defineEmits<{
   (e: "update:conditions", value: any): void;
 }>();
 
-watch(
-  () => props.conditions,
-  (newVal) => {
-    emit("update:conditions", newVal);
-  },
-  { deep: true, immediate: true }
-);
-
 const columnsLoaded = ref(false);
 const formRef = ref();
 const groupRef = ref();
@@ -255,6 +247,21 @@ const allDictDatas = {};
 const canRemove = computed(() => {
   return props.conditions.filters?.length + props.conditions.groups?.length > 1;
 });
+
+watch(
+  () => props.conditions,
+  (newVal) => {
+    allUserColumns.forEach(async (item: any) => {
+      if (item.dataType === "DICT" && item.dictId) {
+        if (item.cascadeDict !== undefined) {
+          setFilterCascadeDict(item.key, item.cascadeDict);
+        }
+      }
+    });
+    emit("update:conditions", newVal);
+  },
+  { deep: true, immediate: true }
+);
 
 const handleGetAllUserColumns = () => {
   getUserAttrs({
@@ -274,7 +281,9 @@ const handleGetAllUserColumns = () => {
             }
 
             allDictDatas[item.key] = [];
-            getEnabledDictDataPromises.push(handleGetEnabledDictData(item.key, item.dictId));
+            getEnabledDictDataPromises.push(
+              handleGetEnabledDictData(item.key, item.dictId)
+            );
           }
         });
 
