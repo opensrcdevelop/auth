@@ -21,4 +21,6 @@ public interface DictDataService extends IService<DictData> {
     void removeDictData(List<String> dictDataIds);
 
     List<DictDataResponseDto> getEnabledDictData(String dictId);
+
+    List<DictDataResponseDto> getRelatableDictData(String dictId);
 }

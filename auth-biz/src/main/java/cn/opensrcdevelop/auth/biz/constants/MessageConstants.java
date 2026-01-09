@@ -30,11 +30,13 @@ public class MessageConstants {
     public static final String RESOURCE_MSG_1000 = "resource.msg.1000";
     public static final String RESOURCE_MSG_1001 = "resource.msg.1001";
     public static final String RESOURCE_GROUP_MSG_1000 = "resource.group.msg.1000";
+    public static final String RESOURCE_GROUP_MSG_1001 = "resource.group.msg.1001";
     public static final String ROLE_MSG_1000 = "role.msg.1000";
     public static final String USER_MSG_1000 = "user.msg.1000";
     public static final String USER_MSG_1001 = "user.msg.1001";
     public static final String USER_MSG_1002 = "user.msg.1002";
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
+    public static final String USER_GROUP_MSG_1001 = "user.group.msg.1001";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
     public static final String PERMISSION_EXP_MSG_1000 = "permission.exp.msg.1000";
     public static final String PERMISSION_EXP_MSG_1001 = "permission.exp.msg.1001";

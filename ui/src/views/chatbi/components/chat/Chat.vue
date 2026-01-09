@@ -304,6 +304,7 @@ const resendMessage = (qId: string) => {
  * 处理消息
  */
 const handleMessage = (message) => {
+  scrollToBottom();
   activeChatId.value = message.chatId;
   // 如果当前对话为全新对话，则更新对话历史
   if (activeChatId.value !== props.chatId) {
@@ -312,6 +313,7 @@ const handleMessage = (message) => {
 
   if (message.role === "USER") {
     messages.push(message);
+    scrollToBottom();
     return;
   }
 
@@ -374,7 +376,7 @@ const handleMessage = (message) => {
 
     // 类型相同，合并内容
     if (last.type === message.type) {
-      if (["MARKDOWN", "TEXT", "HTML_REPORT"].includes(message.type)) {
+      if (["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(message.type) && message.content) {
         last.content += message.content;
       } else if (["ECHARTS", "TABLE"].includes(message.type)) {
         last.content = message.content;
@@ -438,34 +440,6 @@ const scrollToBottom = () => {
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
   border-radius: 12px;
   overflow-x: auto;
-
-  /* WebKit 浏览器滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  /* 滚动条滑块 */
-  &::-webkit-scrollbar-thumb {
-    background: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(144, 147, 153, 0.5);
-    }
-  }
-
-  /* Firefox 滚动条样式 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-  &:hover {
-    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-  }
 }
 
 .message-container {
@@ -473,34 +447,6 @@ const scrollToBottom = () => {
   overflow-y: auto;
   padding: 20px;
   margin-bottom: 20px;
-
-  /* WebKit 浏览器滚动条样式 */
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  /* 滚动条滑块 */
-  &::-webkit-scrollbar-thumb {
-    background: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(144, 147, 153, 0.5);
-    }
-  }
-
-  /* Firefox 滚动条样式 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-  &:hover {
-    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-  }
 }
 
 .operator-container {
@@ -547,36 +493,6 @@ const scrollToBottom = () => {
 
     &:hover {
       border: none;
-    }
-
-    :deep(.arco-textarea) {
-      /* WebKit 浏览器滚动条样式 */
-      &::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent;
-        border-radius: 3px;
-      }
-
-      /* 滚动条滑块 */
-      &::-webkit-scrollbar-thumb {
-        background: rgba(144, 147, 153, 0.3);
-        border-radius: 3px;
-
-        &:hover {
-          background: rgba(144, 147, 153, 0.5);
-        }
-      }
-
-      /* Firefox 滚动条样式 */
-      scrollbar-width: thin;
-      scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-      &:hover {
-        scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-      }
     }
   }
 

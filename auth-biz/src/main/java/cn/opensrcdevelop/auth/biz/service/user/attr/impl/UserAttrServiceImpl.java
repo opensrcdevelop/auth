@@ -21,6 +21,7 @@ import cn.opensrcdevelop.auth.biz.repository.user.attr.UserAttrRepository;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
+import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -28,9 +29,11 @@ import com.baomidou.mybatisplus.core.batch.MybatisBatch;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +48,10 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     private final UserAttrMappingService userAttrMappingService;
     private final UserAttrRepository userAttrRepository;
     private final DictDataService dictDataService;
+
+    @Resource
+    @Lazy
+    private DictService dictService;
 
     /**
      * 创建用户属性
@@ -87,7 +94,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
         }
 
         // 2.2 属性数据类型为 DICT，设置字典ID
-        if (StringUtils.equals(UserAttrDataTypeEnum.DICT.getType(), requestDto.getDataType()) && StringUtils.isNotEmpty(requestDto.getDictId())) {
+        if (UserAttrDataTypeEnum.DICT.getType().equals(requestDto.getDataType()) && StringUtils.isNotEmpty(requestDto.getDictId())) {
             userAttr.setDictId(requestDto.getDictId());
         }
 
@@ -187,6 +194,11 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             userAttrResponse.setDisplaySeq(userAttr.getDisplaySeq());
             userAttrResponse.setDisplayWidth(userAttr.getDisplayWidth());
             userAttrResponse.setDictId(userAttr.getDictId());
+
+            // 2.1 属性数据类型为 DICT，设置是否是级联字典
+            if (userAttr.getDictId() != null) {
+                userAttrResponse.setCascadeDict(dictService.hasChildDict(userAttr.getDictId()));
+            }
 
             return userAttrResponse;
         }).toList();
@@ -419,6 +431,11 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             userAttrResponse.setExtFlg(userAttr.getExtAttrFlg());
             userAttrResponse.setUserEditable(userAttr.getUserEditable());
             userAttrResponse.setDictId(userAttr.getDictId());
+
+            // 2.1 属性数据类型为 DICT，设置是否是级联字典
+            if (userAttr.getDictId() != null) {
+                userAttrResponse.setCascadeDict(dictService.hasChildDict(userAttr.getDictId()));
+            }
 
             return userAttrResponse;
         }).toList();

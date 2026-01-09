@@ -14,6 +14,7 @@ public interface PermissionMapper extends BaseMapper<Permission> {
 
     IPage<AuthorizeRecord> searchUserPermissions(@Param("page") IPage<AuthorizeRecord> page,
                                                  @Param("userId") String userId,
+                                                 @Param("dynamicUserGroupIds") List<String> dynamicUserGroupIds,
                                                  @Param("resourceGroupCode") String resourceGroupCode,
                                                  @Param("resourceGroupNameSearchKeyword") String resourceGroupNameSearchKeyword,
                                                  @Param("resourceNameSearchKeyword") String resourceNameSearchKeyword,

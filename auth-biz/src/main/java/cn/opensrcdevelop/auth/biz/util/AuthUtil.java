@@ -1,8 +1,9 @@
 package cn.opensrcdevelop.auth.biz.util;
 
+import cn.opensrcdevelop.auth.biz.constants.ConjunctionType;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
-import cn.opensrcdevelop.auth.biz.dto.user.DataFilterRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
@@ -282,19 +283,24 @@ public class AuthUtil {
      *
      * @param queryWrapper query
      * @param filter 过滤条件
+     * @param conjunction 连接符
      * @param <T> T
      */
-    public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterRequestDto filter) {
+    public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterDto filter, ConjunctionType conjunction) {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         UserAttrDataTypeEnum dataType = UserAttrDataTypeEnum.valueOf(filter.getDataType());
         if (Boolean.TRUE.equals(filter.getExtFlg())) {
-            editExistsQuery(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType);
+            editExistsQuery(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
         } else {
-            editQueryCondition(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType);
+            editQueryCondition(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
         }
     }
 
-    private static <T> void editExistsQuery(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+    private static <T> void editExistsQuery(QueryWrapper<T> queryWrapper,
+                                            DataFilterEnum filterType,
+                                            String attrKey, Object value,
+                                            UserAttrDataTypeEnum valueDataType,
+                                            ConjunctionType conjunction) {
         String sqlSegment = """
                 SELECT
                     1
@@ -308,7 +314,11 @@ public class AuthUtil {
                     AND
                     %s
                 """;
-        queryWrapper.and(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+        if (ConjunctionType.OR == conjunction) {
+            queryWrapper.or(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+        } else {
+            queryWrapper.and(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+        }
     }
 
     private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
@@ -351,7 +361,11 @@ public class AuthUtil {
         return sqlSegment;
     }
 
-    private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper, DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+    private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper,
+                                               DataFilterEnum filterType,
+                                               String attrKey, Object value,
+                                               UserAttrDataTypeEnum valueDataType,
+                                               ConjunctionType conjunction) {
         String queryKey = "t_user." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
         Object queryValue = switch (valueDataType) {
             case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
@@ -360,17 +374,78 @@ public class AuthUtil {
         };
 
         // 构造查询条件
+        boolean isOr = ConjunctionType.OR == conjunction;
         switch (filterType) {
-            case EQ -> queryWrapper.eq(queryKey, queryValue);
-            case NE -> queryWrapper.ne(queryKey, queryValue);
-            case LIKE -> queryWrapper.like(queryKey, queryValue);
-            case NOT_LIKE -> queryWrapper.notLike(queryKey, queryValue);
-            case IN -> queryWrapper.in(queryKey, queryValue);
-            case NOT_IN -> queryWrapper.notIn(queryKey, queryValue);
-            case GT -> queryWrapper.gt(queryKey, queryValue);
-            case GE -> queryWrapper.ge(queryKey, queryValue);
-            case LT -> queryWrapper.lt(queryKey, queryValue);
-            case LE -> queryWrapper.le(queryKey, queryValue);
+            case EQ -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.eq(queryKey, queryValue));
+                } else {
+                    queryWrapper.eq(queryKey, queryValue);
+                }
+            }
+            case NE -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.ne(queryKey, queryValue));
+                } else {
+                    queryWrapper.ne(queryKey, queryValue);
+                }
+            }
+            case LIKE -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.like(queryKey, queryValue));
+                } else {
+                    queryWrapper.like(queryKey, queryValue);
+                }
+            }
+            case NOT_LIKE -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.notLike(queryKey, queryValue));
+                } else {
+                    queryWrapper.notLike(queryKey, queryValue);
+                }
+            }
+            case IN -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.in(queryKey, queryValue));
+                } else {
+                    queryWrapper.in(queryKey, queryValue);
+                }
+            }
+            case NOT_IN -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.notIn(queryKey, queryValue));
+                } else {
+                    queryWrapper.notIn(queryKey, queryValue);
+                }
+            }
+            case GT -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.gt(queryKey, queryValue));
+                } else {
+                    queryWrapper.gt(queryKey, queryValue);
+                }
+            }
+            case GE -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.ge(queryKey, queryValue));
+                } else {
+                    queryWrapper.ge(queryKey, queryValue);
+                }
+            }
+            case LT -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.lt(queryKey, queryValue));
+                } else {
+                    queryWrapper.lt(queryKey, queryValue);
+                }
+            }
+            case LE -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.le(queryKey, queryValue));
+                } else {
+                    queryWrapper.le(queryKey, queryValue);
+                }
+            }
         }
     }
 }

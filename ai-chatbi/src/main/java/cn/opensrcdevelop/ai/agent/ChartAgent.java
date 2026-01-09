@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -17,7 +16,6 @@ import java.util.Map;
 public class ChartAgent {
 
     private final PromptTemplate promptTemplate;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
@@ -27,23 +25,25 @@ public class ChartAgent {
      * @param sql 执行的 SQL
      * @param question 用户提问
      * @param queryResult 查询结果
+     * @param instruction 图表生成指令
      * @return 图表配置
      */
     public Map<String, Object> generateChart(ChatClient chatClient,
                                 String sql,
                                 String question,
-                                List<Map<String, Object>> queryResult) {
+                                List<Map<String, Object>> queryResult,
+                                String instruction) {
         // 1. 生成图表配置
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_CHART)
                 .param("question", question)
                 .param("sql", sql)
-                .param("query_result", CommonUtil.serializeObject(queryResult));
+                .param("query_result", CommonUtil.serializeObject(queryResult))
+                .param("instruction", instruction);
 
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_CHART))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_CHART))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_CHART))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }

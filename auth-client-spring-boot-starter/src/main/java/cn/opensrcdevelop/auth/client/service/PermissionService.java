@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.auth.client.config.AuthClientProperties;
 import cn.opensrcdevelop.auth.client.constants.ApiConstants;
 import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
+import cn.opensrcdevelop.auth.client.support.PermissionVerifyRequestCustomizer;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +14,13 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -28,7 +34,7 @@ import java.util.stream.IntStream;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class PermissionService {
+public class PermissionService implements ApplicationContextAware {
 
     private static final String API_VERIFY_PERMISSIONS = "/api/v1/permission/verify";
     private static final String HEADER_AUTHORIZATION = "Authorization";
@@ -36,6 +42,8 @@ public class PermissionService {
     private static final String URL_FORMAT = "%s://%s";
 
     private final AuthClientProperties authClientProperties;
+
+    private List<PermissionVerifyRequestCustomizer> permissionVerifyRequestCustomizers;
 
     /**
      * 权限校验
@@ -119,6 +127,7 @@ public class PermissionService {
                                 ApiConstants.REQ_PARAMS, methodParams
                         )
                 ))
+                .httpRequest(httpRequest -> permissionVerifyRequestCustomizers.forEach(customizer -> customizer.customize(httpRequest)))
                 .retrieve()
                 .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
@@ -153,5 +162,16 @@ public class PermissionService {
             IntStream.range(0, args.length).forEach(i -> methodParams.put(paramNames[i], args[i]));
         }
         return methodParams;
+    }
+
+    @Override
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
+        var beans = beanFactory.getBeansOfType(PermissionVerifyRequestCustomizer.class);
+        if (MapUtils.isNotEmpty(beans)) {
+            permissionVerifyRequestCustomizers = beans.values().stream().toList();
+        } else {
+            permissionVerifyRequestCustomizers = Collections.emptyList();
+        }
     }
 }

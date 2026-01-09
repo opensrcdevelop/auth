@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.MapperProxyMetadata;
 import com.baomidou.mybatisplus.core.toolkit.MybatisUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
@@ -32,7 +33,7 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
         return CommonUtil
                 .stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
                                 .select(MultiChatMemory::getChatId)
-                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContext.getPromptTemplate())
+                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
                         )
                 )
                 .map(MultiChatMemory::getChatId)
@@ -45,7 +46,21 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
         return CommonUtil.stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
                                 .select(MultiChatMemory::getContent, MultiChatMemory::getType)
                                 .eq(MultiChatMemory::getChatId, conversationId)
-                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContext.getPromptTemplate())
+                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
+                                .orderByDesc(MultiChatMemory::getCreateTime)
+                        )
+                )
+                .map(this::buildMessage)
+                .toList();
+    }
+
+    public List<Message> findByConversationId(@NonNull String conversationId, int limit) {
+        return CommonUtil.stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
+                                .select(MultiChatMemory::getContent, MultiChatMemory::getType)
+                                .eq(MultiChatMemory::getChatId, conversationId)
+                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
+                                .orderByDesc(MultiChatMemory::getCreateTime)
+                                .last("limit " + limit)
                         )
                 )
                 .map(this::buildMessage)
@@ -57,8 +72,13 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
         List<MultiChatMemory> saveList = CommonUtil.stream(messages).map(message -> {
             MultiChatMemory multiChatMemory = new MultiChatMemory();
             multiChatMemory.setChatId(conversationId);
-            multiChatMemory.setPromptTemplate(ChatMemoryContext.getPromptTemplate());
-            multiChatMemory.setContent(message.getText());
+            multiChatMemory.setPromptTemplate(ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate());
+
+            if (message instanceof ToolResponseMessage toolResponseMessage) {
+                multiChatMemory.setContent(CommonUtil.serializeObject(toolResponseMessage.getResponses()));
+            } else {
+                multiChatMemory.setContent(message.getText());
+            }
             multiChatMemory.setType(message.getMessageType().name());
             multiChatMemory.setCreateTime(LocalDateTime.now());
 
@@ -74,7 +94,7 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
     public void deleteByConversationId(@NonNull String conversationId) {
         multiChatMemoryMapper.delete(Wrappers.<MultiChatMemory>lambdaQuery()
                 .eq(MultiChatMemory::getChatId, conversationId)
-                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContext.getPromptTemplate()));
+                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate()));
     }
 
     private Message buildMessage(MultiChatMemory multiChatMemory) {
@@ -85,10 +105,7 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
             case USER -> new UserMessage(content);
             case ASSISTANT -> new AssistantMessage(content);
             case SYSTEM -> new SystemMessage(content);
-            // The content is always stored empty for ToolResponseMessages.
-            // If we want to capture the actual content, we need to extend
-            // AddBatchPreparedStatement to support it.
-            case TOOL -> new ToolResponseMessage(List.of());
+            case TOOL -> ToolResponseMessage.builder().responses(CommonUtil.deserializeObject(content, new TypeReference<List<ToolResponseMessage.ToolResponse>>() {})).build();
         };
     }
 }

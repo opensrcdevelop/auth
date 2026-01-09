@@ -42,4 +42,7 @@ public class UserAttrResponseDto {
 
     @Schema(description = "字典ID")
     private String dictId;
+
+    @Schema(description = "是否是级联字典")
+    private Boolean cascadeDict;
 }

@@ -155,12 +155,49 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 Map<String, String> fieldDescription = new HashMap<>();
                 fieldDescription.put("field_name", x.getFieldName());
                 fieldDescription.put("field_data_type", x.getFieldType());
-                fieldDescription.put("description", x.getRemark() == null ? "No description available":  x.getRemark());
+                fieldDescription.put("description", x.getRemark() == null ? "No description available" : x.getRemark());
                 fieldDescription.put("additional_info", x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
                 return CommonUtil.serializeObject(fieldDescription);
             }).toList();
             newTableInfo.put("fields", fieldDescriptions);
             return newTableInfo;
         }).toList();
+    }
+
+    /**
+     * 获取数据源下的所有表
+     *
+     * @param dataSourceId 数据源ID
+     * @return 数据源下的所有表
+     */
+    @Override
+    public List<Map<String, Object>> getTables(String dataSourceId) {
+        List<Table> tables = super.list(Wrappers.<Table>lambdaQuery()
+                .eq(Table::getDataSourceId, dataSourceId)
+                .eq(Table::getToUse, true));
+
+        return CommonUtil.stream(tables).map(table -> {
+            Map<String, Object> tableDescription = new HashMap<>();
+            tableDescription.put("table_id", table.getTableId());
+            tableDescription.put("table_name", table.getTableName());
+            tableDescription.put("description", table.getRemark() == null ? "No description available" : table.getRemark());
+            tableDescription.put("additional_info", table.getAdditionalInfo() == null ? "No additional info available" : table.getAdditionalInfo());
+            return tableDescription;
+        }).toList();
+    }
+
+    /**
+     * 获取表的禁止字段
+     *
+     * @param tableId 表ID
+     * @return 表的禁止字段
+     */
+    @Override
+    public List<String> getTableForbiddenFields(String tableId) {
+        List<TableField> forbiddenFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+            .select(TableField::getFieldName)
+            .eq(TableField::getTableId, tableId)
+            .eq(TableField::getToUse, false));
+        return CommonUtil.stream(forbiddenFields).map(TableField::getFieldName).toList();
     }
 }

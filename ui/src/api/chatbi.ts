@@ -292,3 +292,15 @@ export function deleteModelProvider(id: string) {
     url: `/chatbi/modelProvider/${id}`,
   });
 }
+
+/**
+ * 获取回答的 SQL
+ * 
+ * @param id 回答ID
+ * @returns 回答的 SQL
+ */
+export function getAnsweredSql(id: string) {
+  return noneLoadingApiRequest.get({
+    url: `/chatbi/answer/${id}/sql`,
+  });
+}

@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.service.impl;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.dto.ChatMessageHistoryResponseDto;
 import cn.opensrcdevelop.ai.entity.ChatMessageHistory;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -40,8 +40,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
         chatMessageHistory.setCreateTime(LocalDateTime.now());
-        chatMessageHistory.setChatId(ChatContext.getChatId());
-        chatMessageHistory.setQuestionId(ChatContext.getQuestionId());
+        chatMessageHistory.setChatId(ChatContextHolder.getChatContext().getChatId());
+        chatMessageHistory.setQuestionId(ChatContextHolder.getChatContext().getQuestionId());
         chatMessageHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatMessageHistory.setContent(content);
         chatMessageHistory.setType(chatContentType.name());
@@ -63,8 +63,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
         chatMessageHistory.setCreateTime(LocalDateTime.now());
-        chatMessageHistory.setChatId(ChatContext.getChatId());
-        chatMessageHistory.setQuestionId(ChatContext.getQuestionId());
+        chatMessageHistory.setChatId(ChatContextHolder.getChatContext().getChatId());
+        chatMessageHistory.setQuestionId(ChatContextHolder.getChatContext().getQuestionId());
         chatMessageHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatMessageHistory.setType(chatContentType.name());
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
@@ -88,8 +88,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
         chatMessageHistory.setCreateTime(LocalDateTime.now());
-        chatMessageHistory.setChatId(ChatContext.getChatId());
-        chatMessageHistory.setQuestionId(ChatContext.getQuestionId());
+        chatMessageHistory.setChatId(ChatContextHolder.getChatContext().getChatId());
+        chatMessageHistory.setQuestionId(ChatContextHolder.getChatContext().getQuestionId());
         chatMessageHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatMessageHistory.setType(chatContentType.name());
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
@@ -111,8 +111,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
         chatMessageHistory.setCreateTime(LocalDateTime.now());
-        chatMessageHistory.setChatId(ChatContext.getChatId());
-        chatMessageHistory.setQuestionId(ChatContext.getQuestionId());
+        chatMessageHistory.setChatId(ChatContextHolder.getChatContext().getChatId());
+        chatMessageHistory.setQuestionId(ChatContextHolder.getChatContext().getQuestionId());
         chatMessageHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatMessageHistory.setContent(content);
         chatMessageHistory.setType(ChatContentType.TEXT.name());

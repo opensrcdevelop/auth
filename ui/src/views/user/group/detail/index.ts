@@ -1,12 +1,12 @@
 import {computed, defineComponent, h, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  addUserGroupMapping,
-  getGroupUsers,
-  getUserGroupDetail,
-  getUserGroupPermissions,
-  removeUserGroupMapping,
-  updateUserGroup,
+    addUserGroupMapping,
+    getGroupUsers,
+    getUserGroupDetail,
+    getUserGroupPermissions,
+    removeUserGroupMapping,
+    updateUserGroup,
 } from "@/api/userGroup";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -16,6 +16,7 @@ import {useGlobalVariablesStore} from "@/store/globalVariables";
 import IconSearch from "@arco-design/web-vue/es/icon/icon-search";
 import {usePagination} from "@/hooks/usePagination";
 import {IconFilter} from "@arco-design/web-vue/es/icon";
+import UserGroupConditions from "../components/UserGroupConditions.vue";
 
 /**
  * 返回上一级
@@ -55,6 +56,8 @@ const userGroupInfoForm = reactive({
   name: undefined,
   code: undefined,
   desc: undefined,
+  type: undefined,
+  conditions: undefined,
 });
 const userGroupInfoFormRules = {
   name: [{ required: true, message: "用户组名称未填写" }],
@@ -71,6 +74,7 @@ const userGroupInfoFormRules = {
     },
   ],
 };
+const userGroupConditionsRef = ref();
 
 /**
  * 获取用户组详情
@@ -88,6 +92,8 @@ const handleGetUserGroupDetail = (id: string) => {
         userGroupInfoForm.name = data.name;
         userGroupInfoForm.code = data.code;
         userGroupInfoForm.desc = data.desc;
+        userGroupInfoForm.type = data.type;
+        userGroupInfoForm.conditions = data.conditions;
       });
     })
     .catch((err: any) => {
@@ -244,14 +250,26 @@ const handleGetGroupUsers = (
 /**
  * 提交用户组信息表单
  *
- * @param formData 用户组信息表单
  */
-const handleUserGroupInfoFormSubmit = (formData: any) => {
-  updateUserGroup(formData)
+const handleUserGroupInfoFormSubmit = async () => {
+  const validateRes1 = await userGroupInfoFormRef.value.validate();
+  let validateRes2 = true;
+  if (userGroupConditionsRef.value) {
+    validateRes2 = await userGroupConditionsRef.value.validate();
+  }
+
+  if (validateRes1 !== undefined || !validateRes2) {
+    return;
+  }
+
+  updateUserGroup(userGroupInfoForm)
     .then((result: any) => {
       handleApiSuccess(result, () => {
         Notification.success("保存成功");
         handleGetUserGroupDetail(userGroupId.value);
+        if (userGroupInfoForm.type === "DYNAMIC") {
+          handleGetGroupUsers(userGroupId.value);
+        }
       });
     })
     .catch((err: any) => {
@@ -597,6 +615,9 @@ const handleToPermissionDetail = (id: string) => {
 };
 
 export default defineComponent({
+  components: {
+    UserGroupConditions,
+  },
   setup() {
     const userGroupId = getQueryString("id");
     groupUsersPagination = usePagination(
@@ -670,6 +691,7 @@ export default defineComponent({
       permissionNameFilter,
       permissionCodeFilter,
       handleResetPermissionFilter,
+      userGroupConditionsRef,
     };
   },
 });

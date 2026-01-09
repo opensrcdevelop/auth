@@ -8,6 +8,17 @@
           </template>
           <template #default>重新生成</template>
         </a-button>
+        <a-button
+          type="text"
+          size="mini"
+          v-if="message.answerId"
+          @click="handleGetAnsweredSql(message)"
+        >
+          <template #icon>
+            <icon-copy />
+          </template>
+          <template #default>复制 SQL</template>
+        </a-button>
         <a-divider v-if="message.answerId" direction="vertical" />
         <a-space v-if="message.answerId">
           <a-tooltip content="喜欢" position="bottom" mini>
@@ -44,8 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import {voteAnswer} from "@/api/chatbi";
-import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {getAnsweredSql, voteAnswer} from "@/api/chatbi";
+import {copyToClipboard, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Message} from "@arco-design/web-vue";
 
 const props = withDefaults(
   defineProps<{
@@ -58,38 +70,10 @@ const props = withDefaults(
 
 const emits = defineEmits<{
   (e: "resendMessage", questionId: string): void;
-  (
-    e: "analyzeData",
-    chartId: string,
-    chatId: string,
-    question: string,
-    generateReport: boolean
-  ): void;
-  (e: "fullScreen", questionId: string): void;
-  (e: "downloadReport", questionId: string): void;
 }>();
 
 const handleResendMessage = () => {
-  console.log(props.message)
   emits("resendMessage", props.message.rewrittenQuestion);
-};
-
-const handleAnalyzeData = (generateReport: boolean) => {
-  emits(
-    "analyzeData",
-    props.message.chartId,
-    props.message.chatId,
-    props.message.rewrittenQuestion,
-    generateReport
-  );
-};
-
-const handleFullscreen = () => {
-  emits("fullScreen", props.message.questionId);
-};
-
-const handleDownloadReport = () => {
-  emits("downloadReport", props.message.questionId);
 };
 
 const handleVoteAnswer = (doneMessage: any, feedback: string) => {
@@ -107,6 +91,25 @@ const handleVoteAnswer = (doneMessage: any, feedback: string) => {
     .catch((err: any) => {
       handleApiError(err, "反馈图表");
     });
+};
+
+const handleGetAnsweredSql = (doneMessage: any) => {
+  getAnsweredSql(doneMessage.answerId).then((result: any) => {
+    handleApiSuccess(result, async (data: any) => {
+      if (data.sql) {
+        const result = await copyToClipboard(data.sql);
+        if (result) {
+          Message.success("复制成功");
+        } else {
+          Message.error("复制失败");
+        }
+      } else {
+        Message.warning("该回答没有生成 SQL");
+      }
+    });
+  }).catch((err: any) => {
+    handleApiError(err, "获取回答的 SQL")
+  })
 };
 </script>
 

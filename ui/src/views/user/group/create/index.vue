@@ -1,5 +1,6 @@
 <script lang="ts">
 import createTs from "./index";
+
 export default createTs;
 </script>
 
@@ -17,7 +18,6 @@ export default createTs;
         ref="createUserGroupFormRef"
         :rules="createUserGroupFormRules"
         layout="vertical"
-        @submit-success="handleCreateUserGroupFormSubmit"
       >
         <a-row :gutter="24">
           <a-col :span="12">
@@ -36,20 +36,41 @@ export default createTs;
               />
             </a-form-item>
           </a-col>
+          <a-col :span="12">
+            <a-form-item field="type" label="用户组类型">
+              <a-radio-group
+                v-model="createUserGroupForm.type"
+                @change="handleUserGroupTypeChange"
+              >
+                <a-radio value="STATIC">静态用户组</a-radio>
+                <a-radio value="DYNAMIC">动态用户组</a-radio>
+              </a-radio-group>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item field="desc" label="用户组描述">
+              <a-textarea
+                v-model="createUserGroupForm.desc"
+                placeholder="请输入用户组描述"
+                :auto-size="{
+                  minRows: 3,
+                  maxRows: 5,
+                }"
+              />
+            </a-form-item>
+          </a-col>
         </a-row>
-        <a-form-item field="desc" label="用户组描述">
-          <a-textarea
-            v-model="createUserGroupForm.desc"
-            placeholder="请输入用户组描述"
-            :auto-size="{
-              minRows: 3,
-              maxRows: 5,
-            }"
-          />
-        </a-form-item>
+        <div class="info-title">用户组规则</div>
+        <UserGroupConditions
+          v-if="createUserGroupForm.type === 'DYNAMIC'"
+          :conditions="createUserGroupForm.conditions"
+          ref="userGroupConditionsRef"
+        />
         <a-form-item hide-label>
           <a-space>
-            <a-button type="primary" html-type="submit">创建</a-button>
+            <a-button type="primary" @click="handleCreateUserGroupFormSubmit"
+              >创建</a-button
+            >
             <a-button @click="handleResetCreateUserGroupForm">重置</a-button>
           </a-space>
         </a-form-item>

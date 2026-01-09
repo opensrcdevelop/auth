@@ -137,3 +137,53 @@ export function getEnabledDictData(dictId: string) {
     url: `/dict/${dictId}/data/enabled`,
   });
 }
+
+/**
+ * 获取可选子字典列表
+ *
+ * @param dictId 字典ID
+ * @returns 可选子字典列表
+ */
+export function getSelectableChildDictList(dictId: string) {
+  return apiRequest.get({
+    url: `/dict/${dictId}/child/selectable`,
+  });
+}
+
+/**
+ * 添加子字典
+ *
+ * @param data 子字典数据
+ * @returns 调用结果
+ */
+export function addChildDicts(data: any) {
+  return apiRequest.put({
+    url: "/dict/child",
+    data,
+  });
+}
+
+/**
+ * 删除子字典
+ *
+ * @param data 子字典数据
+ * @returns 调用结果
+ */
+export function removeChildDicts(data: any) {
+  return apiRequest.delete({
+    url: "/dict/child",
+    data,
+  });
+}
+
+/**
+ * 获取可关联字典数据列表
+ *
+ * @param dictId 字典ID
+ * @returns 可关联字典数据列表
+ */
+export function getRelatableDictDataList(dictId: string) {
+  return apiRequest.get({
+    url: `/dict/${dictId}/data/relatable`,
+  });
+}

@@ -68,6 +68,8 @@ public class User extends BaseEntity implements UserDetails, OAuth2User, Seriali
 
     private LocalDateTime lastUpdatePasswordTime;
 
+    private String rememberMeTokenSecret;
+
     @TableField(exist = false)
     private Collection<GrantedAuthority> authorities;
 

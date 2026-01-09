@@ -1,13 +1,14 @@
 package cn.opensrcdevelop.auth.configurer;
 
-import cn.opensrcdevelop.auth.biz.component.CustomAuthorizationCodeTokenResponseClient;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2AuthorizationRequestResolver;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2LoginAuthenticationProvider;
-import cn.opensrcdevelop.auth.biz.component.CustomOAuth2UserService;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomAuthorizationCodeTokenResponseClient;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2AuthorizationRequestResolver;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2LoginAuthenticationProvider;
+import cn.opensrcdevelop.auth.biz.component.oauth2login.CustomOAuth2UserService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationService;
 import cn.opensrcdevelop.auth.handler.OAuth2LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.OAuth2LoginSuccessHandler;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -30,6 +31,7 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
+    private final AuthorizationServerProperties authorizationServerProperties;
 
     @Override
     public void init(HttpSecurity http) throws Exception {
@@ -39,10 +41,12 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
                     x.failureHandler(new OAuth2LoginFailureHandler());
                     x.clientRegistrationRepository(clientRegistrationRepository);
                     x.authorizationEndpoint(authorization -> authorization
-                            .authorizationRequestResolver(new CustomOAuth2AuthorizationRequestResolver(clientRegistrationRepository, identitySourceRegistrationService))
+                            .authorizationRequestResolver(new CustomOAuth2AuthorizationRequestResolver(
+                                    authorizationServerProperties,
+                                    clientRegistrationRepository, identitySourceRegistrationService))
                     );
                     x.redirectionEndpoint(redirection -> redirection
-                            .baseUri(AuthConstants.FEDERATION_LOGIN_REDIRECTION_URI)
+                            .baseUri(authorizationServerProperties.getApiPrefix().concat(AuthConstants.FEDERATION_LOGIN_REDIRECTION_URI))
                     );
                     x.userInfoEndpoint(userInfo -> userInfo
                             .userService(customOAuth2UserService)

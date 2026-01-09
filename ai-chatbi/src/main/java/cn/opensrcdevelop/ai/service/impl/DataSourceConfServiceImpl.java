@@ -25,6 +25,7 @@ import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -204,12 +205,14 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         }
 
         // 3. 采集数据源元数据
+        String currentDataSource = DynamicDataSourceContextHolder.peek();
         CompletableFuture.runAsync(() -> {
                     // 3.1 获取锁
                     RLock lock = RedisUtil.getLock(SYNC_TABLE_LOCK.formatted(id));
                     try {
                         if (lock.tryLock()) {
                             // 3.2 采集
+                            DynamicDataSourceContextHolder.push(currentDataSource);
                             dataSourceMetaCollector.collect(id);
                             log.info("数据表同步成功，数据源ID：{}", id);
                         }

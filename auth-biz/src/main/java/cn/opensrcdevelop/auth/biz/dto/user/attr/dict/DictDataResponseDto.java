@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Schema(description = "字典数据响应")
 @Data
@@ -30,4 +31,10 @@ public class DictDataResponseDto implements Serializable {
 
     @Schema(description = "显示顺序")
     private Integer displaySeq;
+
+    @Schema(description = "父字典数据ID")
+    private String parentId;
+
+    @Schema(description = "子字典数据集合")
+    private List<DictDataResponseDto> children;
 }

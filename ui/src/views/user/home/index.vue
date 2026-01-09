@@ -117,9 +117,10 @@ export default homeTs;
                             :placeholder="`请选择${attr.name}`"
                           />
                           <a-select
-                            v-if="attr.dataType === 'DICT'"
+                            v-if="attr.dataType === 'DICT' && !attr.cascadeDict"
                             v-model="userInfo[attr.key]"
-                            allowClear
+                            allow-clear
+                            allow-search
                             :disabled="!attr.userEditable"
                             :placeholder="`请选择${attr.name}`"
                           >
@@ -130,6 +131,16 @@ export default homeTs;
                               >{{ dictData.label }}</a-option
                             >
                           </a-select>
+                          <a-cascader
+                            v-if="attr.dataType === 'DICT' && attr.cascadeDict"
+                            v-model="userInfo[attr.key]"
+                            :placeholder="`请选择${attr.name}`"
+                            expand-trigger="hover"
+                            :options="allDictDatas[attr.key]"
+                            :field-names="{ value: 'id', label: 'label' }"
+                            allow-clear
+                            allow-search
+                          />
                         </a-form-item>
                       </a-col>
                     </a-row>

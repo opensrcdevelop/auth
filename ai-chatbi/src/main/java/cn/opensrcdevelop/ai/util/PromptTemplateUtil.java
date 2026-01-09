@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.ai.util;
 
 import cn.opensrcdevelop.common.exception.ServerException;
-import cn.opensrcdevelop.common.util.CommonUtil;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.apache.commons.collections4.MapUtils;
@@ -19,18 +18,19 @@ public class PromptTemplateUtil {
     /**
      * 获取 Prompt
      *
+     * @param name 模板名称
      * @param promptTemplate Prompt 模板
      * @param params 参数
      * @return Prompt
      */
-    public static String getPrompt(String promptTemplate, Map<String, Object> params) {
+    public static String getPrompt(String name, String promptTemplate, Map<String, Object> params) {
         if (MapUtils.isEmpty(params)) {
             return promptTemplate;
         }
 
         try (StringReader reader = new StringReader(promptTemplate);
              StringWriter writer = new StringWriter()) {
-            Template processor = new Template(CommonUtil.getUUIDV7String(), reader, null, StandardCharsets.UTF_8.name());
+            Template processor = new Template(name, reader, null, StandardCharsets.UTF_8.name());
             processor.process(params, writer);
             return writer.toString();
         } catch (IOException | TemplateException e) {

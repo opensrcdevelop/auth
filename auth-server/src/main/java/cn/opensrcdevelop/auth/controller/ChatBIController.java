@@ -35,6 +35,7 @@ public class ChatBIController {
     private final TableFieldService tableFieldService;
     private final ChatHistoryService chatHistoryService;
     private final ChatMessageHistoryService chatMessageHistoryService;
+    private final ChatAnswerService chatAnswerService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -247,5 +248,15 @@ public class ChatBIController {
     @Authorize({ "allChatBIModelProviderPermissions", "deleteModelProvider" })
     public void removeModelProvider(@PathVariable @NotBlank String id) {
         modelProviderService.removeModelProvider(id);
+    }
+
+    @Operation(summary = "获取回答的SQL", description = "获取回答的SQL")
+    @Parameters({
+            @Parameter(name = "id", description = "回答ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/answer/{id}/sql")
+    @Authorize({ "allChatBIPermissions", "getAnsweredSql" })
+    public ChatAnswerResponseDto getAnsweredSql(@PathVariable @NotBlank String id) {
+        return chatAnswerService.getAnsweredSql(id);
     }
 }

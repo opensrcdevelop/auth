@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface PermissionRepository {
 
-    void searchUserPermissions(IPage<AuthorizeRecord> page, String userId, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    void searchUserPermissions(IPage<AuthorizeRecord> page, String userId, List<String> dynamicUserGroupIds, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
     void searchUserGroupPermissions(IPage<AuthorizeRecord> page, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 

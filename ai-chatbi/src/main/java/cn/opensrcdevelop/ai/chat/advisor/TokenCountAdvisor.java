@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.chat.advisor;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -26,8 +26,13 @@ public class TokenCountAdvisor implements BaseAdvisor {
     public ChatClientResponse after(@NonNull ChatClientResponse chatClientResponse, @NonNull AdvisorChain advisorChain) {
         ChatResponse chatResponse = chatClientResponse.chatResponse();
         if (Objects.nonNull(chatResponse)) {
-            ChatContext.setReqTokens(chatResponse.getMetadata().getUsage().getPromptTokens());
-            ChatContext.setRepTokens(chatResponse.getMetadata().getUsage().getCompletionTokens());
+            if (Objects.nonNull(ChatContextHolder.getChatContext())) {
+                ChatContextHolder.getChatContext().getReqTokens().getAndAdd(chatResponse.getMetadata().getUsage().getPromptTokens());
+            }
+
+            if (Objects.nonNull(ChatContextHolder.getChatContext())) {
+                ChatContextHolder.getChatContext().getRepTokens().getAndAdd(chatResponse.getMetadata().getUsage().getCompletionTokens());
+            }
         }
         return chatClientResponse;
     }

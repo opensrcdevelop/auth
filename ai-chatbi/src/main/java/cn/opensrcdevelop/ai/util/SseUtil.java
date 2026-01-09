@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.util;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
@@ -33,8 +33,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(text)
                         .type(ChatContentType.TEXT)
                         .build(), MediaType.APPLICATION_JSON)
@@ -49,7 +49,7 @@ public class SseUtil {
      * @param text     文本消息
      * @param maxDelay 最大延迟时间（毫秒）
      */
-    public static void sendChatBITextSegmented(SseEmitter emitter, String text, long maxDelay) {
+    public static void sendChatBITextSegmented(SseEmitter emitter, String text, ChatContentType contentType, long maxDelay) {
         Try.run(() -> {
             if (StringUtils.isEmpty(text)) {
                 return;
@@ -70,10 +70,10 @@ public class SseUtil {
                     emitter.send(SseEmitter
                             .event()
                             .data(ChatBIResponseDto.builder()
-                                    .chatId(ChatContext.getChatId())
-                                    .questionId(ChatContext.getQuestionId())
+                                    .chatId(ChatContextHolder.getChatContext().getChatId())
+                                    .questionId(ChatContextHolder.getChatContext().getQuestionId())
                                     .content(segment)
-                                    .type(ChatContentType.TEXT)
+                                    .type(contentType)
                                     .build(), MediaType.APPLICATION_JSON)
                     );
                     break;
@@ -89,10 +89,10 @@ public class SseUtil {
                 emitter.send(SseEmitter
                         .event()
                         .data(ChatBIResponseDto.builder()
-                                .chatId(ChatContext.getChatId())
-                                .questionId(ChatContext.getQuestionId())
+                                .chatId(ChatContextHolder.getChatContext().getChatId())
+                                .questionId(ChatContextHolder.getChatContext().getQuestionId())
                                 .content(segment)
-                                .type(ChatContentType.TEXT)
+                                .type(contentType)
                                 .build(), MediaType.APPLICATION_JSON)
                 );
                 startIndex = endIndex;
@@ -105,7 +105,7 @@ public class SseUtil {
                 }
             }
         });
-        chatMessageHistoryService.createChatMessageHistory(text, ChatContentType.TEXT);
+        chatMessageHistoryService.createChatMessageHistory(text, contentType);
     }
 
     /**
@@ -118,8 +118,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(md)
                         .type(ChatContentType.MARKDOWN)
                         .build(), MediaType.APPLICATION_JSON)
@@ -137,8 +137,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(chart)
                         .type(ChatContentType.CHART)
                         .build(), MediaType.APPLICATION_JSON)
@@ -157,8 +157,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .answerId(answerId)
                         .rewrittenQuestion(rewrittenQuestion)
                         .type(ChatContentType.DONE)
@@ -178,8 +178,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)
@@ -197,8 +197,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(loadingMsg)
                         .type(ChatContentType.LOADING)
                         .build(), MediaType.APPLICATION_JSON)
@@ -216,8 +216,8 @@ public class SseUtil {
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(table)
                         .type(ChatContentType.TABLE)
                         .build(), MediaType.APPLICATION_JSON)
@@ -234,8 +234,8 @@ public class SseUtil {
     public static void sendChatBIError(SseEmitter emitter, String errorMsg) {
         Try.run(() -> emitter.send(SseEmitter.event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(errorMsg)
                         .type(ChatContentType.ERROR)
                         .build(), MediaType.APPLICATION_JSON)
@@ -252,12 +252,32 @@ public class SseUtil {
     public static void sendChatBIHtmlReport(SseEmitter emitter, String htmlContent) {
         Try.run(() -> emitter.send(SseEmitter.event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContext.getChatId())
-                        .questionId(ChatContext.getQuestionId())
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
                         .content(htmlContent)
                         .type(ChatContentType.HTML_REPORT)
                         .build(), MediaType.APPLICATION_JSON)
         ));
         chatMessageHistoryService.createChatMessageHistory(htmlContent, ChatContentType.HTML_REPORT);
+    }
+
+    /**
+     * 发送 ChatBI 思考消息
+     *
+     * @param emitter SseEmitter
+     * @param thinkingMsg 思考消息
+     */
+    public static void sendChatBIThinking(SseEmitter emitter, String thinkingMsg, boolean saveMessage) {
+        Try.run(() -> emitter.send(SseEmitter.event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .content(thinkingMsg)
+                        .type(ChatContentType.THINKING)
+                        .build(), MediaType.APPLICATION_JSON)
+        ));
+        if (saveMessage) {
+            chatMessageHistoryService.createChatMessageHistory(thinkingMsg, ChatContentType.THINKING);
+        }
     }
 }

@@ -18,8 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Tag(name = "API-ResourceGroup", description = "接口-资源组管理")
 @RestController
 @RestResponse
@@ -75,7 +73,7 @@ public class ResourceGroupController {
     @DeleteMapping("/{id}")
     @Authorize({ "allResourceGroupPermissions", "deleteResourceGroup" })
     public void removeResourceGroup(@PathVariable @NotBlank String id) {
-        resourceGroupService.removeResourceGroup(List.of(id));
+        resourceGroupService.removeResourceGroup(id);
     }
 
     @Operation(summary = "获取资源组详情", description = "获取资源组详情")

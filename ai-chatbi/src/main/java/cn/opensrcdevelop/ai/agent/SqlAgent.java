@@ -1,14 +1,11 @@
 package cn.opensrcdevelop.ai.agent;
 
-import cn.opensrcdevelop.ai.chat.advisor.MultiMessageChatMemoryAdvisor;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
-import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,63 +24,60 @@ public class SqlAgent {
     private final DataSourceManager dataSourceManager;
     private final TableService tableService;
     private final PromptTemplate promptTemplate;
-    private final MultiMessageChatMemoryAdvisor multiMessageChatMemoryAdvisor;
 
 
     /**
      * 从表描述中获取相关表
      *
-     * @param chatClient ChatClient
+     * @param chatClient   ChatClient
      * @param userQuestion 用户问题
      * @param dataSourceId 数据源ID
+     * @param instruction  指令
      * @return 相关表
      */
-    public Map<String, Object> getRelevantTables(ChatClient chatClient, String userQuestion, String dataSourceId) {
+    public Map<String, Object> getRelevantTables(ChatClient chatClient,
+                                                 String userQuestion,
+                                                 String dataSourceId,
+                                                 String instruction) {
         // 1. 获取数据源中的表信息
-        List<Table> candidateTables = tableService.list(Wrappers.<Table>lambdaQuery()
-                .eq(Table::getDataSourceId, dataSourceId)
-                .eq(Table::getToUse, true));
-
+        List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
         if (CollectionUtils.isEmpty(candidateTables)) {
             return Map.of(
                     "success", false,
-                    "error", "数据源中没有可用的表"
+                    "error", "The data source " + dataSourceId + " does not have any available tables."
             );
         }
 
-        List<String> tableDescriptions = candidateTables.stream().map(table -> {
-            Map<String, String> tableDescription = new HashMap<>();
-            tableDescription.put("table_id", table.getTableId());
-            tableDescription.put("table_name", table.getTableName());
-            tableDescription.put("description", table.getRemark() == null ? "No description available" : table.getRemark());
-            tableDescription.put("additional_info", table.getAdditionalInfo() == null ? "No additional info available" : table.getAdditionalInfo());
-            return CommonUtil.serializeObject(tableDescription);
-        }).toList();
-
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
                 .param("question", userQuestion)
-                .param("table_descriptions", tableDescriptions);
+                .param("table_descriptions", CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList())
+                .param("instruction", instruction);
 
         // 2. 推测关联表
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.SELECT_TABLE))
+                .user(prompt.buildUserPrompt(PromptTemplate.SELECT_TABLE))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.SELECT_TABLE))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 
     /**
      * 生成 SQL
      *
-     * @param chatClient ChatClient
-     * @param userQuestion 用户问题
+     * @param chatClient     ChatClient
+     * @param userQuestion   用户问题
      * @param relevantTables 相关表
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId   数据源ID
+     * @param instruction    指令
      * @return SQL
      */
-    public Map<String, Object> generateSql(ChatClient chatClient, String userQuestion, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> generateSql(ChatClient chatClient,
+                                           String userQuestion,
+                                           List<Map<String, Object>> relevantTables,
+                                           String dataSourceId,
+                                           String instruction) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -92,14 +85,14 @@ public class SqlAgent {
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("question", userQuestion)
-                .param("relevant_tables", schemas);
+                .param("relevant_tables", schemas)
+                .param("instruction", instruction);
 
         // 2. 生成 SQL
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_SQL))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
@@ -107,14 +100,20 @@ public class SqlAgent {
     /**
      * 修复 SQL
      *
-     * @param chatClient ChatClient
-     * @param sql SQL
-     * @param error 错误信息
+     * @param chatClient     ChatClient
+     * @param sql            SQL
+     * @param error          错误信息
      * @param relevantTables 相关表
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId   数据源ID
+     * @param instruction    指令
      * @return 修复后的 SQL
      */
-    public Map<String, Object> fixSql(ChatClient chatClient, String sql, String error, List<Map<String, Object>> relevantTables, String dataSourceId) {
+    public Map<String, Object> fixSql(ChatClient chatClient,
+                                      String sql,
+                                      String error,
+                                      List<Map<String, Object>> relevantTables,
+                                      String dataSourceId,
+                                      String instruction) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -122,15 +121,55 @@ public class SqlAgent {
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("sql", sql)
                 .param("error", error)
-                .param("relevant_tables", schemas);
+                .param("relevant_tables", schemas)
+                .param("instruction", instruction);
 
         // 2. 修复 SQL
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt())
-                .user(prompt.buildUserPrompt())
+                .system(prompt.buildSystemPrompt(PromptTemplate.FIX_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.FIX_SQL))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FIX_SQL))
-                .advisors(multiMessageChatMemoryAdvisor)
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
+
+    /**
+     * 检查查询数据是否包含禁止字段
+     *
+     * @param chatClient     ChatClient
+     * @param sql            SQL
+     * @param relevantTables 相关表
+     * @param queryColumns   查询列
+     * @param queryData      查询数据
+     * @return 是否包含禁止字段
+     */
+    public Map<String, Object> checkQueryData(
+            ChatClient chatClient,
+            String sql,
+            List<Map<String, Object>> relevantTables,
+            List<Map<String, Object>> queryColumns,
+            List<Map<String, Object>> queryData) {
+        // 1. 获取表的禁止字段
+        for (Map<String, Object> relevantTable : relevantTables) {
+            String tableId = relevantTable.get("table_id").toString();
+            List<String> forbiddenFields = tableService.getTableForbiddenFields(tableId);
+            relevantTable.put("forbidden_fields", forbiddenFields);
+        }
+
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.CHECK_QUERY_DATA)
+                .param("relevant_tables", relevantTables)
+                .param("sql", sql)
+                .param("query_columns", queryColumns)
+                .param("sample_data", CommonUtil.nonJdkSerializeObject(queryData.getFirst()));
+
+        // 2. 检查查询数据是否包含禁止字段
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt(PromptTemplate.CHECK_QUERY_DATA))
+                .user(prompt.buildUserPrompt(PromptTemplate.CHECK_QUERY_DATA))
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.CHECK_QUERY_DATA))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }

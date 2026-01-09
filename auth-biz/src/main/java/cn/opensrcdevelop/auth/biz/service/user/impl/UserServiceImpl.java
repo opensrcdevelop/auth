@@ -7,7 +7,7 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
-import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
+import cn.opensrcdevelop.auth.biz.component.authserver.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.auth.biz.constants.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
@@ -26,6 +26,7 @@ import cn.opensrcdevelop.auth.biz.repository.role.RoleRepository;
 import cn.opensrcdevelop.auth.biz.repository.user.UserRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleService;
 import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
@@ -95,6 +96,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final VerificationCodeService verificationCodeService;
     private final LoginLogService loginLogService;
     private final PasswordPolicyService passwordPolicyService;
+    private final ThirdAccountService thirdAccountService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -171,7 +173,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUserAttrs(userAttrService.getUserAttrs(userId));
 
         // 4. 设置用户组信息
-        user.setUserGroups(userGroupService.getUserGroups(userId));
+        List<UserGroup> userGroups = new ArrayList<>();
+        userGroups.addAll(userGroupService.getUserGroups(userId));
+        userGroups.addAll(userGroupService.getDynamicUserGroups(userId));
+        user.setUserGroups(userGroups);
         return user;
     }
 
@@ -184,14 +189,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * @return 用户列表
      */
     @Override
-    public PageData<Map<String, Object>> list(int page, int size, List<DataFilterRequestDto> filters) {
+    public PageData<Map<String, Object>> list(int page, int size, List<DataFilterDto> filters) {
         // 1. 计算分页偏移量 & 编辑查询条件
         int offset = (page - 1) * size;
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
-            for (DataFilterRequestDto filter : filters) {
-                AuthUtil.editQuery(queryWrapper, filter);
+            for (DataFilterDto filter : filters) {
+                AuthUtil.editQuery(queryWrapper, filter, ConjunctionType.AND);
             }
         }
 
@@ -436,6 +441,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 6. 删除用户组信息
         userGroupService.removeUserGroupMapping(userId);
+
+        // 7. 删除用户绑定的第三方账号
+        thirdAccountService.removeUserBindings(userId);
     }
 
     /**
@@ -528,6 +536,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 2. 删除 Token
         dbOAuth2AuthorizationService.removeUserTokens(user.getUsername());
+
+        // 3. 无效 RememberMe Token
+        super.update(Wrappers.<User>lambdaUpdate().set(User::getRememberMeTokenSecret, StringUtils.EMPTY).eq(User::getUserId, userId));
     }
 
     /**
@@ -678,7 +689,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public PageData<PermissionResponseDto> getPermissions(int page, int size, String userId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
         // 1. 查询数据库
         Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
-        permissionService.getUserPermissions(pageRequest, userId, null, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+        List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId)).map(UserGroup::getUserGroupId).toList();
+        permissionService.getUserPermissions(pageRequest, userId, dynamicUserGroupIds, null, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
 
         // 2. 属性编辑
         PageData<PermissionResponseDto> pageData = new PageData<>();
@@ -811,7 +823,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userResponse.setAttributes(attributes);
 
         // 3. 角色信息
-        var roles = CommonUtil.stream(roleRepository.searchUserRoles(user.getUserId())).map(roleMapping -> {
+        List<UserGroup> dynamicUserGroups = userGroupService.getDynamicUserGroups(user.getUserId());
+        var roles = CommonUtil.stream(roleRepository.searchUserRoles(user.getUserId(), CommonUtil.stream(dynamicUserGroups).map(UserGroup::getUserGroupId).toList())).map(roleMapping -> {
             Role role = roleMapping.getRole();
 
             RoleResponseDto roleResponse = new RoleResponseDto();
@@ -828,14 +841,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userResponse.setRoles(roles);
 
         // 4. 用户组信息
-        var userGroups = CommonUtil.stream(userGroupService.getUserGroups(user.getUserId())).map(group -> {
+        List<UserGroup> userGroups = new ArrayList<>();
+        userGroups.addAll(userGroupService.getUserGroups(user.getUserId()));
+        userGroups.addAll(dynamicUserGroups);
+        userResponse.setUserGroups(CommonUtil.stream(userGroups).map(group -> {
             UserGroupResponseDto userGroupResponse = new UserGroupResponseDto();
             userGroupResponse.setId(group.getUserGroupId());
             userGroupResponse.setName(group.getUserGroupName());
             userGroupResponse.setCode(group.getUserGroupCode());
             return userGroupResponse;
-        }).toList();
-        userResponse.setUserGroups(userGroups);
+        }).toList());
 
         // 5. 最后一次登录信息
         var lastLoginInfo = loginLogService.getLastLoginInfo(user.getUserId());

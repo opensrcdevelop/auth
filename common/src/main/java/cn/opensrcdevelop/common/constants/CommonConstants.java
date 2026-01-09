@@ -36,4 +36,5 @@ public class CommonConstants {
     public static final String REQ_CTX_OS_TYPE = "osType";
     public static final String USER_CTX = "_userCtx";
     public static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
+    public static final String REQ_HEADER_X_TENANT_CODE = "X-Tenant-Code";
 }

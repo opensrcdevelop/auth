@@ -27,7 +27,6 @@ export default detailTs;
               layout="vertical"
               ref="userGroupInfoFormRef"
               :rules="userGroupInfoFormRules"
-              @submit-success="handleUserGroupInfoFormSubmit"
             >
               <a-row :gutter="24">
                 <a-col :span="12">
@@ -57,9 +56,24 @@ export default detailTs;
                   }"
                 />
               </a-form-item>
+              <div
+                class="info-title"
+                v-if="userGroupInfoForm.type === 'DYNAMIC'"
+              >
+                用户组规则
+              </div>
+              <UserGroupConditions
+                v-if="userGroupInfoForm.type === 'DYNAMIC'"
+                :conditions="userGroupInfoForm.conditions"
+                ref="userGroupConditionsRef"
+              />
               <a-form-item hide-label>
                 <a-space>
-                  <a-button type="primary" html-type="submit">保存</a-button>
+                  <a-button
+                    type="primary"
+                    @click="handleUserGroupInfoFormSubmit"
+                    >保存</a-button
+                  >
                   <a-button @click="handleResetUserGroupInfoForm"
                     >重置</a-button
                   >
@@ -67,17 +81,21 @@ export default detailTs;
               </a-form-item>
             </a-form>
             <div class="info-title">用户组成员</div>
-            <a-input-search
-              :style="{ width: '320px' }"
-              placeholder="输入用户名 / 邮箱 / 手机号进行搜索"
-              allow-clear
-              v-model="searchGroupUserKeyword"
-              @search="handleSearchGroupUser"
-              @clear="handleSearchGroupUser"
-              @keyup.enter.native="handleSearchGroupUser"
-            />
-            <div class="add-container">
-              <a-button type="text" @click="handleOpenAddGroupUserModal">
+            <div class="tools-container">
+              <a-input-search
+                :style="{ width: '320px' }"
+                placeholder="输入用户名 / 邮箱 / 手机号进行搜索"
+                allow-clear
+                v-model="searchGroupUserKeyword"
+                @search="handleSearchGroupUser"
+                @clear="handleSearchGroupUser"
+                @keyup.enter.native="handleSearchGroupUser"
+              />
+              <a-button
+                type="text"
+                v-if="userGroupInfoForm.type === 'STATIC'"
+                @click="handleOpenAddGroupUserModal"
+              >
                 <template #icon>
                   <icon-plus />
                 </template>
@@ -292,7 +310,7 @@ export default detailTs;
                   <div class="filter-footer">
                     <a-space>
                       <a-button
-                        @click="handleGetUserGroupPermissions(1, 15)"
+                        @click="handleGetUserGroupPermissions()"
                         type="primary"
                         >确认</a-button
                       >

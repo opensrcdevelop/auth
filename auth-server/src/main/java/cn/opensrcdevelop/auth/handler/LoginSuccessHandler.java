@@ -17,10 +17,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -39,6 +39,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
     private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
+    private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -51,16 +52,12 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             // 1.1 未绑定设备
             if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
                 // 1.1.1 生成 TOTP 密钥（不存在的场合下）
-                String secret = user.getMfaSecret();
-                if (StringUtils.isEmpty(secret)) {
-                    secret = MultiFactorAuthenticator.generateSecretKey();
-
-                    // 1.1.2 更新用户数据
-                    User updateUser = new User();
-                    updateUser.setUserId(user.getUserId());
-                    updateUser.setMfaSecret(secret);
-                    userService.updateById(updateUser);
-                }
+                String secret = MultiFactorAuthenticator.generateSecretKey();
+                // 1.1.2 更新用户数据
+                User updateUser = new User();
+                updateUser.setUserId(user.getUserId());
+                updateUser.setMfaSecret(secret);
+                userService.updateById(updateUser);
 
                 // 1.1.3 生成二维码数据
                 String qrCodeData = MultiFactorAuthenticator.getQrCodeString(user.getUsername(), secret);
@@ -104,6 +101,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
             setChangePwdSessionFlag(request);
         }
+
+        // 6. 记住我
+        rememberMeServices.loginSuccess(request, response, authentication);
 
         WebUtil.sendJsonResponse(R.ok(responseDto), HttpStatus.OK);
     }

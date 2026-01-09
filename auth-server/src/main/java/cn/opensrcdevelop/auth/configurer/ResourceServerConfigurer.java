@@ -5,10 +5,10 @@ import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvid
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
 import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.*;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +17,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.web.filter.CorsFilter;
@@ -33,7 +32,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OpaqueTokenIntrospector tokenIntrospector;
-    private final RememberMeServices rememberMeServices;
 
     @Override
     public void init(HttpSecurity http) throws Exception {
@@ -44,15 +42,15 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                     x.anyRequest().authenticated();
                 })
                 .formLogin(x -> {
-                    x.loginPage("/login");
+                    x.loginProcessingUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGIN_URL));
                     if (UrlUtils.isAbsoluteUrl(authorizationServerProperties.getLoginPageUrl())) {
                         x.successHandler(new LoginSuccessHandler());
                         x.failureHandler(new LoginFailureHandler());
                     }
                 });
 
-        // RememberMe 配置
-        http.rememberMe(x -> x.rememberMeServices(rememberMeServices));
+        // 登出处理
+        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
@@ -94,7 +92,7 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
-        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager, rememberMeServices);
+        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
     }

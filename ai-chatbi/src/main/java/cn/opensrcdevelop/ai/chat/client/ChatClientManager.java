@@ -21,7 +21,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -75,7 +75,11 @@ public class ChatClientManager {
 
         // 4. 返回 ChatClient
         ChatClient.Builder builder = ChatClient.builder(chatModel)
-                .defaultOptions(ToolCallingChatOptions.builder().model(model).build())
+                .defaultOptions(ToolCallingChatOptions
+                        .builder()
+                        .model(model)
+                        .toolContext(ChatMemory.CONVERSATION_ID, chatId)
+                        .build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
                         SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build()
@@ -104,7 +108,7 @@ public class ChatClientManager {
                 .ollamaApi(OllamaApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
                         .build())
-                .defaultOptions(OllamaOptions.builder()
+                .defaultOptions(OllamaChatOptions.builder()
                         .model(modelProvider.getDefaultModel())
                         .temperature(modelProvider.getTemperature())
                         .build())

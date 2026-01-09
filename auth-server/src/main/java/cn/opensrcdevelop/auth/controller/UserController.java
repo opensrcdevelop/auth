@@ -75,7 +75,7 @@ public class UserController {
     })
     @PostMapping("/list")
     @Authorize({ "allUserPermissions", "listUser" })
-    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") @Min(1) int page, @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterRequestDto> filters) {
+    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") @Min(1) int page, @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterDto> filters) {
         return userService.list(page, size, filters);
     }
 

@@ -44,6 +44,14 @@ public class UserGroup extends BaseEntity implements Serializable {
     @PropertyName("描述")
     private String description;
 
+    /** 用户组类型 */
+    @PropertyName("用户组类型")
+    private String userGroupType;
+
+    /** 动态条件 */
+    @PropertyName("动态条件")
+    private String dynamicConditions;
+
     /** 用户集合 */
     @TableField(exist = false)
     private List<User> users;

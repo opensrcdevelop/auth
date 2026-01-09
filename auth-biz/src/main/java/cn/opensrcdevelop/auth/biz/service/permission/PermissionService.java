@@ -17,7 +17,7 @@ public interface PermissionService extends IService<Permission> {
 
     List<PermissionResponseDto> getCurrentUserPermissions();
 
-    void getUserPermissions(IPage<AuthorizeRecord> page, String userId, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    void getUserPermissions(IPage<AuthorizeRecord> page, String userId, List<String> dynamicUserGroupIds, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
     void getUserGroupPermissions(IPage<AuthorizeRecord> page, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 

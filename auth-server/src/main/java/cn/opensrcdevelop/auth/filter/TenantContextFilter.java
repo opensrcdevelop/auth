@@ -30,27 +30,37 @@ public class TenantContextFilter extends RestFilter {
     @Override
     protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            // 1. 根据域名获取租户标识
-            URL baseUrl = URI.create(SpringContextUtil.getProperty(CommonConstants.PROP_DEFAULT_ISSUER)).toURL();
-            URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
-            // 1.1 默认租户
-            if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
-                // 1.1.1 设置租户线程上下文
-                MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
+            MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
+
+            // 1. 检查请求头中是否包含租户标识
+            String tenantCode = request.getHeader(CommonConstants.REQ_HEADER_X_TENANT_CODE);
+            if (StringUtils.isBlank(tenantCode)) {
+                // 2. 根据域名获取租户标识
+                URL baseUrl = URI.create(SpringContextUtil.getProperty(CommonConstants.PROP_DEFAULT_ISSUER)).toURL();
+                URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
+                if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
+                    tenantCode = multiTenantProperties.getDefaultTenant();
+                } else {
+                    tenantCode = requestUrl.getHost().split("\\.")[0];
+                }
+            }
+
+            // 3.1 默认租户
+            if (multiTenantProperties.getDefaultTenant().equals(tenantCode)) {
+                // 3.1.1 设置租户线程上下文
                 TenantContext tenantContext = new TenantContext();
-                tenantContext.setTenantCode(multiTenantProperties.getDefaultTenant());
+                tenantContext.setTenantCode(tenantCode);
                 tenantContext.setDefaultTenant(true);
                 setTenantContext(tenantContext);
 
                 filterChain.doFilter(request, response);
                 return;
             }
-            String tenantCode = requestUrl.getHost().split("\\.")[0];
 
-            // 2. 检查租户是否存在
-             var existsRes = TenantHelper.tenantExists(tenantCode);
+            // 4. 检查租户是否存在
+            var existsRes = TenantHelper.tenantExists(tenantCode);
             if (Boolean.TRUE.equals(existsRes._1)) {
-                // 2.1 设置租户线程上下文
+                // 4.1 设置租户线程上下文
                 TenantContext tenantContext = new TenantContext();
                 tenantContext.setTenantCode(existsRes._2.getTenantCode());
                 tenantContext.setTenantName(existsRes._2.getTenantName());
@@ -62,7 +72,7 @@ public class TenantContextFilter extends RestFilter {
             }
             WebUtil.sendJsonResponse(response, R.optFail(MessageConstants.TENANT_MSG_1000, tenantCode), HttpStatus.NOT_FOUND);
         } finally {
-            // 3. 清空租户线程上下文和 session 属性
+            // 5. 清空租户线程上下文和 session 属性
             TenantHelper.clearTenantContext();
             TenantHelper.clearTenantDsContext();
         }

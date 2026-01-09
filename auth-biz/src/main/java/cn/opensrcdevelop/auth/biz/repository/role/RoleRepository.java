@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface RoleRepository {
 
-    List<RoleMapping> searchUserRoles(String userId);
+    List<RoleMapping> searchUserRoles(String userId, List<String> dynamicUserGroupIds);
 
     void searchRolePrincipals(IPage<RoleMapping> page, String roleId, String keyword);
 }

@@ -7,8 +7,6 @@ import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 
-import java.util.List;
-
 public interface ResourceGroupService extends IService<ResourceGroup> {
 
     PageData<ResourceGroupResponseDto> list(int page, int size, String keyword);
@@ -17,7 +15,7 @@ public interface ResourceGroupService extends IService<ResourceGroup> {
 
     ResourceGroupResponseDto detail(String resourceGroupId);
 
-    void removeResourceGroup(List<String> resourceGroupId);
+    void removeResourceGroup(String resourceGroupId);
 
     void createResourceGroup(ResourceGroupRequestDto requestDto);
 

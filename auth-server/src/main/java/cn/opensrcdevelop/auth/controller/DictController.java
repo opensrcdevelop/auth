@@ -1,9 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
-import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.*;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
@@ -15,7 +12,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -60,12 +59,13 @@ public class DictController {
     @Parameters({
             @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
-            @Parameter(name = "keyword", description = "字典名称或标识检索关键字", in = ParameterIn.QUERY)
+            @Parameter(name = "keyword", description = "字典名称或标识检索关键字", in = ParameterIn.QUERY),
+            @Parameter(name = "queryChildren", description = "是否查询子字典", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
     @Authorize({"allDictPermissions", "listDict"})
-    public PageData<DictResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
-        return dictService.list(page, size, keyword);
+    public PageData<DictResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword, @RequestParam(required = false) boolean queryChildren) {
+        return dictService.list(page, size, keyword, queryChildren);
     }
 
     @Operation(summary = "删除字典", description = "删除字典")
@@ -132,5 +132,39 @@ public class DictController {
     @GetMapping("/{id}/data/enabled")
     public List<DictDataResponseDto> getEnabledDictData(@PathVariable @NotBlank String id) {
         return dictDataService.getEnabledDictData(id);
+    }
+
+    @Operation(summary = "获取可选择的子字典列表", description = "获取可选择的子字典列表")
+    @Parameters({
+            @Parameter(name = "id", description = "字典ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/{id}/child/selectable")
+    @Authorize({"allDictPermissions", "addChildDict"})
+    public List<DictResponseDto> selectableChildren(@PathVariable @NotBlank String id) {
+        return dictService.listSelectableChildren(id);
+    }
+
+    @Operation(summary = "获取可关联的字典数据", description = "获取可关联的字典数据")
+    @Parameters({
+            @Parameter(name = "id", description = "字典ID", in = ParameterIn.PATH, required = true),
+    })
+    @GetMapping("/{id}/data/relatable")
+    @Authorize({"allDictPermissions", "addChildDict"})
+    public List<DictDataResponseDto> getRelatableDictData(@PathVariable @NotBlank String id) {
+        return dictDataService.getRelatableDictData(id);
+    }
+
+    @Operation(summary = "添加子字典", description = "添加子字典")
+    @PutMapping("/child")
+    @Authorize({"allDictPermissions", "addChildDict"})
+    public void addChildDicts(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) @NotEmpty List<@Valid ChildDictRequestDto> requestDtoList) {
+        dictService.addChildDicts(requestDtoList);
+    }
+
+    @Operation(summary = "删除子字典", description = "删除子字典")
+    @DeleteMapping("/child")
+    @Authorize({"allDictPermissions", "deleteChildDict"})
+    public void removeChildDict(@RequestBody @Valid ChildDictRequestDto requestDto) {
+        dictService.removeChildDict(requestDto);
     }
 }

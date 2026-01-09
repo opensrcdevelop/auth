@@ -62,14 +62,14 @@
       >
         <div class="content">
           <a-tooltip :content="item.title">
-                      <div
-            class="title"
-            :class="{
-              active: item.id === activeChatId,
-            }"
-          >
-            {{ item.title }}
-          </div>
+            <div
+              class="title"
+              :class="{
+                active: item.id === activeChatId,
+              }"
+            >
+              {{ item.title }}
+            </div>
           </a-tooltip>
           <div class="time">{{ item.start }}</div>
         </div>
@@ -224,6 +224,9 @@ const handleDeleteChatHistory = (chatHistory: any) => {
           handleApiSuccess(result, () => {
             Notification.success("删除成功");
             handleGetChatHistoryList();
+            if (chatHistory.id === activeChatId.value) {
+              handleAddNewChat();
+            }
           });
         })
         .catch((err: any) => {
@@ -367,31 +370,6 @@ defineExpose({
   overflow-x: hidden;
   overflow-y: auto;
   height: calc(100% - 150px);
-
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(144, 147, 153, 0.3);
-    border-radius: 3px;
-
-    &:hover {
-      background: rgba(144, 147, 153, 0.5);
-    }
-  }
-
-  scrollbar-width: thin;
-  scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
-
-  &:hover {
-    scrollbar-color: rgba(144, 147, 153, 0.5) transparent;
-  }
 }
 
 .chat-history-item {

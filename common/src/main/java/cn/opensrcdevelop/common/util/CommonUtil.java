@@ -39,13 +39,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
@@ -146,6 +142,16 @@ public class CommonUtil {
     }
 
     /**
+     * 不使用JDK序列化对象
+     *
+     * @param obj 对象
+     * @return 序列化字符串
+     */
+    public static String nonJdkSerializeObject(Object obj) {
+        return Try.of(() -> OBJECT_MAPPER.writeValueAsString(obj)).getOrElseThrow(ServerException::new);
+    }
+
+    /**
      * 序列化对象
      *
      * @param obj 对象
@@ -181,6 +187,24 @@ public class CommonUtil {
     }
 
     /**
+     * 反序列化对象（不使用JDK序列化）
+     *
+     * @param value 反序列化字符串
+     * @param clazz 目标类
+     * @param <T>   目标类
+     * @return 对象
+     */
+    @SuppressWarnings("all")
+    public static <T> T nonJdkDeserializeObject(String value, Class<T> clazz) {
+        try {
+            // json 反序列化
+            return OBJECT_MAPPER.readValue(value, clazz);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * 反序列化对象
      *
      * @param value 反序列化字符串
@@ -194,6 +218,36 @@ public class CommonUtil {
             // jdk 反序列化
             return javaDeserialize(value);
         }
+    }
+
+    /**
+     * 反序列化对象（不使用JDK序列化）
+     *
+     * @param value        反序列化字符串
+     * @param valueTypeRef 目标类
+     * @param <T>          目标类
+     * @return 对象
+     */
+    @SuppressWarnings("all")
+    public static <T> T nonJdkDeserializeObject(String value, TypeReference<T> valueTypeRef) {
+        try {
+            // json 反序列化
+            return OBJECT_MAPPER.readValue(value, valueTypeRef);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 将Map转换为对象
+     *
+     * @param map   map
+     * @param clazz 目标类
+     * @param <T>   目标类
+     * @return 目标对象
+     */
+    public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
+        return OBJECT_MAPPER.convertValue(map, clazz);
     }
 
     /**
@@ -330,7 +384,7 @@ public class CommonUtil {
     /**
      * 校验 Bean
      *
-     * @param bean bean
+     * @param bean   bean
      * @param groups 分组
      */
     public static void validateBean(Object bean, Class<?>... groups) {
@@ -399,10 +453,10 @@ public class CommonUtil {
      * 填充模版
      *
      * @param template 模版
-     * @param context 上下文
+     * @param context  上下文
      * @return 填充后的模版
      */
-    public static String fillTemplate(String template , Map<String, Object> context) {
+    public static String fillTemplate(String template, Map<String, Object> context) {
         try (StringReader reader = new StringReader(template);
              StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
@@ -414,6 +468,75 @@ public class CommonUtil {
             throw new ServerException(ex.getMessage(), ex);
         }
     }
+
+    /**
+     * 构建树结构
+     *
+     * @param nodes 节点列表
+     * @param pIdFunc 父节点ID获取函数
+     * @param idFunc  节点ID获取函数
+     * @param rootCheckFunc 根节点检查函数
+     * @param setChildrenFunc 子节点设置函数
+     * @param initLevel 初始层级
+     * @param levelFunc 层级设置函数
+     * @return 根节点列表
+     * @param <T> 节点ID类型
+     * @param <E> 节点类型
+     */
+    public static <T, E>List<E> makeTree(List<E> nodes,
+                                         Function<E, T> pIdFunc,
+                                         Function<E, T> idFunc,
+                                         Predicate<E> rootCheckFunc,
+                                         BiConsumer<E, List<E>> setChildrenFunc,
+                                         Integer initLevel,
+                                         ObjIntConsumer<E> levelFunc) {
+        Map<Optional<T>, List<E>> parentMap = CommonUtil.stream(nodes).collect(Collectors.groupingBy(
+                node -> Optional.ofNullable(pIdFunc.apply(node)),
+                LinkedHashMap::new,
+                Collectors.toList()
+        ));
+
+        List<E> rootNodes = new ArrayList<>();
+        for (E node : nodes) {
+            setChildrenFunc.accept(node, parentMap.get(Optional.ofNullable(idFunc.apply(node))));
+            if (rootCheckFunc.test(node)) {
+                rootNodes.add(node);
+            }
+        }
+
+        if (initLevel == null || levelFunc == null) {
+            return rootNodes;
+        }
+
+        Deque<Map.Entry<E, Integer>> nodeQueue = new ArrayDeque<>();
+
+        // 将根节点加入队列
+        for (E rootNode : rootNodes) {
+            nodeQueue.offerLast(new AbstractMap.SimpleEntry<>(rootNode, initLevel));
+        }
+
+        // 遍历队列中的节点并设置层级
+        while (!nodeQueue.isEmpty()) {
+            Map.Entry<E, Integer> entry = nodeQueue.pollFirst();
+            E parentNode = entry.getKey();
+            Integer currentLevel = entry.getValue();
+            levelFunc.accept(parentNode, currentLevel);
+
+            // 获取父节点的子节点
+            T parentNodeId = idFunc.apply(parentNode);
+            List<E> children = parentMap.get(Optional.ofNullable(parentNodeId));
+
+            if (CollectionUtils.isNotEmpty(children)) {
+                for (E child : children) {
+                    // 将子节点加入队列，用于处理下一层级
+                    nodeQueue.offerLast(new AbstractMap.SimpleEntry<>(child, currentLevel + 1));
+                }
+            }
+        }
+
+        return rootNodes;
+    }
+
 
     @FunctionalInterface
     public interface Getter<T, R> extends Serializable {

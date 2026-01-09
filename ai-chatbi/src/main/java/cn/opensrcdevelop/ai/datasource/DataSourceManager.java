@@ -7,6 +7,8 @@ import cn.opensrcdevelop.ai.service.DataSourceConfService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -54,7 +56,8 @@ public class DataSourceManager {
 
         // 2. 判断是否为系统数据源
         if (Boolean.TRUE.equals(dataSourceConf.getSystemDs())) {
-            return SpringContextUtil.getBean(DataSource.class);
+            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
+            return dynamicRoutingDataSource.getDataSource(DynamicDataSourceContextHolder.peek());
         }
 
         // 3. 检查缓存中是否存在数据源

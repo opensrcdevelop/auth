@@ -1,14 +1,10 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import {
-  getGroupResources,
-  getResourceGroupDetail,
-  updateResourceGroup,
-} from "@/api/resourceGroup";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Notification } from "@arco-design/web-vue";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { usePagination } from "@/hooks/usePagination";
+import {getGroupResources, getResourceGroupDetail, updateResourceGroup,} from "@/api/resourceGroup";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {usePagination} from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -140,7 +136,6 @@ const handleGetGroupResourceList = (
  * 提交资源组信息表单
  */
 const handleResourceGroupInfoFormSubmit = (formData: any) => {
-  delete formData.code;
   updateResourceGroup(formData)
     .then((result: any) => {
       handleApiSuccess(result, () => {

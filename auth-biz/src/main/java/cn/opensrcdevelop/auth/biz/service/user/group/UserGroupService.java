@@ -19,6 +19,8 @@ public interface UserGroupService extends IService<UserGroup> {
 
     List<UserGroup> getUserGroups(String userId);
 
+    List<UserGroup> getDynamicUserGroups(String userId);
+
     PageData<UserGroupResponseDto> list(int page, int size, String keyword);
 
     void removeUserGroupMapping(UserGroupMappingRequestDto requestDto);

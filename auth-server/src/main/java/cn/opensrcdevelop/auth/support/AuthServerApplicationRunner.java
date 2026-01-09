@@ -36,14 +36,11 @@ public class AuthServerApplicationRunner implements ApplicationRunner, Ordered {
     @Override
     public void run (ApplicationArguments args) throws Exception {
         executeWithTenantContext(() -> {
-            // 存储控制台客户端 ID 和密钥
+            // 存储控制台客户端 ID
             Client client = clientService.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, CONSOLE_CLIENT_NAME));
             if (Objects.nonNull(client)) {
                 String clientId = client.getClientId();
                 systemSettingService.saveSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, clientId);
-                // 轮换控制台客户端密钥
-                String clientSecret = clientService.rotateConsoleClientSecret();
-                systemSettingService.saveSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_SECRET, clientSecret);
             }
         });
     }

@@ -84,7 +84,7 @@ const createIdentitySourceFormRules = {
 
 // 回调地址
 const callBackUrl = computed(() => {
-  return `${getOAuthIssuer()}/login/federation/callback/${
+  return `${getOAuthIssuer()}${import.meta.env.VITE_API_BASE_URI}/login/federation/callback/${
     createIdentitySourceForm.code ? createIdentitySourceForm.code : "身份源标识"
   }`;
 });

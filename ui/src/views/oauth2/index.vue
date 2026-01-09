@@ -102,7 +102,7 @@ if (code) {
   localStorage.setItem(CODE_VERIFIER, codeVerifier);
 
   // 获取授权码
-  window.location.href = `${getOAuthIssuer()}/oauth2/authorize?client_id=${
+  window.location.href = `${getOAuthIssuer()}${import.meta.env.VITE_API_BASE_URI}/oauth2/authorize?client_id=${
     import.meta.env.VITE_OAUTH_CLIENT_ID
   }&response_type=code&redirect_uri=${getConsoleUrl()}${
     import.meta.env.VITE_UI_BASE_PATH || ""

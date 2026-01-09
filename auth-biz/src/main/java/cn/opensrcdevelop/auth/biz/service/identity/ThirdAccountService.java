@@ -17,4 +17,6 @@ public interface ThirdAccountService extends IService<ThirdAccount> {
     User bind(String userId, List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration);
 
     PageData<UserBindingResponseDto> getUserBindingList(String id, int page, int size, String keyword);
+
+    void removeUserBindings(String userId);
 }

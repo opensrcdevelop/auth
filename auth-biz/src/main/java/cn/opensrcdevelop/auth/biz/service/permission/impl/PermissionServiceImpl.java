@@ -26,6 +26,7 @@ import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.resource.ResourceService;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.constants.CommonConstants;
@@ -67,6 +68,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Resource
     @Lazy
     private PermissionExpService permissionExpService;
+
+    @Resource
+    @Lazy
+    private UserGroupService userGroupService;
 
     /**
      * 创建权限
@@ -112,7 +117,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS,
             key = "#root.target.generateCurrentUserPermissionsCacheKey()",
             condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
-    @CacheExpire("7 * 24 * 3600")
+    @CacheExpire("5 * 3600")
     @Override
     public List<PermissionResponseDto> getCurrentUserPermissions() {
         // 1. 获取当前用户
@@ -122,7 +127,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
             // 2. 数据库操作
             Page<AuthorizeRecord> pageRequest = new Page<>(1, -1);
-            getUserPermissions(pageRequest, userId, aud.getFirst(), null, null, null, null);
+            List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId)).map(UserGroup::getUserGroupId).toList();
+            getUserPermissions(pageRequest, userId, dynamicUserGroupIds, aud.getFirst(), null, null, null, null);
             List<AuthorizeRecord> authorizeRecords = pageRequest.getRecords();
             // 2.1 过滤重复的权限（先按优先级再按授权时间排序）
             var records = CommonUtil.stream(authorizeRecords).collect(Collectors
@@ -166,12 +172,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Override
     public void getUserPermissions(IPage<AuthorizeRecord> page,
                                    String userId,
+                                   List<String> dynamicUserGroupIds,
                                    String resourceGroupCode,
                                    String resourceGroupNameSearchKeyword,
                                    String resourceNameSearchKeyword,
                                    String permissionNameSearchKeyword,
                                    String permissionCodeSearchKeyword) {
-        permissionRepository.searchUserPermissions(page, userId, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+        permissionRepository.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
@@ -422,6 +429,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                     List<PermissionExpResponseDto> conditions = permissions.get(permissionLocator).getConditions();
                     if (CollectionUtils.isNotEmpty(conditions)) {
                         // 2.2.1 执行表达式
+                        responseBuilder.allow(true);
                         for (PermissionExpResponseDto condition : conditions) {
                             if (!Boolean.TRUE.equals(permissionExpService.executePermissionExp(condition.getId(), requestDto.getContext()))) {
                                 responseBuilder.allow(false);

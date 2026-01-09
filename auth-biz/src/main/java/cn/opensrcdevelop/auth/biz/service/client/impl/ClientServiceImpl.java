@@ -6,7 +6,7 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
-import cn.opensrcdevelop.auth.biz.component.DbRegisteredClientRepository;
+import cn.opensrcdevelop.auth.biz.component.authserver.DbRegisteredClientRepository;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
 import cn.opensrcdevelop.auth.biz.dto.client.ClientRequestDto;

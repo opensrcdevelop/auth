@@ -1,3 +1,77 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.yaml:snakeyaml:${rootProject.snakeYamlVer}"
+    }
+}
+
+
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
+
+tasks.register('updatePromptTemplates') {
+    group = 'build'
+    description = 'Update application-prompt_template.yml with prompt files from resources/prompts'
+
+    doLast {
+        def promptsDir = file('src/main/resources/prompts')
+        def yamlFile = file('src/main/resources/application-prompt_template.yml')
+
+        if (!promptsDir.exists()) {
+            println "Prompts directory does not exist"
+            return
+        }
+
+        if (yamlFile.exists()) {
+            yamlFile.delete()
+        }
+
+        yamlFile.createNewFile()
+        def data = new LinkedHashMap()
+        data.put('ai', new LinkedHashMap())
+        data['ai'].put('prompt', new LinkedHashMap())
+        data['ai']['prompt'].put('templates', new LinkedHashMap())
+
+        def templates = data['ai']['prompt']['templates']
+        promptsDir.eachDir { dir ->
+            def systemFile = new File(dir, 'system.md')
+            def userFile = new File(dir, 'user.md')
+
+            if (systemFile.exists() && systemFile.text) {
+                if (!templates.containsKey(dir.name)) {
+                    templates.put(dir.name, new LinkedHashMap())
+                }
+                templates[dir.name].put('system', systemFile.text)
+            }
+
+            if (userFile.exists() && userFile.text) {
+                if (!templates.containsKey(dir.name)) {
+                    templates.put(dir.name, new LinkedHashMap())
+                }
+                templates[dir.name].put('user', userFile.text)
+            }
+        }
+
+        def options = new DumperOptions()
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.AUTO)
+        options.setPrettyFlow(true)
+        options.setIndent(2)
+        options.setIndicatorIndent(0)
+        options.setWidth(80)
+        def yamlWithFormatting = new Yaml(options)
+
+        def writer = new StringWriter()
+        yamlWithFormatting.dump(data, writer)
+        yamlFile.write(writer.toString())
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn updatePromptTemplates
+}
+
 jar {
     enabled = true
     archiveClassifier = ''
@@ -22,6 +96,7 @@ dependencies {
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     implementation 'org.springframework.security:spring-security-core'
+    implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'

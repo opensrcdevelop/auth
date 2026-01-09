@@ -4,7 +4,7 @@ import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.impl.UserServiceImpl;
-import cn.opensrcdevelop.auth.component.AuthorizationServerProperties;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.response.CodeEnum;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -18,6 +18,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -31,10 +32,12 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
 
     private final UserServiceImpl userService = (UserServiceImpl) SpringContextUtil.getBean(UserService.class);
     private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
+    private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
         log.debug(exception.getMessage(), exception);
+        this.rememberMeServices.loginFail(request, response);
         checkLoginFailedCnt(request);
         if (exception instanceof BadCredentialsException) {
             WebUtil.sendJsonResponse(R.optFail(MessageConstants.LOGIN_MSG_1002), HttpStatus.BAD_REQUEST);

@@ -18,4 +18,8 @@ public interface TableService extends IService<Table> {
     void removeTables(String dataSourceId);
 
     List<Map<String, Object>> getTableSchemas(List<Map<String, Object>> tables);
+
+    List<Map<String, Object>> getTables(String dataSourceId);
+
+    List<String> getTableForbiddenFields(String tableId);
 }

@@ -66,7 +66,8 @@ export default detailTs;
               </a-form-item>
             </a-form>
             <div class="info-title">角色主体</div>
-            <a-input-search
+            <div class="tools-container">
+              <a-input-search
               :style="{ width: '320px' }"
               placeholder="输入用户名 / 用户组名进行搜索"
               allow-clear
@@ -75,7 +76,6 @@ export default detailTs;
               @clear="handleSearchRolePrincipal"
               @keyup.enter.native="handleSearchRolePrincipal"
             />
-            <div class="add-container">
               <a-button type="text" @click="handleOpenAddRolePrincipalModel">
                 <template #icon>
                   <icon-plus />

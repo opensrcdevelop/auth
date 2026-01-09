@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.user.attr.dict.DictMapper">
+
+    <select id="selectByParentId" resultType="cn.opensrcdevelop.auth.biz.entity.user.attr.dict.Dict">
+        WITH RECURSIVE children AS (
+            SELECT
+                dict_id,
+                parent_dict_id,
+                related_dict_data_id,
+                dict_name,
+                dict_code
+            FROM
+                t_dict
+            WHERE
+                parent_dict_id = #{parentId}
+                AND deleted = false
+            UNION ALL
+            SELECT
+                t.dict_id,
+                t.parent_dict_id,
+                t.related_dict_data_id,
+                t.dict_name,
+                t.dict_code
+            FROM
+                t_dict t
+                INNER JOIN children c ON t.parent_dict_id = c.dict_id
+            WHERE
+                t.deleted = false
+        )
+        SELECT * FROM children
+        ORDER BY dict_code ASC
+    </select>
+
+    <select id="getAllParentDicts" resultType="cn.opensrcdevelop.auth.biz.entity.user.attr.dict.Dict">
+        WITH RECURSIVE ancestors AS (
+            SELECT
+                dict_id,
+                parent_dict_id
+            FROM
+                t_dict
+            WHERE
+                dict_id = #{dictId}
+            UNION ALL
+            SELECT
+                d.dict_id,
+                d.parent_dict_id
+            FROM
+                t_dict d
+                INNER JOIN ancestors a ON d.dict_id = a.parent_dict_id
+            WHERE
+                d.parent_dict_id IS NOT NULL
+        )
+        SELECT
+            d.dict_id,
+            d.dict_name,
+            d.dict_code
+        FROM
+            t_dict d
+        WHERE
+            d.dict_id IN (
+                SELECT
+                    parent_dict_id
+                FROM
+                    ancestors
+                WHERE
+                    parent_dict_id IS NOT NULL
+        );
+    </select>
+</mapper>

@@ -6,29 +6,31 @@ import cn.opensrcdevelop.auth.interceptor.OAuth2ContextInterceptor;
 import cn.opensrcdevelop.auth.interceptor.OpenApiInterceptor;
 import cn.opensrcdevelop.auth.interceptor.TraceUserInterceptor;
 import cn.opensrcdevelop.common.annoation.NoPathPrefix;
+import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.filter.ForwardFilter;
 import cn.opensrcdevelop.common.filter.RestFilter;
 import cn.opensrcdevelop.common.filter.TraceFilter;
 import cn.opensrcdevelop.common.interceptor.RestResponseInterceptor;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.http.CacheControl;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.*;
 
+import java.util.concurrent.TimeUnit;
+
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private static final String SWAGGER_PATH = "/swagger-ui/**";
     private static final String UI_PATH = "/ui/**";
-
-
-    @Value("${spring.controller.path-prefix}")
-    private String pathPrefix;
+    private final AuthorizationServerProperties authorizationServerProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -69,7 +71,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Bean
     public FilterRegistrationBean<RestFilter> tenantContextFilter() {
         TenantContextFilter tenantContextFilter = new TenantContextFilter();
-        tenantContextFilter.excludePathPatterns(pathPrefix + "/tenant/check/*", UI_PATH);
+        tenantContextFilter.excludePathPatterns(authorizationServerProperties.getApiPrefix() + "/tenant/check/*", UI_PATH);
 
         var filterRegistrationBean = new FilterRegistrationBean<RestFilter>();
         filterRegistrationBean.setFilter(tenantContextFilter);
@@ -93,7 +95,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         // 为接口配置统一前缀
-        configurer.addPathPrefix(pathPrefix, c -> !c.isAnnotationPresent(NoPathPrefix.class) && (c.isAnnotationPresent(RestController.class) || c.isAnnotationPresent(Controller.class)));
+        configurer.addPathPrefix(authorizationServerProperties.getApiPrefix(), c -> !c.isAnnotationPresent(NoPathPrefix.class) && (c.isAnnotationPresent(RestController.class) || c.isAnnotationPresent(Controller.class)));
     }
 
     @Override
@@ -104,7 +106,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // UI页面静态资源处理
-        registry.addResourceHandler(UI_PATH).addResourceLocations("classpath:/ui/");
+        registry.addResourceHandler("/ui/assets/*.js", "/ui/assets/*.css")
+                .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic())
+                .addResourceLocations("classpath:/ui/assets/");
+
+        registry.addResourceHandler("/ui/**")
+                .addResourceLocations("classpath:/ui/");
     }
 }

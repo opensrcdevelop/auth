@@ -40,7 +40,9 @@ const createModelProviderForm = reactive({
  * 可选模型
  */
 const selectableModels = computed(() => {
-  return createModelProviderForm.optionalModels?.split("\n");
+  return createModelProviderForm.optionalModels
+    ?.split("\n")
+    .filter((item: string) => item !== "");
 });
 
 /**
@@ -55,15 +57,19 @@ const handleCreateModelProviderFormSubmit = (formData: any) => {
     temperature: formData.temperature,
     maxTokens: formData.maxTokens,
     defaultModel: formData.defaultModel,
-    optionalModels: createModelProviderForm.optionalModels?.split("\n")
-  }).then((result: any) => {
-    handleApiSuccess(result, () => {
-      Notification.success("创建成功");
-      handleResetCreateModelProviderForm();
-    });
-  }).catch((err: any) => {
-    handleApiError(err, "创建模型提供商");
+    optionalModels: createModelProviderForm.optionalModels
+      ?.split("\n")
+      .filter((item: string) => item !== ""),
   })
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("创建成功");
+        handleResetCreateModelProviderForm();
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "创建模型提供商");
+    });
 };
 
 /**

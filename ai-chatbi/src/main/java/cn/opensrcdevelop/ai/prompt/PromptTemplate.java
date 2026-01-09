@@ -23,8 +23,9 @@ public class PromptTemplate {
     public static final String REWRITE_QUESTION = "rewrite_question";
     public static final String GENERATE_PYTHON_CODE = "generate_python_code";
     public static final String FIX_PYTHON_CODE = "fix_python_code";
-    public static final String ANSWER_QUESTION = "answer_question";
     public static final String EXTRACT_QUERY = "extract_query";
+    public static final String THINK_ANSWER = "think_answer";
+    public static final String CHECK_QUERY_DATA = "check_query_data";
 
     private Map<String, Prompt> templates;
 }

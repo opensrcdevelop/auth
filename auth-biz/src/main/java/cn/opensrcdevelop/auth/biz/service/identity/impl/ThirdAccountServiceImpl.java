@@ -13,6 +13,7 @@ import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.mapper.identity.ThirdAccountMapper;
 import cn.opensrcdevelop.auth.biz.repository.identity.ThirdAccountRepository;
 import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
+import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
 import cn.opensrcdevelop.auth.biz.service.user.impl.UserServiceImpl;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -22,9 +23,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Service;
@@ -40,11 +44,18 @@ import java.util.Objects;
 public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, ThirdAccount> implements ThirdAccountService {
 
     private static final String INVALID_USER_INFO_RESPONSE_ERROR_CODE = "invalid_user_info_response";
+    private static final String USERNAME_PREFIX = "user_";
     private static final Integer USERNAME_LENGTH = 8;
+    private static final Integer PASSWORD_LENGTH = 12;
     private static final String EMAIL_ATTR = "email";
 
-    private final UserServiceImpl userService;
+    private final MailService mailService;
     private final ThirdAccountRepository thirdAccountRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Lazy
+    @Resource
+    private UserServiceImpl userService;
 
     /**
      * 绑定第三方账号
@@ -95,15 +106,20 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
             if (Objects.isNull(user)) {
                 // 3.2.1 未找到用户，自动注册
                 String randomUsername = CommonUtil.generateRandomString(USERNAME_LENGTH);
+                String randomPassword = CommonUtil.generateRandomString(PASSWORD_LENGTH);
                 User newUser = new User();
                 newUser.setUserId(CommonUtil.getUUIDV7String());
-                newUser.setUsername(randomUsername);
+                newUser.setUsername(USERNAME_PREFIX + randomUsername);
+                newUser.setPassword(passwordEncoder.encode(randomPassword));
                 if (EMAIL_ATTR.equals(userMatchAttribute)) {
                     newUser.setEmailAddress(userMatchAttributeValue);
                 }
                 userService.save(newUser);
                 user = newUser;
                 log.info("未找到匹配的用户 {}，已自动注册用户 {}", userMatchAttributeValue, randomUsername);
+                if (StringUtils.isNotEmpty(user.getEmailAddress())) {
+                    mailService.sendCreateUserNotice(user.getEmailAddress(), user.getUsername(), randomPassword);
+                }
             }
             // 3.3 绑定第三方账号
             // 3.3.1 检查绑定的用户的状态
@@ -202,6 +218,18 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
         ).toList();
         pageData.setList(responseDtoList);
         return pageData;
+    }
+
+    /**
+     * 删除用户绑定的第三方账号
+     *
+     * @param userId 用户ID
+     */
+    @Transactional
+    @Override
+    public void removeUserBindings(String userId) {
+        super.remove(Wrappers.<ThirdAccount>lambdaQuery()
+                .eq(ThirdAccount::getUserId, userId));
     }
 
     @SuppressWarnings("all")

@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.handler;
 
-import cn.opensrcdevelop.auth.biz.component.DbOAuth2AuthorizationService;
+import cn.opensrcdevelop.auth.biz.component.authserver.DbOAuth2AuthorizationService;
 import cn.opensrcdevelop.common.response.CodeEnum;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
