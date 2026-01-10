@@ -8,22 +8,27 @@ import cn.opensrcdevelop.auth.audit.event.AuditEvent;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
-
 import java.time.LocalDateTime;
 
 public class AuditUtil {
 
-    private AuditUtil() {}
+    private AuditUtil() {
+    }
 
     /**
      * 发布用户操作审计事件（成功）
      *
-     * @param userId 用户ID
-     * @param resourceType 资源类型
-     * @param userOperationType 用户操作类型
-     * @param success 成功消息
+     * @param userId
+     *            用户ID
+     * @param resourceType
+     *            资源类型
+     * @param userOperationType
+     *            用户操作类型
+     * @param success
+     *            成功消息
      */
-    public static void publishSuccessUserOperationAuditEvent(String userId, ResourceType resourceType, UserOperationType userOperationType, String success) {
+    public static void publishSuccessUserOperationAuditEvent(String userId, ResourceType resourceType,
+            UserOperationType userOperationType, String success) {
         AuditLog auditLog = new AuditLog();
         auditLog.setAuditId(CommonUtil.getUUIDV7String());
         auditLog.setUserId(userId);

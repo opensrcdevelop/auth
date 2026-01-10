@@ -19,16 +19,17 @@ import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 @Service
-public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, MailTemplate> implements MailTemplateService {
+public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, MailTemplate>
+        implements
+            MailTemplateService {
 
     /**
      * 获取邮件模版列表
@@ -41,18 +42,17 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
         List<MailTemplate> mailTemplateList = super.list();
 
         // 2. 响应编辑
-        return CommonUtil.stream(mailTemplateList).map(mailTemplate ->
-                MailTemplateResponseDto.builder()
-                        .id(mailTemplate.getTemplateId())
-                        .name(mailTemplate.getTemplateName())
-                        .desc(mailTemplate.getDescription()).build()
-        ).toList();
+        return CommonUtil.stream(mailTemplateList).map(mailTemplate -> MailTemplateResponseDto.builder()
+                .id(mailTemplate.getTemplateId())
+                .name(mailTemplate.getTemplateName())
+                .desc(mailTemplate.getDescription()).build()).toList();
     }
 
     /**
      * 获取邮件模版详情
      *
-     * @param templateId 邮件模版ID
+     * @param templateId
+     *            邮件模版ID
      * @return 邮件模版详情
      */
     @Override
@@ -66,11 +66,12 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
             // 2.1 处理模版参数
             List<MailTemplateParamResponseDto> params = null;
             if (StringUtils.isNotBlank(mailTemplate.getTemplateParameters())) {
-                Map<String, String> paramsMap = CommonUtil.deserializeObject(mailTemplate.getTemplateParameters(), new TypeReference<Map<String, String>>() {});
-                params = CommonUtil.stream(paramsMap.entrySet()).map(entry ->
-                        MailTemplateParamResponseDto.builder()
-                                .key(entry.getKey())
-                                .value(entry.getValue()).build())
+                Map<String, String> paramsMap = CommonUtil.deserializeObject(mailTemplate.getTemplateParameters(),
+                        new TypeReference<Map<String, String>>() {
+                        });
+                params = CommonUtil.stream(paramsMap.entrySet()).map(entry -> MailTemplateParamResponseDto.builder()
+                        .key(entry.getKey())
+                        .value(entry.getValue()).build())
                         .toList();
             }
 
@@ -89,15 +90,10 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
     /**
      * 更新邮件模版
      *
-     * @param requestDto 更新邮件模版请求
+     * @param requestDto
+     *            更新邮件模版请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.MESSAGE_SETTING,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了邮件模版（{{ #templateName }}）",
-            fail = "修改邮件模版（{{ #templateName }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.MESSAGE_SETTING, sysOperation = SysOperationType.UPDATE, success = "修改了邮件模版（{{ #templateName }}）", fail = "修改邮件模版（{{ #templateName }}）失败")
     @Transactional
     @Override
     public void update(MailTemplateRequestDto requestDto) {
@@ -136,7 +132,8 @@ public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, Mai
     /**
      * 获取邮件模版
      *
-     * @param code 模版标识
+     * @param code
+     *            模版标识
      * @return 邮件模版
      */
     @Override

@@ -3,10 +3,9 @@ package cn.opensrcdevelop.auth.biz.repository.client.oidc.impl;
 import cn.opensrcdevelop.auth.biz.entity.client.oidc.OidcClaim;
 import cn.opensrcdevelop.auth.biz.mapper.client.oidc.OidcClaimMapper;
 import cn.opensrcdevelop.auth.biz.repository.client.oidc.OidcClaimRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,7 +16,8 @@ public class OidcClaimRepositoryImpl implements OidcClaimRepository {
     /**
      * 检索 claim
      *
-     * @param claims 目标 claims
+     * @param claims
+     *            目标 claims
      * @return claims
      */
     @Override

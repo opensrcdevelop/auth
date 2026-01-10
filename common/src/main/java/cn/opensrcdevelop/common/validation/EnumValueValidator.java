@@ -3,7 +3,6 @@ package cn.opensrcdevelop.common.validation;
 import cn.opensrcdevelop.common.validation.constraints.EnumValue;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
@@ -26,10 +25,10 @@ public class EnumValueValidator implements ConstraintValidator<EnumValue, Object
         // 集合类型
         if (value instanceof Collection<?> collectionValue) {
             return collectionValue.stream().noneMatch(x -> {
-               if (x instanceof String) {
-                   return !stringValues.contains(x);
-               }
-               return false;
+                if (x instanceof String) {
+                    return !stringValues.contains(x);
+                }
+                return false;
             });
         }
 

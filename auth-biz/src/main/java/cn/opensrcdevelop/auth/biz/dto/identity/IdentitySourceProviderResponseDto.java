@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.auth.biz.dto.identity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
 
 @Schema(description = "身份源提供商响应")
 @Data

@@ -15,11 +15,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "API-Dict", description = "接口-数据字典")
 @RestController
@@ -34,14 +33,16 @@ public class DictController {
     @Operation(summary = "创建字典", description = "创建字典")
     @PostMapping
     @Authorize({"allDictPermissions", "createDict"})
-    public void createDict(@RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) DictRequestDto requestDto) {
+    public void createDict(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) DictRequestDto requestDto) {
         dictService.createDict(requestDto);
     }
 
     @Operation(summary = "更新字典", description = "更新字典")
     @PutMapping
     @Authorize({"allDictPermissions", "updateDict"})
-    public void updateDict(@RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) DictRequestDto requestDto) {
+    public void updateDict(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) DictRequestDto requestDto) {
         dictService.updateDict(requestDto);
     }
 
@@ -64,7 +65,9 @@ public class DictController {
     })
     @GetMapping("/list")
     @Authorize({"allDictPermissions", "listDict"})
-    public PageData<DictResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword, @RequestParam(required = false) boolean queryChildren) {
+    public PageData<DictResponseDto> list(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) boolean queryChildren) {
         return dictService.list(page, size, keyword, queryChildren);
     }
 
@@ -81,14 +84,16 @@ public class DictController {
     @Operation(summary = "创建字典数据", description = "创建字典数据")
     @PostMapping("/data")
     @Authorize({"allDictDataPermissions", "createDictData"})
-    public void createDictData(@RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) DictDataRequestDto requestDto) {
+    public void createDictData(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) DictDataRequestDto requestDto) {
         dictDataService.createDictData(requestDto);
     }
 
     @Operation(summary = "更新字典数据", description = "更新字典数据")
     @PutMapping("/data")
     @Authorize({"allDictDataPermissions", "updateDictData"})
-    public void updateDictData(@RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) DictDataRequestDto requestDto) {
+    public void updateDictData(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) DictDataRequestDto requestDto) {
         dictDataService.updateDictData(requestDto);
     }
 
@@ -111,7 +116,9 @@ public class DictController {
     })
     @GetMapping("/{id}/data/list")
     @Authorize({"allDictDataPermissions", "listDictData"})
-    public PageData<DictDataResponseDto> dictDataList(@PathVariable @NotBlank String id, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    public PageData<DictDataResponseDto> dictDataList(@PathVariable @NotBlank String id,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword) {
         return dictDataService.list(id, page, size, keyword);
     }
 
@@ -157,7 +164,8 @@ public class DictController {
     @Operation(summary = "添加子字典", description = "添加子字典")
     @PutMapping("/child")
     @Authorize({"allDictPermissions", "addChildDict"})
-    public void addChildDicts(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) @NotEmpty List<@Valid ChildDictRequestDto> requestDtoList) {
+    public void addChildDicts(
+            @RequestBody @Validated(ValidationGroups.Operation.INSERT.class) @NotEmpty List<@Valid ChildDictRequestDto> requestDtoList) {
         dictService.addChildDicts(requestDtoList);
     }
 

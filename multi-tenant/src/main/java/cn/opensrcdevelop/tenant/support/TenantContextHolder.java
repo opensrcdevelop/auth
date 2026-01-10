@@ -6,14 +6,14 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.component.MultiTenantProperties;
 import com.alibaba.ttl.TransmittableThreadLocal;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.lang3.StringUtils;
-
 import java.net.URI;
 import java.net.URL;
+import org.apache.commons.lang3.StringUtils;
 
 public class TenantContextHolder {
 
-    private TenantContextHolder() {}
+    private TenantContextHolder() {
+    }
 
     private static final ThreadLocal<TenantContext> TENANT_LOCAL = new TransmittableThreadLocal<>();
 

@@ -2,10 +2,9 @@ package cn.opensrcdevelop.auth.biz.dto.permission.expression.template;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
+import lombok.Data;
 
 @Schema(description = "权限表达式模版参数")
 @Data

@@ -25,13 +25,12 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -48,15 +47,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 创建资源
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了资源（{{ @linkGen.toLink(#resourceId, T(ResourceType).RESOURCE) }}）",
-            fail = "创建资源（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE, sysOperation = SysOperationType.CREATE, success = "创建了资源（{{ @linkGen.toLink(#resourceId, T(ResourceType).RESOURCE) }}）", fail = "创建资源（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createResource(ResourceRequestDto requestDto) {
@@ -82,9 +76,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 获取资源列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 资源名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            资源名称 / 标识检索关键字
      * @return 资源列表
      */
     @Override
@@ -126,7 +123,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 获取资源详情
      *
-     * @param resourceId 资源ID
+     * @param resourceId
+     *            资源ID
      * @return 资源详情
      */
     @Override
@@ -160,14 +158,19 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 获取资源内权限
      *
-     * @param page 页数
-     * @param size 条数
-     * @param resourceId 资源ID
-     * @param keyword 资源名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param resourceId
+     *            资源ID
+     * @param keyword
+     *            资源名称 / 标识检索关键字
      * @return 资源内权限
      */
     @Override
-    public PageData<PermissionResponseDto> getResourcePermissions(int page, int size, String resourceId, String keyword) {
+    public PageData<PermissionResponseDto> getResourcePermissions(int page, int size, String resourceId,
+            String keyword) {
         // 1. 查询数据库
         Page<Permission> pageRequest = new Page<>(page, size);
         permissionService.getResourcePermissions(pageRequest, resourceId, keyword);
@@ -194,15 +197,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 更新资源
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）",
-            fail = "修改资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE, sysOperation = SysOperationType.UPDATE, success = "修改了资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）", fail = "修改资源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).RESOURCE) }}）失败")
     @Transactional
     @Override
     public void updateResource(ResourceRequestDto requestDto) {
@@ -240,15 +238,10 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
     /**
      * 删除资源
      *
-     * @param resourceIds 资源ID集合
+     * @param resourceIds
+     *            资源ID集合
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）",
-            fail = "删除资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE, sysOperation = SysOperationType.DELETE, success = "删除了资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）", fail = "删除资源（{{ @linkGen.toLinks(#resourceIds, T(ResourceType).RESOURCE) }}）失败")
     @Transactional
     @Override
     public void removeResource(List<String> resourceIds) {
@@ -268,7 +261,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             throw new BizException(MessageConstants.RESOURCE_MSG_1001);
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceCode, requestDto.getCode()).and(q -> q.eq(Resource::getResourceGroupId, requestDto.getResourceGroupId()))))) {
+        if (Objects.nonNull(
+                super.getOne(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceCode, requestDto.getCode())
+                        .and(q -> q.eq(Resource::getResourceGroupId, requestDto.getResourceGroupId()))))) {
             throw new BizException(MessageConstants.RESOURCE_MSG_1000, requestDto.getCode());
         }
     }

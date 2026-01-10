@@ -16,12 +16,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
+import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
-import java.util.List;
 
 @Tag(name = "API-IdentitySource", description = "接口-身份源管理")
 @RestController
@@ -41,8 +40,9 @@ public class IdentitySourceController {
             @Parameter(name = "keyword", description = "身份源提供商名称或标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/provider/list")
-    @Authorize({ "allIdentitySourceProviderPermissions", "listIdentitySourceProvider" })
-    public PageData<IdentitySourceProviderResponseDto> listProviders(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allIdentitySourceProviderPermissions", "listIdentitySourceProvider"})
+    public PageData<IdentitySourceProviderResponseDto> listProviders(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return identitySourceProviderService.list(page, size, keyword);
     }
 
@@ -51,22 +51,24 @@ public class IdentitySourceController {
             @Parameter(name = "id", description = "身份源提供商ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/provider/{id}")
-    @Authorize({ "allIdentitySourceProviderPermissions", "getIdentitySourceProviderDetail" })
+    @Authorize({"allIdentitySourceProviderPermissions", "getIdentitySourceProviderDetail"})
     public IdentitySourceProviderResponseDto getProviderDetail(@PathVariable @NotBlank String id) {
         return identitySourceProviderService.detail(id);
     }
 
     @Operation(summary = "创建身份源提供商", description = "创建身份源提供商")
     @PostMapping("/provider")
-    @Authorize({ "allIdentitySourceProviderPermissions", "createIdentitySourceProvider" })
-    public void createProvider(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) IdentitySourceProviderRequestDto requestDto) {
+    @Authorize({"allIdentitySourceProviderPermissions", "createIdentitySourceProvider"})
+    public void createProvider(@RequestBody @Validated({
+            ValidationGroups.Operation.INSERT.class}) IdentitySourceProviderRequestDto requestDto) {
         identitySourceProviderService.createIdentitySourceProvider(requestDto);
     }
 
     @Operation(summary = "更新身份源提供商", description = "更新身份源提供商")
     @PutMapping("/provider")
-    @Authorize({ "allIdentitySourceProviderPermissions", "updateIdentitySourceProvider" })
-    public void updateProvider(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) IdentitySourceProviderRequestDto requestDto) {
+    @Authorize({"allIdentitySourceProviderPermissions", "updateIdentitySourceProvider"})
+    public void updateProvider(@RequestBody @Validated({
+            ValidationGroups.Operation.UPDATE.class}) IdentitySourceProviderRequestDto requestDto) {
         identitySourceProviderService.updateIdentitySourceProvider(requestDto);
     }
 
@@ -75,7 +77,7 @@ public class IdentitySourceController {
             @Parameter(name = "id", description = "身份源提供商ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/provider/{id}")
-    @Authorize({ "allIdentitySourceProviderPermissions", "deleteIdentitySourceProvider" })
+    @Authorize({"allIdentitySourceProviderPermissions", "deleteIdentitySourceProvider"})
     public void deleteProvider(@PathVariable @NotBlank String id) {
         identitySourceProviderService.removeIdentitySourceProvider(id);
     }
@@ -85,7 +87,7 @@ public class IdentitySourceController {
             @Parameter(name = "id", description = "身份源提供商ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/provider/{id}/registrations")
-    @Authorize({ "allIdentitySourceProviderPermissions", "getIdentitySourceProviderRegistrations" })
+    @Authorize({"allIdentitySourceProviderPermissions", "getIdentitySourceProviderRegistrations"})
     public List<IdentitySourceRegistrationResponseDto> registrations(@PathVariable @NotBlank String id) {
         return identitySourceProviderService.registrations(id);
     }
@@ -97,8 +99,9 @@ public class IdentitySourceController {
             @Parameter(name = "keyword", description = "获取身份源注册名称或标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @Authorize({ "allIdentitySourcePermissions", "listIdentitySource" })
-    public PageData<IdentitySourceRegistrationResponseDto> listRegistrations(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allIdentitySourcePermissions", "listIdentitySource"})
+    public PageData<IdentitySourceRegistrationResponseDto> listRegistrations(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return identitySourceRegistrationService.list(page, size, keyword);
     }
 
@@ -107,22 +110,24 @@ public class IdentitySourceController {
             @Parameter(name = "id", description = "身份源ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}")
-    @Authorize({ "allIdentitySourcePermissions", "getIdentitySourceDetail" })
+    @Authorize({"allIdentitySourcePermissions", "getIdentitySourceDetail"})
     public IdentitySourceRegistrationResponseDto getRegistrationDetail(@PathVariable @NotBlank String id) {
         return identitySourceRegistrationService.detail(id);
     }
 
     @Operation(summary = "创建身份源", description = "创建身份源")
     @PostMapping
-    @Authorize({ "allIdentitySourcePermissions", "createIdentitySource" })
-    public void createRegistration(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) IdentitySourceRegistrationRequestDto requestDto) {
+    @Authorize({"allIdentitySourcePermissions", "createIdentitySource"})
+    public void createRegistration(@RequestBody @Validated({
+            ValidationGroups.Operation.INSERT.class}) IdentitySourceRegistrationRequestDto requestDto) {
         identitySourceRegistrationService.createIdentitySourceRegistration(requestDto);
     }
 
     @Operation(summary = "更新身份源", description = "更新身份源")
     @PutMapping
-    @Authorize({ "allIdentitySourcePermissions", "updateIdentitySource" })
-    public void updateRegistration(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) IdentitySourceRegistrationRequestDto requestDto) {
+    @Authorize({"allIdentitySourcePermissions", "updateIdentitySource"})
+    public void updateRegistration(@RequestBody @Validated({
+            ValidationGroups.Operation.UPDATE.class}) IdentitySourceRegistrationRequestDto requestDto) {
         identitySourceRegistrationService.updateIdentitySourceRegistration(requestDto);
     }
 
@@ -131,7 +136,7 @@ public class IdentitySourceController {
             @Parameter(name = "id", description = "身份源ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allIdentitySourcePermissions", "deleteIdentitySource" })
+    @Authorize({"allIdentitySourcePermissions", "deleteIdentitySource"})
     public void deleteRegistration(@PathVariable @NotBlank String id) {
         identitySourceRegistrationService.removeIdentitySourceRegistration(id);
     }
@@ -150,8 +155,10 @@ public class IdentitySourceController {
             @Parameter(name = "keyword", description = "用户名检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/userBindings")
-    @Authorize({ "allIdentitySourcePermissions", "getIdentitySourceUserBindings" })
-    public PageData<UserBindingResponseDto> getUserBindingList(@PathVariable @NotBlank String id, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allIdentitySourcePermissions", "getIdentitySourceUserBindings"})
+    public PageData<UserBindingResponseDto> getUserBindingList(@PathVariable @NotBlank String id,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword) {
         return thirdAccountService.getUserBindingList(id, page, size, keyword);
     }
 
@@ -166,7 +173,8 @@ public class IdentitySourceController {
             @Parameter(name = "code", description = "身份源标识", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/bind/{code}")
-    public UserBindingResponseDto bindUser(@PathVariable @NotBlank String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public UserBindingResponseDto bindUser(@PathVariable @NotBlank String code, HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
         return identitySourceRegistrationService.bindUser(code, request, response);
     }
 

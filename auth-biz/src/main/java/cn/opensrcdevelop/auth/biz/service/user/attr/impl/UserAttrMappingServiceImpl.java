@@ -7,5 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserAttrMappingServiceImpl extends ServiceImpl<UserAttrMappingMapper, UserAttrMapping> implements UserAttrMappingService {
+public class UserAttrMappingServiceImpl extends ServiceImpl<UserAttrMappingMapper, UserAttrMapping>
+        implements
+            UserAttrMappingService {
 }

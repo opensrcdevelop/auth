@@ -17,14 +17,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpSession;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +37,8 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     /**
      * 保存登录日志
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      */
     @Override
     public void saveLoginLog(String userId) {
@@ -49,8 +49,10 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     /**
      * 保存登录日志
      *
-     * @param userId 用户ID
-     * @param maxLoginLogTotalNum 保存的最大登录日志数
+     * @param userId
+     *            用户ID
+     * @param maxLoginLogTotalNum
+     *            保存的最大登录日志数
      */
     @Transactional
     @Override
@@ -83,7 +85,8 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
         long loginLogNum = super.count(Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId));
         if (Objects.nonNull(maxLoginLogTotalNum) && maxLoginLogTotalNum > 0 && loginLogNum > maxLoginLogTotalNum) {
             // 2.2 获取待删除的登录日志
-            List<LoginLog> deleteTargets = super.list(Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId).orderByAsc(LoginLog::getLoginTime).last(PG_LIMIT + (loginLogNum - maxLoginLogTotalNum)));
+            List<LoginLog> deleteTargets = super.list(Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId)
+                    .orderByAsc(LoginLog::getLoginTime).last(PG_LIMIT + (loginLogNum - maxLoginLogTotalNum)));
             // 2.3 数据库操作
             super.removeBatchByIds(CommonUtil.stream(deleteTargets).map(LoginLog::getLoginId).toList());
         }
@@ -92,14 +95,17 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     /**
      * 获取最后一次登录信息
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      * @return 登录信息
      */
     @Override
     public Tuple4<String, String, String, LocalDateTime> getLastLoginInfo(String userId) {
-        LoginLog loginLog = super.getOne(Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId).orderByDesc(LoginLog::getLoginTime).last(PG_LIMIT + 1));
+        LoginLog loginLog = super.getOne(Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId)
+                .orderByDesc(LoginLog::getLoginTime).last(PG_LIMIT + 1));
         if (Objects.nonNull(loginLog)) {
-            return Tuple.of(loginLog.getLoginIp(), loginLog.getDeviceType(), loginLog.getDeviceOs(), loginLog.getLoginTime());
+            return Tuple.of(loginLog.getLoginIp(), loginLog.getDeviceType(), loginLog.getDeviceOs(),
+                    loginLog.getLoginTime());
         }
         return Tuple.of(null, null, null, null);
     }
@@ -107,16 +113,20 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     /**
      * 获取用户登录日志列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param userId 用户ID
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param userId
+     *            用户ID
      * @return 用户登录日志列表
      */
     @Override
     public PageData<LoginLogResponseDto> getUserLoginLogs(int page, int size, String userId) {
         // 1. 查询数据库
         Page<LoginLog> pageRequest = new Page<>(page, size);
-        List<LoginLog> loginLogs = super.list(pageRequest, Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId).orderByDesc(LoginLog::getLoginTime));
+        List<LoginLog> loginLogs = super.list(pageRequest,
+                Wrappers.<LoginLog>lambdaQuery().eq(LoginLog::getUserId, userId).orderByDesc(LoginLog::getLoginTime));
 
         // 2. 属性编辑
         PageData<LoginLogResponseDto> pageData = new PageData<>();
@@ -151,7 +161,8 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
     /**
      * 移除用户的最近登录会话
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      */
     @Override
     public void removeRecentLoginSessions(String userId) {

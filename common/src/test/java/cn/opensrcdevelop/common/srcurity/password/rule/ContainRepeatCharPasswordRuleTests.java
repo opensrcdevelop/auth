@@ -1,14 +1,13 @@
 package cn.opensrcdevelop.common.srcurity.password.rule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import cn.opensrcdevelop.common.security.password.rule.ContainRepeatCharPasswordRule;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContainRepeatCharPasswordRuleTests {
 
@@ -27,10 +26,8 @@ class ContainRepeatCharPasswordRuleTests {
                 Arguments.of("a", true),
                 Arguments.of("abc", true),
                 Arguments.of("ab111", true),
-                Arguments.of("111212311111", false)
-        );
+                Arguments.of("111212311111", false));
     }
-
 
     @Test
     void testGetRuleName() {

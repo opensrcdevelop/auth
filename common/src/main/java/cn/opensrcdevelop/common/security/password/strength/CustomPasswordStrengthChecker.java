@@ -4,10 +4,9 @@ import cn.opensrcdevelop.common.security.password.CharType;
 import cn.opensrcdevelop.common.security.password.PasswordComplexityConfig;
 import cn.opensrcdevelop.common.security.password.rule.*;
 import io.vavr.Tuple2;
-import lombok.RequiredArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 自定义密码强度检查器
@@ -33,7 +32,8 @@ public class CustomPasswordStrengthChecker implements PasswordStrengthChecker {
     /**
      * 获取密码检查结果，返回一个包含检查结果的列表，每个元素是一个元组，包含规则名称和检查结果。
      *
-     * @param password 密码
+     * @param password
+     *            密码
      * @return 检查结果列表
      */
     public List<Tuple2<String, Boolean>> getValidateResult(String password) {
@@ -44,7 +44,8 @@ public class CustomPasswordStrengthChecker implements PasswordStrengthChecker {
     /**
      * 添加用户信息，用于密码规则中禁止包含用户信息
      *
-     * @param userInfo 用户信息
+     * @param userInfo
+     *            用户信息
      */
     public void addUserInfo(String userInfo) {
         userInfoList.add(userInfo);
@@ -53,7 +54,8 @@ public class CustomPasswordStrengthChecker implements PasswordStrengthChecker {
     private PasswordRuleManager buildRuleManager() {
         PasswordRuleManager ruleManager = new PasswordRuleManager();
         // 长度规则
-        if (complexityConfig.getMaxLength() != -1 && complexityConfig.getMinLength() > complexityConfig.getMaxLength()) {
+        if (complexityConfig.getMaxLength() != -1
+                && complexityConfig.getMinLength() > complexityConfig.getMaxLength()) {
             throw new IllegalArgumentException("密码长度规则配置错误，最小长度不能大于最大长度。");
         }
         ruleManager.addRule(new LengthPasswordRule(complexityConfig.getMinLength(), complexityConfig.getMaxLength()));

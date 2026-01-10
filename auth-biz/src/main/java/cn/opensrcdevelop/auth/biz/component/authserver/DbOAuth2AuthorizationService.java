@@ -13,6 +13,13 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.HttpSession;
+import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.security.oauth2.core.*;
@@ -31,14 +38,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.lang.reflect.Field;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 @Component
 @Slf4j
 public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService {
@@ -49,7 +48,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     private final RegisteredClientRepository registeredClientRepository;
     private final LoginLogService loginLogService;
 
-    public DbOAuth2AuthorizationService(AuthorizationRepository authorizationRepository, RegisteredClientRepository registeredClientRepository, LoginLogService loginLogService) {
+    public DbOAuth2AuthorizationService(AuthorizationRepository authorizationRepository,
+            RegisteredClientRepository registeredClientRepository, LoginLogService loginLogService) {
         Assert.notNull(authorizationRepository, "authorizationRepository cannot be null");
         Assert.notNull(registeredClientRepository, "registeredClientRepository cannot be null");
         Assert.notNull(loginLogService, "loginLogService cannot be null");
@@ -64,7 +64,9 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         Assert.notNull(authorization, "authorization cannot be null");
         // 1. 检查 RefreshToken 是否在黑名单中
         if (Objects.nonNull(authorization.getRefreshToken()) &&
-                (Objects.nonNull(RedisUtil.get(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshToken().getToken().getTokenValue(), String.class)))) {
+                (Objects.nonNull(RedisUtil.get(
+                        REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshToken().getToken().getTokenValue(),
+                        String.class)))) {
             throw new OAuth2AuthenticationException("invalid refresh_token");
         }
 
@@ -79,7 +81,9 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         SpringContextUtil.publishEvent(new ClearExpiredTokensEvent(authorization.getRegisteredClientId()));
 
         // 5. 更新登录日志的客户端ID
-        loginLogService.update(Wrappers.<LoginLog>lambdaUpdate().set(LoginLog::getClientId, authorization.getRegisteredClientId()).isNull(LoginLog::getClientId).eq(LoginLog::getLoginId, entity.getLoginId()));
+        loginLogService.update(
+                Wrappers.<LoginLog>lambdaUpdate().set(LoginLog::getClientId, authorization.getRegisteredClientId())
+                        .isNull(LoginLog::getClientId).eq(LoginLog::getLoginId, entity.getLoginId()));
     }
 
     @Transactional
@@ -101,7 +105,9 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
 
         Authorization result;
         if (tokenType == null) {
-            result = this.authorizationRepository.findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(token);
+            result = this.authorizationRepository
+                    .findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(
+                            token);
         } else if (OAuth2ParameterNames.STATE.equals(tokenType.getValue())) {
             result = this.authorizationRepository.findByState(token);
         } else if (OAuth2ParameterNames.CODE.equals(tokenType.getValue())) {
@@ -124,7 +130,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     }
 
     public List<OAuth2Authorization> findByClientId(String clientId) {
-        return CommonUtil.stream(authorizationRepository.getAuthorizationsByClientId(clientId)).map(this::toObject).collect(Collectors.toCollection(ArrayList::new));
+        return CommonUtil.stream(authorizationRepository.getAuthorizationsByClientId(clientId)).map(this::toObject)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Transactional
@@ -136,11 +143,15 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     public void removeUserTokens(String principalName) {
         // 1. 查询是否存在 RefreshToken
         List<Authorization> authorizations = authorizationRepository.findRefreshTokensByPrincipalName(principalName);
-        CommonUtil.stream(authorizations).filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue())).forEach(authorization ->
-            // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
-            RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
-                    "",
-                    Duration.between(authorization.getRefreshTokenIssuedAt(), authorization.getRefreshTokenExpiresAt()).getSeconds(), TimeUnit.SECONDS));
+        CommonUtil.stream(authorizations)
+                .filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue()))
+                .forEach(authorization ->
+                // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
+                RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
+                        "",
+                        Duration.between(authorization.getRefreshTokenIssuedAt(),
+                                authorization.getRefreshTokenExpiresAt()).getSeconds(),
+                        TimeUnit.SECONDS));
 
         // 3. 数据库操作
         authorizationRepository.deleteUserTokens(principalName);
@@ -150,11 +161,15 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     public void removeByLoginId(String loginId) {
         // 1. 查询是否存在 RefreshToken
         List<Authorization> authorizations = authorizationRepository.findRefreshTokensByLoginId(loginId);
-        CommonUtil.stream(authorizations).filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue())).forEach(authorization ->
-            // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
-            RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
-                    "",
-                    Duration.between(authorization.getRefreshTokenIssuedAt(), authorization.getRefreshTokenExpiresAt()).getSeconds(), TimeUnit.SECONDS));
+        CommonUtil.stream(authorizations)
+                .filter(authorization -> StringUtils.hasText(authorization.getRefreshTokenValue()))
+                .forEach(authorization ->
+                // 2. 将 RefreshToken 加入黑名单，避免使用该 RefreshToken
+                RedisUtil.set(REFRESH_TOKEN_BLACK_LIST_PREFIX + authorization.getRefreshTokenValue(),
+                        "",
+                        Duration.between(authorization.getRefreshTokenIssuedAt(),
+                                authorization.getRefreshTokenExpiresAt()).getSeconds(),
+                        TimeUnit.SECONDS));
 
         // 3. 删除关联的 session
         LoginLog loginLog = loginLogService.getById(loginId);
@@ -167,10 +182,12 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     }
 
     private OAuth2Authorization toObject(Authorization entity) {
-        RegisteredClient registeredClient = this.registeredClientRepository.findByClientId(entity.getRegisteredClientId());
+        RegisteredClient registeredClient = this.registeredClientRepository
+                .findByClientId(entity.getRegisteredClientId());
         if (registeredClient == null) {
             throw new DataRetrievalFailureException(
-                    "The RegisteredClient with id '" + entity.getRegisteredClientId() + "' was not found in the RegisteredClientRepository.");
+                    "The RegisteredClient with id '" + entity.getRegisteredClientId()
+                            + "' was not found in the RegisteredClientRepository.");
         }
 
         OAuth2Authorization.Builder builder = OAuth2Authorization.withRegisteredClient(registeredClient)
@@ -194,7 +211,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
                     entity.getAuthorizationCodeValue(),
                     entity.getAuthorizationCodeIssuedAt(),
                     entity.getAuthorizationCodeExpiresAt());
-            builder.token(authorizationCode, metadata -> metadata.putAll(AuthUtil.parseMap(entity.getAuthorizationCodeMetadata())));
+            builder.token(authorizationCode,
+                    metadata -> metadata.putAll(AuthUtil.parseMap(entity.getAuthorizationCodeMetadata())));
         }
 
         if (entity.getAccessTokenValue() != null) {
@@ -212,7 +230,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
                     entity.getRefreshTokenValue(),
                     entity.getRefreshTokenIssuedAt(),
                     entity.getRefreshTokenExpiresAt());
-            builder.token(refreshToken, metadata -> metadata.putAll(AuthUtil.parseMap(entity.getRefreshTokenMetadata())));
+            builder.token(refreshToken,
+                    metadata -> metadata.putAll(AuthUtil.parseMap(entity.getRefreshTokenMetadata())));
         }
 
         if (entity.getOidcIdTokenValue() != null) {
@@ -251,71 +270,61 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         entity.setAuthorizedScopes(StringUtils.collectionToDelimitedString(authorization.getAuthorizedScopes(), ","));
         entity.setState(authorization.getAttribute(OAuth2ParameterNames.STATE));
 
-        OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode =
-                authorization.getToken(OAuth2AuthorizationCode.class);
+        OAuth2Authorization.Token<OAuth2AuthorizationCode> authorizationCode = authorization
+                .getToken(OAuth2AuthorizationCode.class);
         setTokenValues(
                 authorizationCode,
                 entity::setAuthorizationCodeValue,
                 entity::setAuthorizationCodeIssuedAt,
                 entity::setAuthorizationCodeExpiresAt,
-                entity::setAuthorizationCodeMetadata
-        );
+                entity::setAuthorizationCodeMetadata);
 
-        OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
-                authorization.getToken(OAuth2AccessToken.class);
+        OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getToken(OAuth2AccessToken.class);
         setTokenValues(
                 accessToken,
                 entity::setAccessTokenValue,
                 entity::setAccessTokenIssuedAt,
                 entity::setAccessTokenExpiresAt,
-                entity::setAccessTokenMetadata
-        );
+                entity::setAccessTokenMetadata);
         if (accessToken != null && accessToken.getToken().getScopes() != null) {
-            entity.setAccessTokenScopes(StringUtils.collectionToDelimitedString(accessToken.getToken().getScopes(), ","));
+            entity.setAccessTokenScopes(
+                    StringUtils.collectionToDelimitedString(accessToken.getToken().getScopes(), ","));
         }
 
-        OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken =
-                authorization.getToken(OAuth2RefreshToken.class);
+        OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getToken(OAuth2RefreshToken.class);
         setTokenValues(
                 refreshToken,
                 entity::setRefreshTokenValue,
                 entity::setRefreshTokenIssuedAt,
                 entity::setRefreshTokenExpiresAt,
-                entity::setRefreshTokenMetadata
-        );
+                entity::setRefreshTokenMetadata);
 
-        OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
-                authorization.getToken(OidcIdToken.class);
+        OAuth2Authorization.Token<OidcIdToken> oidcIdToken = authorization.getToken(OidcIdToken.class);
         setTokenValues(
                 oidcIdToken,
                 entity::setOidcIdTokenValue,
                 entity::setOidcIdTokenIssuedAt,
                 entity::setOidcIdTokenExpiresAt,
-                entity::setOidcIdTokenMetadata
-        );
+                entity::setOidcIdTokenMetadata);
         if (oidcIdToken != null) {
             entity.setOidcIdTokenClaims(AuthUtil.writeMap(oidcIdToken.getClaims()));
         }
 
-        OAuth2Authorization.Token<OAuth2UserCode> userCode =
-                authorization.getToken(OAuth2UserCode.class);
+        OAuth2Authorization.Token<OAuth2UserCode> userCode = authorization.getToken(OAuth2UserCode.class);
         setTokenValues(
                 userCode,
                 entity::setUserCodeValue,
                 entity::setUserCodeIssuedAt,
                 entity::setUserCodeExpiresAt,
-                entity::setUserCodeMetadata
-        );
+                entity::setUserCodeMetadata);
 
-        OAuth2Authorization.Token<OAuth2DeviceCode> deviceCode =
-                authorization.getToken(OAuth2DeviceCode.class);
+        OAuth2Authorization.Token<OAuth2DeviceCode> deviceCode = authorization.getToken(OAuth2DeviceCode.class);
         setTokenValues(
                 deviceCode,
                 entity::setDeviceCodeValue,
                 entity::setDeviceCodeIssuedAt,
                 entity::setDeviceCodeExpiresAt,
-                entity::setDeviceCodeMetadata
-        );
+                entity::setDeviceCodeMetadata);
 
         // 设置登录ID
         String loginId = authorization.getAttribute(AuthConstants.SESSION_LOGIN_ID);
@@ -359,7 +368,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         } else if (AuthorizationGrantType.DEVICE_CODE.getValue().equals(authorizationGrantType)) {
             return AuthorizationGrantType.DEVICE_CODE;
         }
-        return new AuthorizationGrantType(authorizationGrantType);              // Custom authorization grant type
+        return new AuthorizationGrantType(authorizationGrantType); // Custom authorization grant type
     }
 
     @SuppressWarnings("all")
@@ -377,7 +386,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         }
 
         if (Objects.nonNull(authorization.getToken(OAuth2AuthorizationCode.class))) {
-            String authorizationCodeValue = authorization.getToken(OAuth2AuthorizationCode.class).getToken().getTokenValue();
+            String authorizationCodeValue = authorization.getToken(OAuth2AuthorizationCode.class).getToken()
+                    .getTokenValue();
             // 2. 检查在数据库中是否已存储 OAuth2AuthorizationCode
             if (Objects.nonNull(authorizationRepository.findByAuthorizationCodeValue(authorizationCodeValue))) {
                 // 2.1 若数据库中已存储，则删除 OAuth2AuthorizationCode
@@ -389,7 +399,8 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         if (clearRefrshToken || clearOAuth2AuthorizationCode) {
             Field tokensField = ReflectionUtils.findField(OAuth2Authorization.class, "tokens");
             ReflectionUtils.makeAccessible(tokensField);
-            var tokens = (Map<Class<? extends OAuth2Token>, OAuth2Authorization.Token<?>>) ReflectionUtils.getField(tokensField, authorization);
+            var tokens = (Map<Class<? extends OAuth2Token>, OAuth2Authorization.Token<?>>) ReflectionUtils
+                    .getField(tokensField, authorization);
             if (Objects.nonNull(tokens)) {
                 var editableMap = new HashMap<>(tokens);
                 if (clearRefrshToken) {

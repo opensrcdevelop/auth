@@ -4,10 +4,9 @@ import cn.opensrcdevelop.auth.biz.entity.identity.IdentitySourceRegistration;
 import cn.opensrcdevelop.auth.biz.mapper.identity.IdentitySourceRegistrationMapper;
 import cn.opensrcdevelop.auth.biz.repository.identity.IdentitySourceRegistrationRepository;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor

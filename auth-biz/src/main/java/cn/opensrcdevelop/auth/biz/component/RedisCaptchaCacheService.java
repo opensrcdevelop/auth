@@ -2,9 +2,8 @@ package cn.opensrcdevelop.auth.biz.component;
 
 import cn.opensrcdevelop.common.util.RedisUtil;
 import com.anji.captcha.service.CaptchaCacheService;
-import org.springframework.stereotype.Component;
-
 import java.util.concurrent.TimeUnit;
+import org.springframework.stereotype.Component;
 
 @Component
 public class RedisCaptchaCacheService implements CaptchaCacheService {

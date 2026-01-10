@@ -20,12 +20,6 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.jwt.JwtClaimNames;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +27,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +43,6 @@ public class MailServiceImpl implements MailService {
     private static final String RESET_PWD_NOTICE_TEMPLATE = "reset_password";
     private static final String BIND_EMAIL_TEMPLATE = "bind_email";
     private static final String REMIND_UPDATE_PWD_TEMPLATE = "remind_update_password";
-
 
     @Resource
     @Lazy
@@ -58,12 +56,14 @@ public class MailServiceImpl implements MailService {
     /**
      * 发送邮箱验证码
      *
-     * @param to 收件人
+     * @param to
+     *            收件人
      */
     @Override
     public void sendMailCode(String to) {
         // 1. 获取用户信息
-        User user = userService.getOne(Wrappers.<User>lambdaQuery().select(User::getUsername).eq(User::getEmailAddress, to));
+        User user = userService
+                .getOne(Wrappers.<User>lambdaQuery().select(User::getUsername).eq(User::getEmailAddress, to));
         if (user == null) {
             throw new BizException(MessageConstants.EMAIL_CODE_MSG_1000);
         }
@@ -97,9 +97,12 @@ public class MailServiceImpl implements MailService {
     /**
      * 发送创建用户通知邮件
      *
-     * @param to 收件人
-     * @param username 用户名
-     * @param password 初始密码
+     * @param to
+     *            收件人
+     * @param username
+     *            用户名
+     * @param password
+     *            初始密码
      */
     @Override
     public void sendCreateUserNotice(String to, String username, String password) {
@@ -128,9 +131,12 @@ public class MailServiceImpl implements MailService {
     /**
      * 发送重置密码通知邮件
      *
-     * @param to 收件人
-     * @param username 用户名
-     * @param password 密码
+     * @param to
+     *            收件人
+     * @param username
+     *            用户名
+     * @param password
+     *            密码
      */
     @Override
     public void sendResetPwdNotice(String to, String username, String password) {
@@ -159,7 +165,8 @@ public class MailServiceImpl implements MailService {
     /**
      * 发送绑定邮箱验证码
      *
-     * @param to 收件人
+     * @param to
+     *            收件人
      */
     @Override
     public void sendBindEmailCode(String to) {
@@ -199,12 +206,16 @@ public class MailServiceImpl implements MailService {
     /**
      * 发送修改密码提醒邮件
      *
-     * @param user 用户
-     * @param expireTime 过期时间
-     * @param executeTime 执行时间
+     * @param user
+     *            用户
+     * @param expireTime
+     *            过期时间
+     * @param executeTime
+     *            执行时间
      */
     @Override
-    public void sendRemindUpdatePwd(User user, PasswordPolicy passwordPolicy, LocalDateTime expireTime, LocalDateTime executeTime) {
+    public void sendRemindUpdatePwd(User user, PasswordPolicy passwordPolicy, LocalDateTime expireTime,
+            LocalDateTime executeTime) {
         // 1. 发送邮件
         // 1.1 获取邮件模版
         MailTemplate mailTemplate = mailTemplateService.getByCode(REMIND_UPDATE_PWD_TEMPLATE);
@@ -212,7 +223,8 @@ public class MailServiceImpl implements MailService {
         // 1.2 参数设置
         Map<String, Object> parameters = new HashMap<>();
         parameters.put(CommonConstants.USERNAME, user.getUsername());
-        parameters.put("expire_time", expireTime.format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
+        parameters.put("expire_time",
+                expireTime.format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
 
         // 1.3 设置 JavaMailSender
         MailUtil.setJavaMailSender(systemSettingService.buildJavaMailSender());

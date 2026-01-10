@@ -6,7 +6,6 @@ import cn.opensrcdevelop.auth.biz.dto.resource.ResourceResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.resource.Resource;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface ResourceService extends IService<Resource> {

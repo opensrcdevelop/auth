@@ -1,12 +1,11 @@
 package cn.opensrcdevelop.auth.client.config;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Data;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @ConfigurationProperties(prefix = "auth.client")
 @Data

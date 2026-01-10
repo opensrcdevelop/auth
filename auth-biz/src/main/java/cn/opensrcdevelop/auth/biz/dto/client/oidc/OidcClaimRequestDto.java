@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class OidcClaimRequestDto {
     @Schema(description = "claim ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     public String id;
 
     @Schema(description = "claim 名")

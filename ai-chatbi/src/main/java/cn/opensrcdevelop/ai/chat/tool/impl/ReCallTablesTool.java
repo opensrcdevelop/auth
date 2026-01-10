@@ -4,15 +4,14 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.service.TableService;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(ReCallTablesTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -22,10 +21,7 @@ public class ReCallTablesTool implements MethodTool {
 
     private final TableService tableService;
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Recall the tables of data source"
-    )
+    @Tool(name = TOOL_NAME, description = "Recall the tables of data source")
     public Response execute() {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();

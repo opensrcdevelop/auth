@@ -3,10 +3,9 @@ package cn.opensrcdevelop.auth.biz.dto.permission;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
 
 @Schema(description = "验证权限请求")
 @Data

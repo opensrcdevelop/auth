@@ -5,7 +5,6 @@ import cn.opensrcdevelop.auth.biz.entity.user.LoginLog;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.vavr.Tuple4;
-
 import java.time.LocalDateTime;
 
 public interface LoginLogService extends IService<LoginLog> {

@@ -2,9 +2,8 @@ package cn.opensrcdevelop.auth.biz.dto.auth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "添加 / 删除授权条件请求")
 @Data

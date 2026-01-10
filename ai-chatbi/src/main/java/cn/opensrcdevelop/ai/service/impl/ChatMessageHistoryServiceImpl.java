@@ -12,27 +12,30 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
 @Service
 @RequiredArgsConstructor
-public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistoryMapper, ChatMessageHistory> implements ChatMessageHistoryService {
+public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistoryMapper, ChatMessageHistory>
+        implements
+            ChatMessageHistoryService {
 
     private final ChatAnswerService chatAnswerService;
 
     /**
      * 创建对话消息历史记录
      *
-     * @param content         消息内容
-     * @param chatContentType 消息类型
+     * @param content
+     *            消息内容
+     * @param chatContentType
+     *            消息类型
      */
     @Override
     public void createChatMessageHistory(String content, ChatContentType chatContentType) {
@@ -53,12 +56,16 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 创建对话消息历史记录
      *
-     * @param chatContentType   消息类型
-     * @param rewrittenQuestion 重写后的问题
-     * @param time              时间
+     * @param chatContentType
+     *            消息类型
+     * @param rewrittenQuestion
+     *            重写后的问题
+     * @param time
+     *            时间
      */
     @Override
-    public void createChatMessageHistory(ChatContentType chatContentType, String rewrittenQuestion, LocalDateTime time) {
+    public void createChatMessageHistory(ChatContentType chatContentType, String rewrittenQuestion,
+            LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
@@ -77,13 +84,18 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 创建对话消息历史记录
      *
-     * @param chatContentType   消息类型
-     * @param answerId          回答ID
-     * @param rewrittenQuestion 重写后的问题
-     * @param time              时间
+     * @param chatContentType
+     *            消息类型
+     * @param answerId
+     *            回答ID
+     * @param rewrittenQuestion
+     *            重写后的问题
+     * @param time
+     *            时间
      */
     @Override
-    public void createChatMessageHistory(ChatContentType chatContentType, String answerId, String rewrittenQuestion, LocalDateTime time) {
+    public void createChatMessageHistory(ChatContentType chatContentType, String answerId, String rewrittenQuestion,
+            LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
@@ -103,7 +115,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 创建用户对话消息历史记录
      *
-     * @param content 消息内容
+     * @param content
+     *            消息内容
      */
     @Override
     public void createUserChatMessageHistory(String content) {
@@ -124,7 +137,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 获取对话消息历史记录
      *
-     * @param chatId 对话ID
+     * @param chatId
+     *            对话ID
      * @return 对话消息历史记录列表
      */
     @Override
@@ -137,7 +151,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
 
         // 2. 属性编辑
         return CommonUtil.stream(chatMessageHistoryList).map(chatMessageHistory -> {
-            ChatMessageHistoryResponseDto.ChatMessageHistoryResponseDtoBuilder builder = ChatMessageHistoryResponseDto.builder()
+            ChatMessageHistoryResponseDto.ChatMessageHistoryResponseDtoBuilder builder = ChatMessageHistoryResponseDto
+                    .builder()
                     .id(chatMessageHistory.getMessageId())
                     .chatId(chatMessageHistory.getChatId())
                     .questionId(chatMessageHistory.getQuestionId())
@@ -147,9 +162,11 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                     .time(chatMessageHistory.getTime())
                     .answerId(chatMessageHistory.getAnswerId());
 
-            if (List.of(ChatContentType.TABLE, ChatContentType.CHART).contains(ChatContentType.valueOf(chatMessageHistory.getType()))) {
-                builder.content(CommonUtil.deserializeObject(chatMessageHistory.getContent(), new TypeReference<Map<String, Object>>() {
-                }));
+            if (List.of(ChatContentType.TABLE, ChatContentType.CHART)
+                    .contains(ChatContentType.valueOf(chatMessageHistory.getType()))) {
+                builder.content(CommonUtil.deserializeObject(chatMessageHistory.getContent(),
+                        new TypeReference<Map<String, Object>>() {
+                        }));
             } else {
                 builder.content(chatMessageHistory.getContent());
             }
@@ -166,7 +183,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 获取用户历史问题
      *
-     * @param chatId 对话ID
+     * @param chatId
+     *            对话ID
      * @return 用户历史问题列表
      */
     @Override
@@ -187,15 +205,15 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
     /**
      * 删除用户对话消息历史记录
      *
-     * @param chatId 对话ID
+     * @param chatId
+     *            对话ID
      */
     @Override
     public void removeUserChatMessageHistory(String chatId) {
         // 1. 删除用户对话历史记录中的所有消息
         super.remove(Wrappers.<ChatMessageHistory>lambdaQuery()
                 .eq(ChatMessageHistory::getChatId, chatId)
-                .eq(ChatMessageHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
-        );
+                .eq(ChatMessageHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName()));
     }
 
     private void asyncSaveChatMessageHistory(ChatMessageHistory chatMessageHistory) {

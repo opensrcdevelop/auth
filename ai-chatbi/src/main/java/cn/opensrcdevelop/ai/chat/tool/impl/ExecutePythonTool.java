@@ -2,6 +2,12 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -9,13 +15,6 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
@@ -29,22 +28,19 @@ public class ExecutePythonTool implements MethodTool {
     private static final String VENV_NAME_PREFIX = "ai_chat_venv_";
     private static final int DEFAULT_TIMEOUT_MINUTES = 3;
 
-    @Tool(
-            name = ExecutePythonTool.TOOL_NAME,
-            description = "Used to execute Python scripts and return the results of Python script execution"
-    )
+    @Tool(name = ExecutePythonTool.TOOL_NAME, description = "Used to execute Python scripts and return the results of Python script execution")
     @SuppressWarnings({"unused", "java:S3776"})
     public Response execute(@ToolParam(description = "Request to execute Python script") Request request) {
         log.info("Execute Python script: {}", CommonUtil.serializeObject(request));
-        String venvDir = Path.of(System.getProperty("java.io.tmpdir"), VENV_NAME_PREFIX + System.currentTimeMillis()).toString();
+        String venvDir = Path.of(System.getProperty("java.io.tmpdir"), VENV_NAME_PREFIX + System.currentTimeMillis())
+                .toString();
         Response response = new Response();
         File tempScriptFile = null;
         Process process = null;
 
         try (
                 StringWriter stdoutWriter = new StringWriter();
-                StringWriter stderrWriter = new StringWriter()
-        ) {
+                StringWriter stderrWriter = new StringWriter()) {
             // 1. 创建 Python 虚拟环境
             Response venvResponse = createVirtualEnvironment(venvDir);
             if (!venvResponse.getSuccess()) {
@@ -64,19 +60,20 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             // 3. 创建临时文件存储 Python 脚本
-            tempScriptFile = File.createTempFile(PYTHON_SCRIPT_NAME.formatted(System.currentTimeMillis()), PYTHON_SCRIPT_EXT);
+            tempScriptFile = File.createTempFile(PYTHON_SCRIPT_NAME.formatted(System.currentTimeMillis()),
+                    PYTHON_SCRIPT_EXT);
             try (FileWriter writer = new FileWriter(tempScriptFile)) {
                 writer.write(request.getScript());
             }
 
             // 4. 使用虚拟环境执行 Python 脚本
-            process = Runtime.getRuntime().exec(new String[]{Path.of(venvDir, "bin", "python").toString(), tempScriptFile.getAbsolutePath()});
+            process = Runtime.getRuntime()
+                    .exec(new String[]{Path.of(venvDir, "bin", "python").toString(), tempScriptFile.getAbsolutePath()});
 
             // 5. 读取标准输出
             try (
                     BufferedReader stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    BufferedReader stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))
-            ) {
+                    BufferedReader stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                 CompletableFuture<Void> stdoutFuture = CompletableFuture.runAsync(() -> {
                     try {
                         stdoutReader.transferTo(stdoutWriter);
@@ -148,17 +145,17 @@ public class ExecutePythonTool implements MethodTool {
 
     private Response installPackages(String venvDir, List<String> packages) {
         Response response = new Response();
-        
+
         try {
             ProcessBuilder pb = new ProcessBuilder(Path.of(venvDir, "bin", "pip").toString(), "install");
             packages.forEach(pb.command()::add);
             pb.redirectErrorStream(true);
-            
+
             Process process = pb.start();
-            
+
             try (StringWriter outputWriter = new StringWriter();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
                 CompletableFuture<Void> readFuture = CompletableFuture.runAsync(() -> {
                     try {
                         reader.transferTo(outputWriter);
@@ -179,10 +176,10 @@ public class ExecutePythonTool implements MethodTool {
                 }
 
                 readFuture.join();
-                
+
                 int exitCode = process.exitValue();
                 String output = outputWriter.toString();
-                
+
                 if (exitCode != 0) {
                     response.setSuccess(false);
                     response.setResult("Package installation failed: " + output);
@@ -191,7 +188,7 @@ public class ExecutePythonTool implements MethodTool {
                     response.setResult("Packages installed successfully: " + output);
                 }
             }
-            
+
         } catch (Exception ex) {
             log.error("Package installation error", ex);
             if (ex instanceof InterruptedException) {
@@ -207,16 +204,16 @@ public class ExecutePythonTool implements MethodTool {
 
     private Response createVirtualEnvironment(String venvDir) {
         Response response = new Response();
-        
+
         try {
             ProcessBuilder pb = new ProcessBuilder(PYTHON_COMMAND, "-m", "venv", venvDir);
             pb.redirectErrorStream(true);
-            
+
             Process process = pb.start();
-            
+
             try (StringWriter outputWriter = new StringWriter();
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
                 CompletableFuture<Void> readFuture = CompletableFuture.runAsync(() -> {
                     try {
                         reader.transferTo(outputWriter);
@@ -235,12 +232,12 @@ public class ExecutePythonTool implements MethodTool {
                     response.setResult("Virtual environment creation timeout");
                     return response;
                 }
-                
+
                 readFuture.join();
-                
+
                 int exitCode = process.exitValue();
                 String output = outputWriter.toString();
-                
+
                 if (exitCode != 0) {
                     response.setSuccess(false);
                     response.setResult("Virtual environment creation failed: " + output);
@@ -249,7 +246,7 @@ public class ExecutePythonTool implements MethodTool {
                     response.setResult("Virtual environment created successfully: " + output);
                 }
             }
-            
+
         } catch (Exception ex) {
             log.error("Virtual environment creation error", ex);
             if (ex instanceof InterruptedException) {

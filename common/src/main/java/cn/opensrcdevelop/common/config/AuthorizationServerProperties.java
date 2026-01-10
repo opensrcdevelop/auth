@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.common.config;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.util.List;
 
 @ConfigurationProperties(prefix = "auth.server")
 @Data

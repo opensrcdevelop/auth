@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.ai.chat.memory;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-
-import java.util.List;
 
 @SuppressWarnings("all")
 @RequiredArgsConstructor

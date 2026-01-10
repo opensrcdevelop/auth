@@ -3,10 +3,9 @@ package cn.opensrcdevelop.auth.biz.repository.user.attr.impl;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr;
 import cn.opensrcdevelop.auth.biz.mapper.user.attr.UserAttrMapper;
 import cn.opensrcdevelop.auth.biz.repository.user.attr.UserAttrRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,7 +16,8 @@ public class UserAttrRepositoryImpl implements UserAttrRepository {
     /**
      * 检索用户属性
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      * @return 用户属性
      */
     @Override

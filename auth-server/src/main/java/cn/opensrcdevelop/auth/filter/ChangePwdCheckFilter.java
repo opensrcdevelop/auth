@@ -10,19 +10,20 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.http.HttpStatus;
-
 import java.io.IOException;
+import org.springframework.http.HttpStatus;
 
 public class ChangePwdCheckFilter extends RestFilter {
 
     @Override
-    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session != null) {
             Boolean chengResult = (Boolean) session.getAttribute(AuthConstants.SESSION_CHANGED_PWD);
             if (Boolean.FALSE.equals(chengResult)) {
-                WebUtil.sendJsonResponse(R.optFail(MessageConstants.LOGIN_MSG_1000, new Object()), HttpStatus.UNAUTHORIZED);
+                WebUtil.sendJsonResponse(R.optFail(MessageConstants.LOGIN_MSG_1000, new Object()),
+                        HttpStatus.UNAUTHORIZED);
                 return;
             }
         }

@@ -1,8 +1,7 @@
 package cn.opensrcdevelop.common.response;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 /**
  * 参数检验错误响应

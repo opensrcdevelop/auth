@@ -1,17 +1,16 @@
 package cn.opensrcdevelop.common.exression;
 
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Setter;
 import org.apache.commons.jexl3.JexlBuilder;
 import org.apache.commons.jexl3.JexlEngine;
 import org.apache.commons.jexl3.JexlScript;
 import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.jexl3.introspection.JexlPermissions;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Setter
 public class ExpressionEngine {
@@ -40,7 +39,8 @@ public class ExpressionEngine {
     /**
      * 执行表达式
      *
-     * @param expression 表达式
+     * @param expression
+     *            表达式
      * @return 执行结果
      */
     public Object evaluate(String expression, Map<String, Object> context) {
@@ -51,7 +51,8 @@ public class ExpressionEngine {
     /**
      * 执行表达式
      *
-     * @param expression 表达式
+     * @param expression
+     *            表达式
      * @return 执行结果
      */
     public Object evaluate(String expression) {

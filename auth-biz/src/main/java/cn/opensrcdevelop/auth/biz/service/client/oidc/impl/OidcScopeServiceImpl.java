@@ -21,17 +21,16 @@ import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -44,15 +43,10 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     /**
      * 创建 OIDC scope
      *
-     * @param requestDto 创建 OIDC scope 请求
+     * @param requestDto
+     *            创建 OIDC scope 请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.OIDC_SCOPE,
-            sysOperation = SysOperationType.CREATE,
-            success = "'创建了 OIDC Scope（' + #requestDto.name + '），包含的 Claim 为：' + #claims",
-            fail = "'创建 OIDC Scope（' + #requestDto.name + '）失败，包含的 Claim 为：' + #claims"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.CREATE, success = "'创建了 OIDC Scope（' + #requestDto.name + '），包含的 Claim 为：' + #claims", fail = "'创建 OIDC Scope（' + #requestDto.name + '）失败，包含的 Claim 为：' + #claims")
     @Transactional
     @Override
     public void createOidcScope(OidcScopeRequestDto requestDto) {
@@ -83,14 +77,16 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     /**
      * 设置 OIDC claim scope 映射关系
      *
-     * @param requestDto 设置 OIDC claim scope 映射关系请求
+     * @param requestDto
+     *            设置 OIDC claim scope 映射关系请求
      */
     @Transactional
     @Override
     public void setOidcClaimScopeMapping(OidcClaimScopeMappingRequestDto requestDto) {
         // 1. 删除原有的映射关系
         String scopeId = requestDto.getScopeId();
-        oidcClaimScopeMappingService.remove(Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId, scopeId));
+        oidcClaimScopeMappingService
+                .remove(Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId, scopeId));
 
         // 2. 属性编辑
         var mappings = CommonUtil.stream(requestDto.getClaimIds()).map(claimId -> {
@@ -107,7 +103,8 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     /**
      * 获取 OIDC scope claim 映射关系
      *
-     * @param scopes OIDC scope 名
+     * @param scopes
+     *            OIDC scope 名
      * @return OIDC scope 集合
      */
     @Override
@@ -141,16 +138,12 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     /**
      * 更新 OIDC scope
      *
-     * @param requestDto 更新 OIDC scope 请求
+     * @param requestDto
+     *            更新 OIDC scope 请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.OIDC_SCOPE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "'将 OIDC Scope 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name + " +
-                    "'，包含的 Claim 由 ' + #oldClaims + ' 修改为了 ' + #claims",
-            fail = "'修改 OIDC Scope（' + #oldName + '）失败'"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.UPDATE, success = "'将 OIDC Scope 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name + "
+            +
+            "'，包含的 Claim 由 ' + #oldClaims + ' 修改为了 ' + #claims", fail = "'修改 OIDC Scope（' + #oldName + '）失败'")
     @Transactional
     @Override
     public void updateOidcScope(OidcScopeRequestDto requestDto) {
@@ -163,8 +156,9 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
         AuditContext.setSpelVariable("oldName", rawOidcScope.getScopeName());
         AuditContext.setSpelVariable("oldClaims", getClaimNames(CommonUtil
                 .stream(oidcClaimScopeMappingService
-                        .list(Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId, scopeId))
-                ).map(OidcClaimScopeMapping::getClaimId).toList()));
+                        .list(Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId,
+                                scopeId)))
+                .map(OidcClaimScopeMapping::getClaimId).toList()));
 
         // 2. 检查
         checkScopeName(requestDto, rawOidcScope);
@@ -189,14 +183,10 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     /**
      * 删除 OIDC scope
      *
-     * @param scopeId scope ID
+     * @param scopeId
+     *            scope ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.OIDC_SCOPE,
-            sysOperation = SysOperationType.DELETE,
-            success = "'删除了 OIDC Scope（' + #scopeName + '）'",
-            fail = "'删除 OIDC Scope（' + #scopeName + '）失败'"
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.DELETE, success = "'删除了 OIDC Scope（' + #scopeName + '）'", fail = "'删除 OIDC Scope（' + #scopeName + '）失败'"
 
     )
     @Transactional
@@ -204,7 +194,8 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     public void removeOidcScope(String scopeId) {
         if (StringUtils.isNotEmpty(scopeId)) {
             // 1. 移除 scope claim 映射关系
-            oidcClaimScopeMappingService.remove(Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId, scopeId));
+            oidcClaimScopeMappingService.remove(
+                    Wrappers.<OidcClaimScopeMapping>lambdaQuery().eq(OidcClaimScopeMapping::getScopeId, scopeId));
 
             AuditContext.setSpelVariable("scopeName", super.getById(scopeId).getScopeName());
 
@@ -218,7 +209,8 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<OidcScope>lambdaQuery().eq(OidcScope::getScopeName, requestDto.getName())))) {
+        if (Objects.nonNull(
+                super.getOne(Wrappers.<OidcScope>lambdaQuery().eq(OidcScope::getScopeName, requestDto.getName())))) {
             throw new BizException(MessageConstants.OIDC_SCOPE_MSG_1000, requestDto.getName());
         }
     }

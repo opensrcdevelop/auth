@@ -29,8 +29,9 @@ public class ClientController {
 
     @Operation(summary = "创建客户端", description = "创建客户端")
     @PostMapping
-    @Authorize({ "allClientPermissions", "createClient" })
-    public CreateOrUpdateSecretClientResponseDto createClient(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) ClientRequestDto requestDto) {
+    @Authorize({"allClientPermissions", "createClient"})
+    public CreateOrUpdateSecretClientResponseDto createClient(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) ClientRequestDto requestDto) {
         return clientService.createClient(requestDto);
     }
 
@@ -41,8 +42,9 @@ public class ClientController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/list")
-    @Authorize({ "allClientPermissions", "listClient" })
-    public PageData<ClientResponseDto> list(@RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+    @Authorize({"allClientPermissions", "listClient"})
+    public PageData<ClientResponseDto> list(@RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         return clientService.list(keyword, page, size);
     }
 
@@ -51,15 +53,16 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @Authorize({ "allClientPermissions", "getClientDetail" })
+    @Authorize({"allClientPermissions", "getClientDetail"})
     public ClientResponseDto details(@PathVariable @NotBlank String id) {
         return clientService.details(id);
     }
 
     @Operation(summary = "更新客户端", description = "更新客户端")
     @PutMapping
-    @Authorize({ "allClientPermissions", "updateClient" })
-    public void updateClient(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ClientRequestDto requestDto) {
+    @Authorize({"allClientPermissions", "updateClient"})
+    public void updateClient(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) ClientRequestDto requestDto) {
         clientService.updateClient(requestDto);
     }
 
@@ -68,7 +71,7 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @PutMapping("/secret/{id}")
-    @Authorize({ "allClientPermissions", "updateClientSecret" })
+    @Authorize({"allClientPermissions", "updateClientSecret"})
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(@PathVariable @NotBlank String id) {
         return clientService.updateClientSecret(id);
     }
@@ -78,7 +81,7 @@ public class ClientController {
             @Parameter(name = "id", description = "客户端ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allClientPermissions", "deleteClient" })
+    @Authorize({"allClientPermissions", "deleteClient"})
     public void deleteClient(@PathVariable @NotBlank String id) {
         clientService.deleteClient(id);
     }

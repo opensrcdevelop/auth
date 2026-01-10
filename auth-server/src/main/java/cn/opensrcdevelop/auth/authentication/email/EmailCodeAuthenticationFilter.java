@@ -8,6 +8,7 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,8 +19,6 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
-import java.io.IOException;
-
 /**
  * 邮箱验证码登录过滤器
  */
@@ -28,8 +27,10 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
 
     private static final String PARAMETER_EMAIL = "email";
     private static final String PARAMETER_CODE = "code";
-    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST,
-            SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix().concat(AuthConstants.EMAIL_LOGIN_URL));
+    private static final PathPatternRequestMatcher REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults().matcher(
+            HttpMethod.POST,
+            SpringContextUtil.getBean(AuthorizationServerProperties.class).getApiPrefix()
+                    .concat(AuthConstants.EMAIL_LOGIN_URL));
 
     public EmailCodeAuthenticationFilter(AuthenticationManager authenticationManager) {
         super(REQUEST_MATCHER, authenticationManager);
@@ -39,7 +40,8 @@ public class EmailCodeAuthenticationFilter extends AbstractAuthenticationProcess
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException, IOException, ServletException {
         if (!request.getMethod().equals("POST")) {
             throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
         }

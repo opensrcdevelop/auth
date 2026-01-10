@@ -4,6 +4,8 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -11,9 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(GenerateSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -24,10 +23,7 @@ public class GenerateSqlTool implements MethodTool {
     private final SqlAgent sqlAgent;
 
     @SuppressWarnings("unchecked")
-    @Tool(
-            name = TOOL_NAME,
-            description = "Generate SQL from the query"
-    )
+    @Tool(name = TOOL_NAME, description = "Generate SQL from the query")
     public Response execute(@ToolParam(description = "The request to generate SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
@@ -36,7 +32,9 @@ public class GenerateSqlTool implements MethodTool {
         String query = request.getQuery();
         List<Map<String, Object>> tables = request.getTables();
         if (StringUtils.isEmpty(query)) {
-            query = StringUtils.isNotEmpty(chatContext.getUserQuery()) ? chatContext.getUserQuery() : chatContext.getQuestion();
+            query = StringUtils.isNotEmpty(chatContext.getUserQuery())
+                    ? chatContext.getUserQuery()
+                    : chatContext.getQuestion();
         }
 
         if (CollectionUtils.isEmpty(tables)) {
@@ -51,7 +49,7 @@ public class GenerateSqlTool implements MethodTool {
                 request.instruction);
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
-            String sql =(String) result.get("sql");
+            String sql = (String) result.get("sql");
             List<Map<String, Object>> columns = (List<Map<String, Object>>) result.get("columns");
             response.setSql(sql);
             chatContext.setSql(sql);

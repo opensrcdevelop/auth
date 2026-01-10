@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.common.security.password.rule;
 
 import cn.opensrcdevelop.common.security.password.CharType;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 @RequiredArgsConstructor
 public class CharTypePasswordRule implements PasswordRule {

@@ -2,7 +2,6 @@ package cn.opensrcdevelop.auth.biz.repository.user;
 
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
 import java.util.List;
 
 public interface UserRepository {

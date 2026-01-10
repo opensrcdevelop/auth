@@ -6,9 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "权限表达式模版参数配置")
 @Data
@@ -31,11 +30,11 @@ public class PermissionExpTemplateParamConfigDto {
     private String desc;
 
     @Schema(description = "可选项")
-    @NotEmpty(groups = { ChoiceType.class })
+    @NotEmpty(groups = {ChoiceType.class})
     private List<@NotBlank String> options;
 
     @Schema(description = "是否多选")
-    @NotNull(groups = { ChoiceType.class })
+    @NotNull(groups = {ChoiceType.class})
     private Boolean multiple;
 
     @Schema(description = "是否必填")
@@ -45,5 +44,6 @@ public class PermissionExpTemplateParamConfigDto {
     @Schema(description = "默认值")
     private Object defaultValue;
 
-    public interface ChoiceType{}
+    public interface ChoiceType {
+    }
 }

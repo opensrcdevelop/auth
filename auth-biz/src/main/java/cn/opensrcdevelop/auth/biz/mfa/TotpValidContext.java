@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.mfa;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
+import lombok.Data;
 
 @Data
 public class TotpValidContext implements Serializable {

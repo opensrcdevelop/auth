@@ -4,5 +4,5 @@ import java.util.Map;
 
 public interface ICheckAttribute {
 
-     boolean check(Map<String, Object> attributes);
+    boolean check(Map<String, Object> attributes);
 }

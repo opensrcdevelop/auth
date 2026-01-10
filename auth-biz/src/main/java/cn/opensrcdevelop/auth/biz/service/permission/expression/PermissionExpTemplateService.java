@@ -8,7 +8,6 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionE
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExpTemplate;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 import java.util.Map;
 
@@ -28,5 +27,6 @@ public interface PermissionExpTemplateService extends IService<PermissionExpTemp
 
     List<PermissionExpResponseDto> getPermissionExpList(String templateId);
 
-    Map<String, Object> getParamExecutionContext(List<PermissionExpTemplateParamConfigDto> paramConfigs, List<PermissionExpTemplateParamDto> params);
+    Map<String, Object> getParamExecutionContext(List<PermissionExpTemplateParamConfigDto> paramConfigs,
+            List<PermissionExpTemplateParamDto> params);
 }

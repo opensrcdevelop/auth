@@ -5,7 +5,8 @@ package cn.opensrcdevelop.auth.biz.constants;
  */
 public class MessageConstants {
 
-    private MessageConstants() {}
+    private MessageConstants() {
+    }
 
     public static final String TOTP_MSG_1000 = "totp.msg.1000";
     public static final String TOTP_MSG_1001 = "totp.msg.1001";

@@ -7,6 +7,8 @@ import cn.opensrcdevelop.common.util.RedisUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.DeferredSecurityContext;
@@ -17,9 +19,6 @@ import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
 /**
  * 使用 Redis 存储 SecurityContext
  */
@@ -28,12 +27,13 @@ import java.util.function.Supplier;
 public class RedisSecurityContextRepository implements SecurityContextRepository {
 
     private static final long EXPIRE_TIME = 5L;
-    private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+    private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
+            .getContextHolderStrategy();
 
     @Override
     @SuppressWarnings("all")
     public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
-        throw  new UnsupportedOperationException("Method deprecated.");
+        throw new UnsupportedOperationException("Method deprecated.");
     }
 
     @Override

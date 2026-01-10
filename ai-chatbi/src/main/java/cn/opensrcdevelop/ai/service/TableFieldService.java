@@ -5,7 +5,6 @@ import cn.opensrcdevelop.ai.dto.TableFieldResponseDto;
 import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface TableFieldService extends IService<TableField> {

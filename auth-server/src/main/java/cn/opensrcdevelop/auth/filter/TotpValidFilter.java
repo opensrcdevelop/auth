@@ -11,20 +11,22 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
-
-import java.io.IOException;
 
 public class TotpValidFilter extends RestFilter {
 
     @Override
-    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session != null) {
-            TotpValidContext totpValidContext = (TotpValidContext) session.getAttribute(AuthConstants.TOTP_VALID_CONTEXT);
+            TotpValidContext totpValidContext = (TotpValidContext) session
+                    .getAttribute(AuthConstants.TOTP_VALID_CONTEXT);
             if (totpValidContext != null && BooleanUtils.isFalse(totpValidContext.getValid())) {
-                WebUtil.sendJsonResponse(R.optFail(MessageConstants.TOTP_MSG_1001, new Object()), HttpStatus.UNAUTHORIZED);
+                WebUtil.sendJsonResponse(R.optFail(MessageConstants.TOTP_MSG_1001, new Object()),
+                        HttpStatus.UNAUTHORIZED);
                 return;
             }
         }

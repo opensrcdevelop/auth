@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.common.security.password;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class PasswordComplexityConfig implements Serializable {

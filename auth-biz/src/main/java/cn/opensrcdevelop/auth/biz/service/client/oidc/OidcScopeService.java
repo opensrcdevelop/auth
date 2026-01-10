@@ -5,7 +5,6 @@ import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcScopeResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.client.oidc.OidcScope;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface OidcScopeService extends IService<OidcScope> {

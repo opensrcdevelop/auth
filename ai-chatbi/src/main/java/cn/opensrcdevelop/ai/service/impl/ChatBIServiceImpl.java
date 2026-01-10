@@ -29,6 +29,11 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -38,12 +43,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -66,16 +65,11 @@ public class ChatBIServiceImpl implements ChatBIService {
     /**
      * ChatBI 用户对话
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return SseEmitter
      */
-    @Audit(
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.CHAT_BI,
-            userOperation = UserOperationType.CHAT_BI_CHAT,
-            success = "开启了 ChatBI 对话（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}",
-            fail = "开启 ChatBI 对话失败（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}"
-    )
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.CHAT_BI, userOperation = UserOperationType.CHAT_BI_CHAT, success = "开启了 ChatBI 对话（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}", fail = "开启 ChatBI 对话失败（ChatID：{{ #chatId }}），问题（ID：{{ #requestDto.questionId }}）：{{ #requestDto.question }}")
     @Override
     public SseEmitter streamChatBI(ChatBIRequestDto requestDto) {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
@@ -106,7 +100,8 @@ public class ChatBIServiceImpl implements ChatBIService {
                 ChatContextHolder.setChatContext(chatContext);
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
 
-                Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag,  requestDto, finalChatId);
+                Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag, requestDto,
+                        finalChatId);
                 if (!interruptFlag.get()) {
                     SseUtil.sendChatBIDone(emitter, result._1, result._2);
                 } else {
@@ -134,28 +129,24 @@ public class ChatBIServiceImpl implements ChatBIService {
     /**
      * 投票回答
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.CHAT_BI,
-            userOperation = UserOperationType.CHAT_BI_VOTE,
-            success = "反馈了 ChatBI 回答（ID：{{ #requestDto.answerId }}），反馈：{{ #requestDto.feedback }}",
-            fail = "反馈 ChatBI 回答（ID：{{ #requestDto.answerId }}）失败，反馈：{{ #requestDto.feedback }}"
-    )
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.CHAT_BI, userOperation = UserOperationType.CHAT_BI_VOTE, success = "反馈了 ChatBI 回答（ID：{{ #requestDto.answerId }}），反馈：{{ #requestDto.feedback }}", fail = "反馈 ChatBI 回答（ID：{{ #requestDto.answerId }}）失败，反馈：{{ #requestDto.feedback }}")
     @Override
     public void voteAnswer(VoteAnswerRequestDto requestDto) {
         // 1. 数据库操作
         chatAnswerService.update(Wrappers.<ChatAnswer>lambdaUpdate()
                 .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
-                .set(ChatAnswer::getFeedback, requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+                .set(ChatAnswer::getFeedback,
+                        requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
     }
 
     @SuppressWarnings("all")
     private Tuple2<String, String> processStreamChatBIRequest(SseEmitter emitter,
-                                                              AtomicBoolean interruptFlag,
-                                                              ChatBIRequestDto requestDto,
-                                                              String chatId) throws IOException {
+            AtomicBoolean interruptFlag,
+            ChatBIRequestDto requestDto,
+            String chatId) throws IOException {
         String dataSourceId = requestDto.getDataSourceId();
         String question = requestDto.getQuestion();
 
@@ -166,7 +157,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 2. 获取 ChatClient
-        ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(), chatId);
+        ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(),
+                chatId);
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
         // 3. 回答问题
@@ -176,8 +168,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 interruptFlag,
                 chatClient,
                 question,
-                30
-        );
+                30);
 
         if (interruptFlag.get()) {
             return Tuple.of(null, question);

@@ -2,17 +2,16 @@ package cn.opensrcdevelop.auth.audit.event;
 
 import cn.opensrcdevelop.auth.audit.entity.AuditLog;
 import cn.opensrcdevelop.auth.audit.entity.ObjChangeLog;
-import lombok.Getter;
-import org.springframework.context.ApplicationEvent;
-
 import java.io.Serial;
 import java.util.List;
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
 
 @Getter
 public class AuditEvent extends ApplicationEvent {
 
     @Serial
-    private static  final long serialVersionUID = -228766484238594273L;
+    private static final long serialVersionUID = -228766484238594273L;
 
     private final AuditLog auditLog;
 

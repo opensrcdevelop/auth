@@ -4,7 +4,6 @@ import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface AuthorizeService extends IService<AuthorizeRecord> {

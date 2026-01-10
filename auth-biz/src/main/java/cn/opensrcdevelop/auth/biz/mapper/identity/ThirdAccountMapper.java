@@ -9,5 +9,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface ThirdAccountMapper extends BaseMapper<ThirdAccount> {
 
-    IPage<ThirdAccount> searchUserBindings(@Param("page") IPage<ThirdAccount> page, @Param("registrationId") String registrationId, @Param("keyword") String keyword);
+    IPage<ThirdAccount> searchUserBindings(@Param("page") IPage<ThirdAccount> page,
+            @Param("registrationId") String registrationId, @Param("keyword") String keyword);
 }

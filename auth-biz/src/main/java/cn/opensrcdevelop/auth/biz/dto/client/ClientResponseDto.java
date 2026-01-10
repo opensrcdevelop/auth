@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.dto.client;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "获取客户端详情信息响应")
 @Data

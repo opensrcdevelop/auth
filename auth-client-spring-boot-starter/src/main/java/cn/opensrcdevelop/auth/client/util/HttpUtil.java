@@ -1,5 +1,11 @@
 package cn.opensrcdevelop.auth.client.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -29,13 +35,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class HttpUtil {
 
@@ -92,15 +91,16 @@ public class HttpUtil {
     }
 
     private static CloseableHttpClient getHttpClient() {
-        Registry<ConnectionSocketFactory> registry =
-                RegistryBuilder.<ConnectionSocketFactory>create()
-                        .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                        .register("https", SSLConnectionSocketFactory.getSocketFactory())
-                        .build();
+        Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", SSLConnectionSocketFactory.getSocketFactory())
+                .build();
         PoolingHttpClientConnectionManager poolingConnectionManager = new PoolingHttpClientConnectionManager(registry);
 
-        poolingConnectionManager.setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(10)).build());
-        poolingConnectionManager.setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(Timeout.ofSeconds(10)).build());
+        poolingConnectionManager
+                .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(10)).build());
+        poolingConnectionManager
+                .setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(Timeout.ofSeconds(10)).build());
 
         // set total amount of connections across all HTTP routes
         poolingConnectionManager.setMaxTotal(200);
@@ -125,8 +125,10 @@ public class HttpUtil {
 
         @Override
         @NonNull
-        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes, @NonNull ClientHttpRequestExecution execution) throws IOException {
-            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(), request.getHeaders());
+        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes,
+                @NonNull ClientHttpRequestExecution execution) throws IOException {
+            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(),
+                    request.getHeaders());
             request.getMethod();
             if (request.getMethod().equals(HttpMethod.POST)) {
                 log.info("Request Body: {}", new String(bytes, StandardCharsets.UTF_8));

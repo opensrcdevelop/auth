@@ -1,8 +1,7 @@
 package cn.opensrcdevelop.common.entity;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 /**
  * 邮件信息

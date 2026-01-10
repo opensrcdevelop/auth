@@ -25,33 +25,29 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.math.BigDecimal;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.*;
-
 @Service
 @RequiredArgsConstructor
-public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpTemplateMapper, PermissionExpTemplate> implements PermissionExpTemplateService {
+public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpTemplateMapper, PermissionExpTemplate>
+        implements
+            PermissionExpTemplateService {
 
     private final PermissionExpService permissionExpService;
 
     /**
      * 创建权限表达式模版
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
-            fail = "创建限制条件模板（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP_TEMPLATE, sysOperation = SysOperationType.CREATE, success = "创建了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）", fail = "创建限制条件模板（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createPermissionExpTemplate(PermissionExpTemplateRequestDto requestDto) {
@@ -78,15 +74,10 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 更新权限表达式模版
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了限制条件模板（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
-            fail = "修改限制条件模板（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP_TEMPLATE, sysOperation = SysOperationType.UPDATE, success = "修改了限制条件模板（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）", fail = "修改限制条件模板（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void updatePermissionExpTemplate(PermissionExpTemplateRequestDto requestDto) {
@@ -112,7 +103,8 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         updatePermissionExpTemplate.setDescription(requestDto.getDesc());
         updatePermissionExpTemplate.setExpression(requestDto.getExpression());
         if (CollectionUtils.isNotEmpty(requestDto.getParamConfigs())) {
-            updatePermissionExpTemplate.setTemplateParamConfigs(CommonUtil.serializeObject(requestDto.getParamConfigs()));
+            updatePermissionExpTemplate
+                    .setTemplateParamConfigs(CommonUtil.serializeObject(requestDto.getParamConfigs()));
         }
 
         // 3. 数据库操作
@@ -125,15 +117,10 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 删除权限表达式模版
      *
-     * @param templateId 模版ID
+     * @param templateId
+     *            模版ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP_TEMPLATE,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）",
-            fail = "删除限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP_TEMPLATE, sysOperation = SysOperationType.DELETE, success = "删除了限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）", fail = "删除限制条件模板（{{ @linkGen.toLink(#templateId, T(ResourceType).PERMISSION_EXP_TEMPLATE) }}）失败")
     @Transactional
     @Override
     public void deletePermissionExpTemplate(String templateId) {
@@ -147,28 +134,34 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 获取权限表达式模版参数配置
      *
-     * @param templateId 模版ID
+     * @param templateId
+     *            模版ID
      * @return 权限表达式模版参数配置
      */
     @Override
     public List<PermissionExpTemplateParamConfigDto> getParamsConfigs(String templateId) {
         // 1. 数据库操作
         PermissionExpTemplate permissionExpTemplate = super.getById(templateId);
-        if (Objects.isNull(permissionExpTemplate) || StringUtils.isEmpty(permissionExpTemplate.getTemplateParamConfigs())) {
+        if (Objects.isNull(permissionExpTemplate)
+                || StringUtils.isEmpty(permissionExpTemplate.getTemplateParamConfigs())) {
             return Collections.emptyList();
         }
 
         // 2. 反序列
-        return CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
-        });
+        return CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(),
+                new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
+                });
     }
 
     /**
      * 获取权限表达式模版列表
      *
-     * @param page    页数
-     * @param size    条数
-     * @param keyword 权限表达式模版名称检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            权限表达式模版名称检索关键字
      * @return 权限表达式模版列表
      */
     @Override
@@ -186,11 +179,13 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         }
 
         // 2. 属性设置
-        var records = CommonUtil.stream(permissionExpTemplateList).map(permissionExpTemplate -> PermissionExpTemplateResponseDto.builder()
-                .id(permissionExpTemplate.getTemplateId())
-                .name(permissionExpTemplate.getTemplateName())
-                .desc(permissionExpTemplate.getDescription())
-                .build()).toList();
+        var records = CommonUtil.stream(permissionExpTemplateList)
+                .map(permissionExpTemplate -> PermissionExpTemplateResponseDto.builder()
+                        .id(permissionExpTemplate.getTemplateId())
+                        .name(permissionExpTemplate.getTemplateName())
+                        .desc(permissionExpTemplate.getDescription())
+                        .build())
+                .toList();
 
         PageData<PermissionExpTemplateResponseDto> pageData = new PageData<>();
         pageData.setTotal(pageRequest.getTotal());
@@ -205,7 +200,8 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 获取权限表达式模版详情
      *
-     * @param templateId 模版ID
+     * @param templateId
+     *            模版ID
      * @return 权限表达式模版详情
      */
     @Override
@@ -224,8 +220,9 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         responseBuilder.desc(permissionExpTemplate.getDescription());
         responseBuilder.expression(permissionExpTemplate.getExpression());
         if (StringUtils.isNotEmpty(permissionExpTemplate.getTemplateParamConfigs())) {
-            responseBuilder.paramConfigs(CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
-            }));
+            responseBuilder.paramConfigs(CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(),
+                    new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
+                    }));
         }
         return responseBuilder.build();
     }
@@ -233,7 +230,8 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 获取模板关联的权限表达式列表
      *
-     * @param templateId 模板ID
+     * @param templateId
+     *            模板ID
      * @return 关联的权限表达式列表
      */
     @Override
@@ -257,18 +255,20 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
     /**
      * 获取模板参数对应的执行上下文
      *
-     * @param paramConfigs 模板参数配置
-     * @param params     参数列表
+     * @param paramConfigs
+     *            模板参数配置
+     * @param params
+     *            参数列表
      * @return 执行上下文
      */
     @Override
-    public Map<String, Object> getParamExecutionContext(List<PermissionExpTemplateParamConfigDto> paramConfigs, List<PermissionExpTemplateParamDto> params) {
+    public Map<String, Object> getParamExecutionContext(List<PermissionExpTemplateParamConfigDto> paramConfigs,
+            List<PermissionExpTemplateParamDto> params) {
         Map<String, Object> execCtx = new HashMap<>();
         for (var paramConfig : paramConfigs) {
             // 1. 获取匹配的参数
             var param = CommonUtil.stream(params)
-                    .filter(templateParam ->
-                            templateParam.getCode().equals(paramConfig.getCode()))
+                    .filter(templateParam -> templateParam.getCode().equals(paramConfig.getCode()))
                     .findFirst();
             if (param.isPresent()) {
                 // 2. 转换参数类型

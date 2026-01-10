@@ -12,13 +12,12 @@ import cn.opensrcdevelop.tenant.support.TenantContext;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -34,10 +33,11 @@ public class AuthServerApplicationRunner implements ApplicationRunner, Ordered {
      * 执行应用程序启动初始化任务
      */
     @Override
-    public void run (ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) throws Exception {
         executeWithTenantContext(() -> {
             // 存储控制台客户端 ID
-            Client client = clientService.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, CONSOLE_CLIENT_NAME));
+            Client client = clientService
+                    .getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, CONSOLE_CLIENT_NAME));
             if (Objects.nonNull(client)) {
                 String clientId = client.getClientId();
                 systemSettingService.saveSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, clientId);

@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.dto.audit;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "对象变更日志响应")
 @Data

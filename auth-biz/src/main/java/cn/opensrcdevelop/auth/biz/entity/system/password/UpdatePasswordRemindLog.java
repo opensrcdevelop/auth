@@ -3,11 +3,10 @@ package cn.opensrcdevelop.auth.biz.entity.system.password;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * 密码到期修改提醒日志

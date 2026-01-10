@@ -1,10 +1,8 @@
 package cn.opensrcdevelop.ai.prompt;
 
 import cn.opensrcdevelop.ai.util.PromptTemplateUtil;
-
 import java.util.HashMap;
 import java.util.Map;
-
 
 public class Prompt {
 

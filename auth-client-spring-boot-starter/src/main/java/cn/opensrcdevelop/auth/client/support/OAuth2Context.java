@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.client.support;
 
+import java.io.Serial;
+import java.io.Serializable;
 import lombok.Data;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
-
-import java.io.Serial;
-import java.io.Serializable;
 
 @Data
 public class OAuth2Context implements Serializable {

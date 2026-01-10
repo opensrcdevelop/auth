@@ -12,6 +12,7 @@ import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,8 +31,6 @@ import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.CorsFilter;
-
-import java.util.List;
 
 /**
  * 授权服务器配置
@@ -67,16 +66,14 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         });
 
         // 登出处理
-        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
+        http.logout(logout -> logout
+                .logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 登录页面重定向
-        http.exceptionHandling(exception ->
-            exception
-                    .defaultAuthenticationEntryPointFor(
+        http.exceptionHandling(exception -> exception
+                .defaultAuthenticationEntryPointFor(
                         new LoginTargetAuthenticationEntryPoint(authorizationServerProperties.getLoginPageUrl()),
-                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-                    )
-        );
+                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
 
         // 禁用 csrf 和 cors
         http.csrf(AbstractHttpConfigurer::disable);
@@ -96,12 +93,15 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
         // 添加 OAuth2 Authorize 记住我过滤器
-        http.addFilterAfter(new OAuth2AuthorizeRememberMeAuthenticationFilter(authenticationManager, rememberMeServices), SecurityContextHolderFilter.class);
+        http.addFilterAfter(
+                new OAuth2AuthorizeRememberMeAuthenticationFilter(authenticationManager, rememberMeServices),
+                SecurityContextHolderFilter.class);
 
         // 自定义授权类型认证提供
-        OAuth2TokenGenerator<?> tokenGenerator =  http.getSharedObject(OAuth2TokenGenerator.class);
+        OAuth2TokenGenerator<?> tokenGenerator = http.getSharedObject(OAuth2TokenGenerator.class);
         OAuth2AuthorizationService authorizationService = http.getSharedObject(OAuth2AuthorizationService.class);
-        http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService, authenticationManager, tokenGenerator));
+        http.authenticationProvider(new ResourceOwnerPasswordAuthenticationProvider(authorizationService,
+                authenticationManager, tokenGenerator));
         http.authenticationProvider(new RememberMeAuthenticationProvider(AuthConstants.REMEMBER_ME));
     }
 
@@ -110,11 +110,12 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         oauth2AuthorizationServerConfigurer
                 .authorizationEndpoint(x -> x.consentPage(authorizationServerProperties.getConsentPageUrl()))
                 .tokenEndpoint(x -> x.accessTokenRequestConverter(getCustomAccessTokenRequestConverter()))
-                .authorizationServerMetadataEndpoint(x -> x.authorizationServerMetadataCustomizer(c -> c.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
+                .authorizationServerMetadataEndpoint(x -> x
+                        .authorizationServerMetadataCustomizer(c -> c.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
                 .oidc(x -> x
-                        .providerConfigurationEndpoint(c -> c.providerConfigurationCustomizer(p -> p.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
-                        .userInfoEndpoint(userinfo -> userinfo.userInfoMapper(oidcUserInfoService::convert))
-                );
+                        .providerConfigurationEndpoint(c -> c
+                                .providerConfigurationCustomizer(p -> p.grantType(AuthConstants.GRANT_TYPE_PASSWORD)))
+                        .userInfoEndpoint(userinfo -> userinfo.userInfoMapper(oidcUserInfoService::convert)));
         return oauth2AuthorizationServerConfigurer;
     }
 
@@ -123,7 +124,6 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
      */
     private AuthenticationConverter getCustomAccessTokenRequestConverter() {
         return new DelegatingAuthenticationConverter(List.of(
-                new ResourceOwnerPasswordAuthenticationConverter()
-        ));
+                new ResourceOwnerPasswordAuthenticationConverter()));
     }
 }

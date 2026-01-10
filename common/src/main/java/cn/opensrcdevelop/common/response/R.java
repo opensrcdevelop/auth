@@ -5,9 +5,8 @@ import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 public class R<T> {

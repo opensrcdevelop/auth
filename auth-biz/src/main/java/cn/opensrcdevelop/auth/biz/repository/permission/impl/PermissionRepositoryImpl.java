@@ -5,10 +5,9 @@ import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -19,72 +18,98 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     /**
      * 检索用户权限
      *
-     * @param page                           分页对象
-     * @param userId                         用户ID
-     * @param dynamicUserGroupIds            动态用户组ID列表
-     * @param resourceGroupCode              资源组标识
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param userId
+     *            用户ID
+     * @param dynamicUserGroupIds
+     *            动态用户组ID列表
+     * @param resourceGroupCode
+     *            资源组标识
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void searchUserPermissions(IPage<AuthorizeRecord> page,
-                                      String userId,
-                                      List<String> dynamicUserGroupIds,
-                                      String resourceGroupCode,
-                                      String resourceGroupNameSearchKeyword,
-                                      String resourceNameSearchKeyword,
-                                      String permissionNameSearchKeyword,
-                                      String permissionCodeSearchKeyword) {
-        permissionMapper.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String userId,
+            List<String> dynamicUserGroupIds,
+            String resourceGroupCode,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionMapper.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode,
+                resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword,
+                permissionCodeSearchKeyword);
     }
 
     /**
      * 检索用户组权限
      *
-     * @param page                           分页对象
-     * @param userGroupId                    用户组ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param userGroupId
+     *            用户组ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void searchUserGroupPermissions(IPage<AuthorizeRecord> page,
-                                           String userGroupId,
-                                           String resourceGroupNameSearchKeyword,
-                                           String resourceNameSearchKeyword,
-                                           String permissionNameSearchKeyword,
-                                           String permissionCodeSearchKeyword) {
-        permissionMapper.searchUserGroupPermissions(page, userGroupId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String userGroupId,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionMapper.searchUserGroupPermissions(page, userGroupId, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 检索角色权限
      *
-     * @param page                           分页对象
-     * @param roleId                         角色ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param roleId
+     *            角色ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void searchRolePermissions(IPage<AuthorizeRecord> page,
-                                      String roleId,
-                                      String resourceGroupNameSearchKeyword,
-                                      String resourceNameSearchKeyword,
-                                      String permissionNameSearchKeyword,
-                                      String permissionCodeSearchKeyword) {
-        permissionMapper.searchRolePermissions(page, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String roleId,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionMapper.searchRolePermissions(page, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword,
+                permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 检索权限授权记录
      *
-     * @param permissionId 权限ID
-     * @param keyword      被授权主体关键字
+     * @param permissionId
+     *            权限ID
+     * @param keyword
+     *            被授权主体关键字
      * @return 权限授权记录
      */
     @Override
@@ -95,7 +120,8 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     /**
      * 检索权限表达式关联的权限
      *
-     * @param expressionId 表达式ID
+     * @param expressionId
+     *            表达式ID
      * @return 权限表达式关联的权限
      */
     @Override
@@ -106,7 +132,8 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     /**
      * 获取权限
      *
-     * @param permissionId 权限ID
+     * @param permissionId
+     *            权限ID
      * @return 权限
      */
     @Override

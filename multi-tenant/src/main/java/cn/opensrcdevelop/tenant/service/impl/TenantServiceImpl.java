@@ -23,13 +23,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
@@ -38,15 +37,10 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 创建租户
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.TENANT,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）",
-            fail = "'创建租户（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.TENANT, sysOperation = SysOperationType.CREATE, success = "创建了租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）", fail = "'创建租户（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
@@ -72,21 +66,26 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 判断租户是否存在
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 是否存在
      */
     @Override
     public Tuple2<Boolean, Tenant> exists(String tenantCode) {
-        Tenant tenant =  super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode).and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
+        Tenant tenant = super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode)
+                .and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
         return Objects.isNull(tenant) ? Tuple.of(false, null) : Tuple.of(true, tenant);
     }
 
     /**
      * 获取租户列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 租户名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            租户名称 / 标识检索关键字
      * @return 租户列表
      */
     @Override
@@ -125,15 +124,10 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 更新租户
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.TENANT,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了租户（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) }}）",
-            fail = "修改租户（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.TENANT, sysOperation = SysOperationType.UPDATE, success = "修改了租户（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) }}）", fail = "修改租户（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).TENANT) }}）失败")
     @Transactional
     @Override
     public void updateTenant(TenantRequestDto requestDto) {
@@ -167,7 +161,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 获取租户详情
      *
-     * @param tenantId 租户 ID
+     * @param tenantId
+     *            租户 ID
      * @return 租户详情
      */
     @Override
@@ -192,15 +187,10 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 删除租户
      *
-     * @param tenantId 租户 ID
+     * @param tenantId
+     *            租户 ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.TENANT,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）",
-            fail = "删除租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.TENANT, sysOperation = SysOperationType.DELETE, success = "删除了租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）", fail = "删除租户（{{ @linkGen.toLink(#tenantId, T(ResourceType).TENANT) }}）失败")
     @Transactional
     @Override
     public void removeTenant(String tenantId) {
@@ -220,11 +210,12 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     /**
      * 检查租户
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 检查结果
      */
     @Override
-    public CheckTenantResponseDto checkTenant(String tenantCode){
+    public CheckTenantResponseDto checkTenant(String tenantCode) {
         try {
             CheckTenantResponseDto checkTenantResponse = new CheckTenantResponseDto();
             var existsRes = TenantHelper.tenantExists(tenantCode);
@@ -242,7 +233,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     }
 
     private void checkTenantCode(TenantRequestDto requestDto) {
-        if (Objects.nonNull(super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, requestDto.getCode())))) {
+        if (Objects.nonNull(
+                super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
         }
     }

@@ -4,6 +4,9 @@ import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.cache.aop.CacheExpireAspect;
 import cn.opensrcdevelop.common.exception.ServerException;
 import jakarta.annotation.Resource;
+import java.lang.reflect.Method;
+import java.time.Duration;
+import java.util.Objects;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.cache.RedisCache;
@@ -13,10 +16,6 @@ import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Method;
-import java.time.Duration;
-import java.util.Objects;
 
 @Component
 public class CustomRedisCacheManager extends RedisCacheManager {
@@ -44,7 +43,8 @@ public class CustomRedisCacheManager extends RedisCacheManager {
                     // 1. 解析缓存时间
                     String expireExpression = expire.value();
                     String expressionResolveResult = environment.resolvePlaceholders(expireExpression);
-                    Long expireSeconds = spelExpressionParser.parseExpression(expressionResolveResult).getValue(Long.class);
+                    Long expireSeconds = spelExpressionParser.parseExpression(expressionResolveResult)
+                            .getValue(Long.class);
                     if (Objects.nonNull(expireSeconds)) {
                         // 2. 设置缓存时间
                         cacheConfiguration = cacheConfiguration.entryTtl(Duration.ofSeconds(expireSeconds));

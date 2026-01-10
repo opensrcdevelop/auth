@@ -16,8 +16,10 @@ public class ResourceRepositoryImpl implements ResourceRepository {
     /**
      * 检索资源
      *
-     * @param page 分页对象
-     * @param keyword 资源名称 / 标识检索关键字
+     * @param page
+     *            分页对象
+     * @param keyword
+     *            资源名称 / 标识检索关键字
      */
     @Override
     public void searchResources(IPage<Resource> page, String keyword) {

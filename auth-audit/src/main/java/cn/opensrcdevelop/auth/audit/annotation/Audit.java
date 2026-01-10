@@ -4,15 +4,14 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
-import org.apache.commons.lang3.StringUtils;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.commons.lang3.StringUtils;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
+@Target({ElementType.METHOD})
 public @interface Audit {
 
     /**
@@ -51,7 +50,7 @@ public @interface Audit {
     String fail() default StringUtils.EMPTY;
 
     /**
-     *  额外信息
+     * 额外信息
      */
     String extra() default StringUtils.EMPTY;
 }

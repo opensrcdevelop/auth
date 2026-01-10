@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.component.authserver;
 
 import jakarta.annotation.Resource;
+import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
@@ -13,8 +14,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
@@ -34,12 +33,12 @@ public class CustomOpaqueTokenIntrospector implements OpaqueTokenIntrospector {
         JwtAuthenticationProvider jwtAuthenticationProvider = new JwtAuthenticationProvider(jwtDecoder);
         jwtAuthenticationProvider.authenticate(bearerTokenAuthenticationToken);
 
-
         OAuth2Authorization authorization = authorizationService.findByToken(token, OAuth2TokenType.ACCESS_TOKEN);
         if (authorization == null) {
             throw new InvalidBearerTokenException("Invalid Bearer Token");
         }
 
-        return new OAuth2IntrospectionAuthenticatedPrincipal(jwtDecoder.decode(token).getClaims(), Collections.emptyList());
+        return new OAuth2IntrospectionAuthenticatedPrincipal(jwtDecoder.decode(token).getClaims(),
+                Collections.emptyList());
     }
 }

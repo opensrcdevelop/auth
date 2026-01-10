@@ -15,6 +15,6 @@ public class UserAttrMappingRequestDto {
     private String attrId;
 
     @Schema(description = "属性值")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private String attrValue;
 }

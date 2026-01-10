@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.biz.component.authserver;
 import cn.opensrcdevelop.auth.biz.entity.client.Client;
 import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import java.util.*;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -14,8 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
-
 @Component
 public class DbRegisteredClientRepository implements RegisteredClientRepository {
 
@@ -25,7 +24,6 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
         Assert.notNull(clientService, "clientService cannot be null");
         this.clientService = clientService;
     }
-
 
     @Override
     public void save(RegisteredClient registeredClient) {
@@ -64,12 +62,11 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
                 .clientSecret(client.getClientSecret())
                 .clientSecretExpiresAt(client.getClientSecretExpiresAt())
                 .clientName(client.getClientName())
-                .clientAuthenticationMethods(authenticationMethods ->
-                        clientAuthenticationMethods.forEach(authenticationMethod ->
-                                authenticationMethods.add(resolveClientAuthenticationMethod(authenticationMethod))))
-                .authorizationGrantTypes(grantTypes ->
-                        authorizationGrantTypes.forEach(grantType ->
-                                grantTypes.add(resolveAuthorizationGrantType(grantType))))
+                .clientAuthenticationMethods(authenticationMethods -> clientAuthenticationMethods
+                        .forEach(authenticationMethod -> authenticationMethods
+                                .add(resolveClientAuthenticationMethod(authenticationMethod))))
+                .authorizationGrantTypes(grantTypes -> authorizationGrantTypes
+                        .forEach(grantType -> grantTypes.add(resolveAuthorizationGrantType(grantType))))
                 .redirectUris(uris -> uris.addAll(redirectUris))
                 .postLogoutRedirectUris(uris -> uris.addAll(postLogoutRedirectUris))
                 .scopes(scopes -> scopes.addAll(clientScopes));
@@ -83,15 +80,15 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
         return builder.build();
     }
 
-
     public Client toEntity(RegisteredClient registeredClient) {
-        List<String> clientAuthenticationMethods = new ArrayList<>(registeredClient.getClientAuthenticationMethods().size());
-        registeredClient.getClientAuthenticationMethods().forEach(clientAuthenticationMethod ->
-                clientAuthenticationMethods.add(clientAuthenticationMethod.getValue()));
+        List<String> clientAuthenticationMethods = new ArrayList<>(
+                registeredClient.getClientAuthenticationMethods().size());
+        registeredClient.getClientAuthenticationMethods().forEach(
+                clientAuthenticationMethod -> clientAuthenticationMethods.add(clientAuthenticationMethod.getValue()));
 
         List<String> authorizationGrantTypes = new ArrayList<>(registeredClient.getAuthorizationGrantTypes().size());
-        registeredClient.getAuthorizationGrantTypes().forEach(authorizationGrantType ->
-                authorizationGrantTypes.add(authorizationGrantType.getValue()));
+        registeredClient.getAuthorizationGrantTypes()
+                .forEach(authorizationGrantType -> authorizationGrantTypes.add(authorizationGrantType.getValue()));
 
         Client entity = new Client();
         entity.setClientId(registeredClient.getClientId());
@@ -99,10 +96,12 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
         entity.setClientSecret(registeredClient.getClientSecret());
         entity.setClientSecretExpiresAt(registeredClient.getClientSecretExpiresAt());
         entity.setClientName(registeredClient.getClientName());
-        entity.setClientAuthenticationMethods(StringUtils.collectionToCommaDelimitedString(clientAuthenticationMethods));
+        entity.setClientAuthenticationMethods(
+                StringUtils.collectionToCommaDelimitedString(clientAuthenticationMethods));
         entity.setAuthorizationGrantTypes(StringUtils.collectionToCommaDelimitedString(authorizationGrantTypes));
         entity.setRedirectUris(StringUtils.collectionToCommaDelimitedString(registeredClient.getRedirectUris()));
-        entity.setPostLogoutRedirectUris(StringUtils.collectionToCommaDelimitedString(registeredClient.getPostLogoutRedirectUris()));
+        entity.setPostLogoutRedirectUris(
+                StringUtils.collectionToCommaDelimitedString(registeredClient.getPostLogoutRedirectUris()));
         entity.setScopes(StringUtils.collectionToCommaDelimitedString(registeredClient.getScopes()));
         entity.setClientSettings(AuthUtil.writeMap(registeredClient.getClientSettings().getSettings()));
         entity.setTokenSettings(AuthUtil.writeMap(registeredClient.getTokenSettings().getSettings()));
@@ -118,7 +117,7 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
         } else if (AuthorizationGrantType.REFRESH_TOKEN.getValue().equals(authorizationGrantType)) {
             return AuthorizationGrantType.REFRESH_TOKEN;
         }
-        return new AuthorizationGrantType(authorizationGrantType);              // Custom authorization grant type
+        return new AuthorizationGrantType(authorizationGrantType); // Custom authorization grant type
     }
 
     private static ClientAuthenticationMethod resolveClientAuthenticationMethod(String clientAuthenticationMethod) {
@@ -129,7 +128,6 @@ public class DbRegisteredClientRepository implements RegisteredClientRepository 
         } else if (ClientAuthenticationMethod.NONE.getValue().equals(clientAuthenticationMethod)) {
             return ClientAuthenticationMethod.NONE;
         }
-        return new ClientAuthenticationMethod(clientAuthenticationMethod);      // Custom client authentication method
+        return new ClientAuthenticationMethod(clientAuthenticationMethod); // Custom client authentication method
     }
 }
-

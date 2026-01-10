@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.util;
 
 import cn.opensrcdevelop.common.util.HttpUtil;
+import java.util.Map;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -15,8 +16,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
-
 public class HttpExpressionUtil {
 
     private static final RestTemplate REST_TEMPLATE = new RestTemplateBuilder()
@@ -29,7 +28,7 @@ public class HttpExpressionUtil {
     }
 
     public Object http(String url, String method, Map<String, String> headers, Object body,
-                                        Class<?> responseType, String resultExpression) {
+            Class<?> responseType, String resultExpression) {
 
         // 构建请求头
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -42,8 +41,7 @@ public class HttpExpressionUtil {
                 url,
                 HttpMethod.valueOf(method),
                 body != null ? new HttpEntity<>(body, httpHeaders) : null,
-                responseType
-        );
+                responseType);
 
         // 处理响应结果
         if (StringUtils.isBlank(resultExpression)) {
@@ -68,13 +66,13 @@ public class HttpExpressionUtil {
             Object value = entry.getValue();
 
             if (value instanceof String strVal && StringUtils.isNotBlank(strVal)) {
-                    int startIdx = strVal.indexOf("$$");
-                    int endIdx = strVal.lastIndexOf("$$");
-                    if (startIdx != -1 && endIdx != -1) {
-                        String expression = strVal.substring(startIdx + 2, endIdx);
-                        Expression exp = PARSER.parseExpression(expression);
-                        spELMap.put(key, exp.getValue(CONTEXT));
-                    }
+                int startIdx = strVal.indexOf("$$");
+                int endIdx = strVal.lastIndexOf("$$");
+                if (startIdx != -1 && endIdx != -1) {
+                    String expression = strVal.substring(startIdx + 2, endIdx);
+                    Expression exp = PARSER.parseExpression(expression);
+                    spELMap.put(key, exp.getValue(CONTEXT));
+                }
             }
 
             if (value instanceof Map mapVal) {

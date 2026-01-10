@@ -22,12 +22,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -42,15 +41,17 @@ public class UserController {
 
     @Operation(summary = "创建用户", description = "创建用户")
     @PostMapping
-    @Authorize({ "allUserPermissions", "createUser" })
-    public void createUser(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) UserRequestDto requestDto) {
+    @Authorize({"allUserPermissions", "createUser"})
+    public void createUser(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) UserRequestDto requestDto) {
         userService.createUser(requestDto);
     }
 
     @Operation(summary = "创建用户属性", description = "创建用户属性")
     @PostMapping("/attr")
-    @Authorize({ "allUserAttrPermissions", "createUserAttr" })
-    public void createUserAttr(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) UserAttrRequestDto requestDto) {
+    @Authorize({"allUserAttrPermissions", "createUserAttr"})
+    public void createUserAttr(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) UserAttrRequestDto requestDto) {
         userAttrService.createUserAttr(requestDto);
     }
 
@@ -62,9 +63,11 @@ public class UserController {
             @Parameter(name = "keyword", description = "用户属性名称或 key 检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/attr/list")
-    @Authorize({ "allUserAttrPermissions", "listUserAttr" })
-    public PageData<UserAttrResponseDto> listUserAttrs(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
-                                                       @RequestParam(required = false, defaultValue = "false") Boolean onlyDisplay, @RequestParam(required = false) String keyword) {
+    @Authorize({"allUserAttrPermissions", "listUserAttr"})
+    public PageData<UserAttrResponseDto> listUserAttrs(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false, defaultValue = "false") Boolean onlyDisplay,
+            @RequestParam(required = false) String keyword) {
         return userAttrService.listUserAttrs(page, size, onlyDisplay, keyword);
     }
 
@@ -74,29 +77,33 @@ public class UserController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @PostMapping("/list")
-    @Authorize({ "allUserPermissions", "listUser" })
-    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") @Min(1) int page, @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterDto> filters) {
+    @Authorize({"allUserPermissions", "listUser"})
+    public PageData<Map<String, Object>> list(@RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "15") int size, @RequestBody @Valid List<DataFilterDto> filters) {
         return userService.list(page, size, filters);
     }
 
     @Operation(summary = "更新用户信息", description = "更新用户信息")
     @PutMapping
-    @Authorize({ "allUserPermissions", "updateUser" })
-    public void updateUser(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserRequestDto requestDto) {
+    @Authorize({"allUserPermissions", "updateUser"})
+    public void updateUser(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) UserRequestDto requestDto) {
         userService.updateUser(requestDto);
     }
 
     @Operation(summary = "更新用户属性", description = "更新用户属性")
     @PutMapping("/attr")
-    @Authorize({ "allUserAttrPermissions", "updateUserAttr" })
-    public void updateUserAttr(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserAttrRequestDto requestDto) {
+    @Authorize({"allUserAttrPermissions", "updateUserAttr"})
+    public void updateUserAttr(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) UserAttrRequestDto requestDto) {
         userAttrService.updateUserAttr(requestDto);
     }
 
     @Operation(summary = "设置用户属性显示顺序", description = "设置用户属性显示顺序")
     @PostMapping("/attr/seq")
-    @Authorize({ "allUserAttrPermissions", "setUserAttrDisplaySeq" })
-    public void setUserAttrDisplaySeq(@RequestBody @NotEmpty @Valid List<SetUserAttrDisplaySeqRequestDto> requestDtoList) {
+    @Authorize({"allUserAttrPermissions", "setUserAttrDisplaySeq"})
+    public void setUserAttrDisplaySeq(
+            @RequestBody @NotEmpty @Valid List<SetUserAttrDisplaySeqRequestDto> requestDtoList) {
         userAttrService.setUserAttrDisplaySeq(requestDtoList);
     }
 
@@ -105,7 +112,7 @@ public class UserController {
             @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}")
-    @Authorize({ "allUserPermissions", "getUserDetail" })
+    @Authorize({"allUserPermissions", "getUserDetail"})
     public UserResponseDto userDetail(@PathVariable @NotBlank String id) {
         return userService.detail(id);
     }
@@ -121,7 +128,7 @@ public class UserController {
             @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allUserPermissions", "deleteUser" })
+    @Authorize({"allUserPermissions", "deleteUser"})
     public void removeUser(@PathVariable @NotBlank String id) {
         userService.removeUser(id);
     }
@@ -131,14 +138,14 @@ public class UserController {
             @Parameter(name = "id", description = "用户属性ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/attr/{id}")
-    @Authorize({ "allUserAttrPermissions", "getUserAttrDetail" })
+    @Authorize({"allUserAttrPermissions", "getUserAttrDetail"})
     public UserAttrResponseDto userAttrDetail(@PathVariable @NotBlank String id) {
         return userAttrService.detail(id);
     }
 
     @Operation(summary = "删除用户属性", description = "删除用户属性")
     @DeleteMapping("/attr/{id}")
-    @Authorize({ "allUserAttrPermissions", "deleteUserAttr" })
+    @Authorize({"allUserAttrPermissions", "deleteUserAttr"})
     public void removeUserAttr(@PathVariable @NotBlank String id) {
         userAttrService.removeUserAttr(id);
     }
@@ -154,7 +161,7 @@ public class UserController {
             @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
     @PutMapping("/{id}/mfa/device")
-    @Authorize({ "allUserPermissions", "rebindMfaDevice" })
+    @Authorize({"allUserPermissions", "rebindMfaDevice"})
     public void rebindMfaDevice(@PathVariable @NotBlank String id) {
         userService.rebindMfaDevice(id);
     }
@@ -164,7 +171,7 @@ public class UserController {
             @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/{id}/token")
-    @Authorize({ "allUserPermissions", "clearTokens" })
+    @Authorize({"allUserPermissions", "clearTokens"})
     public void clearAuthorizedTokens(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokens(id);
     }
@@ -210,13 +217,15 @@ public class UserController {
             @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
     })
     @GetMapping("/{id}/permissions")
-    @Authorize({ "allUserPermissions", "getUserPermissions" })
-    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
-                                                          @RequestParam(required = false) String resourceGroupNameSearchKeyword,
-                                                          @RequestParam(required = false) String resourceNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionCodeSearchKeyword) {
-        return userService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+    @Authorize({"allUserPermissions", "getUserPermissions"})
+    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+            @RequestParam(required = false) String resourceGroupNameSearchKeyword,
+            @RequestParam(required = false) String resourceNameSearchKeyword,
+            @RequestParam(required = false) String permissionNameSearchKeyword,
+            @RequestParam(required = false) String permissionCodeSearchKeyword) {
+        return userService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword,
+                permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     @Operation(summary = "获取用户登录日志", description = "获取用户登录日志")
@@ -226,8 +235,9 @@ public class UserController {
             @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true)
     })
     @GetMapping("/{id}/loginLogs")
-    @Authorize({ "allUserPermissions", "getUserLoginLogs" })
-    public PageData<LoginLogResponseDto> getUserLoginLogs(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id) {
+    @Authorize({"allUserPermissions", "getUserLoginLogs"})
+    public PageData<LoginLogResponseDto> getUserLoginLogs(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id) {
         return loginLogService.getUserLoginLogs(page, size, id);
     }
 
@@ -236,7 +246,7 @@ public class UserController {
             @Parameter(name = "id", description = "登录ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/login/{id}/token")
-    @Authorize({ "allUserPermissions", "clearTokensByLoginId" })
+    @Authorize({"allUserPermissions", "clearTokensByLoginId"})
     public void clearAuthorizedTokensByLoginId(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokensByLoginId(id);
     }

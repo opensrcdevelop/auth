@@ -10,6 +10,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -20,11 +24,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.stereotype.Component;
-
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component
@@ -56,7 +55,8 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
             return null;
         }
         String rememberMeTokenSecret = getRememberMeTokenSecret(userId);
-        if (StringUtils.isEmpty(rememberMeTokenSecret) || !JwtUtil.verifyJwtWithHS256(rememberMeToken, rememberMeTokenSecret)) {
+        if (StringUtils.isEmpty(rememberMeTokenSecret)
+                || !JwtUtil.verifyJwtWithHS256(rememberMeToken, rememberMeTokenSecret)) {
             cancelCookie(request, response);
             return null;
         }
@@ -67,7 +67,8 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
             return null;
         }
 
-        RememberMeAuthenticationToken auth = new RememberMeAuthenticationToken(AuthConstants.REMEMBER_ME, user, Collections.emptyList());
+        RememberMeAuthenticationToken auth = new RememberMeAuthenticationToken(AuthConstants.REMEMBER_ME, user,
+                Collections.emptyList());
         auth.setAuthenticated(true);
         return auth;
     }
@@ -93,19 +94,16 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
             rememberMeTokenSecret = CommonUtil.generateRandomString(32);
             userService.update(Wrappers.<User>lambdaUpdate()
                     .set(User::getRememberMeTokenSecret, rememberMeTokenSecret)
-                    .eq(User::getUserId, userId)
-            );
+                    .eq(User::getUserId, userId));
         }
 
         String rememberMeToken = JwtUtil.createJwtWithHS256(
                 Map.of(
                         JwtClaimNames.SUB,
-                        userId
-                ),
+                        userId),
                 rememberMeTokenSecret,
                 authorizationServerProperties.getRememberMeSeconds(),
-                ChronoUnit.SECONDS
-        );
+                ChronoUnit.SECONDS);
         setCookie(rememberMeToken, authorizationServerProperties.getRememberMeSeconds(), request, response);
     }
 
@@ -161,7 +159,7 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
         return userService
                 .getOne(Wrappers.<User>lambdaQuery()
                         .select(User::getUserId, User::getRememberMeTokenSecret)
-                        .eq(User::getUserId, userId)
-                ).getRememberMeTokenSecret();
+                        .eq(User::getUserId, userId))
+                .getRememberMeTokenSecret();
     }
 }

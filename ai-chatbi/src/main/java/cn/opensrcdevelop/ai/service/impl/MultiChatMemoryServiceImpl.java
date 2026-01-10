@@ -8,12 +8,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MultiChatMemoryServiceImpl extends ServiceImpl<MultiChatMemoryMapper, MultiChatMemory> implements MultiChatMemoryService {
+public class MultiChatMemoryServiceImpl extends ServiceImpl<MultiChatMemoryMapper, MultiChatMemory>
+        implements
+            MultiChatMemoryService {
 
     /**
      * 删除对话记忆
      *
-     * @param chatId 对话ID
+     * @param chatId
+     *            对话ID
      */
     @Override
     public void removeChatMemory(String chatId) {

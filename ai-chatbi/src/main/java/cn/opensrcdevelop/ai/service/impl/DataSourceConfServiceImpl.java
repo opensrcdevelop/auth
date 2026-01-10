@@ -29,13 +29,6 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -44,11 +37,19 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper, DataSourceConf> implements DataSourceConfService {
+public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper, DataSourceConf>
+        implements
+            DataSourceConfService {
 
     private static final String SYNC_TABLE_LOCK = "sync_table_lock:%s";
 
@@ -79,9 +80,12 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 获取数据源配置列表
      *
-     * @param keyword 数据源名称检索关键字
-     * @param page    页数
-     * @param size    条数
+     * @param keyword
+     *            数据源名称检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
      * @return 数据源配置列表
      */
     @Override
@@ -100,8 +104,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                             DataSourceConf::getDescription,
                             DataSourceConf::getSystemDs)
                     .like(DataSourceConf::getDataSourceName, keyword)
-                    .orderByAsc(DataSourceConf::getDataSourceName)
-            );
+                    .orderByAsc(DataSourceConf::getDataSourceName));
         } else {
             dataSourceConfList = super.list(pageRequest, Wrappers.<DataSourceConf>lambdaQuery()
                     .select(DataSourceConf::getDataSourceId,
@@ -112,8 +115,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                             DataSourceConf::getSyncTableCount,
                             DataSourceConf::getDescription,
                             DataSourceConf::getSystemDs)
-                    .orderByAsc(DataSourceConf::getDataSourceName)
-            );
+                    .orderByAsc(DataSourceConf::getDataSourceName));
         }
 
         // 2. 属性编辑
@@ -123,7 +125,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         pageData.setTotal(pageRequest.getTotal());
         pageData.setSize(pageRequest.getSize());
 
-        List<DataSourceConfResponseDto> data = CommonUtil.stream(dataSourceConfList).map(dataSourceConf -> DataSourceConfResponseDto.builder()
+        List<DataSourceConfResponseDto> data = CommonUtil.stream(dataSourceConfList)
+                .map(dataSourceConf -> DataSourceConfResponseDto.builder()
                         .id(dataSourceConf.getDataSourceId())
                         .name(dataSourceConf.getDataSourceName())
                         .type(DataSourceType.valueOf(dataSourceConf.getDataSourceType()).getDisplayName())
@@ -138,7 +141,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         // 3. 统计表数量
         for (DataSourceConfResponseDto d : data) {
             if (Objects.nonNull(d.getLastSyncTableTime())) {
-                d.setTableCount(tableService.count(Wrappers.<Table>lambdaQuery().eq(Table::getDataSourceId, d.getId())));
+                d.setTableCount(
+                        tableService.count(Wrappers.<Table>lambdaQuery().eq(Table::getDataSourceId, d.getId())));
             }
         }
         pageData.setList(data);
@@ -148,7 +152,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 获取数据源配置详情
      *
-     * @param id 数据源配置ID
+     * @param id
+     *            数据源配置ID
      * @return 数据源配置详情
      */
     @Override
@@ -178,23 +183,17 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 同步表
      *
-     * @param id 数据源ID
+     * @param id
+     *            数据源ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_DATA_SOURCE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步成功",
-            fail = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.UPDATE, success = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步成功", fail = "数据源 {{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }} 表同步失败")
     @Override
     @SuppressWarnings({"java:S2222", "java:S3776"})
     public void syncTable(String id) {
         // 1. 检查数据源是否存在
-        boolean exists = super
-                .exists(Wrappers.<DataSourceConf>lambdaQuery()
-                        .eq(DataSourceConf::getDataSourceId, id)
-                        .eq(DataSourceConf::getEnabled, true));
+        boolean exists = super.exists(Wrappers.<DataSourceConf>lambdaQuery()
+                .eq(DataSourceConf::getDataSourceId, id)
+                .eq(DataSourceConf::getEnabled, true));
         if (!exists) {
             throw new BizException(MessageConstants.AI_DATASOURCE_MSG_1000, id);
         }
@@ -207,19 +206,20 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         // 3. 采集数据源元数据
         String currentDataSource = DynamicDataSourceContextHolder.peek();
         CompletableFuture.runAsync(() -> {
-                    // 3.1 获取锁
-                    RLock lock = RedisUtil.getLock(SYNC_TABLE_LOCK.formatted(id));
-                    try {
-                        if (lock.tryLock()) {
-                            // 3.2 采集
-                            DynamicDataSourceContextHolder.push(currentDataSource);
-                            dataSourceMetaCollector.collect(id);
-                            log.info("数据表同步成功，数据源ID：{}", id);
-                        }
-                    } finally {
-                        if (lock.isLocked()) lock.unlock();
-                    }
-                }, SpringContextUtil.getBean(ExecutorConstants.EXECUTOR_IO_DENSE))
+            // 3.1 获取锁
+            RLock lock = RedisUtil.getLock(SYNC_TABLE_LOCK.formatted(id));
+            try {
+                if (lock.tryLock()) {
+                    // 3.2 采集
+                    DynamicDataSourceContextHolder.push(currentDataSource);
+                    dataSourceMetaCollector.collect(id);
+                    log.info("数据表同步成功，数据源ID：{}", id);
+                }
+            } finally {
+                if (lock.isLocked())
+                    lock.unlock();
+            }
+        }, SpringContextUtil.getBean(ExecutorConstants.EXECUTOR_IO_DENSE))
                 .orTimeout(10, TimeUnit.MINUTES)
                 .whenComplete((v, ex) -> {
                     if (Objects.nonNull(ex)) {
@@ -235,15 +235,10 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 创建数据源配置
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_DATA_SOURCE,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了数据源（{{ @linkGen.toLink(#dataSourceId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
-            fail = "创建数据源（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.CREATE, success = "创建了数据源（{{ @linkGen.toLink(#dataSourceId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）", fail = "创建数据源（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createDataSourceConf(DataSourceConfRequestDto requestDto) {
@@ -276,15 +271,10 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 更新数据源配置
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_DATA_SOURCE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
-            fail = "修改数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.UPDATE, success = "修改了数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）", fail = "修改数据源（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败")
     @Transactional
     @Override
     public void updateDataSourceConf(DataSourceConfRequestDto requestDto) {
@@ -334,7 +324,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 测试数据源连接
      *
-     * @param requestDto 测试数据源连接请求
+     * @param requestDto
+     *            测试数据源连接请求
      * @return 测试数据源连接响应
      */
     @Override
@@ -346,13 +337,11 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                     requestDto.getHost(),
                     requestDto.getPort(),
                     requestDto.getDatabase(),
-                    ""
-            );
+                    "");
             connection = DriverManager.getConnection(
                     jdbcUrl,
                     requestDto.getUsername(),
-                    requestDto.getPassword()
-            );
+                    requestDto.getPassword());
             return TestDataSourceConnResponseDto.builder().connected(true).build();
         } catch (SQLException e) {
             return TestDataSourceConnResponseDto.builder().connected(false).build();
@@ -370,15 +359,10 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 删除数据源配置
      *
-     * @param id 数据源ID
+     * @param id
+     *            数据源ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_DATA_SOURCE,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
-            fail = "删除数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.DELETE, success = "删除了数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）", fail = "删除数据源（{{ @linkGen.toLink(#id, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）失败")
     @Transactional
     @Override
     public void removeDataSourceConf(String id) {
@@ -398,7 +382,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     /**
      * 检查数据源是否已同步
      *
-     * @param id 数据源ID
+     * @param id
+     *            数据源ID
      * @return 是否已同步
      */
     @Override
@@ -407,8 +392,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
                 Wrappers.<DataSourceConf>lambdaQuery()
                         .select(DataSourceConf::getSyncTableCount)
                         .eq(DataSourceConf::getDataSourceId, id)
-                        .eq(DataSourceConf::getEnabled, true)
-        );
+                        .eq(DataSourceConf::getEnabled, true));
         if (Objects.isNull(dataSourceConf)) {
             return false;
         }
@@ -417,11 +401,13 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
     }
 
     private void checkDataSourceName(DataSourceConfRequestDto requestDto, DataSourceConf rawDataSourceConf) {
-        if (Objects.nonNull(rawDataSourceConf) && StringUtils.equals(requestDto.getName(), rawDataSourceConf.getDataSourceName())) {
+        if (Objects.nonNull(rawDataSourceConf)
+                && StringUtils.equals(requestDto.getName(), rawDataSourceConf.getDataSourceName())) {
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<DataSourceConf>lambdaQuery().eq(DataSourceConf::getDataSourceName, requestDto.getName())))) {
+        if (Objects.nonNull(super.getOne(
+                Wrappers.<DataSourceConf>lambdaQuery().eq(DataSourceConf::getDataSourceName, requestDto.getName())))) {
             throw new BizException(MessageConstants.AI_DATASOURCE_MSG_1002, requestDto.getName());
         }
     }
