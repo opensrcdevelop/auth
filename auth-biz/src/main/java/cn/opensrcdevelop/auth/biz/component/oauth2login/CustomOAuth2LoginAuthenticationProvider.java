@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.component.oauth2login;
 
+import java.util.Map;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -16,8 +17,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.util.Assert;
-
-import java.util.Map;
 
 public class CustomOAuth2LoginAuthenticationProvider implements AuthenticationProvider {
 
@@ -40,10 +39,10 @@ public class CustomOAuth2LoginAuthenticationProvider implements AuthenticationPr
         try {
             authorizationCodeAuthenticationToken = (OAuth2AuthorizationCodeAuthenticationToken) this.authorizationCodeAuthenticationProvider
                     .authenticate(
-                            new OAuth2AuthorizationCodeAuthenticationToken(loginAuthenticationToken.getClientRegistration(),
+                            new OAuth2AuthorizationCodeAuthenticationToken(
+                                    loginAuthenticationToken.getClientRegistration(),
                                     loginAuthenticationToken.getAuthorizationExchange()));
-        }
-        catch (OAuth2AuthorizationException ex) {
+        } catch (OAuth2AuthorizationException ex) {
             OAuth2Error oauth2Error = ex.getError();
             throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString(), ex);
         }
@@ -53,7 +52,8 @@ public class CustomOAuth2LoginAuthenticationProvider implements AuthenticationPr
                 loginAuthenticationToken.getClientRegistration(), accessToken, additionalParameters));
         OAuth2LoginAuthenticationToken authenticationResult = new OAuth2LoginAuthenticationToken(
                 loginAuthenticationToken.getClientRegistration(), loginAuthenticationToken.getAuthorizationExchange(),
-                oauth2User, oauth2User.getAuthorities(), accessToken, authorizationCodeAuthenticationToken.getRefreshToken());
+                oauth2User, oauth2User.getAuthorities(), accessToken,
+                authorizationCodeAuthenticationToken.getRefreshToken());
         authenticationResult.setDetails(loginAuthenticationToken.getDetails());
         return authenticationResult;
     }

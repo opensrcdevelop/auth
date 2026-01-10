@@ -31,15 +31,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
@@ -49,10 +40,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, SystemSetting> implements SystemSettingService {
+public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, SystemSetting>
+        implements
+            SystemSettingService {
 
     private static final Map<String, JavaMailSender> MAIL_SENDERS_CACHE = new ConcurrentHashMap<>();
 
@@ -63,15 +64,10 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 保存邮件服务配置
      *
-     * @param mailServiceConfig 邮件服务配置
+     * @param mailServiceConfig
+     *            邮件服务配置
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.MESSAGE_SETTING,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了邮件服务配置",
-            fail = "修改邮件服务配置失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.MESSAGE_SETTING, sysOperation = SysOperationType.UPDATE, success = "修改了邮件服务配置", fail = "修改邮件服务配置失败")
     @Transactional
     @Override
     public void saveMailServerConfig(MailServiceConfigDto mailServiceConfig) {
@@ -99,7 +95,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 根据 key 获取系统设置
      *
-     * @param key key
+     * @param key
+     *            key
      * @return 系统配置
      */
     @Override
@@ -120,15 +117,10 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 保存邮件消息配置
      *
-     * @param mailMessageConfig 邮件消息配置
+     * @param mailMessageConfig
+     *            邮件消息配置
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.MESSAGE_SETTING,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了邮件消息配置",
-            fail = "修改邮件消息配置失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.MESSAGE_SETTING, sysOperation = SysOperationType.UPDATE, success = "修改了邮件消息配置", fail = "修改邮件消息配置失败")
     @Transactional
     @Override
     public void saveMailMessageConfig(MailMessageConfigDto mailMessageConfig) {
@@ -175,15 +167,10 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 保存 JWT 密钥轮换配置
      *
-     * @param jwtSecretRotationConfig JWT 密钥轮换配置
+     * @param jwtSecretRotationConfig
+     *            JWT 密钥轮换配置
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.JWT_SETTING,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了 JWT 密钥轮换配置",
-            fail = "修改 JWT 密钥轮换配置失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.JWT_SETTING, sysOperation = SysOperationType.UPDATE, success = "修改了 JWT 密钥轮换配置", fail = "修改 JWT 密钥轮换配置失败")
     @Transactional
     @Override
     public void setJwtSecretRotationConfig(JwtSecretRotationConfigDto jwtSecretRotationConfig) {
@@ -201,13 +188,7 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
      * 轮换 JWT 密钥
      *
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.JWT_SETTING,
-            sysOperation = SysOperationType.UPDATE,
-            success = "轮换了 JWT 密钥",
-            fail = "轮换 JWT 密钥失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.JWT_SETTING, sysOperation = SysOperationType.UPDATE, success = "轮换了 JWT 密钥", fail = "轮换 JWT 密钥失败")
     @Transactional
     @Override
     public void rotateJwtSecret() {
@@ -227,7 +208,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             jwtSecretInfo.setKid(kid);
             jwtSecretInfo.setAlg("RSA");
             jwtSecretInfo.setCreateTime(createTime);
-            jwtSecretInfo.setExpireTime(createTime.plus(jwtSecretRotationConfig.getRotationPeriod(), CommonUtil.convertDBTimeUnit2ChronoUnit(jwtSecretRotationConfig.getRotationPeriodUnit())));
+            jwtSecretInfo.setExpireTime(createTime.plus(jwtSecretRotationConfig.getRotationPeriod(),
+                    CommonUtil.convertDBTimeUnit2ChronoUnit(jwtSecretRotationConfig.getRotationPeriodUnit())));
             saveSystemSetting(SystemSettingConstants.JWT_SECRET_INFO, jwtSecretInfo);
 
             KeyPair keyPair = CommonUtil.generateRsaKey();
@@ -244,7 +226,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
             String taskName = RotateJwtSecretApplicationRunner.ROTATE_JWT_SECRET_TASK_NAME_PREFIX + tenantCode;
             scheduledTaskService.cancelTask(taskName);
             // 4.2 添加新的轮换密钥任务
-            scheduledTaskService.addTaskAtFixedTime(taskName, () -> rotateJwtSecret(tenantCode), jwtSecretInfo.getExpireTime());
+            scheduledTaskService.addTaskAtFixedTime(taskName, () -> rotateJwtSecret(tenantCode),
+                    jwtSecretInfo.getExpireTime());
         } finally {
             lock.unlock();
         }
@@ -253,7 +236,8 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 轮换 JWT 密钥
      *
-     * @param tenantCode 租户
+     * @param tenantCode
+     *            租户
      */
     @Override
     public void rotateJwtSecret(String tenantCode) {
@@ -278,10 +262,13 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 获取系统设置
      *
-     * @param key 系统设置
-     * @param clazz 类型
+     * @param key
+     *            系统设置
+     * @param clazz
+     *            类型
      * @return 系统设置
-     * @param <T> T
+     * @param <T>
+     *            T
      */
     public <T> T getSystemSetting(String key, Class<T> clazz) {
         // 1. 从缓存获取
@@ -306,9 +293,12 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
     /**
      * 保存系统设置
      *
-     * @param key 系统设置
-     * @param value 系统设置值
-     * @param <T> T
+     * @param key
+     *            系统设置
+     * @param value
+     *            系统设置值
+     * @param <T>
+     *            T
      */
     public <T> void saveSystemSetting(String key, T value) {
         // 1. JSON 序列化

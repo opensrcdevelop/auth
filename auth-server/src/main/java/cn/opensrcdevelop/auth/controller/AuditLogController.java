@@ -14,11 +14,10 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
 
 @Tag(name = "API-AuditLog", description = "接口-审计日志")
 @RestController
@@ -40,16 +39,15 @@ public class AuditLogController {
             @Parameter(name = "end", description = "结束时间", in = ParameterIn.QUERY)
     })
     @GetMapping("/userOperation")
-    @Authorize({ "allAuditLogPermissions", "listUserOperationLogs" })
+    @Authorize({"allAuditLogPermissions", "listUserOperationLogs"})
     public PageData<AuditLogResponseDto> userOperationLogs(@RequestParam(defaultValue = "1") int page,
-                                                           @RequestParam(defaultValue = "15") int size,
-                                                           @RequestParam(required = false) String keyword,
-                                                           @RequestParam(required = false) Integer type,
-                                                           @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime start,
-                                                           @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime end) {
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime end) {
         return auditLogService.getUserOperationLogs(page, size, keyword, type, start, end);
     }
-
 
     @Operation(summary = "获取系统操作日志", description = "获取系统操作日志")
     @Parameters({
@@ -62,14 +60,14 @@ public class AuditLogController {
             @Parameter(name = "end", description = "结束时间", in = ParameterIn.QUERY)
     })
     @GetMapping("/sysOperation")
-    @Authorize({ "allAuditLogPermissions", "listSysOperationLogs" })
+    @Authorize({"allAuditLogPermissions", "listSysOperationLogs"})
     public PageData<AuditLogResponseDto> sysOperationLogs(@RequestParam(defaultValue = "1") int page,
-                                                          @RequestParam(defaultValue = "15") int size,
-                                                          @RequestParam(required = false) String keyword,
-                                                          @RequestParam(required = false) Integer type,
-                                                          @RequestParam(required = false) String resourceId,
-                                                          @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime start,
-                                                          @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime end) {
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String resourceId,
+            @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS) LocalDateTime end) {
         return auditLogService.getSysOperationLogs(page, size, keyword, type, resourceId, start, end);
     }
 
@@ -78,7 +76,7 @@ public class AuditLogController {
             @Parameter(name = "id", description = "审计日志ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}/objChanges")
-    @Authorize({ "allAuditLogPermissions", "listObjChangeLogs" })
+    @Authorize({"allAuditLogPermissions", "listObjChangeLogs"})
     public ObjChangeLogResponseDto objChangeLog(@PathVariable @NotBlank String id) {
         return objChangeLogService.getObjChangeLog(id);
     }

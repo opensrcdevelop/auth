@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.ai.chat;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
-import org.springframework.util.Assert;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.util.Assert;
 
 public class ChatContextHolder {
 

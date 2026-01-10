@@ -4,15 +4,14 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -21,23 +20,25 @@ public class ChatAgent {
     private final PromptTemplate promptTemplate;
     private final ChatMessageHistoryService chatMessageHistoryService;
 
-
     /**
      * 重写用户提问
      *
-     * @param chatClient   ChatClient
-     * @param userQuestion 用户提问
-     * @param instruction 指令
+     * @param chatClient
+     *            ChatClient
+     * @param userQuestion
+     *            用户提问
+     * @param instruction
+     *            指令
      * @return 重写后的用户提问
      */
     public Map<String, Object> rewriteUserQuestion(ChatClient chatClient, String userQuestion, String instruction) {
         // 1. 获取用户历史提问
-        List<String> userQuestions = chatMessageHistoryService.getUserHistoryQuestions(ChatContextHolder.getChatContext().getChatId());
+        List<String> userQuestions = chatMessageHistoryService
+                .getUserHistoryQuestions(ChatContextHolder.getChatContext().getChatId());
         if (CollectionUtils.isEmpty(userQuestions) || userQuestions.size() < 2) {
             return Map.of(
                     "success", true,
-                    "rewritten_question", userQuestion
-            );
+                    "rewritten_question", userQuestion);
         }
 
         // 2. 重写用户提问
@@ -58,9 +59,12 @@ public class ChatAgent {
     /**
      * 提取用户提问中的查询信息
      *
-     * @param chatClient   ChatClient
-     * @param userQuestion 用户提问
-     * @param instruction 指令
+     * @param chatClient
+     *            ChatClient
+     * @param userQuestion
+     *            用户提问
+     * @param instruction
+     *            指令
      * @return 查询信息
      */
     public Map<String, Object> extractQuery(ChatClient chatClient, String userQuestion, String instruction) {
@@ -73,6 +77,7 @@ public class ChatAgent {
                 .user(prompt.buildUserPrompt(PromptTemplate.EXTRACT_QUERY))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.EXTRACT_QUERY))
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }

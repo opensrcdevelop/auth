@@ -9,6 +9,8 @@ import cn.opensrcdevelop.ai.service.ModelProviderService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -28,9 +30,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Component
 @RequiredArgsConstructor
 public class ChatClientManager {
@@ -45,9 +44,12 @@ public class ChatClientManager {
     /**
      * 获取 ChatClient
      *
-     * @param providerId 模型提供商ID
-     * @param model 模型名称
-     * @param chatId 对话ID
+     * @param providerId
+     *            模型提供商ID
+     * @param model
+     *            模型名称
+     * @param chatId
+     *            对话ID
      * @return ChatClient
      */
     public synchronized ChatClient getChatClient(String providerId, String model, String chatId) {
@@ -82,8 +84,7 @@ public class ChatClientManager {
                         .build())
                 .defaultAdvisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
                 .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
-                        SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build()
-                );
+                        SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build());
         return builder.build();
     }
 

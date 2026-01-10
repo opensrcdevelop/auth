@@ -27,7 +27,8 @@ public class RestResponseHandler implements ResponseBodyAdvice<Object> {
     @Override
     @SuppressWarnings("all")
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
         RestResponse ann = (RestResponse) request.getAttribute(CommonConstants.REST_RESPONSE_ATTR);
         return ann != null;
@@ -35,7 +36,9 @@ public class RestResponseHandler implements ResponseBodyAdvice<Object> {
 
     @Override
     @SuppressWarnings("NullableProblems")
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+            Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
+            ServerHttpResponse response) {
         if (body instanceof R<?> r) {
             return r;
         } else if (body instanceof String r) {

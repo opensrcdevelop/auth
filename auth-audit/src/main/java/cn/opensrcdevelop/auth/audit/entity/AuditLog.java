@@ -4,9 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Data
 @TableName("t_audit_log")
@@ -42,7 +41,7 @@ public class AuditLog {
     /** IP */
     private String ip;
 
-    /** IP地区  */
+    /** IP地区 */
     private String ipRegion;
 
     /** 设备类型 */

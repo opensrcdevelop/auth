@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.core.toolkit.MybatisUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
@@ -16,9 +18,6 @@ import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -32,10 +31,9 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
     public List<String> findConversationIds() {
         return CommonUtil
                 .stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
-                                .select(MultiChatMemory::getChatId)
-                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
-                        )
-                )
+                        .select(MultiChatMemory::getChatId)
+                        .eq(MultiChatMemory::getPromptTemplate,
+                                ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())))
                 .map(MultiChatMemory::getChatId)
                 .toList();
     }
@@ -44,25 +42,23 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
     @Override
     public List<Message> findByConversationId(@NonNull String conversationId) {
         return CommonUtil.stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
-                                .select(MultiChatMemory::getContent, MultiChatMemory::getType)
-                                .eq(MultiChatMemory::getChatId, conversationId)
-                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
-                                .orderByDesc(MultiChatMemory::getCreateTime)
-                        )
-                )
+                .select(MultiChatMemory::getContent, MultiChatMemory::getType)
+                .eq(MultiChatMemory::getChatId, conversationId)
+                .eq(MultiChatMemory::getPromptTemplate,
+                        ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
+                .orderByDesc(MultiChatMemory::getCreateTime)))
                 .map(this::buildMessage)
                 .toList();
     }
 
     public List<Message> findByConversationId(@NonNull String conversationId, int limit) {
         return CommonUtil.stream(multiChatMemoryMapper.selectList(Wrappers.<MultiChatMemory>lambdaQuery()
-                                .select(MultiChatMemory::getContent, MultiChatMemory::getType)
-                                .eq(MultiChatMemory::getChatId, conversationId)
-                                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
-                                .orderByDesc(MultiChatMemory::getCreateTime)
-                                .last("limit " + limit)
-                        )
-                )
+                .select(MultiChatMemory::getContent, MultiChatMemory::getType)
+                .eq(MultiChatMemory::getChatId, conversationId)
+                .eq(MultiChatMemory::getPromptTemplate,
+                        ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate())
+                .orderByDesc(MultiChatMemory::getCreateTime)
+                .last("limit " + limit)))
                 .map(this::buildMessage)
                 .toList();
     }
@@ -87,14 +83,16 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
 
         MapperProxyMetadata mapperProxyMetadata = MybatisUtils.getMapperProxy(multiChatMemoryMapper);
         SqlSessionFactory sqlSessionFactory = MybatisUtils.getSqlSessionFactory(mapperProxyMetadata.getSqlSession());
-        SqlHelper.executeBatch(sqlSessionFactory, log, saveList, saveList.size(), (sqlSession, entity) -> multiChatMemoryMapper.insert(entity));
+        SqlHelper.executeBatch(sqlSessionFactory, log, saveList, saveList.size(),
+                (sqlSession, entity) -> multiChatMemoryMapper.insert(entity));
     }
 
     @Override
     public void deleteByConversationId(@NonNull String conversationId) {
         multiChatMemoryMapper.delete(Wrappers.<MultiChatMemory>lambdaQuery()
                 .eq(MultiChatMemory::getChatId, conversationId)
-                .eq(MultiChatMemory::getPromptTemplate, ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate()));
+                .eq(MultiChatMemory::getPromptTemplate,
+                        ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate()));
     }
 
     private Message buildMessage(MultiChatMemory multiChatMemory) {
@@ -105,7 +103,9 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
             case USER -> new UserMessage(content);
             case ASSISTANT -> new AssistantMessage(content);
             case SYSTEM -> new SystemMessage(content);
-            case TOOL -> ToolResponseMessage.builder().responses(CommonUtil.deserializeObject(content, new TypeReference<List<ToolResponseMessage.ToolResponse>>() {})).build();
+            case TOOL -> ToolResponseMessage.builder().responses(
+                    CommonUtil.deserializeObject(content, new TypeReference<List<ToolResponseMessage.ToolResponse>>() {
+                    })).build();
         };
     }
 }

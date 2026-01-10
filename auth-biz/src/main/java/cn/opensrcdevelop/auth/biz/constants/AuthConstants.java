@@ -5,7 +5,8 @@ package cn.opensrcdevelop.auth.biz.constants;
  */
 public class AuthConstants {
 
-    private AuthConstants() {}
+    private AuthConstants() {
+    }
 
     public static final String SECURITY_CONTEXT_REDIS_PREFIX = "security_context:";
     public static final String JWK_REDIS_KEY = "auth_server_jwk:";

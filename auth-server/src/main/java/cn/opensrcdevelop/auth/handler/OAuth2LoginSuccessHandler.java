@@ -10,12 +10,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * OAuth2 登录成功处理
@@ -26,7 +25,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         // 用户自主绑定，不保存登录日志
         HttpSession session = request.getSession(false);
         if (Objects.nonNull(session)) {
@@ -54,7 +54,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 设置用户登录信息
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      */
     private void setUserLoginInfo(String userId) {
         // 1. 保存登录日志

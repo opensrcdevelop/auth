@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.biz.dto.permission.expression.template;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Schema(description = "权限表达式模版响应")
 @Setter

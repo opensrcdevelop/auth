@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 @RequiredArgsConstructor
-public class ContainRepeatCharPasswordRule implements PasswordRule{
+public class ContainRepeatCharPasswordRule implements PasswordRule {
 
     private final int minRepeatCharNum;
 

@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.auth.biz.entity.system.password;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
+import lombok.Data;
 
 @Data
 @TableName("t_password_policy_mapping")

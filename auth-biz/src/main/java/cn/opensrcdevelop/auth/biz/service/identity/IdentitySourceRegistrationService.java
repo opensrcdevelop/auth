@@ -8,7 +8,6 @@ import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -32,7 +31,8 @@ public interface IdentitySourceRegistrationService extends IService<IdentitySour
 
     List<IdentitySourceRegistrationResponseDto> getBoundRegistrations();
 
-    UserBindingResponseDto bindUser(String registrationCode, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    UserBindingResponseDto bindUser(String registrationCode, HttpServletRequest request, HttpServletResponse response)
+            throws IOException;
 
     void unbindUser(String registrationId);
 }

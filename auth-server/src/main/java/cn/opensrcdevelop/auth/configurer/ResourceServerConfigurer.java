@@ -38,7 +38,9 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 表单 login 配置
         http
                 .authorizeHttpRequests(x -> {
-                    x.requestMatchers(authorizationServerProperties.getIgnoreAuthenticationUriList().toArray(new String[0])).permitAll();
+                    x.requestMatchers(
+                            authorizationServerProperties.getIgnoreAuthenticationUriList().toArray(new String[0]))
+                            .permitAll();
                     x.anyRequest().authenticated();
                 })
                 .formLogin(x -> {
@@ -50,16 +52,18 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                 });
 
         // 登出处理
-        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
+        http.logout(logout -> logout
+                .logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
             http.oauth2ResourceServer(x ->
-                // 向服务器验证 Token
-                x.opaqueToken(t -> t.introspector(tokenIntrospector)).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
-            );
+            // 向服务器验证 Token
+            x.opaqueToken(t -> t.introspector(tokenIntrospector))
+                    .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
         } else {
-            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults()).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
+            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults())
+                    .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
         }
 
         // 登出处理
@@ -77,8 +81,7 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 未认证及未授权异常处理
         http.exceptionHandling(exceptionHandler -> exceptionHandler
                 .accessDeniedHandler(new ResourceAccessDeniedHandler())
-                .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
-        );
+                .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
     }
 
     @Override
@@ -92,8 +95,11 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
-        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
+        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(
+                authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        http.authenticationProvider(new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
+        http.authenticationProvider(
+                new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class),
+                        SpringContextUtil.getBean(VerificationCodeService.class)));
     }
 }

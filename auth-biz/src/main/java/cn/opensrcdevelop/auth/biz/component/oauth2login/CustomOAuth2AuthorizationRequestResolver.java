@@ -14,6 +14,12 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
@@ -21,13 +27,6 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
-
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 @Component
 public class CustomOAuth2AuthorizationRequestResolver implements OAuth2AuthorizationRequestResolver {
@@ -42,10 +41,12 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
             AuthorizationServerProperties authorizationServerProperties,
             ClientRegistrationRepository clientRegistrationRepository,
             IdentitySourceRegistrationService identitySourceRegistrationService) {
-        String federationLoginUri = authorizationServerProperties.getApiPrefix().concat(AuthConstants.FEDERATION_LOGIN_URI);
+        String federationLoginUri = authorizationServerProperties.getApiPrefix()
+                .concat(AuthConstants.FEDERATION_LOGIN_URI);
         delegate = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, federationLoginUri);
         this.identitySourceRegistrationService = identitySourceRegistrationService;
-        this.authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(federationLoginUri + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
+        this.authorizationRequestMatcher = PathPatternRequestMatcher.withDefaults()
+                .matcher(federationLoginUri + "/{" + REGISTRATION_ID_URI_VARIABLE_NAME + "}");
     }
 
     @Override
@@ -60,7 +61,8 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
     @Override
     public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
         // 1. 获取身份源提供商
-        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService.getByCode(clientRegistrationId);
+        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService
+                .getByCode(clientRegistrationId);
         if (Objects.isNull(identitySourceRegistration)) {
             throw new IllegalArgumentException("无效的身份源标识：" + clientRegistrationId);
         }
@@ -71,15 +73,20 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
                 authorizationRequest.parameters(parameters -> {
                     Map<String, Object> customAuthzReqContext = new HashMap<>(parameters);
                     if (StringUtils.isNotBlank(identitySourceRegistration.getAdditionalParams())) {
-                        customAuthzReqContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(), new TypeReference<Map<String, Object>>() {}));
+                        customAuthzReqContext
+                                .putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(),
+                                        new TypeReference<Map<String, Object>>() {
+                                        }));
                     }
                     parameters.clear();
 
                     // 2.1 填充参数
-                    String requestCfgStr = fillRequestCfg(identitySourceProvider.getAuthzReqCfg(), customAuthzReqContext);
+                    String requestCfgStr = fillRequestCfg(identitySourceProvider.getAuthzReqCfg(),
+                            customAuthzReqContext);
 
                     // 2.2 反序列化
-                    RequestConfigRequestDto requestCfg = CommonUtil.deserializeObject(requestCfgStr, RequestConfigRequestDto.class);
+                    RequestConfigRequestDto requestCfg = CommonUtil.deserializeObject(requestCfgStr,
+                            RequestConfigRequestDto.class);
 
                     // 2.3 执行 SpEL 表达式
                     HttpExpressionUtil.parseSpELMap(requestCfg.getParams());
@@ -95,7 +102,7 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
     private String fillRequestCfg(String requestCfg, Map<String, Object> requestCfgValueContext) {
         // 1. 填充模版参数
         try (StringReader reader = new StringReader(requestCfg);
-             StringWriter writer = new StringWriter()) {
+                StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
             Template processor = new Template(CommonUtil.getUUIDV7String(), reader, cfg, StandardCharsets.UTF_8.name());

@@ -1,13 +1,12 @@
 package cn.opensrcdevelop.common.srcurity.password.rule;
 
-import cn.opensrcdevelop.common.security.password.rule.UserInfoPasswordRule;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import cn.opensrcdevelop.common.security.password.rule.UserInfoPasswordRule;
 import java.util.Arrays;
 import java.util.Collections;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class UserInfoPasswordRuleTests {
 

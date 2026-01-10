@@ -5,13 +5,12 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component(GenerateChartTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -21,10 +20,7 @@ public class GenerateChartTool implements MethodTool {
 
     private final ChartAgent chartAgent;
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Used to generate chart based on user question and database query result"
-    )
+    @Tool(name = TOOL_NAME, description = "Used to generate chart based on user question and database query result")
     @SuppressWarnings("unchecked")
     public Response execute(@ToolParam(description = "The request to generate the chart") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -36,8 +32,7 @@ public class GenerateChartTool implements MethodTool {
                 chatContext.getSql(),
                 request.question,
                 chatContext.getQueryData(),
-                request.instruction
-        );
+                request.instruction);
 
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
@@ -47,7 +42,8 @@ public class GenerateChartTool implements MethodTool {
                 ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
             } catch (Exception e) {
                 response.setSuccess(false);
-                response.setError("Failed to render chart: " + e.getMessage() + ", please check the chart config and try again.");
+                response.setError(
+                        "Failed to render chart: " + e.getMessage() + ", please check the chart config and try again.");
                 return response;
             }
             chatContext.setChartConfig(chartConfig);

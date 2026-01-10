@@ -30,13 +30,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -51,15 +50,10 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 创建字典
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
-            fail = "创建字典（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT, sysOperation = SysOperationType.CREATE, success = "创建了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）", fail = "创建字典（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createDict(DictRequestDto requestDto) {
@@ -83,15 +77,10 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 更新字典
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）",
-            fail = "修改字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT, sysOperation = SysOperationType.UPDATE, success = "修改了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）", fail = "修改字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）失败")
     @Transactional
     @Override
     public void updateDict(DictRequestDto requestDto) {
@@ -127,7 +116,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 获取字典详情
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 字典详情
      */
     @Override
@@ -151,10 +141,14 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 获取字典列表
      *
-     * @param page          页数
-     * @param size          条数
-     * @param keyword       字典名称 / 标识检索关键字
-     * @param queryChildren 是否查询子字典
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            字典名称 / 标识检索关键字
+     * @param queryChildren
+     *            是否查询子字典
      * @return 字典列表
      */
     @Override
@@ -163,7 +157,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         Page<Dict> pageRequest = new Page<>(page, size);
         List<Dict> dicts;
         if (StringUtils.isNotEmpty(keyword)) {
-            dicts = super.list(pageRequest, Wrappers.<Dict>lambdaQuery().like(Dict::getDictName, keyword).or(o -> o.like(Dict::getDictCode, keyword)).orderByAsc(Dict::getDictCode));
+            dicts = super.list(pageRequest, Wrappers.<Dict>lambdaQuery().like(Dict::getDictName, keyword)
+                    .or(o -> o.like(Dict::getDictCode, keyword)).orderByAsc(Dict::getDictCode));
         } else {
             dicts = super.list(pageRequest, Wrappers.<Dict>lambdaQuery().orderByAsc(Dict::getDictCode));
         }
@@ -229,15 +224,10 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 删除字典
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）",
-            fail = "删除字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT, sysOperation = SysOperationType.DELETE, success = "删除了字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）", fail = "删除字典（{{ @linkGen.toLink(#dictId, T(ResourceType).DICT) }}）失败")
     @Transactional
     @Override
     public void removeDict(String dictId) {
@@ -245,20 +235,24 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         List<Dict> childDictList = dictRepository.selectByParentId(dictId);
         // 1.1 删除子字典关联关系
         if (CollectionUtils.isNotEmpty(childDictList)) {
-            super.lambdaUpdate().set(Dict::getParentDictId, null).in(Dict::getDictId, CommonUtil.stream(childDictList).map(Dict::getDictId).toList());
+            super.lambdaUpdate().set(Dict::getParentDictId, null).in(Dict::getDictId,
+                    CommonUtil.stream(childDictList).map(Dict::getDictId).toList());
         }
 
         // 2. 删除字典
         super.removeById(dictId);
 
         // 3. 删除关联的字典数据
-        List<DictData> dictData = dictDataService.list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId));
+        List<DictData> dictData = dictDataService
+                .list(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId));
         if (CollectionUtils.isNotEmpty(dictData)) {
             dictDataService.removeDictData(CommonUtil.stream(dictData).map(DictData::getDataId).toList());
         }
 
         // 4. 删除关联的用户属性
-        UserAttr userAttr = userAttrService.getOne(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrDataType, UserAttrDataTypeEnum.DICT.getType()).and(o -> o.eq(UserAttr::getDictId, dictId)));
+        UserAttr userAttr = userAttrService.getOne(
+                Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getAttrDataType, UserAttrDataTypeEnum.DICT.getType())
+                        .and(o -> o.eq(UserAttr::getDictId, dictId)));
         if (Objects.nonNull(userAttr)) {
             userAttrService.removeUserAttr(userAttr.getAttrId());
         }
@@ -270,7 +264,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 查询可选择的子字典
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 可选择的子字典列表
      */
     @Override
@@ -284,7 +279,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         // 3. 筛选出不在父字典列表中的字典
         return CommonUtil.stream(noParentDicts)
                 .filter(dict -> !dictId.equals(dict.getDictId()))
-                .filter(noParentDict -> CommonUtil.stream(parentDicts).noneMatch(parentDict -> parentDict.getDictId().equals(noParentDict.getDictId())))
+                .filter(noParentDict -> CommonUtil.stream(parentDicts)
+                        .noneMatch(parentDict -> parentDict.getDictId().equals(noParentDict.getDictId())))
                 .map(dict -> {
                     DictResponseDto dictResponse = new DictResponseDto();
                     dictResponse.setId(dict.getDictId());
@@ -299,16 +295,12 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 添加子字典
      *
-     * @param requestDtoList 请求列表
+     * @param requestDtoList
+     *            请求列表
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT,
-            sysOperation = SysOperationType.UPDATE,
-            success = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加了子字典：{{ @linkGen.toLinks(#childDictIds, T(ResourceType).DICT) }}" +
-                    ", 关联的字典数据：{{ @linkGen.toLinks(#relatedDictDataIds, T(ResourceType).DICT_DATA) }}",
-            fail = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加子字典失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT, sysOperation = SysOperationType.UPDATE, success = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加了子字典：{{ @linkGen.toLinks(#childDictIds, T(ResourceType).DICT) }}"
+            +
+            ", 关联的字典数据：{{ @linkGen.toLinks(#relatedDictDataIds, T(ResourceType).DICT_DATA) }}", fail = "为字典（{{ @linkGen.toLink(#parentDictId, T(ResourceType).DICT) }}）添加子字典失败")
     @Override
     public void addChildDicts(List<ChildDictRequestDto> requestDtoList) {
         // 1. 获取父字典
@@ -320,15 +312,18 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
         }
 
         // 2. 获取可选的子字典ID和可关联的字典数据ID
-        List<String> selectableChildDictIds = CommonUtil.stream(listSelectableChildren(parentDictId)).map(DictResponseDto::getId).toList();
-        List<String> relatableDictDataIds = CommonUtil.stream(dictDataService.getRelatableDictData(parentDictId)).map(DictDataResponseDto::getId).toList();
+        List<String> selectableChildDictIds = CommonUtil.stream(listSelectableChildren(parentDictId))
+                .map(DictResponseDto::getId).toList();
+        List<String> relatableDictDataIds = CommonUtil.stream(dictDataService.getRelatableDictData(parentDictId))
+                .map(DictDataResponseDto::getId).toList();
 
         // 3. 更新子字典的父字典ID和关联的字典数据ID
         List<Dict> updateDicts = new ArrayList<>();
         List<String> childDictIds = new ArrayList<>();
         List<String> relatedDictDataIds = new ArrayList<>();
         for (ChildDictRequestDto requestDto : requestDtoList) {
-            if (!selectableChildDictIds.contains(requestDto.getChildId()) || !relatableDictDataIds.contains(requestDto.getDataId())) {
+            if (!selectableChildDictIds.contains(requestDto.getChildId())
+                    || !relatableDictDataIds.contains(requestDto.getDataId())) {
                 continue;
             }
 
@@ -353,15 +348,10 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 移除子字典
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT,
-            sysOperation = SysOperationType.DELETE,
-            success = "移除了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典：{{ @linkGen.toLink(#requestDto.childId, T(ResourceType).DICT) }}",
-            fail = "移除字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT, sysOperation = SysOperationType.DELETE, success = "移除了字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典：{{ @linkGen.toLink(#requestDto.childId, T(ResourceType).DICT) }}", fail = "移除字典（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT) }}）的子字典失败")
     @Override
     public void removeChildDict(ChildDictRequestDto requestDto) {
         // 1. 获取父字典
@@ -384,7 +374,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
     /**
      * 判断字典是否有子字典
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 是否有子字典
      */
     @Override
@@ -398,7 +389,8 @@ public class DictServiceImpl extends ServiceImpl<DictMapper, Dict> implements Di
 
     private void removeEnabledDictDataCacheWithParents(String dictId) {
         // 1. 获取所有字典ID
-        List<String> dictIds = new ArrayList<>(CommonUtil.stream(dictRepository.getAllParentDicts(dictId)).map(Dict::getDictId).toList());
+        List<String> dictIds = new ArrayList<>(
+                CommonUtil.stream(dictRepository.getAllParentDicts(dictId)).map(Dict::getDictId).toList());
         dictIds.add(dictId);
 
         // 2. 拼接缓存键

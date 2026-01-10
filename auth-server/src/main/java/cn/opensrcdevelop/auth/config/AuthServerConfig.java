@@ -27,6 +27,9 @@ import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,10 +60,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 @Configuration
 @EnableConfigurationProperties(AuthorizationServerProperties.class)
 @RequiredArgsConstructor
@@ -73,10 +72,10 @@ public class AuthServerConfig {
 
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-                                                                      AuthorizationServerProperties authorizationServerProperties,
-                                                                      RememberMeServices rememberMeServices,
-                                                                      OidcUserInfoService oidcUserInfoService,
-                                                                      OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
+            AuthorizationServerProperties authorizationServerProperties,
+            RememberMeServices rememberMeServices,
+            OidcUserInfoService oidcUserInfoService,
+            OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
         AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(
                 corsFilter(),
                 totpValidFilter(),
@@ -85,28 +84,35 @@ public class AuthServerConfig {
                 authorizationServerProperties,
                 oidcUserInfoService,
                 rememberMeServices);
-        http.with(authorizationServerConfigurer, x-> {});
-        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> x.tokenGenerator(tokenGenerator()));
-        http.with(auth2LoginConfigurer, x -> {});
+        http.with(authorizationServerConfigurer, x -> {
+        });
+        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(),
+                x -> x.tokenGenerator(tokenGenerator()));
+        http.with(auth2LoginConfigurer, x -> {
+        });
         return http.build();
     }
 
     @Bean
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http,
-                                                                 AuthorizationServerProperties authorizationServerProperties,
-                                                                 RememberMeServices rememberMeServices,
-                                                                 OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
-        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector), x -> {});
-        http.with(auth2LoginConfigurer, x -> {});
+            AuthorizationServerProperties authorizationServerProperties,
+            RememberMeServices rememberMeServices,
+            OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
+        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(),
+                authorizationServerProperties, tokenIntrospector), x -> {
+                });
+        http.with(auth2LoginConfigurer, x -> {
+        });
         return http.build();
     }
 
     @Bean
     public OAuth2LoginConfigurer auth2LoginConfigurer(ClientRegistrationRepository clientRegistrationRepository,
-                                                      CustomOAuth2UserService customOAuth2UserService,
-                                                      IdentitySourceRegistrationService identitySourceRegistrationService,
-                                                      AuthorizationServerProperties authorizationServerProperties) {
-        return new OAuth2LoginConfigurer(clientRegistrationRepository, customOAuth2UserService, identitySourceRegistrationService, authorizationServerProperties);
+            CustomOAuth2UserService customOAuth2UserService,
+            IdentitySourceRegistrationService identitySourceRegistrationService,
+            AuthorizationServerProperties authorizationServerProperties) {
+        return new OAuth2LoginConfigurer(clientRegistrationRepository, customOAuth2UserService,
+                identitySourceRegistrationService, authorizationServerProperties);
     }
 
     @Bean
@@ -173,11 +179,13 @@ public class AuthServerConfig {
 
     @Bean
     public CaptchaVerificationCheckFilter captchaVerificationCheckFilter() {
-        return new CaptchaVerificationCheckFilter(List.of(authorizationServerProperties.getApiPrefix().concat("/login")));
+        return new CaptchaVerificationCheckFilter(
+                List.of(authorizationServerProperties.getApiPrefix().concat("/login")));
     }
 
     /**
-     * An instance of com.nimbusds.jose.jwk.source.JWKSource for signing access tokens.
+     * An instance of com.nimbusds.jose.jwk.source.JWKSource for signing access
+     * tokens.
      */
     @Bean
     public JWKSource<SecurityContext> jwkSource(SystemSettingService systemSettingService) {
@@ -193,7 +201,8 @@ public class AuthServerConfig {
     }
 
     /**
-     * An instance of AuthorizationServerSettings to configure Spring Authorization Server.
+     * An instance of AuthorizationServerSettings to configure Spring Authorization
+     * Server.
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
@@ -243,7 +252,8 @@ public class AuthServerConfig {
 
     @Bean
     public PermissionVerifyRequestCustomizer systemSettingService() {
-        return httpRequest -> httpRequest.getHeaders().add(CommonConstants.REQ_HEADER_X_TENANT_CODE, TenantContextHolder.getTenantContext().getTenantCode());
+        return httpRequest -> httpRequest.getHeaders().add(CommonConstants.REQ_HEADER_X_TENANT_CODE,
+                TenantContextHolder.getTenantContext().getTenantCode());
     }
 
     /**
@@ -257,8 +267,7 @@ public class AuthServerConfig {
         return new DelegatingOAuth2TokenGenerator(
                 jwtGenerator,
                 new OAuth2AccessTokenGenerator(),
-                new CustomOAuth2RefreshTokenGenerator()
-        );
+                new CustomOAuth2RefreshTokenGenerator());
     }
 
     /**
@@ -271,7 +280,7 @@ public class AuthServerConfig {
             Set<String> scopes = context.getAuthorizedScopes();
 
             if (context.getPrincipal().getPrincipal() instanceof User user) {
-                JwtClaimsSet.Builder claims =  context.getClaims();
+                JwtClaimsSet.Builder claims = context.getClaims();
 
                 // access_token
                 if (OAuth2TokenType.ACCESS_TOKEN.equals(tokenType)) {

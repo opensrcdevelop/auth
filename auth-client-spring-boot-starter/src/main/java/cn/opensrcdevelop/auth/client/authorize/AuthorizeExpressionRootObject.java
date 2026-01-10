@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.client.authorize;
 
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import org.aopalliance.intercept.MethodInvocation;
@@ -7,9 +8,9 @@ import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
 
-import java.util.function.Supplier;
-
-public class AuthorizeExpressionRootObject extends SecurityExpressionRoot implements MethodSecurityExpressionOperations {
+public class AuthorizeExpressionRootObject extends SecurityExpressionRoot
+        implements
+            MethodSecurityExpressionOperations {
 
     private Object filterObject;
     private Object returnObject;

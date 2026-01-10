@@ -4,7 +4,6 @@ import cn.opensrcdevelop.common.security.password.CharType;
 import cn.opensrcdevelop.common.security.password.rule.CharTypePasswordRule;
 import cn.opensrcdevelop.common.security.password.rule.LengthPasswordRule;
 import cn.opensrcdevelop.common.security.password.rule.PasswordRuleManager;
-
 import java.util.List;
 
 /**
@@ -17,7 +16,8 @@ public class MediumPasswordStrengthChecker implements PasswordStrengthChecker {
     public Boolean validate(String password) {
         PasswordRuleManager ruleManager = new PasswordRuleManager();
         ruleManager.addRule(new LengthPasswordRule(6, -1));
-        ruleManager.addRule(new CharTypePasswordRule(List.of(CharType.LETTER, CharType.DIGIT, CharType.SPECIAL_CHAR), 2));
+        ruleManager
+                .addRule(new CharTypePasswordRule(List.of(CharType.LETTER, CharType.DIGIT, CharType.SPECIAL_CHAR), 2));
         return ruleManager.validateAll(password);
     }
 

@@ -14,16 +14,23 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class UpdatePasswordRemindLogServiceImpl extends ServiceImpl<UpdatePasswordRemindLogMapper, UpdatePasswordRemindLog> implements UpdatePasswordRemindLogService {
+public class UpdatePasswordRemindLogServiceImpl
+        extends
+            ServiceImpl<UpdatePasswordRemindLogMapper, UpdatePasswordRemindLog>
+        implements
+            UpdatePasswordRemindLogService {
 
     private final UpdatePasswordRemindLogRepository updatePasswordRemindLogRepository;
 
     /**
      * 获取密码到期提醒记录列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            检索关键字
      * @return 密码到期提醒记录列表
      */
     @Override

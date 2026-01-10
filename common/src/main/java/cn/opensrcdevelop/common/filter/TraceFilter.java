@@ -7,18 +7,17 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.util.StopWatch;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.util.StopWatch;
 
 @Slf4j
-public class TraceFilter extends RestFilter{
+public class TraceFilter extends RestFilter {
 
     public static final TransmittableThreadLocal<Map<String, String>> TTL_MDC = new TransmittableThreadLocal<>() {
 
@@ -27,7 +26,7 @@ public class TraceFilter extends RestFilter{
          */
         @Override
         protected void beforeExecute() {
-            final Map<String, String> map  = get();
+            final Map<String, String> map = get();
             map.forEach(MDC::put);
         }
 
@@ -43,7 +42,8 @@ public class TraceFilter extends RestFilter{
     };
 
     @Override
-    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             String traceId = UUID.randomUUID().toString();
             String remoteIP = WebUtil.getRemoteIP(request);
@@ -61,13 +61,15 @@ public class TraceFilter extends RestFilter{
         }
     }
 
-    private void doNext(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response, String requestId) throws ServletException, IOException {
+    private void doNext(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response,
+            String requestId) throws ServletException, IOException {
         // API 审计
         StopWatch stopWatch = new StopWatch(requestId);
         log.info("REQUEST API: {} {}", request.getMethod(), request.getRequestURI());
         stopWatch.start();
         filterChain.doFilter(request, response);
         stopWatch.stop();
-        log.info("API: {} {} | status: {} | time: {}ms", request.getMethod(), request.getRequestURI(), response.getStatus(), stopWatch.getTotalTime(TimeUnit.MILLISECONDS));
+        log.info("API: {} {} | status: {} | time: {}ms", request.getMethod(), request.getRequestURI(),
+                response.getStatus(), stopWatch.getTotalTime(TimeUnit.MILLISECONDS));
     }
 }

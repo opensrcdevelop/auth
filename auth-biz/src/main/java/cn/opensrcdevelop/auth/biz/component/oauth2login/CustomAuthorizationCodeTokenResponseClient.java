@@ -8,6 +8,11 @@ import cn.opensrcdevelop.auth.biz.util.HttpExpressionUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.HttpUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -29,34 +34,29 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Component
 @RequiredArgsConstructor
-public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> {
+public class CustomAuthorizationCodeTokenResponseClient
+        implements
+            OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> {
 
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
     private final RestClientAuthorizationCodeTokenResponseClient delegate = new RestClientAuthorizationCodeTokenResponseClient();
     private final CustomMapOAuth2AccessTokenResponseConverter accessTokenResponseConverter = new CustomMapOAuth2AccessTokenResponseConverter();
 
-    private final RestClient restClient =
-            RestClient
-                    .builder()
-                    .requestInterceptor(new HttpUtil.CustomClientHttpRequestInterceptor())
-                    .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
-                    .messageConverters(messageConverters -> {
-                        messageConverters.clear();
-                        var accessTokenResponseHttpMessageConverter = new OAuth2AccessTokenResponseHttpMessageConverter();
-                        accessTokenResponseHttpMessageConverter.setAccessTokenResponseConverter(accessTokenResponseConverter);
-                        messageConverters.addFirst(accessTokenResponseHttpMessageConverter);
-                        messageConverters.add(new FormHttpMessageConverter());
-                        messageConverters.add(new MappingJackson2HttpMessageConverter());
-                    })
-                    .build();
+    private final RestClient restClient = RestClient
+            .builder()
+            .requestInterceptor(new HttpUtil.CustomClientHttpRequestInterceptor())
+            .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+            .messageConverters(messageConverters -> {
+                messageConverters.clear();
+                var accessTokenResponseHttpMessageConverter = new OAuth2AccessTokenResponseHttpMessageConverter();
+                accessTokenResponseHttpMessageConverter.setAccessTokenResponseConverter(accessTokenResponseConverter);
+                messageConverters.addFirst(accessTokenResponseHttpMessageConverter);
+                messageConverters.add(new FormHttpMessageConverter());
+                messageConverters.add(new MappingJackson2HttpMessageConverter());
+            })
+            .build();
 
     @Override
     public OAuth2AccessTokenResponse getTokenResponse(OAuth2AuthorizationCodeGrantRequest authorizationGrantRequest) {
@@ -64,7 +64,8 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
 
         // 1. 获取身份源提供商
         ClientRegistration clientRegistration = authorizationGrantRequest.getClientRegistration();
-        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService.getByCode(clientRegistration.getRegistrationId());
+        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService
+                .getByCode(clientRegistration.getRegistrationId());
         IdentitySourceProvider identitySourceProvider = identitySourceRegistration.getIdentitySourceProvider();
 
         // 2. 是否启用自定义令牌请求
@@ -75,11 +76,13 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
             validateClientAuthenticationMethod(authorizationGrantRequest);
 
             // 2.1.2 填充请求配置
-            Map<String, Object> valContext = getRequestCfgValueContext(authorizationGrantRequest, identitySourceRegistration);
+            Map<String, Object> valContext = getRequestCfgValueContext(authorizationGrantRequest,
+                    identitySourceRegistration);
             String requestCfgStr = CommonUtil.fillTemplate(identitySourceProvider.getTokenReqCfg(), valContext);
 
             // 2.1.3 请求配置反序列化
-            RequestConfigRequestDto requestCfg = CommonUtil.deserializeObject(requestCfgStr, RequestConfigRequestDto.class);
+            RequestConfigRequestDto requestCfg = CommonUtil.deserializeObject(requestCfgStr,
+                    RequestConfigRequestDto.class);
 
             // 2.1.4 执行 SpEL 表达式
             HttpExpressionUtil.parseSpELMap(requestCfg.getParams());
@@ -117,7 +120,8 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
         }
     }
 
-    private OAuth2AccessTokenResponse getResponse(ClientRegistration clientRegistration, IdentitySourceProvider identitySourceProvider, RequestConfigRequestDto requestCfg) {
+    private OAuth2AccessTokenResponse getResponse(ClientRegistration clientRegistration,
+            IdentitySourceProvider identitySourceProvider, RequestConfigRequestDto requestCfg) {
         String tokenUri = identitySourceProvider.getTokenUri();
         if (HttpMethod.GET.matches(requestCfg.getMethod())) {
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(tokenUri);
@@ -139,19 +143,26 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
                 .body(OAuth2AccessTokenResponse.class);
     }
 
-    private Map<String, Object> getRequestCfgValueContext(OAuth2AuthorizationCodeGrantRequest authorizationCodeGrantRequest, IdentitySourceRegistration identitySourceRegistration) {
+    private Map<String, Object> getRequestCfgValueContext(
+            OAuth2AuthorizationCodeGrantRequest authorizationCodeGrantRequest,
+            IdentitySourceRegistration identitySourceRegistration) {
         Map<String, Object> requestCfgValueContext = new HashMap<>();
 
         // 请求上下文参数
         requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_ID, identitySourceRegistration.getClientId());
         requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_SECRET, identitySourceRegistration.getClientSecret());
-        requestCfgValueContext.put(OAuth2ParameterNames.GRANT_TYPE, authorizationCodeGrantRequest.getGrantType().getValue());
-        requestCfgValueContext.put(OAuth2ParameterNames.CODE, authorizationCodeGrantRequest.getAuthorizationExchange().getAuthorizationResponse().getCode());
-        requestCfgValueContext.put(OAuth2ParameterNames.REDIRECT_URI, authorizationCodeGrantRequest.getAuthorizationExchange().getAuthorizationRequest().getRedirectUri());
+        requestCfgValueContext.put(OAuth2ParameterNames.GRANT_TYPE,
+                authorizationCodeGrantRequest.getGrantType().getValue());
+        requestCfgValueContext.put(OAuth2ParameterNames.CODE,
+                authorizationCodeGrantRequest.getAuthorizationExchange().getAuthorizationResponse().getCode());
+        requestCfgValueContext.put(OAuth2ParameterNames.REDIRECT_URI,
+                authorizationCodeGrantRequest.getAuthorizationExchange().getAuthorizationRequest().getRedirectUri());
 
         // 额外参数
         if (StringUtils.isNotBlank(identitySourceRegistration.getAdditionalParams())) {
-            requestCfgValueContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(), new TypeReference<Map<String, Object>>() {}));
+            requestCfgValueContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(),
+                    new TypeReference<Map<String, Object>>() {
+                    }));
         }
         return requestCfgValueContext;
     }
@@ -166,9 +177,7 @@ public class CustomAuthorizationCodeTokenResponseClient implements OAuth2AccessT
         }
 
         if (MapUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach((key, value) ->
-                    headers.add(key, value!= null? value.toString() : null)
-            );
+            requestHeaders.forEach((key, value) -> headers.add(key, value != null ? value.toString() : null));
         }
 
         return headers;

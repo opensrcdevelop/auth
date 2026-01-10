@@ -23,6 +23,10 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,29 +34,21 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
-public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourceProviderMapper, IdentitySourceProvider> implements IdentitySourceProviderService {
+public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourceProviderMapper, IdentitySourceProvider>
+        implements
+            IdentitySourceProviderService {
 
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
 
     /**
      * 创建身份源提供商
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了身份源提供商（{{ #providerId }}）",
-            fail = "创建身份源提供商（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.IDENTITY_SOURCE_PROVIDER, sysOperation = SysOperationType.CREATE, success = "创建了身份源提供商（{{ #providerId }}）", fail = "创建身份源提供商（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createIdentitySourceProvider(IdentitySourceProviderRequestDto requestDto) {
@@ -74,8 +70,10 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         identitySourceProvider.setProviderDesc(requestDto.getDesc());
         identitySourceProvider.setAuthorizationUri(requestDto.getAuthorizationUri());
         identitySourceProvider.setTokenUri(requestDto.getTokenUri());
-        identitySourceProvider.setUserInfoUris(CommonUtil.stream(requestDto.getUserInfoUris()).collect(Collectors.joining(CommonConstants.COMMA)));
-        identitySourceProvider.setScopes(CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
+        identitySourceProvider.setUserInfoUris(
+                CommonUtil.stream(requestDto.getUserInfoUris()).collect(Collectors.joining(CommonConstants.COMMA)));
+        identitySourceProvider.setScopes(
+                CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
         identitySourceProvider.setUsernameAttribute(requestDto.getUsernameAttribute());
         identitySourceProvider.setUniqueIdAttribute(requestDto.getUniqueIdAttribute());
         identitySourceProvider.setUserMatchAttribute(requestDto.getUserMatchAttribute());
@@ -107,15 +105,10 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
     /**
      * 更新身份源提供商
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
-            fail = "修改身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.IDENTITY_SOURCE_PROVIDER, sysOperation = SysOperationType.UPDATE, success = "修改了身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）", fail = "修改身份源提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败")
     @Transactional
     @Override
     public void updateIdentitySourceProvider(IdentitySourceProviderRequestDto requestDto) {
@@ -148,10 +141,12 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         updateProvider.setTokenUri(requestDto.getTokenUri());
 
         if (CollectionUtils.isNotEmpty(requestDto.getUserInfoUris())) {
-            updateProvider.setUserInfoUris(CommonUtil.stream(requestDto.getUserInfoUris()).collect(Collectors.joining(CommonConstants.COMMA)));
+            updateProvider.setUserInfoUris(
+                    CommonUtil.stream(requestDto.getUserInfoUris()).collect(Collectors.joining(CommonConstants.COMMA)));
         }
 
-        updateProvider.setScopes(CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
+        updateProvider.setScopes(
+                CommonUtil.stream(requestDto.getScopes()).collect(Collectors.joining(CommonConstants.COMMA)));
         updateProvider.setUsernameAttribute(requestDto.getUsernameAttribute());
         updateProvider.setUserMatchAttribute(requestDto.getUserMatchAttribute());
         updateProvider.setUniqueIdAttribute(requestDto.getUniqueIdAttribute());
@@ -194,15 +189,10 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
     /**
      * 删除身份源提供商
      *
-     * @param providerId 身份源提供商ID
+     * @param providerId
+     *            身份源提供商ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.IDENTITY_SOURCE_PROVIDER,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）",
-            fail = "删除身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.IDENTITY_SOURCE_PROVIDER, sysOperation = SysOperationType.DELETE, success = "删除了身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）", fail = "删除身份源提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).IDENTITY_SOURCE_PROVIDER) }}）失败")
     @Transactional
     @Override
     public void removeIdentitySourceProvider(String providerId) {
@@ -230,9 +220,12 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
     /**
      * 获取身份源提供商列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 身份源提供商名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            身份源提供商名称 / 标识检索关键字
      * @return 身份源提供商列表
      */
     @Override
@@ -243,13 +236,18 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         if (StringUtils.isNotEmpty(keyword)) {
             providers = super.list(pageRequest,
                     Wrappers.<IdentitySourceProvider>lambdaQuery()
-                            .select(IdentitySourceProvider::getProviderId, IdentitySourceProvider::getProviderName, IdentitySourceProvider::getProviderCode, IdentitySourceProvider::getProviderLogo, IdentitySourceProvider::getProviderDesc)
-                            .like(IdentitySourceProvider::getProviderName, keyword).or().like(IdentitySourceProvider::getProviderCode, keyword)
+                            .select(IdentitySourceProvider::getProviderId, IdentitySourceProvider::getProviderName,
+                                    IdentitySourceProvider::getProviderCode, IdentitySourceProvider::getProviderLogo,
+                                    IdentitySourceProvider::getProviderDesc)
+                            .like(IdentitySourceProvider::getProviderName, keyword).or()
+                            .like(IdentitySourceProvider::getProviderCode, keyword)
                             .orderByAsc(IdentitySourceProvider::getProviderCode));
         } else {
             providers = super.list(pageRequest,
                     Wrappers.<IdentitySourceProvider>lambdaQuery()
-                            .select(IdentitySourceProvider::getProviderId, IdentitySourceProvider::getProviderName, IdentitySourceProvider::getProviderCode, IdentitySourceProvider::getProviderLogo, IdentitySourceProvider::getProviderDesc)
+                            .select(IdentitySourceProvider::getProviderId, IdentitySourceProvider::getProviderName,
+                                    IdentitySourceProvider::getProviderCode, IdentitySourceProvider::getProviderLogo,
+                                    IdentitySourceProvider::getProviderDesc)
                             .orderByAsc(IdentitySourceProvider::getProviderCode));
         }
 
@@ -260,13 +258,12 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         pageData.setCurrent(pageRequest.getCurrent());
         pageData.setSize(pageRequest.getSize());
 
-        var records = CommonUtil.stream(providers).map(provider ->
-            IdentitySourceProviderResponseDto.builder()
-                    .id(provider.getProviderId())
-                    .name(provider.getProviderName())
-                    .code(provider.getProviderCode())
-                    .logo(provider.getProviderLogo())
-                    .desc(provider.getProviderDesc()).build()).toList();
+        var records = CommonUtil.stream(providers).map(provider -> IdentitySourceProviderResponseDto.builder()
+                .id(provider.getProviderId())
+                .name(provider.getProviderName())
+                .code(provider.getProviderCode())
+                .logo(provider.getProviderLogo())
+                .desc(provider.getProviderDesc()).build()).toList();
         pageData.setList(records);
         return pageData;
     }
@@ -274,7 +271,8 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
     /**
      * 获取身份源提供商详情
      *
-     * @param providerId 身份源提供商ID
+     * @param providerId
+     *            身份源提供商ID
      * @return 身份源提供商详情
      */
     @Override
@@ -315,22 +313,22 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
     /**
      * 获取关联的身份源
      *
-     * @param providerId 身份源提供商ID
+     * @param providerId
+     *            身份源提供商ID
      * @return 身份源列表
      */
     @Override
     public List<IdentitySourceRegistrationResponseDto> registrations(String providerId) {
         // 1. 数据库操作
-        var records = identitySourceRegistrationService.list(Wrappers.<IdentitySourceRegistration>lambdaQuery().eq(IdentitySourceRegistration::getProviderId, providerId));
+        var records = identitySourceRegistrationService.list(Wrappers.<IdentitySourceRegistration>lambdaQuery()
+                .eq(IdentitySourceRegistration::getProviderId, providerId));
 
         // 2. 属性编辑
-        return CommonUtil.stream(records).map(registration ->
-            IdentitySourceRegistrationResponseDto.builder()
-                    .id(registration.getRegistrationId())
-                    .code(registration.getRegistrationCode())
-                    .name(registration.getRegistrationName())
-                    .enabled(registration.getEnabled()).build()
-        ).toList();
+        return CommonUtil.stream(records).map(registration -> IdentitySourceRegistrationResponseDto.builder()
+                .id(registration.getRegistrationId())
+                .code(registration.getRegistrationCode())
+                .name(registration.getRegistrationName())
+                .enabled(registration.getEnabled()).build()).toList();
     }
 
     private void checkProviderCode(IdentitySourceProviderRequestDto requestDto, IdentitySourceProvider rawProvider) {
@@ -338,7 +336,8 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<IdentitySourceProvider>lambdaQuery().eq(IdentitySourceProvider::getProviderCode, requestDto.getCode())))) {
+        if (Objects.nonNull(super.getOne(Wrappers.<IdentitySourceProvider>lambdaQuery()
+                .eq(IdentitySourceProvider::getProviderCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.IDENTITY_PROVIDER_MSG_1000, requestDto.getCode());
         }
     }
@@ -353,11 +352,13 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
         if (Boolean.TRUE.equals(requestDto.getEnableCustomTokenReq())) {
             String requestMethod = requestDto.getTokenReqCfg().getMethod();
             if (HttpMethod.GET.matches(requestMethod)) {
-                CommonUtil.validateBean(requestDto.getTokenReqCfg(), RequestConfigRequestDto.TokenReq.class, RequestConfigRequestDto.GetReq.class);
+                CommonUtil.validateBean(requestDto.getTokenReqCfg(), RequestConfigRequestDto.TokenReq.class,
+                        RequestConfigRequestDto.GetReq.class);
             }
 
             if (HttpMethod.POST.matches(requestMethod)) {
-                CommonUtil.validateBean(requestDto.getTokenReqCfg(), RequestConfigRequestDto.TokenReq.class, RequestConfigRequestDto.PostReq.class);
+                CommonUtil.validateBean(requestDto.getTokenReqCfg(), RequestConfigRequestDto.TokenReq.class,
+                        RequestConfigRequestDto.PostReq.class);
             }
         }
 
@@ -366,11 +367,13 @@ public class IdentitySourceProviderServiceImpl extends ServiceImpl<IdentitySourc
             requestDto.getUserInfoReqCfg().values().forEach(userIndoReqCfg -> {
                 String requestMethod = userIndoReqCfg.getMethod();
                 if (HttpMethod.GET.matches(requestMethod)) {
-                    CommonUtil.validateBean(requestDto.getUserInfoReqCfg(), RequestConfigRequestDto.UserInfoReq.class, RequestConfigRequestDto.GetReq.class);
+                    CommonUtil.validateBean(requestDto.getUserInfoReqCfg(), RequestConfigRequestDto.UserInfoReq.class,
+                            RequestConfigRequestDto.GetReq.class);
                 }
 
                 if (HttpMethod.POST.matches(requestMethod)) {
-                    CommonUtil.validateBean(requestDto.getUserInfoReqCfg(), RequestConfigRequestDto.UserInfoReq.class, RequestConfigRequestDto.PostReq.class);
+                    CommonUtil.validateBean(requestDto.getUserInfoReqCfg(), RequestConfigRequestDto.UserInfoReq.class,
+                            RequestConfigRequestDto.PostReq.class);
                 }
             });
         }

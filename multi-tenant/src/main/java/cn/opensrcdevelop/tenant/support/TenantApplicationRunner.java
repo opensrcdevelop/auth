@@ -6,15 +6,14 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.entity.Tenant;
 import cn.opensrcdevelop.tenant.service.TenantService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
@@ -33,16 +32,15 @@ public class TenantApplicationRunner implements ApplicationRunner, Ordered {
         var tenants = tenantService.list(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getEnabled, Boolean.TRUE));
 
         // 2. 执行租户数据库迁移脚本
-        var tasks = CommonUtil.stream(tenants).map(tenant ->
-             CompletableFuture.runAsync(() -> {
-                String tenantCode = tenant.getTenantCode();
-                // 2.1 创建租户数据源
-                var ds = TenantHelper.createTenantDataSource(tenantCode);
-                // 2.2 执行
-                TenantHelper.executeTenantDbMigrations(ds, Map.of(FLYWAY_PLACEHOLDER_CONSOLE_REDIRECT_URL,
-                        TenantHelper.getTenantConsoleUrl(tenantCode) + SpringContextUtil.getProperty(PROP_CONSOLE_REDIRECT_PATH)));
-            }, SpringContextUtil.getBean(ExecutorConstants.EXECUTOR_IO_DENSE))
-        ).toList();
+        var tasks = CommonUtil.stream(tenants).map(tenant -> CompletableFuture.runAsync(() -> {
+            String tenantCode = tenant.getTenantCode();
+            // 2.1 创建租户数据源
+            var ds = TenantHelper.createTenantDataSource(tenantCode);
+            // 2.2 执行
+            TenantHelper.executeTenantDbMigrations(ds, Map.of(FLYWAY_PLACEHOLDER_CONSOLE_REDIRECT_URL,
+                    TenantHelper.getTenantConsoleUrl(tenantCode)
+                            + SpringContextUtil.getProperty(PROP_CONSOLE_REDIRECT_PATH)));
+        }, SpringContextUtil.getBean(ExecutorConstants.EXECUTOR_IO_DENSE))).toList();
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
         log.info("结束执行全部租户数据库迁移脚本");
     }

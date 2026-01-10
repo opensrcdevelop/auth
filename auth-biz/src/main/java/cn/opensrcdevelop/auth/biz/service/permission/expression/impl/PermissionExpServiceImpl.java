@@ -43,6 +43,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -55,14 +59,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 @Service
 @RequiredArgsConstructor
-public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, PermissionExp> implements PermissionExpService {
+public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, PermissionExp>
+        implements
+            PermissionExpService {
 
     private final PermissionService permissionService;
     private final AuthorizeConditionService authorizeConditionService;
@@ -76,15 +77,10 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 创建权限表达式
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了限制条件（{{ @linkGen.toLink(#expressionId, T(ResourceType).PERMISSION_EXP) }}）",
-            fail = "创建限制条件（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP, sysOperation = SysOperationType.CREATE, success = "创建了限制条件（{{ @linkGen.toLink(#expressionId, T(ResourceType).PERMISSION_EXP) }}）", fail = "创建限制条件（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createPermissionExp(PermissionExpRequestDto requestDto) {
@@ -125,9 +121,12 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 获取权限表达式列表
      *
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 权限表达式名称检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            权限表达式名称检索关键字
      * @return 权限表达式列表
      */
     @Override
@@ -137,12 +136,14 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         Page<PermissionExp> pageRequest = new Page<>(page, size);
         if (StringUtils.isNotEmpty(keyword)) {
             permissionExps = super.list(pageRequest, Wrappers.<PermissionExp>lambdaQuery()
-                    .select(PermissionExp::getExpressionId, PermissionExp::getExpressionName, PermissionExp::getDescription)
+                    .select(PermissionExp::getExpressionId, PermissionExp::getExpressionName,
+                            PermissionExp::getDescription)
                     .like(PermissionExp::getExpressionName, keyword)
                     .orderByDesc(PermissionExp::getCreateTime));
         } else {
             permissionExps = super.list(pageRequest, Wrappers.<PermissionExp>lambdaQuery()
-                    .select(PermissionExp::getExpressionId, PermissionExp::getExpressionName, PermissionExp::getDescription)
+                    .select(PermissionExp::getExpressionId, PermissionExp::getExpressionName,
+                            PermissionExp::getDescription)
                     .orderByDesc(PermissionExp::getCreateTime));
         }
 
@@ -168,7 +169,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 获取权限表达式详情
      *
-     * @param permissionExpId 权限表达式ID
+     * @param permissionExpId
+     *            权限表达式ID
      * @return 权限表达式详情
      */
     @Override
@@ -188,7 +190,9 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         permissionExpResponse.setExpression(permissionExp.getExpression());
         permissionExpResponse.setTemplateId(permissionExp.getTemplateId());
         if (Objects.nonNull(permissionExp.getTemplateParams())) {
-            permissionExpResponse.setTemplateParams(CommonUtil.deserializeObject(permissionExp.getTemplateParams(), new TypeReference<List<PermissionExpTemplateParamDto>>() {}));
+            permissionExpResponse.setTemplateParams(CommonUtil.deserializeObject(permissionExp.getTemplateParams(),
+                    new TypeReference<List<PermissionExpTemplateParamDto>>() {
+                    }));
         }
         permissionExpResponse.setDesc(permissionExp.getDescription());
         return permissionExpResponse;
@@ -197,21 +201,14 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 更新权限表达式
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）",
-            fail = "修改限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）失败"
-    )
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
-            }
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP, sysOperation = SysOperationType.UPDATE, success = "修改了限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）", fail = "修改限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）失败")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
+    })
     @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
@@ -256,21 +253,14 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 删除权限表达式
      *
-     * @param permissionExpId 权限表达式ID
+     * @param permissionExpId
+     *            权限表达式ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION_EXP,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）",
-            fail = "删除限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）失败"
-    )
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
-            }
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP, sysOperation = SysOperationType.DELETE, success = "删除了限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）", fail = "删除限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）失败")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
+    })
     @Transactional
     @Override
     public void removePermissionExp(String permissionExpId) {
@@ -278,13 +268,15 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         super.removeById(permissionExpId);
 
         // 2. 删除关联的全部的授权记录
-        authorizeConditionService.remove(Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, permissionExpId));
+        authorizeConditionService.remove(
+                Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, permissionExpId));
     }
 
     /**
      * 调试权限表达式
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return 响应
      */
     @Override
@@ -301,17 +293,21 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         Map<String, Object> execCtx = new HashMap<>();
         String expression;
         if (useTemplate) {
-            PermissionExpTemplate permissionExpTemplate = permissionExpTemplateService.getById(requestDto.getTemplateId());
+            PermissionExpTemplate permissionExpTemplate = permissionExpTemplateService
+                    .getById(requestDto.getTemplateId());
             if (Objects.isNull(permissionExpTemplate)) {
                 throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1003, requestDto.getTemplateId());
             }
             if (StringUtils.isNotEmpty(permissionExpTemplate.getTemplateParamConfigs())) {
-                var paramConfigs = CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(), new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {});
+                var paramConfigs = CommonUtil.deserializeObject(permissionExpTemplate.getTemplateParamConfigs(),
+                        new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
+                        });
                 // 2.1 校验模板参数
                 checkParams(paramConfigs, requestDto.getTemplateParams());
 
                 // 2.2 添加模板参数执行上下文
-                execCtx.putAll(permissionExpTemplateService.getParamExecutionContext(paramConfigs, requestDto.getTemplateParams()));
+                execCtx.putAll(permissionExpTemplateService.getParamExecutionContext(paramConfigs,
+                        requestDto.getTemplateParams()));
             }
             expression = permissionExpTemplate.getExpression();
         } else {
@@ -350,7 +346,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 获取权限表达式关联的权限列表
      *
-     * @param permissionExpId 权限表达式ID
+     * @param permissionExpId
+     *            权限表达式ID
      * @return 权限表达式关联的权限列表
      */
     @Override
@@ -387,14 +384,11 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 获取权限表达式（使用缓存）
      *
-     * @param permissionExpId 权限表达式ID
+     * @param permissionExpId
+     *            权限表达式ID
      * @return 权限表达式
      */
-    @Cacheable(
-            cacheNames = CacheConstants.CACHE_PERMISSION_EXP,
-            key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)",
-            condition = "#result != null"
-    )
+    @Cacheable(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)", condition = "#result != null")
     @Override
     public PermissionExp getPermissionExpWithCache(String permissionExpId) {
         PermissionExp permissionExp = super.getById(permissionExpId);
@@ -407,8 +401,10 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 执行权限表达式
      *
-     * @param permissionExpId 权限表达式ID
-     * @param customCtx      自定义上下文
+     * @param permissionExpId
+     *            权限表达式ID
+     * @param customCtx
+     *            自定义上下文
      * @return 执行结果
      */
     @Override
@@ -433,10 +429,13 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
 
         if (Objects.nonNull(permissionExp.getTemplateId())) {
             // 2.3 添加模板参数上下文
-            var paramConfigs = CommonUtil.deserializeObject(permissionExp.getPermissionExpTemplate().getTemplateParamConfigs(),
-                    new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {});
-            var params= CommonUtil.deserializeObject(permissionExp.getTemplateParams(),
-                    new TypeReference<List<PermissionExpTemplateParamDto>>() {});
+            var paramConfigs = CommonUtil.deserializeObject(
+                    permissionExp.getPermissionExpTemplate().getTemplateParamConfigs(),
+                    new TypeReference<List<PermissionExpTemplateParamConfigDto>>() {
+                    });
+            var params = CommonUtil.deserializeObject(permissionExp.getTemplateParams(),
+                    new TypeReference<List<PermissionExpTemplateParamDto>>() {
+                    });
             executeCtx.putAll(permissionExpTemplateService.getParamExecutionContext(paramConfigs, params));
         }
 
@@ -446,7 +445,9 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         }
 
         // 3. 执行表达式
-        String expression = Objects.nonNull(permissionExp.getTemplateId()) ? permissionExp.getPermissionExpTemplate().getExpression() : permissionExp.getExpression();
+        String expression = Objects.nonNull(permissionExp.getTemplateId())
+                ? permissionExp.getPermissionExpTemplate().getExpression()
+                : permissionExp.getExpression();
         Object result = expressionEngine.evaluate(expression, executeCtx);
         if (!(result instanceof Boolean)) {
             return false;
@@ -457,14 +458,13 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     /**
      * 删除模板关联的权限表达式
      *
-     * @param templateId 模板ID
+     * @param templateId
+     *            模板ID
      */
-    @Caching(
-            evict = {
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-                    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, allEntries = true)
-            }
-    )
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
+            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, allEntries = true)
+    })
     @Transactional
     @Override
     public void removeTemplatePermissionExp(String templateId) {
@@ -487,20 +487,24 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         Role role = authorizeRecord.getRole();
 
         if (user != null) {
-            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(), PrincipalTypeEnum.USER.getDisplayName());
+            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(),
+                    PrincipalTypeEnum.USER.getDisplayName());
         }
 
         if (userGroup != null) {
-            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(), PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
+            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(),
+                    PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
         }
 
         if (role != null) {
-            return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(), PrincipalTypeEnum.ROLE.getDisplayName());
+            return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(),
+                    PrincipalTypeEnum.ROLE.getDisplayName());
         }
         return Tuple.of(null, null, null, null);
     }
 
-    private void checkParams(List<PermissionExpTemplateParamConfigDto> paramConfigs, List<PermissionExpTemplateParamDto> params) {
+    private void checkParams(List<PermissionExpTemplateParamConfigDto> paramConfigs,
+            List<PermissionExpTemplateParamDto> params) {
         if (CollectionUtils.isEmpty(paramConfigs)) {
             return;
         }
@@ -514,7 +518,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         var requiredParamCodes = paramConfigs.stream().filter(PermissionExpTemplateParamConfigDto::getRequired)
                 .map(PermissionExpTemplateParamConfigDto::getCode).toList();
         var paramCodes = params.stream().map(PermissionExpTemplateParamDto::getCode).toList();
-        var notInputtedParamCodes = CommonUtil.stream(requiredParamCodes).filter(paramCode -> !paramCodes.contains(paramCode)).toList();
+        var notInputtedParamCodes = CommonUtil.stream(requiredParamCodes)
+                .filter(paramCode -> !paramCodes.contains(paramCode)).toList();
         if (CollectionUtils.isNotEmpty(notInputtedParamCodes)) {
             throw new BizException(MessageConstants.PERMISSION_EXP_MSG_1002, notInputtedParamCodes);
         }

@@ -4,11 +4,10 @@ import cn.opensrcdevelop.auth.biz.entity.auth.Authorization;
 import cn.opensrcdevelop.auth.biz.mapper.auth.AuthorizationMapper;
 import cn.opensrcdevelop.auth.biz.repository.auth.AuthorizationRepository;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,7 +16,8 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
     private final AuthorizationMapper mapper;
 
     @Override
-    public Authorization findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(String token) {
+    public Authorization findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(
+            String token) {
         List<Authorization> authorizationList = mapper.selectList(Wrappers.<Authorization>lambdaQuery()
                 .eq(Authorization::getState, token).or()
                 .eq(Authorization::getAuthorizationCodeValue, token).or()
@@ -40,7 +40,8 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public Authorization findByAuthorizationCodeValue(String token) {
-        return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationCodeValue, token));
+        return mapper
+                .selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationCodeValue, token));
     }
 
     @Override
@@ -50,7 +51,8 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public Authorization findByRefreshTokenValue(String token) {
-        return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRefreshTokenValue, token).orderByDesc(Authorization::getId));
+        return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRefreshTokenValue, token)
+                .orderByDesc(Authorization::getId));
     }
 
     @Override
@@ -90,7 +92,8 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public List<Authorization> getAuthorizationsByClientId(String clientId) {
-        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRegisteredClientId, clientId));
+        return mapper
+                .selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRegisteredClientId, clientId));
     }
 
     @Override
@@ -105,11 +108,14 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     @Override
     public List<Authorization> findRefreshTokensByPrincipalName(String principalName) {
-        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getPrincipalName, principalName).and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
+        return mapper
+                .selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getPrincipalName, principalName)
+                        .and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
     }
 
     @Override
     public List<Authorization> findRefreshTokensByLoginId(String loginId) {
-        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getLoginId, loginId).and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
+        return mapper.selectList(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getLoginId, loginId)
+                .and(o -> o.isNotNull(Authorization::getRefreshTokenValue)));
     }
 }

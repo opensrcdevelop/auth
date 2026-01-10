@@ -28,7 +28,6 @@ public class VerificationCodeController {
         mailService.sendMailCode(to);
     }
 
-
     @Operation(summary = "检查验证码", description = "检查验证码")
     @PostMapping("/check")
     public CheckCodeResponseDto checkCode(@RequestBody @Valid CheckCodeRequestDto requestDto) {

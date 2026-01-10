@@ -1,17 +1,17 @@
 package cn.opensrcdevelop.auth.client.support;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.Optional;
-
 @Slf4j
 public class OAuth2ContextHolder {
 
-    private OAuth2ContextHolder() {}
+    private OAuth2ContextHolder() {
+    }
 
     private static final String SESSION_OAUTH2_CONTEXT = "OAUTH2_CONTEXT";
 
@@ -48,7 +48,8 @@ public class OAuth2ContextHolder {
     }
 
     private static Optional<HttpServletRequest> getRequest() {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         if (requestAttributes != null) {
             return Optional.of(requestAttributes.getRequest());
         }

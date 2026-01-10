@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.support;
 
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.time.Instant;
 import org.springframework.lang.Nullable;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -9,8 +10,6 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-
-import java.time.Instant;
 
 public class CustomOAuth2RefreshTokenGenerator implements OAuth2TokenGenerator<OAuth2RefreshToken> {
 
@@ -27,7 +26,6 @@ public class CustomOAuth2RefreshTokenGenerator implements OAuth2TokenGenerator<O
         if (isPublicClientForAuthorizationCodeGrant(context)) {
             return null;
         }
-
 
         Instant issuedAt = Instant.now();
         Instant expiresAt = issuedAt.plus(context.getRegisteredClient().getTokenSettings().getRefreshTokenTimeToLive());

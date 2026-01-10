@@ -12,7 +12,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class TraceUserInterceptor implements HandlerInterceptor {
 
     @Override
-    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull Object handler) throws Exception {
         // 获取当前用户名，设置到 MDC 中
         AuthUtil.getCurrentUsername().ifPresent(username -> {
             MDC.put(CommonConstants.MDC_USERNAME, username);

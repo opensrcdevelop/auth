@@ -41,17 +41,16 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -67,15 +66,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 创建用户组
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
-            fail = "创建用户组（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_GROUP, sysOperation = SysOperationType.CREATE, success = "创建了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）", fail = "创建用户组（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createUserGroup(UserGroupRequestDto requestDto) {
@@ -110,17 +104,14 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 创建用户组映射
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.CREATE,
-            success = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
-                    "）中添加了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
-            fail = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
-                    "）中添加用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_GROUP, sysOperation = SysOperationType.CREATE, success = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}"
+            +
+            "）中添加了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）", fail = "向用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}"
+                    +
+                    "）中添加用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败")
     @Transactional
     @Override
     public void createUserGroupMapping(UserGroupMappingRequestDto requestDto) {
@@ -130,10 +121,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         if (CollectionUtils.isNotEmpty(mappings)) {
             // 2. 删除待创建的映射关系，避免重复创建
-            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, mappings, mappings.size(), ((sqlSession, userUserGroupMapping) -> {
-                UserGroupMappingMapper mapper = sqlSession.getMapper(UserGroupMappingMapper.class);
-                mapper.delete(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userUserGroupMapping.getUserId()).and(o -> o.eq(UserGroupMapping::getUserGroupId, userUserGroupMapping.getUserGroupId())));
-            }));
+            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, mappings, mappings.size(),
+                    ((sqlSession, userUserGroupMapping) -> {
+                        UserGroupMappingMapper mapper = sqlSession.getMapper(UserGroupMappingMapper.class);
+                        mapper.delete(Wrappers.<UserGroupMapping>lambdaQuery()
+                                .eq(UserGroupMapping::getUserId, userUserGroupMapping.getUserId()).and(o -> o
+                                        .eq(UserGroupMapping::getUserGroupId, userUserGroupMapping.getUserGroupId())));
+                    }));
 
             // 3. 数据库操作
             userGroupMappingService.saveBatch(mappings);
@@ -143,7 +137,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取用户所属的静态用户组信息
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      * @return 静态用户组信息
      */
     @Override
@@ -154,13 +149,15 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取用户所属的动态用户组信息
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      * @return 动态用户组信息
      */
     @Override
     public List<UserGroup> getDynamicUserGroups(String userId) {
         // 1. 获取全部用户组
-        List<UserGroup> userGroups = super.list(Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupType, UserGroupType.DYNAMIC.name()));
+        List<UserGroup> userGroups = super.list(
+                Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupType, UserGroupType.DYNAMIC.name()));
 
         // 2. 获取各个动态用户组的用户
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
@@ -170,13 +167,11 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
                 queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
                 queryWrapper.and(q -> editQueryWrapper(q, CommonUtil.nonJdkDeserializeObject(
                         userGroup.getDynamicConditions(),
-                        DynamicUserGroupConditionsDto.class
-                )));
+                        DynamicUserGroupConditionsDto.class)));
                 userGroup.setUsers(userRepository.searchUsers(queryWrapper, 0, 0));
             }, SpringContextUtil.getBean(ExecutorConstants.EXECUTOR_IO_DENSE)));
         }
         CompletableFuture.allOf(allFutures.toArray(new CompletableFuture[0])).join();
-
 
         // 3. 过滤用户所属的动态用户组
         return CommonUtil.stream(userGroups)
@@ -189,9 +184,12 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取用户组列表
      *
-     * @param page    页数
-     * @param size    条数
-     * @param keyword 用户组名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            用户组名称 / 标识检索关键字
      * @return 用户组列表
      */
     @Override
@@ -200,9 +198,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         Page<UserGroup> pageRequest = new Page<>(page, size);
         List<UserGroup> userGroups;
         if (StringUtils.isNotEmpty(keyword)) {
-            userGroups = super.list(pageRequest, Wrappers.<UserGroup>lambdaQuery().like(UserGroup::getUserGroupName, keyword).or(o -> o.like(UserGroup::getUserGroupCode, keyword)).orderByAsc(UserGroup::getUserGroupCode));
+            userGroups = super.list(pageRequest,
+                    Wrappers.<UserGroup>lambdaQuery().like(UserGroup::getUserGroupName, keyword)
+                            .or(o -> o.like(UserGroup::getUserGroupCode, keyword))
+                            .orderByAsc(UserGroup::getUserGroupCode));
         } else {
-            userGroups = super.list(pageRequest, Wrappers.<UserGroup>lambdaQuery().orderByAsc(UserGroup::getUserGroupCode));
+            userGroups = super.list(pageRequest,
+                    Wrappers.<UserGroup>lambdaQuery().orderByAsc(UserGroup::getUserGroupCode));
         }
 
         // 2. 属性设置
@@ -221,7 +223,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
             // 2.1 查询成员数
             if (UserGroupType.STATIC.name().equals(userGroup.getUserGroupType())) {
-                long cnt = userGroupMappingService.count(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserGroupId, userGroup.getUserGroupId()));
+                long cnt = userGroupMappingService.count(Wrappers.<UserGroupMapping>lambdaQuery()
+                        .eq(UserGroupMapping::getUserGroupId, userGroup.getUserGroupId()));
                 userGroupResponse.setMemberNum(cnt);
             }
             return userGroupResponse;
@@ -233,17 +236,14 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 移除用户组映射
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
-                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）",
-            fail = "删除用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}" +
-                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_GROUP, sysOperation = SysOperationType.DELETE, success = "删除了用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}"
+            +
+            "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）", fail = "删除用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}"
+                    +
+                    "）中的用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）失败")
     @Transactional
     @Override
     public void removeUserGroupMapping(UserGroupMappingRequestDto requestDto) {
@@ -253,28 +253,34 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         if (CollectionUtils.isNotEmpty(deleteTargetMappings)) {
 
             // 2. 数据库操作
-            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, deleteTargetMappings, deleteTargetMappings.size(), ((sqlSession, userUserGroupMapping) -> {
-                UserGroupMappingMapper mapper = sqlSession.getMapper(UserGroupMappingMapper.class);
-                mapper.delete(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userUserGroupMapping.getUserId()).and(o -> o.eq(UserGroupMapping::getUserGroupId, userUserGroupMapping.getUserGroupId())));
-            }));
+            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, deleteTargetMappings, deleteTargetMappings.size(),
+                    ((sqlSession, userUserGroupMapping) -> {
+                        UserGroupMappingMapper mapper = sqlSession.getMapper(UserGroupMappingMapper.class);
+                        mapper.delete(Wrappers.<UserGroupMapping>lambdaQuery()
+                                .eq(UserGroupMapping::getUserId, userUserGroupMapping.getUserId()).and(o -> o
+                                        .eq(UserGroupMapping::getUserGroupId, userUserGroupMapping.getUserGroupId())));
+                    }));
         }
     }
 
     /**
      * 删除指定用户的全部用户组映射
      *
-     * @param userId 用户UID
+     * @param userId
+     *            用户UID
      */
     @Transactional
     @Override
     public void removeUserGroupMapping(String userId) {
-        userGroupMappingService.remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userId));
+        userGroupMappingService
+                .remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userId));
     }
 
     /**
      * 获取用户组详情
      *
-     * @param userGroupId 用户组 ID
+     * @param userGroupId
+     *            用户组 ID
      * @return 用户组详情
      */
     @Override
@@ -293,7 +299,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         userGroupResponse.setDesc(userGroup.getDescription());
 
         if (UserGroupType.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
-            userGroupResponse.setConditions(CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(), DynamicUserGroupConditionsDto.class));
+            userGroupResponse.setConditions(CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(),
+                    DynamicUserGroupConditionsDto.class));
         }
         return userGroupResponse;
     }
@@ -301,10 +308,14 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取组内用户
      *
-     * @param page        页数
-     * @param size        条数
-     * @param userGroupId 用户组ID
-     * @param keyword     用户名 / 邮箱 / 手机号检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param userGroupId
+     *            用户组ID
+     * @param keyword
+     *            用户名 / 邮箱 / 手机号检索关键字
      * @return 组内用户集合
      */
     @Override
@@ -334,16 +345,15 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
 
         // 2.2 动态用户组
         if (UserGroupType.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
-            var conditions = CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(), DynamicUserGroupConditionsDto.class);
+            var conditions = CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(),
+                    DynamicUserGroupConditionsDto.class);
             int offset = (page - 1) * size;
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
             if (StringUtils.isNotEmpty(keyword)) {
-                queryWrapper.and(q ->
-                        q.like("t_user.username", keyword)
-                                .or().like("t_user.email_address", keyword)
-                                .or().like("t_user.phone_number", keyword)
-                );
+                queryWrapper.and(q -> q.like("t_user.username", keyword)
+                        .or().like("t_user.email_address", keyword)
+                        .or().like("t_user.phone_number", keyword));
             }
             queryWrapper.and(q -> editQueryWrapper(q, conditions));
 
@@ -381,15 +391,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 更新用户组
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）",
-            fail = "修改用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_GROUP, sysOperation = SysOperationType.UPDATE, success = "修改了用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）", fail = "修改用户组（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_GROUP) }}）失败")
     @Transactional
     @Override
     public void updateUserGroup(UserGroupRequestDto requestDto) {
@@ -435,15 +440,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 删除用户组
      *
-     * @param userGroupId 用户组 ID
+     * @param userGroupId
+     *            用户组 ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.USER_GROUP,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）",
-            fail = "删除用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_GROUP, sysOperation = SysOperationType.DELETE, success = "删除了用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）", fail = "删除用户组（{{ @linkGen.toLink(#userGroupId, T(ResourceType).USER_GROUP) }}）失败")
     @Transactional
     @Override
     public void removeUserGroup(String userGroupId) {
@@ -451,7 +451,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         super.removeById(userGroupId);
 
         // 2. 删除关联的全部用户组映射关系
-        userGroupMappingService.remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserGroupId, userGroupId));
+        userGroupMappingService
+                .remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserGroupId, userGroupId));
 
         // 3. 删除关联的全部角色映射关系
         roleService.removeUserRoleMapping(userGroupId);
@@ -463,20 +464,30 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     /**
      * 获取权限
      *
-     * @param page                           页数
-     * @param size                           条数
-     * @param userGroupId                    用户组ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param userGroupId
+     *            用户组ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      * @return 权限信息
      */
     @Override
-    public PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
+    public PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId,
+            String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
         // 1. 查询数据库
         Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
-        permissionService.getUserGroupPermissions(pageRequest, userGroupId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+        permissionService.getUserGroupPermissions(pageRequest, userGroupId, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
 
         // 2. 属性编辑
         PageData<PermissionResponseDto> pageData = new PageData<>();
@@ -484,43 +495,49 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         pageData.setSize(pageRequest.getSize());
         pageData.setPages(pageRequest.getPages());
         pageData.setCurrent(pageRequest.getCurrent());
-        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords()).map(authorizeRecord -> {
-            PermissionResponseDto permissionResponse = new PermissionResponseDto();
+        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords())
+                .map(authorizeRecord -> {
+                    PermissionResponseDto permissionResponse = new PermissionResponseDto();
 
-            // 2.1 权限响应属性
-            var permission = authorizeRecord.getPermission();
-            permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
-            permissionResponse.setPriority(authorizeRecord.getPriority());
-            permissionResponse.setPermissionId(permission.getPermissionId());
-            permissionResponse.setPermissionName(permission.getPermissionName());
-            permissionResponse.setPermissionCode(permission.getPermissionCode());
-            permissionResponse.setResourceId(permission.getResource().getResourceId());
-            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
-            permissionResponse.setResourceName(permission.getResource().getResourceName());
-            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
-            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
-            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+                    // 2.1 权限响应属性
+                    var permission = authorizeRecord.getPermission();
+                    permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+                    permissionResponse.setPriority(authorizeRecord.getPriority());
+                    permissionResponse.setPermissionId(permission.getPermissionId());
+                    permissionResponse.setPermissionName(permission.getPermissionName());
+                    permissionResponse.setPermissionCode(permission.getPermissionCode());
+                    permissionResponse.setResourceId(permission.getResource().getResourceId());
+                    permissionResponse.setResourceCode(permission.getResource().getResourceCode());
+                    permissionResponse.setResourceName(permission.getResource().getResourceName());
+                    permissionResponse
+                            .setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
+                    permissionResponse
+                            .setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
+                    permissionResponse
+                            .setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
 
-            // 2.2 限定条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setDesc(exp.getDescription());
-                return condition;
-            }).toList();
-            permissionResponse.setConditions(conditions);
+                    // 2.2 限定条件
+                    var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                        PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                        condition.setId(exp.getExpressionId());
+                        condition.setName(exp.getExpressionName());
+                        condition.setDesc(exp.getDescription());
+                        return condition;
+                    }).toList();
+                    permissionResponse.setConditions(conditions);
 
-            return permissionResponse;
-        }).toList();
+                    return permissionResponse;
+                }).toList();
         pageData.setList(permissionResponseList);
 
         return pageData;
     }
 
     private List<UserGroupMapping> getMappings(UserGroupMappingRequestDto requestDto) {
-        var userIds = CommonUtil.stream(requestDto.getUserIds()).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-        var userGroupIds = CommonUtil.stream(requestDto.getUserGroupIds()).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+        var userIds = CommonUtil.stream(requestDto.getUserIds()).filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+        var userGroupIds = CommonUtil.stream(requestDto.getUserGroupIds()).filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
 
         List<UserGroupMapping> mappings = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(userIds) && CollectionUtils.isNotEmpty(userGroupIds)) {
@@ -535,17 +552,20 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     }
 
     private void checkUserGroupCode(UserGroupRequestDto requestDto, UserGroup rawUserGroup) {
-        if (Objects.nonNull(rawUserGroup) && StringUtils.equals(requestDto.getCode(), rawUserGroup.getUserGroupCode())) {
+        if (Objects.nonNull(rawUserGroup)
+                && StringUtils.equals(requestDto.getCode(), rawUserGroup.getUserGroupCode())) {
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupCode, requestDto.getCode())))) {
+        if (Objects.nonNull(super.getOne(
+                Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.USER_GROUP_MSG_1000, requestDto.getCode());
         }
     }
 
     private void checkDynamicUserGroupConditions(UserGroupRequestDto requestDto) {
-        if (CollectionUtils.isEmpty(requestDto.getConditions().getFilters()) && CollectionUtils.isEmpty(requestDto.getConditions().getGroups())) {
+        if (CollectionUtils.isEmpty(requestDto.getConditions().getFilters())
+                && CollectionUtils.isEmpty(requestDto.getConditions().getGroups())) {
             throw new BizException(MessageConstants.USER_GROUP_MSG_1001);
         }
     }

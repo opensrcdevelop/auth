@@ -11,21 +11,21 @@ import lombok.Data;
 public class PermissionRequestDto {
 
     @Schema(description = "权限ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "权限名")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String name;
 
     @Schema(description = "权限标识")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String code;
 
     @Schema(description = "资源ID")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
     private String resourceId;
 
     @Schema(description = "描述")

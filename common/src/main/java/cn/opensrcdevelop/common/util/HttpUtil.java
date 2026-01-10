@@ -1,5 +1,9 @@
 package cn.opensrcdevelop.common.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -11,11 +15,6 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.util.StreamUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
 public class HttpUtil {
     private HttpUtil() {
     }
@@ -25,8 +24,10 @@ public class HttpUtil {
 
         @Override
         @NonNull
-        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes, @NonNull ClientHttpRequestExecution execution) throws IOException {
-            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(), request.getHeaders());
+        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes,
+                @NonNull ClientHttpRequestExecution execution) throws IOException {
+            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(),
+                    request.getHeaders());
             request.getMethod();
             if (request.getMethod().equals(HttpMethod.POST)) {
                 log.info("Request Body: {}", new String(bytes, StandardCharsets.UTF_8));

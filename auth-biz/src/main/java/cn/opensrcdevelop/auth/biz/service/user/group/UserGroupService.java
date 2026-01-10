@@ -8,7 +8,6 @@ import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface UserGroupService extends IService<UserGroup> {
@@ -35,5 +34,7 @@ public interface UserGroupService extends IService<UserGroup> {
 
     void removeUserGroup(String userGroupId);
 
-    PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String userGroupId,
+            String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword);
 }

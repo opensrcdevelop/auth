@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.biz.dto.user.attr.dict;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "字典数据响应")
 @Data

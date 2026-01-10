@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.common.security.password.rule;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 public class SpecificPasswordRule implements PasswordRule {

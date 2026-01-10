@@ -2,7 +2,6 @@ package cn.opensrcdevelop.auth.audit.context;
 
 import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import com.alibaba.ttl.TransmittableThreadLocal;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

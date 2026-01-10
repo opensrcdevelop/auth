@@ -17,13 +17,12 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.List;
+import java.util.Objects;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableField> implements TableFieldService {
@@ -31,10 +30,14 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
     /**
      * 获取表字段列表
      *
-     * @param tableId 表ID
-     * @param keyword 字段名称检索关键字
-     * @param page    页数
-     * @param size    条数
+     * @param tableId
+     *            表ID
+     * @param keyword
+     *            字段名称检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
      * @return 表字段列表
      */
     @Override
@@ -60,7 +63,8 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
         pageData.setTotal(pageRequest.getTotal());
         pageData.setSize(pageRequest.getSize());
 
-        List<TableFieldResponseDto> data = CommonUtil.stream(tableFieldList).map(tableField -> TableFieldResponseDto.builder()
+        List<TableFieldResponseDto> data = CommonUtil.stream(tableFieldList)
+                .map(tableField -> TableFieldResponseDto.builder()
                         .id(tableField.getFieldId())
                         .name(tableField.getFieldName())
                         .type(TableFieldType.valueOf(tableField.getFieldType()).getDisplayName())
@@ -75,15 +79,10 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
     /**
      * 批量更新表字段
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_DATA_SOURCE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "批量更新了数据源中的表字段信息",
-            fail = "批量更新数据源中的表字段信息失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.UPDATE, success = "批量更新了数据源中的表字段信息", fail = "批量更新数据源中的表字段信息失败")
     @Override
     public void batchUpdate(BatchUpdateTableFieldRequestDto requestDto) {
         // 1. 属性编辑
@@ -113,7 +112,8 @@ public class TableFieldServiceImpl extends ServiceImpl<TableFieldMapper, TableFi
     /**
      * 删除表中的所有字段
      *
-     * @param tableIds 表ID集合
+     * @param tableIds
+     *            表ID集合
      */
     @Transactional
     @Override

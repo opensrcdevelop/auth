@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.ai.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Schema(description = "模型提供商响应")
 @Builder

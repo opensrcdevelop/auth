@@ -5,7 +5,8 @@ package cn.opensrcdevelop.common.constants;
  */
 public class CommonConstants {
 
-    private CommonConstants () {}
+    private CommonConstants() {
+    }
 
     public static final String REST_RESPONSE_ATTR = "REST_RESPONSE_ATTR";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS = "yyyy-MM-dd HH:mm:ss.SSSSSS";
@@ -21,7 +22,7 @@ public class CommonConstants {
     public static final String VERSION = "version";
     public static final String ROLES = "roles";
     public static final String COMMA = ",";
-    public static final String USERNAME  ="username";
+    public static final String USERNAME = "username";
     public static final String MDC_TRACE_ID = "TraceId";
     public static final String MDC_REMOTE_IP = "RemoteIP";
     public static final String MDC_TENANT_CODE = "TenantCode";

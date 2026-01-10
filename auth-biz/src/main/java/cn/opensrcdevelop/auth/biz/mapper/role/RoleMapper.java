@@ -4,15 +4,16 @@ import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
-import java.util.List;
 
 @Mapper
 public interface RoleMapper extends BaseMapper<Role> {
 
-    List<RoleMapping> searchUserRoles(@Param("userId") String userId, @Param("dynamicUserGroupIds") List<String> dynamicUserGroupIds);
+    List<RoleMapping> searchUserRoles(@Param("userId") String userId,
+            @Param("dynamicUserGroupIds") List<String> dynamicUserGroupIds);
 
-    IPage<RoleMapping> searchRolePrincipals(@Param("page") IPage<RoleMapping> page,  @Param("roleId") String roleId, @Param("keyword") String keyword);
+    IPage<RoleMapping> searchRolePrincipals(@Param("page") IPage<RoleMapping> page, @Param("roleId") String roleId,
+            @Param("keyword") String keyword);
 }

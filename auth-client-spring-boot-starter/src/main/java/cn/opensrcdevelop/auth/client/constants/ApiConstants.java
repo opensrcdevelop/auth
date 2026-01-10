@@ -2,9 +2,10 @@ package cn.opensrcdevelop.auth.client.constants;
 
 public class ApiConstants {
 
-    private ApiConstants() {}
+    private ApiConstants() {
+    }
 
-    public static final String SUCCESS  ="success";
+    public static final String SUCCESS = "success";
     public static final String DATA = "data";
     public static final String PERMISSIONS = "permissions";
     public static final String PERMISSION = "permission";

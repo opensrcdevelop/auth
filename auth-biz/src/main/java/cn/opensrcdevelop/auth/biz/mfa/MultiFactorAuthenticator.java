@@ -4,18 +4,18 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.support.TenantContext;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
-import org.apache.commons.codec.binary.Base32;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.binary.Base32;
 
 public class MultiFactorAuthenticator {
 
-    private MultiFactorAuthenticator() {}
+    private MultiFactorAuthenticator() {
+    }
 
     private static final String RANDOM_NUMBER_ALGORITHM = "SHA1PRNG";
     private static final String ISSUER = SpringContextUtil.getProperty("spring.application.name", "auth-server");
@@ -47,8 +47,10 @@ public class MultiFactorAuthenticator {
     /**
      * 获取二维码字符串
      *
-     * @param username 用户名
-     * @param secret 密钥
+     * @param username
+     *            用户名
+     * @param secret
+     *            密钥
      * @return 二维码字符串
      */
     public static String getQrCodeString(String username, String secret) {
@@ -56,22 +58,26 @@ public class MultiFactorAuthenticator {
         if (tenantContext.isDefaultTenant()) {
             return String.format(TOTP_QRCODE_FORMAT, username, secret, ISSUER);
         } else {
-            return String.format(TOTP_QRCODE_FORMAT, username, secret, String.format(TENANT_ISSUER_FORMAT, ISSUER, tenantContext.getTenantName()));
+            return String.format(TOTP_QRCODE_FORMAT, username, secret,
+                    String.format(TENANT_ISSUER_FORMAT, ISSUER, tenantContext.getTenantName()));
         }
     }
 
     /**
      * 验证一次性密码是否正确
      *
-     * @param secret 密钥
-     * @param code 用户提交的密码
-     * @param time 当前时间
+     * @param secret
+     *            密钥
+     * @param code
+     *            用户提交的密码
+     * @param time
+     *            当前时间
      * @return 验证结果
      */
     public static boolean checkCode(String secret, long code, long time) {
         byte[] decodedSecret = BASE32.decode(secret);
         long t = (time / 1000L) / TIME_PERIOD;
-        for(int i = -WINDOW_SIZE; i <= WINDOW_SIZE; i++) {
+        for (int i = -WINDOW_SIZE; i <= WINDOW_SIZE; i++) {
             long hash;
             try {
                 hash = verifyCode(decodedSecret, t + i);

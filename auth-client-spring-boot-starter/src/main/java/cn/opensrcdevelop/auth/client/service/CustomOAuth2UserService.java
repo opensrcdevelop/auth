@@ -1,10 +1,12 @@
 package cn.opensrcdevelop.auth.client.service;
 
-import cn.opensrcdevelop.auth.client.support.OAuth2Context;
-import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
 import cn.opensrcdevelop.auth.client.support.OAuth2Attributes;
 import cn.opensrcdevelop.auth.client.support.OAuth2AttributesCustomizer;
+import cn.opensrcdevelop.auth.client.support.OAuth2Context;
+import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -15,9 +17,6 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-
-import java.util.Collections;
-import java.util.List;
 
 public class CustomOAuth2UserService extends DefaultOAuth2UserService implements ApplicationContextAware {
 
@@ -55,7 +54,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService implements
     }
 
     private List<OAuth2AttributesCustomizer> getAllOAuth2UserAttributesCustomizers() {
-        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext
+                .getAutowireCapableBeanFactory();
         var beans = beanFactory.getBeansOfType(OAuth2AttributesCustomizer.class);
         if (MapUtils.isNotEmpty(beans)) {
             return beans.values().stream().toList();

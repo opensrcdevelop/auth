@@ -26,6 +26,10 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -38,11 +42,6 @@ import org.springframework.security.oauth2.server.authorization.settings.Configu
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -63,16 +62,11 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 创建客户端
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return 响应
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CLIENT,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了客户端{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）",
-            fail = "创建客户端{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CLIENT, sysOperation = SysOperationType.CREATE, success = "创建了客户端{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）", fail = "创建客户端{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto createClient(ClientRequestDto requestDto) {
@@ -117,9 +111,12 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 获取客户端列表
      *
-     * @param keyword 关键字
-     * @param page 页数
-     * @param size 条数
+     * @param keyword
+     *            关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
      * @return 客户端列表
      */
     @Override
@@ -131,13 +128,11 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             clientList = super.list(pageRequest, Wrappers.<Client>lambdaQuery()
                     .select(Client::getClientId, Client::getClientName, Client::getDescription)
                     .like(Client::getClientName, keyword)
-                    .orderByAsc(Client::getClientName)
-            );
+                    .orderByAsc(Client::getClientName));
         } else {
             clientList = super.list(pageRequest, Wrappers.<Client>lambdaQuery()
                     .select(Client::getClientId, Client::getClientName, Client::getDescription)
-                    .orderByAsc(Client::getClientName)
-            );
+                    .orderByAsc(Client::getClientName));
         }
 
         // 2. 属性编辑
@@ -161,7 +156,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 获取客户端详情
      *
-     * @param id 客户端 ID
+     * @param id
+     *            客户端 ID
      * @return 客户端详情
      */
     @Override
@@ -188,7 +184,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
 
         // 认证方式
         List<String> authenticationMethods = new ArrayList<>();
-        CommonUtil.stream(registeredClient.getClientAuthenticationMethods()).forEach(m -> authenticationMethods.add(m.getValue()));
+        CommonUtil.stream(registeredClient.getClientAuthenticationMethods())
+                .forEach(m -> authenticationMethods.add(m.getValue()));
         clientResponseDto.setAuthenticationMethods(authenticationMethods);
 
         // OIDC scope
@@ -197,9 +194,12 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         clientResponseDto.setScopes(scopes);
 
         // Token 配置
-        clientResponseDto.setAuthorizationCodeTimeToLive(registeredClient.getTokenSettings().getAuthorizationCodeTimeToLive().toMinutes());
-        clientResponseDto.setAccessTokenTimeToLive(registeredClient.getTokenSettings().getAccessTokenTimeToLive().toMinutes());
-        clientResponseDto.setRefreshTokenTimeToLive(registeredClient.getTokenSettings().getRefreshTokenTimeToLive().toMinutes());
+        clientResponseDto.setAuthorizationCodeTimeToLive(
+                registeredClient.getTokenSettings().getAuthorizationCodeTimeToLive().toMinutes());
+        clientResponseDto
+                .setAccessTokenTimeToLive(registeredClient.getTokenSettings().getAccessTokenTimeToLive().toMinutes());
+        clientResponseDto
+                .setRefreshTokenTimeToLive(registeredClient.getTokenSettings().getRefreshTokenTimeToLive().toMinutes());
 
         // PKCE
         clientResponseDto.setRequireProofKey(registeredClient.getClientSettings().isRequireProofKey());
@@ -209,15 +209,10 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 更新客户端
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CLIENT,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）",
-            fail = "修改客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CLIENT, sysOperation = SysOperationType.UPDATE, success = "修改了客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）", fail = "修改客户端（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CLIENT) }}）失败")
     @Transactional
     @Override
     public void updateClient(ClientRequestDto requestDto) {
@@ -251,15 +246,10 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 更新客户端密钥
      *
-     * @param id 客户端 ID
+     * @param id
+     *            客户端 ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CLIENT,
-            sysOperation = SysOperationType.UPDATE,
-            success = "更新了客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥",
-            fail = "更新客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CLIENT, sysOperation = SysOperationType.UPDATE, success = "更新了客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥", fail = "更新客户端（{{ @linkGen.toLink(#id, T(ResourceType).CLIENT) }}）的密钥失败")
     @Transactional
     @Override
     public CreateOrUpdateSecretClientResponseDto updateClientSecret(String id) {
@@ -289,15 +279,10 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     /**
      * 删除客户端
      *
-     * @param clientId 客户端ID
+     * @param clientId
+     *            客户端ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CLIENT,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）",
-            fail = "删除客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CLIENT, sysOperation = SysOperationType.DELETE, success = "删除了客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）", fail = "删除客户端（{{ @linkGen.toLink(#clientId, T(ResourceType).CLIENT) }}）失败")
     @Transactional
     @Override
     public void deleteClient(String clientId) {
@@ -315,7 +300,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
      */
     @Override
     public String rotateConsoleClientSecret() {
-        String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+        String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID,
+                String.class);
 
         // 获取版本号
         Integer version = super.getById(consoleClientId).getVersion();
@@ -345,7 +331,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         }
 
         if (CollectionUtils.isNotEmpty(requestDto.getAuthenticationMethods())) {
-            updateClient.setClientAuthenticationMethods(String.join(CommonConstants.COMMA, requestDto.getAuthenticationMethods()));
+            updateClient.setClientAuthenticationMethods(
+                    String.join(CommonConstants.COMMA, requestDto.getAuthenticationMethods()));
         }
 
         if (Objects.nonNull(requestDto.getScopes())) {
@@ -364,19 +351,23 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             Map<String, Object> clientSettings = new HashMap<>(beforeUpdateClient.getClientSettings().getSettings());
 
             if (Objects.nonNull(requestDto.getAuthorizationCodeTimeToLive())) {
-                tokenSettings.put(ConfigurationSettingNames.Token.AUTHORIZATION_CODE_TIME_TO_LIVE, Duration.ofMinutes(requestDto.getAuthorizationCodeTimeToLive()));
+                tokenSettings.put(ConfigurationSettingNames.Token.AUTHORIZATION_CODE_TIME_TO_LIVE,
+                        Duration.ofMinutes(requestDto.getAuthorizationCodeTimeToLive()));
             }
 
             if (Objects.nonNull(requestDto.getAccessTokenTimeToLive())) {
-                tokenSettings.put(ConfigurationSettingNames.Token.ACCESS_TOKEN_TIME_TO_LIVE, Duration.ofMinutes(requestDto.getAccessTokenTimeToLive()));
+                tokenSettings.put(ConfigurationSettingNames.Token.ACCESS_TOKEN_TIME_TO_LIVE,
+                        Duration.ofMinutes(requestDto.getAccessTokenTimeToLive()));
             }
 
             if (Objects.nonNull(requestDto.getRefreshTokenTimeToLive())) {
-                tokenSettings.put(ConfigurationSettingNames.Token.REFRESH_TOKEN_TIME_TO_LIVE, Duration.ofMinutes(requestDto.getRefreshTokenTimeToLive()));
+                tokenSettings.put(ConfigurationSettingNames.Token.REFRESH_TOKEN_TIME_TO_LIVE,
+                        Duration.ofMinutes(requestDto.getRefreshTokenTimeToLive()));
             }
 
             if (Objects.nonNull(requestDto.getRequireAuthorizationConsent())) {
-                clientSettings.put(ConfigurationSettingNames.Client.REQUIRE_AUTHORIZATION_CONSENT, requestDto.getRequireAuthorizationConsent());
+                clientSettings.put(ConfigurationSettingNames.Client.REQUIRE_AUTHORIZATION_CONSENT,
+                        requestDto.getRequireAuthorizationConsent());
             }
 
             if (Objects.nonNull(requestDto.getRequireProofKey())) {
@@ -410,19 +401,24 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             clientBuilder.scopes(x -> x.addAll(requestDto.getScopes()));
         }
 
-        var grantTypes = requestDto.getGrantTypes().stream().distinct().map(AuthorizationGrantType::new).collect(Collectors.toSet());
+        var grantTypes = requestDto.getGrantTypes().stream().distinct().map(AuthorizationGrantType::new)
+                .collect(Collectors.toSet());
         clientBuilder.authorizationGrantTypes(x -> x.addAll(grantTypes));
 
-        var methods = requestDto.getAuthenticationMethods().stream().distinct().map(ClientAuthenticationMethod::new).collect(Collectors.toSet());
+        var methods = requestDto.getAuthenticationMethods().stream().distinct().map(ClientAuthenticationMethod::new)
+                .collect(Collectors.toSet());
         clientBuilder.clientAuthenticationMethods(x -> x.addAll(methods));
 
-        tokenSettingsBuilder.authorizationCodeTimeToLive(Duration.ofMinutes(requestDto.getAuthorizationCodeTimeToLive()));
+        tokenSettingsBuilder
+                .authorizationCodeTimeToLive(Duration.ofMinutes(requestDto.getAuthorizationCodeTimeToLive()));
         tokenSettingsBuilder.accessTokenTimeToLive(Duration.ofMinutes(requestDto.getAccessTokenTimeToLive()));
         tokenSettingsBuilder.refreshTokenTimeToLive(Duration.ofMinutes(requestDto.getRefreshTokenTimeToLive()));
         clientBuilder.tokenSettings(tokenSettingsBuilder.build());
 
-        clientSettingsBuilder.requireAuthorizationConsent(!Objects.isNull(requestDto.getRequireAuthorizationConsent()) && requestDto.getRequireAuthorizationConsent());
-        clientSettingsBuilder.requireProofKey(!Objects.isNull(requestDto.getRequireProofKey()) && requestDto.getRequireProofKey());
+        clientSettingsBuilder.requireAuthorizationConsent(!Objects.isNull(requestDto.getRequireAuthorizationConsent())
+                && requestDto.getRequireAuthorizationConsent());
+        clientSettingsBuilder
+                .requireProofKey(!Objects.isNull(requestDto.getRequireProofKey()) && requestDto.getRequireProofKey());
         clientBuilder.clientSettings(clientSettingsBuilder.build());
 
         return clientBuilder.build();
@@ -433,13 +429,15 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, requestDto.getName())))) {
+        if (Objects.nonNull(
+                super.getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, requestDto.getName())))) {
             throw new BizException(MessageConstants.CLIENT_MSG_1000, requestDto.getName());
         }
     }
 
     private void checkIsConsoleClient(String clientId) {
-        String consoleClientId =  systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+        String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID,
+                String.class);
         if (StringUtils.equals(consoleClientId, clientId)) {
             throw new BizException(MessageConstants.CLIENT_MSG_1001, clientId);
         }

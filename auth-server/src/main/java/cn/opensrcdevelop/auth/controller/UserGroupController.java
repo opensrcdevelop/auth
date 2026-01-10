@@ -32,14 +32,15 @@ public class UserGroupController {
 
     @Operation(summary = "创建用户组", description = "创建用户组")
     @PostMapping
-    @Authorize({ "allUserGroupPermissions", "createUserGroup" })
-    public void createUserGroup(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class }) UserGroupRequestDto requestDto) {
+    @Authorize({"allUserGroupPermissions", "createUserGroup"})
+    public void createUserGroup(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) UserGroupRequestDto requestDto) {
         userGroupService.createUserGroup(requestDto);
     }
 
     @Operation(summary = "创建用户组映射", description = "创建用户组映射")
     @PostMapping("/mapping")
-    @Authorize({ "allUserGroupMappingPermissions", "createUserGroupMapping" })
+    @Authorize({"allUserGroupMappingPermissions", "createUserGroupMapping"})
     public void createUserUserGroupMapping(@RequestBody @Valid UserGroupMappingRequestDto requestDto) {
         userGroupService.createUserGroupMapping(requestDto);
     }
@@ -51,14 +52,15 @@ public class UserGroupController {
             @Parameter(name = "keyword", description = "用户组名称或标识关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @Authorize({ "allUserGroupPermissions", "listUserGroup" })
-    public PageData<UserGroupResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allUserGroupPermissions", "listUserGroup"})
+    public PageData<UserGroupResponseDto> list(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return userGroupService.list(page, size, keyword);
     }
 
     @Operation(summary = "删除用户组映射", description = "删除用户组映射")
     @DeleteMapping("/mapping")
-    @Authorize({ "allUserGroupMappingPermissions", "deleteUserGroupMapping" })
+    @Authorize({"allUserGroupMappingPermissions", "deleteUserGroupMapping"})
     public void removeUserUserGroupMapping(@RequestBody @Valid UserGroupMappingRequestDto requestDto) {
         userGroupService.removeUserGroupMapping(requestDto);
     }
@@ -68,7 +70,7 @@ public class UserGroupController {
             @Parameter(name = "id", description = "用户组ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}")
-    @Authorize({ "allUserGroupPermissions", "getUserGroupDetail" })
+    @Authorize({"allUserGroupPermissions", "getUserGroupDetail"})
     public UserGroupResponseDto detail(@PathVariable @NotBlank String id) {
         return userGroupService.detail(id);
     }
@@ -81,15 +83,18 @@ public class UserGroupController {
             @Parameter(name = "keyword", description = "用户名 / 邮箱 / 手机号检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/users")
-    @Authorize({ "allUserGroupPermissions", "getUserGroupUsers" })
-    public PageData<UserResponseDto> getGroupUsers(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id, @RequestParam(required = false) String keyword) {
+    @Authorize({"allUserGroupPermissions", "getUserGroupUsers"})
+    public PageData<UserResponseDto> getGroupUsers(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+            @RequestParam(required = false) String keyword) {
         return userGroupService.getGroupUsers(page, size, id, keyword);
     }
 
     @Operation(summary = "更新用户组", description = "更新用户组")
     @PutMapping
-    @Authorize({ "allUserGroupPermissions", "updateUserGroup" })
-    public void updateUserGroup(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) UserGroupRequestDto requestDto ) {
+    @Authorize({"allUserGroupPermissions", "updateUserGroup"})
+    public void updateUserGroup(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) UserGroupRequestDto requestDto) {
         userGroupService.updateUserGroup(requestDto);
     }
 
@@ -98,7 +103,7 @@ public class UserGroupController {
             @Parameter(name = "id", description = "用户组ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allUserGroupPermissions", "deleteUserGroup" })
+    @Authorize({"allUserGroupPermissions", "deleteUserGroup"})
     public void removeUserGroup(@PathVariable String id) {
         userGroupService.removeUserGroup(id);
     }
@@ -114,12 +119,14 @@ public class UserGroupController {
             @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
     })
     @GetMapping("/{id}/permissions")
-    @Authorize({ "allUserGroupPermissions", "getUserGroupPermissions" })
-    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
-                                                          @RequestParam(required = false) String resourceGroupNameSearchKeyword,
-                                                          @RequestParam(required = false) String resourceNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionCodeSearchKeyword) {
-        return userGroupService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+    @Authorize({"allUserGroupPermissions", "getUserGroupPermissions"})
+    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+            @RequestParam(required = false) String resourceGroupNameSearchKeyword,
+            @RequestParam(required = false) String resourceNameSearchKeyword,
+            @RequestParam(required = false) String permissionNameSearchKeyword,
+            @RequestParam(required = false) String permissionCodeSearchKeyword) {
+        return userGroupService.getPermissions(page, size, id, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 }

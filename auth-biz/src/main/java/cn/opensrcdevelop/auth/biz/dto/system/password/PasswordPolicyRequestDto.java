@@ -8,16 +8,15 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "创建 / 更新密码策略请求")
 @Data
 public class PasswordPolicyRequestDto {
 
     @Schema(description = "策略ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "策略名称")
@@ -28,16 +27,16 @@ public class PasswordPolicyRequestDto {
     private String desc;
 
     @Schema(description = "密码强度")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
-    @EnumValue( { "0", "1", "2", "3", "4" } )
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
+    @EnumValue({"0", "1", "2", "3", "4"})
     private Integer passwordStrength;
 
     @Schema(description = "最小长度")
-    @Min(value = 1, groups = { StrengthLevel4.class })
+    @Min(value = 1, groups = {StrengthLevel4.class})
     private Integer minLength;
 
     @Schema(description = "最大长度")
-    @Max(value = 35, groups = { StrengthLevel4.class })
+    @Max(value = 35, groups = {StrengthLevel4.class})
     private Integer maxLength;
 
     @Schema(description = "是否必须包含数字")
@@ -92,19 +91,19 @@ public class PasswordPolicyRequestDto {
     private Boolean enableForceChangePassword;
 
     @Schema(description = "强制修改密码周期")
-    @Min(value = 1, groups = { ForceChangePassword.class })
+    @Min(value = 1, groups = {ForceChangePassword.class})
     private Integer forcedCycle;
 
     @Schema(description = "强制修改密码周期单位")
-    @EnumValue( value = { "DAY", "MONTH", "YEAR" }, groups = { ForceChangePassword.class })
+    @EnumValue(value = {"DAY", "MONTH", "YEAR"}, groups = {ForceChangePassword.class})
     private String forcedCycleUnit;
 
     @Schema(description = "密码到期提醒周期")
-    @Min(value = 1, groups = { ForceChangePassword.class })
+    @Min(value = 1, groups = {ForceChangePassword.class})
     private Integer remindCycle;
 
     @Schema(description = "密码到期提醒周期单位")
-    @EnumValue( value = { "DAY", "MONTH", "YEAR" }, groups = { ForceChangePassword.class })
+    @EnumValue(value = {"DAY", "MONTH", "YEAR"}, groups = {ForceChangePassword.class})
     private String remindCycleUnit;
 
     @Schema(description = "用户ID列表")
@@ -113,6 +112,8 @@ public class PasswordPolicyRequestDto {
     @Schema(description = "用户组ID列表")
     private List<String> userGroupIds;
 
-    public interface StrengthLevel4{}
-    public interface ForceChangePassword{}
+    public interface StrengthLevel4 {
+    }
+    public interface ForceChangePassword {
+    }
 }

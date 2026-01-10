@@ -14,6 +14,14 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -30,15 +38,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -51,17 +50,22 @@ public class ThinkAnswerAgent {
     /**
      * 思考并回答用户提问
      *
-     * @param emitter       SSE
-     * @param interruptFlag 中断标志
-     * @param chatClient    ChatClient
-     * @param userQuestion  用户提问
-     * @param maxSteps      最大执行步数
+     * @param emitter
+     *            SSE
+     * @param interruptFlag
+     *            中断标志
+     * @param chatClient
+     *            ChatClient
+     * @param userQuestion
+     *            用户提问
+     * @param maxSteps
+     *            最大执行步数
      */
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
-                                           AtomicBoolean interruptFlag,
-                                           ChatClient chatClient,
-                                           String userQuestion,
-                                           int maxSteps) {
+            AtomicBoolean interruptFlag,
+            ChatClient chatClient,
+            String userQuestion,
+            int maxSteps) {
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
@@ -70,7 +74,9 @@ public class ThinkAnswerAgent {
                 break;
             }
 
-            String stepThinkingMsg = step > 0 ? "\n<strong>Step " + (step + 1) + "</strong>\n" : "<strong>Step " + (step + 1) + "</strong>\n";
+            String stepThinkingMsg = step > 0
+                    ? "\n<strong>Step " + (step + 1) + "</strong>\n"
+                    : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
@@ -98,9 +104,7 @@ public class ThinkAnswerAgent {
         chatClient.prompt(prompt)
                 .advisors(a -> a.params(
                         Map.of(
-                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER
-                        )
-                ))
+                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER)))
                 .stream()
                 .chatResponse()
                 .subscribe(chatResponse -> {
@@ -135,7 +139,9 @@ public class ThinkAnswerAgent {
 
     private List<ToolDefinition> getToolDefinitions() {
         return CommonUtil.stream(methodTools)
-                .flatMap(methodTool -> Arrays.stream(methodTool.getToolCallbacks()).map(ToolCallback::getToolDefinition)).toList();
+                .flatMap(
+                        methodTool -> Arrays.stream(methodTool.getToolCallbacks()).map(ToolCallback::getToolDefinition))
+                .toList();
     }
 
     private Prompt getPrompt(String question) {
@@ -147,55 +153,55 @@ public class ThinkAnswerAgent {
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults());
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
-                ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build()
-        );
+                ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
         builder.messages(
                 new SystemMessage(thinkAnswerPrompt.buildSystemPrompt(PromptTemplate.THINK_ANSWER)),
-                new UserMessage(thinkAnswerPrompt.buildUserPrompt(PromptTemplate.THINK_ANSWER))
-        );
+                new UserMessage(thinkAnswerPrompt.buildUserPrompt(PromptTemplate.THINK_ANSWER)));
         return builder.build();
     }
 
     @SuppressWarnings("all")
     private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
-        String toolName =  toolCall.get("name").toString();
+        String toolName = toolCall.get("name").toString();
         String parameters = toolCall.get("parameters").toString();
 
         if (Objects.isNull(toolName)) {
             toolCallResult = Map.of(
-                    "error", "Tool name cannot be null, please check the tool name in the tool call and try again."
-            );
+                    "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
 
         if (Objects.isNull(parameters)) {
             toolCallResult = Map.of(
-                    "error", "Tool parameters cannot be null, please check the tool parameters in the tool call and try again."
-            );
+                    "error",
+                    "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
 
-        String executeTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
+        String executeTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
             SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
-                    method -> "execute".equals(method.getName())
-            ).findFirst().orElse(null);
+                    method -> "execute".equals(method.getName())).findFirst().orElse(null);
             Class<?>[] executeMethodParamTypes = executeMethod.getParameterTypes();
             Object executeMethodResult;
             if (executeMethodParamTypes != null && executeMethodParamTypes.length > 0) {
-                Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters, new TypeReference<Map<String, Object>>() {
-                });
-                Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"), executeMethodParamTypes[0]);
+                Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters,
+                        new TypeReference<Map<String, Object>>() {
+                        });
+                Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"),
+                        executeMethodParamTypes[0]);
                 executeMethodResult = executeMethod.invoke(tool, request);
             } else {
                 executeMethodResult = executeMethod.invoke(tool);
@@ -207,13 +213,12 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,
-                    "result", result
-            );
+                    "result", result);
 
             String endThinkingMsg = "%s - 工具【%s】执行成功\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName
-            );
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    toolName);
             SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
@@ -228,13 +233,12 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,
-                    "result", errorMsg
-            );
+                    "result", errorMsg);
 
             String errorThinkingMsg = "%s - 工具【%s】执行失败\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName
-            );
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    toolName);
             SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         setToolCallResult(toolCallResult);
@@ -262,8 +266,9 @@ public class ThinkAnswerAgent {
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {
-        });
+        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json,
+                new TypeReference<Map<String, Object>>() {
+                });
         return Tuple.of(reason, jsonMap);
     }
 

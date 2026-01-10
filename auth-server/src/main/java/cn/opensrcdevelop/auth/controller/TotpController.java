@@ -25,7 +25,8 @@ public class TotpController {
 
     @Operation(summary = "检验一次性密码", description = "校验一次性密码")
     @PostMapping("/check")
-    public TotpCodeCheckResponseDto checkCode(@RequestBody @Valid TotpCodeCheckRequestDto requestDto, HttpServletRequest request) {
+    public TotpCodeCheckResponseDto checkCode(@RequestBody @Valid TotpCodeCheckRequestDto requestDto,
+            HttpServletRequest request) {
         return totpService.check(requestDto, request);
     }
 }

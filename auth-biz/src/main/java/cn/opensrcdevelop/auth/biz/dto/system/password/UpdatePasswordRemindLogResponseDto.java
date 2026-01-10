@@ -3,10 +3,9 @@ package cn.opensrcdevelop.auth.biz.dto.system.password;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 @Schema(description = "密码到期提醒日志响应")
 @Builder

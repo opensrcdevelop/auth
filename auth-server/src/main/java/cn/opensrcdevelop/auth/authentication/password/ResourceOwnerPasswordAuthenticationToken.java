@@ -1,16 +1,15 @@
 package cn.opensrcdevelop.auth.authentication.password;
 
+import java.io.Serial;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
-
-import java.io.Serial;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * 密码授权模式 token
@@ -36,18 +35,16 @@ public class ResourceOwnerPasswordAuthenticationToken extends AbstractAuthentica
     @Getter
     private final AuthorizationGrantType authorizationGrantType;
 
-    public ResourceOwnerPasswordAuthenticationToken(AuthorizationGrantType authorizationGrantType, Authentication clientPrincipal,
-                                                    @Nullable
-                                                    Set<String> scope,
-                                                    @Nullable
-                                                    Map<String, Object> additionalParameters) {
+    public ResourceOwnerPasswordAuthenticationToken(AuthorizationGrantType authorizationGrantType,
+            Authentication clientPrincipal,
+            @Nullable Set<String> scope,
+            @Nullable Map<String, Object> additionalParameters) {
         super(Collections.emptyList());
         this.scopes = scope;
         this.authentication = clientPrincipal;
         this.additionalParameters = additionalParameters;
         this.authorizationGrantType = authorizationGrantType;
     }
-
 
     @Override
     public Object getCredentials() {

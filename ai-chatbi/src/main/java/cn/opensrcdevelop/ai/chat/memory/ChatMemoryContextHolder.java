@@ -17,7 +17,7 @@ public class ChatMemoryContextHolder {
         return CHAT_MEMORY_CONTEXT.get();
     }
 
-     public static void removeChatMemoryContext() {
+    public static void removeChatMemoryContext() {
         CHAT_MEMORY_CONTEXT.remove();
     }
 }

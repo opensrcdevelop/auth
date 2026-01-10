@@ -8,13 +8,12 @@ import cn.opensrcdevelop.auth.biz.service.audit.ObjChangeLogService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.context.ApplicationListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor

@@ -12,6 +12,8 @@ import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -21,9 +23,6 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.io.IOException;
-import java.util.Objects;
-
 /**
  * 认证失败处理
  */
@@ -31,11 +30,13 @@ import java.util.Objects;
 public class LoginFailureHandler implements AuthenticationFailureHandler {
 
     private final UserServiceImpl userService = (UserServiceImpl) SpringContextUtil.getBean(UserService.class);
-    private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil.getBean(AuthorizationServerProperties.class);
+    private final AuthorizationServerProperties authorizationServerProperties = SpringContextUtil
+            .getBean(AuthorizationServerProperties.class);
     private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
 
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+            AuthenticationException exception) throws IOException, ServletException {
         log.debug(exception.getMessage(), exception);
         this.rememberMeServices.loginFail(request, response);
         checkLoginFailedCnt(request);
@@ -54,12 +55,14 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
     /**
      * 检查用户登录失败次数
      *
-     * @param request 请求
+     * @param request
+     *            请求
      */
     private void checkLoginFailedCnt(HttpServletRequest request) {
         // 1. 开启多次登录失败后禁用账户
         if (Boolean.TRUE.equals(authorizationServerProperties.getEnableLockAccount())) {
-            String username = request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_USERNAME_KEY);
+            String username = request
+                    .getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_USERNAME_KEY);
 
             // 1.1 检索用户
             User loadedUser = (User) userService.loadUserByUsername(username);

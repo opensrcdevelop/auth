@@ -3,9 +3,8 @@ package cn.opensrcdevelop.auth.biz.dto.system.jwt;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Schema(description = "JWT 密钥信息")
 @Data

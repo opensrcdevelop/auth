@@ -8,7 +8,6 @@ import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface PermissionService extends IService<Permission> {
@@ -17,11 +16,15 @@ public interface PermissionService extends IService<Permission> {
 
     List<PermissionResponseDto> getCurrentUserPermissions();
 
-    void getUserPermissions(IPage<AuthorizeRecord> page, String userId, List<String> dynamicUserGroupIds, String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    void getUserPermissions(IPage<AuthorizeRecord> page, String userId, List<String> dynamicUserGroupIds,
+            String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
-    void getUserGroupPermissions(IPage<AuthorizeRecord> page, String userGroupId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    void getUserGroupPermissions(IPage<AuthorizeRecord> page, String userGroupId, String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
-    void getRolePermissions(IPage<AuthorizeRecord> page, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    void getRolePermissions(IPage<AuthorizeRecord> page, String roleId, String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
 
     void getResourcePermissions(IPage<Permission> page, String resourceId, String keyword);
 

@@ -1,6 +1,11 @@
 package cn.opensrcdevelop.common.cache.aop;
 
 import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -13,12 +18,6 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
-
 @Getter
 @Aspect
 @Order(Ordered.LOWEST_PRECEDENCE - 10)
@@ -28,7 +27,8 @@ public class CacheExpireAspect {
     private final Map<String, Method> cacheNameMethodCache = new ConcurrentHashMap<>();
 
     @Pointcut("@annotation(cn.opensrcdevelop.common.cache.annoation.CacheExpire)")
-    public void pointCut() {}
+    public void pointCut() {
+    }
 
     @Before("pointCut()")
     public void before(JoinPoint joinPoint) {

@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.authentication.password;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -13,8 +14,6 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-
-import java.util.*;
 
 /**
  * 密码授权模式 token 转换器
@@ -29,7 +28,7 @@ public class ResourceOwnerPasswordAuthenticationConverter implements Authenticat
             return null;
         }
 
-        Authentication clientPrincipal  = SecurityContextHolder.getContext().getAuthentication();
+        Authentication clientPrincipal = SecurityContextHolder.getContext().getAuthentication();
         MultiValueMap<String, String> parameters = WebUtil.getParameters(request);
 
         // scope (OPTIONAL)
@@ -62,7 +61,9 @@ public class ResourceOwnerPasswordAuthenticationConverter implements Authenticat
             }
         });
 
-        return new ResourceOwnerPasswordAuthenticationToken(new AuthorizationGrantType(AuthConstants.GRANT_TYPE_PASSWORD), clientPrincipal, scopes, additionalParameters);
+        return new ResourceOwnerPasswordAuthenticationToken(
+                new AuthorizationGrantType(AuthConstants.GRANT_TYPE_PASSWORD), clientPrincipal, scopes,
+                additionalParameters);
     }
 
     private static void throwError(String errorCode, String parameterName) {

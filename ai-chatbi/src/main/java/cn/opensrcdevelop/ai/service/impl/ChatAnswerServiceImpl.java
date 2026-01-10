@@ -7,10 +7,9 @@ import cn.opensrcdevelop.ai.service.ChatAnswerService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.Objects;
 
 @Service
 public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAnswer> implements ChatAnswerService {
@@ -18,7 +17,8 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
     /**
      * 获取回答的用户反馈
      *
-     * @param answerId 回答ID
+     * @param answerId
+     *            回答ID
      * @return 回答的用户反馈
      */
     @Override
@@ -29,7 +29,8 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
     /**
      * 获取回答的 SQL
      *
-     * @param answerId 回答ID
+     * @param answerId
+     *            回答ID
      * @return 回答的 SQL
      */
     @Override

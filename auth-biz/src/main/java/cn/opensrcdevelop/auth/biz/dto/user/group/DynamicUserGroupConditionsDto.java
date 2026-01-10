@@ -5,9 +5,8 @@ import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "动态用户组条件请求/响应")
 @Data

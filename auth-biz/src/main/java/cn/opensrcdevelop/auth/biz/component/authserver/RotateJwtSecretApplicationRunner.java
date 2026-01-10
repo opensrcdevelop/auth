@@ -11,14 +11,13 @@ import cn.opensrcdevelop.tenant.support.TenantContext;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -58,7 +57,8 @@ public class RotateJwtSecretApplicationRunner implements ApplicationRunner, Orde
 
                 if (Objects.nonNull(jwtSecretInfoDto) && Objects.nonNull(jwtSecretInfoDto.getExpireTime())) {
                     // 2.4 添加轮换密钥任务
-                    scheduledTaskService.addTaskAtFixedTime(ROTATE_JWT_SECRET_TASK_NAME_PREFIX + tenantCode, () -> systemSettingService.rotateJwtSecret(tenantCode), jwtSecretInfoDto.getExpireTime());
+                    scheduledTaskService.addTaskAtFixedTime(ROTATE_JWT_SECRET_TASK_NAME_PREFIX + tenantCode,
+                            () -> systemSettingService.rotateJwtSecret(tenantCode), jwtSecretInfoDto.getExpireTime());
                 } else {
                     log.info("租户[{}]无轮换密钥任务。", tenantCode);
                 }

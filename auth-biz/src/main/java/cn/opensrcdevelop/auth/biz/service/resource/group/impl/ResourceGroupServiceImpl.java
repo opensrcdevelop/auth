@@ -23,6 +23,8 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,12 +32,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-
 @Service
 @RequiredArgsConstructor
-public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, ResourceGroup> implements ResourceGroupService {
+public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, ResourceGroup>
+        implements
+            ResourceGroupService {
 
     private final SystemSettingService systemSettingService;
 
@@ -43,13 +44,15 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     @Lazy
     private ResourceService resourceService;
 
-
     /**
      * 获取资源组列表
      *
-     * @param page    页数
-     * @param size    条数
-     * @param keyword 资源组名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            资源组名称 / 标识检索关键字
      * @return 资源组列表
      */
     @Override
@@ -58,9 +61,13 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         Page<ResourceGroup> pageRequest = new Page<>(page, size);
         List<ResourceGroup> queryResult;
         if (StringUtils.isNotEmpty(keyword)) {
-            queryResult = super.list(pageRequest, Wrappers.<ResourceGroup>lambdaQuery().like(ResourceGroup::getResourceGroupName, keyword).or(o -> o.like(ResourceGroup::getResourceGroupCode, keyword)).orderByAsc(ResourceGroup::getResourceGroupCode));
+            queryResult = super.list(pageRequest,
+                    Wrappers.<ResourceGroup>lambdaQuery().like(ResourceGroup::getResourceGroupName, keyword)
+                            .or(o -> o.like(ResourceGroup::getResourceGroupCode, keyword))
+                            .orderByAsc(ResourceGroup::getResourceGroupCode));
         } else {
-            queryResult = super.list(pageRequest, Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode));
+            queryResult = super.list(pageRequest,
+                    Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode));
         }
         // 2. 属性设置
         PageData<ResourceGroupResponseDto> pageData = new PageData<>();
@@ -85,17 +92,22 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 获取组内资源
      *
-     * @param page            页数
-     * @param size            条数
-     * @param resourceGroupId 资源组ID
-     * @param keyword         资源名称 / 标识关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param resourceGroupId
+     *            资源组ID
+     * @param keyword
+     *            资源名称 / 标识关键字
      * @return 组内资源
      */
     @Override
     public PageData<ResourceResponseDto> getGroupResources(int page, int size, String resourceGroupId, String keyword) {
         // 1. 查询数据库
         Page<Resource> pageRequest = new Page<>(page, size);
-        var query = Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceGroupId, resourceGroupId).orderByAsc(Resource::getResourceCode);
+        var query = Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceGroupId, resourceGroupId)
+                .orderByAsc(Resource::getResourceCode);
         if (StringUtils.isNotEmpty(keyword)) {
             query.like(Resource::getResourceName, keyword).or(o -> o.like(Resource::getResourceCode, keyword));
         }
@@ -123,7 +135,8 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 获取资源组详情
      *
-     * @param resourceGroupId 资源组ID
+     * @param resourceGroupId
+     *            资源组ID
      * @return 资源组详情
      */
     @Override
@@ -143,15 +156,10 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 删除资源组
      *
-     * @param resourceGroupId 资源组ID
+     * @param resourceGroupId
+     *            资源组ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE_GROUP,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）",
-            fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE_GROUP, sysOperation = SysOperationType.DELETE, success = "删除了资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）", fail = "删除资源组（{{ @linkGen.toLinks(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败")
     @Transactional
     @Override
     public void removeResourceGroup(String resourceGroupId) {
@@ -166,7 +174,8 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
         super.removeById(resourceGroupId);
 
         // 3. 删除组内资源
-        var resources = resourceService.list(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceGroupId, resourceGroupId));
+        var resources = resourceService
+                .list(Wrappers.<Resource>lambdaQuery().eq(Resource::getResourceGroupId, resourceGroupId));
         if (CollectionUtils.isNotEmpty(resources)) {
             resourceService.removeResource(resources.stream().map(Resource::getResourceId).toList());
         }
@@ -175,15 +184,10 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 创建资源组
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE_GROUP,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）",
-            fail = "创建资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE_GROUP, sysOperation = SysOperationType.CREATE, success = "创建了资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）", fail = "创建资源组（{{ @linkGen.toLink(#resourceGroupId, ResourceType.RESOURCE_GROUP) }}）失败")
     @Transactional
     @Override
     public void createResourceGroup(ResourceGroupRequestDto requestDto) {
@@ -207,15 +211,10 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     /**
      * 更新资源组
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.RESOURCE_GROUP,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）",
-            fail = "修改资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.RESOURCE_GROUP, sysOperation = SysOperationType.UPDATE, success = "修改了资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）", fail = "修改资源组（{{ @linkGen.toLink(#requestDto.id, ResourceType.RESOURCE_GROUP) }}）失败")
     @Transactional
     @Override
     public void updateResourceGroup(ResourceGroupRequestDto requestDto) {
@@ -252,17 +251,20 @@ public class ResourceGroupServiceImpl extends ServiceImpl<ResourceGroupMapper, R
     }
 
     private void checkResourceGroupCode(ResourceGroupRequestDto requestDto, ResourceGroup rawResourceGroup) {
-        if (Objects.nonNull(rawResourceGroup) && StringUtils.equals(requestDto.getCode(), rawResourceGroup.getResourceGroupCode())) {
+        if (Objects.nonNull(rawResourceGroup)
+                && StringUtils.equals(requestDto.getCode(), rawResourceGroup.getResourceGroupCode())) {
             return;
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<ResourceGroup>lambdaQuery().eq(ResourceGroup::getResourceGroupCode, requestDto.getCode())))) {
+        if (Objects.nonNull(super.getOne(
+                Wrappers.<ResourceGroup>lambdaQuery().eq(ResourceGroup::getResourceGroupCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.RESOURCE_GROUP_MSG_1000, requestDto.getCode());
         }
     }
 
     private void checkIsSystemResourceGroup(String resourceGroupCode) {
-        String consoleClientId =  systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+        String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID,
+                String.class);
         if (StringUtils.equals(consoleClientId, resourceGroupCode)) {
             throw new BizException(MessageConstants.RESOURCE_GROUP_MSG_1001);
         }

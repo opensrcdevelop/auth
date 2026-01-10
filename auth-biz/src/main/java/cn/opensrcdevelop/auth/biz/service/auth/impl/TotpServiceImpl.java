@@ -31,7 +31,8 @@ public class TotpServiceImpl implements TotpService {
     /**
      * 一次性密码校验
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return 检验结果
      */
     @Override
@@ -40,7 +41,8 @@ public class TotpServiceImpl implements TotpService {
         TotpValidContext totpValidContext = (TotpValidContext) session.getAttribute(AuthConstants.TOTP_VALID_CONTEXT);
 
         // 1. 获取用户 MFA 密钥及设备绑定状态
-        User user = userService.getOne(Wrappers.<User>lambdaQuery().select(User::getMfaSecret, User::getMfaDeviceBind).eq(User::getUserId, totpValidContext.getUserId()));
+        User user = userService.getOne(Wrappers.<User>lambdaQuery().select(User::getMfaSecret, User::getMfaDeviceBind)
+                .eq(User::getUserId, totpValidContext.getUserId()));
         String secret = user.getMfaSecret();
         if (StringUtils.isEmpty(secret)) {
             throw new BizException(MessageConstants.TOTP_MSG_1000);
@@ -57,10 +59,12 @@ public class TotpServiceImpl implements TotpService {
 
         // 4. 初次绑定，执行校验操作后，更新设备绑定状态为已绑定
         if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
-            userService.update(Wrappers.<User>lambdaUpdate().set(User::getMfaDeviceBind, true).eq(User::getUserId, totpValidContext.getUserId()));
+            userService.update(Wrappers.<User>lambdaUpdate().set(User::getMfaDeviceBind, true).eq(User::getUserId,
+                    totpValidContext.getUserId()));
 
             // 5. 审计
-            AuditUtil.publishSuccessUserOperationAuditEvent(AuthUtil.getCurrentUserId(), ResourceType.USER, UserOperationType.BIND_MFA, "绑定了 MFA 设备");
+            AuditUtil.publishSuccessUserOperationAuditEvent(AuthUtil.getCurrentUserId(), ResourceType.USER,
+                    UserOperationType.BIND_MFA, "绑定了 MFA 设备");
         }
 
         TotpCodeCheckResponseDto responseDto = new TotpCodeCheckResponseDto();

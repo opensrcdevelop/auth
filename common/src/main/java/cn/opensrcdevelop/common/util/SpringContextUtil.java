@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.common.util;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -8,9 +10,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
 
 @Component
 @SuppressWarnings("unused")
@@ -49,7 +48,7 @@ public class SpringContextUtil implements ApplicationContextAware {
         DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getAutowireCapableBeanFactory();
         var beans = beanFactory.getBeansOfType(clazz);
         if (MapUtils.isNotEmpty(beans)) {
-             return beans.values().stream().toList();
+            return beans.values().stream().toList();
         } else {
             return Collections.emptyList();
         }

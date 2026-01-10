@@ -6,9 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import lombok.experimental.UtilityClass;
-
 import java.util.*;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class ChartRenderer {
@@ -18,8 +17,10 @@ public class ChartRenderer {
     /**
      * 根据配置渲染图表
      *
-     * @param config   配置
-     * @param dataRows 查询结果
+     * @param config
+     *            配置
+     * @param dataRows
+     *            查询结果
      * @return 图表
      */
     public Tuple2<String, Object> render(Map<String, Object> config, List<Map<String, Object>> dataRows) {
@@ -45,16 +46,14 @@ public class ChartRenderer {
         // 1. 标题
         Map<String, Object> title = Map.of(
                 "text", titleText,
-                "description", description
-        );
+                "description", description);
 
         // 无数据
         if (!columnsNode.isArray() || columnsNode.isEmpty() || rows.isEmpty()) {
             return Map.of(
                     "columns", List.of(),
                     "data", List.of(),
-                    "title", title
-            );
+                    "title", title);
         }
 
         // 2. 列配置
@@ -71,8 +70,7 @@ public class ChartRenderer {
             column.put("align", "left");
             // 2.4 排序
             column.put("sortable", Map.of(
-                    "sortDirections", List.of("ascend", "descend")
-            ));
+                    "sortDirections", List.of("ascend", "descend")));
             arcoColumns.add(column);
         }
 
@@ -108,24 +106,21 @@ public class ChartRenderer {
         // 5. 公共 title
         Map<String, Object> title = Map.of(
                 "text", titleText,
-                "description", description
-        );
+                "description", description);
 
         // 6. 工具箱
         Map<String, Object> toolboxFeature = new LinkedHashMap<>();
         // 6.1 基础工具：还原和保存图片（所有图表类型都支持）
         toolboxFeature.put("restore", Map.of(
                 "show", true,
-                "title", "还原"
-        ));
+                "title", "还原"));
         toolboxFeature.put("saveAsImage", Map.of(
                 "show", true,
                 "type", "png",
                 "name", titleText,
                 "backgroundColor", "#fff",
                 "pixelRatio", 2,
-                "title", "保存为图片"
-        ));
+                "title", "保存为图片"));
         // 6.2 根据图表类型添加特定工具
         if ("pie".equalsIgnoreCase(chartType)) {
             // 6.2.1 饼图：不支持类型切换，添加数据视图工具
@@ -133,8 +128,7 @@ public class ChartRenderer {
                     "show", true,
                     "title", "数据视图",
                     "readOnly", true,
-                    "lang", List.of("数据视图", "关闭", "刷新")
-            ));
+                    "lang", List.of("数据视图", "关闭", "刷新")));
         } else {
             // 6.2.2 柱状图、折线图：支持类型切换
             toolboxFeature.put("magicType", Map.of(
@@ -142,20 +136,16 @@ public class ChartRenderer {
                     "type", List.of("line", "bar"),
                     "title", Map.of(
                             "line", "切换为折线图",
-                            "bar", "切换为柱状图"
-                    )
-            ));
-            
+                            "bar", "切换为柱状图")));
+
             // 6.2.3 坐标轴图表：添加数据缩放工具
             toolboxFeature.put("dataZoom", Map.of(
                     "show", true,
                     "title", Map.of(
                             "zoom", "区域缩放",
-                            "back", "区域缩放还原"
-                    )
-            ));
+                            "back", "区域缩放还原")));
         }
-        
+
         Map<String, Object> toolboxMap = Map.of(
                 "show", true,
                 "orient", "horizontal",
@@ -163,8 +153,7 @@ public class ChartRenderer {
                 "itemGap", 10,
                 "left", "right",
                 "top", "top",
-                "feature", toolboxFeature
-        );
+                "feature", toolboxFeature);
 
         // 7. 系列数据
         List<Map<String, Object>> seriesData;
@@ -190,8 +179,7 @@ public class ChartRenderer {
 
             tooltip = Map.of(
                     "trigger", "item",
-                    "formatter", "{b}: {c} ({d}%)"
-            );
+                    "formatter", "{b}: {c} ({d}%)");
 
             Map<String, Object> pieSeries = new LinkedHashMap<>();
             pieSeries.put("type", chartType);
@@ -201,19 +189,16 @@ public class ChartRenderer {
 
             Map<String, Object> label = Map.of(
                     "show", true,
-                    "formatter", "{b}: {c} ({d}%)"
-            );
+                    "formatter", "{b}: {c} ({d}%)");
             pieSeries.put("label", label);
 
             Map<String, Object> emphasis = Map.of(
                     "itemStyle", Map.of(
                             "shadowBlur", 10,
                             "shadowOffsetX", 0,
-                            "shadowColor", "rgba(0, 0, 0, 0.5)"
-                    )
-            );
+                            "shadowColor", "rgba(0, 0, 0, 0.5)"));
             pieSeries.put("emphasis", emphasis);
-            
+
             seriesData = List.of(pieSeries);
         } else {
             // 7.2 折线 / 柱形
@@ -223,19 +208,16 @@ public class ChartRenderer {
             xAxis = Map.of(
                     "type", "category",
                     "name", xName,
-                    "data", xData
-            );
+                    "data", xData);
             yAxis = Map.of(
                     "type", "value",
-                    "name", yName
-            );
+                    "name", yName);
 
             Map<String, Object> series = Map.ofEntries(
                     Map.entry("name", yName),
                     Map.entry("type", chartType),
                     Map.entry("data", yData),
-                    Map.entry("smooth", smooth)
-            );
+                    Map.entry("smooth", smooth));
             seriesData = List.of(series);
 
             tooltip = Map.of("trigger", "axis");
@@ -243,9 +225,8 @@ public class ChartRenderer {
 
         // 8. 图例数据
         Map<String, Object> legendMap = Map.of(
-                "show", legend, 
-                "data", legendData
-        );
+                "show", legend,
+                "data", legendData);
 
         Map<String, Object> option = new LinkedHashMap<>();
         option.put("tooltip", tooltip);

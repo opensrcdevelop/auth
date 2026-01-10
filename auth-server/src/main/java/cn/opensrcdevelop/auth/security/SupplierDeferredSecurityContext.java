@@ -1,13 +1,12 @@
 package cn.opensrcdevelop.auth.security;
 
+import java.util.function.Supplier;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.core.context.DeferredSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-
-import java.util.function.Supplier;
 
 public class SupplierDeferredSecurityContext implements DeferredSecurityContext {
     private static final Log logger = LogFactory.getLog(SupplierDeferredSecurityContext.class);

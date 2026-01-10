@@ -34,8 +34,9 @@ public class ResourceGroupController {
             @Parameter(name = "keyword", description = "资源组名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @Authorize({ "allResourceGroupPermissions", "listResourceGroup" })
-    public PageData<ResourceGroupResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allResourceGroupPermissions", "listResourceGroup"})
+    public PageData<ResourceGroupResponseDto> list(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return resourceGroupService.list(page, size, keyword);
     }
 
@@ -47,22 +48,26 @@ public class ResourceGroupController {
             @Parameter(name = "keyword", description = "资源名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/resources")
-    @Authorize({ "allResourceGroupPermissions", "getResourceGroupResources" })
-    public PageData<ResourceResponseDto> getGroupResources(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable String id, @RequestParam(required = false) String keyword) {
+    @Authorize({"allResourceGroupPermissions", "getResourceGroupResources"})
+    public PageData<ResourceResponseDto> getGroupResources(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable String id,
+            @RequestParam(required = false) String keyword) {
         return resourceGroupService.getGroupResources(page, size, id, keyword);
     }
 
     @Operation(summary = "创建资源组", description = "创建资源组")
     @PostMapping
-    @Authorize({ "allResourceGroupPermissions", "createResourceGroup" })
-    public void createResourceGroup(@RequestBody @Validated({ ValidationGroups.Operation.INSERT.class })ResourceGroupRequestDto requestDto) {
+    @Authorize({"allResourceGroupPermissions", "createResourceGroup"})
+    public void createResourceGroup(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) ResourceGroupRequestDto requestDto) {
         resourceGroupService.createResourceGroup(requestDto);
     }
 
     @Operation(summary = "更新资源组", description = "更新资源组")
     @PutMapping
-    @Authorize({ "allResourceGroupPermissions", "updateResourceGroup" })
-    public void updateResourceGroup(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) ResourceGroupRequestDto requestDto) {
+    @Authorize({"allResourceGroupPermissions", "updateResourceGroup"})
+    public void updateResourceGroup(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) ResourceGroupRequestDto requestDto) {
         resourceGroupService.updateResourceGroup(requestDto);
     }
 
@@ -71,7 +76,7 @@ public class ResourceGroupController {
             @Parameter(name = "id", description = "资源组ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allResourceGroupPermissions", "deleteResourceGroup" })
+    @Authorize({"allResourceGroupPermissions", "deleteResourceGroup"})
     public void removeResourceGroup(@PathVariable @NotBlank String id) {
         resourceGroupService.removeResourceGroup(id);
     }
@@ -81,7 +86,7 @@ public class ResourceGroupController {
             @Parameter(name = "id", description = "资源组ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @Authorize({ "allResourceGroupPermissions", "getResourceGroupDetail" })
+    @Authorize({"allResourceGroupPermissions", "getResourceGroupDetail"})
     public ResourceGroupResponseDto detail(@PathVariable @NotBlank String id) {
         return resourceGroupService.detail(id);
     }

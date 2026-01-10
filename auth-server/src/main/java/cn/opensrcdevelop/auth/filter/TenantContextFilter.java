@@ -15,20 +15,20 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-
 @Slf4j
 public class TenantContextFilter extends RestFilter {
 
     @Override
-    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
 
@@ -70,7 +70,8 @@ public class TenantContextFilter extends RestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
-            WebUtil.sendJsonResponse(response, R.optFail(MessageConstants.TENANT_MSG_1000, tenantCode), HttpStatus.NOT_FOUND);
+            WebUtil.sendJsonResponse(response, R.optFail(MessageConstants.TENANT_MSG_1000, tenantCode),
+                    HttpStatus.NOT_FOUND);
         } finally {
             // 5. 清空租户线程上下文和 session 属性
             TenantHelper.clearTenantContext();

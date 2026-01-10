@@ -9,6 +9,7 @@ import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationSer
 import cn.opensrcdevelop.auth.handler.OAuth2LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.OAuth2LoginSuccessHandler;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -18,8 +19,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcAuthorizationCodeAuthenticationProvider;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-
-import java.util.List;
 
 /**
  * OAuth2 Login 配置
@@ -43,20 +42,19 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
                     x.authorizationEndpoint(authorization -> authorization
                             .authorizationRequestResolver(new CustomOAuth2AuthorizationRequestResolver(
                                     authorizationServerProperties,
-                                    clientRegistrationRepository, identitySourceRegistrationService))
-                    );
+                                    clientRegistrationRepository, identitySourceRegistrationService)));
                     x.redirectionEndpoint(redirection -> redirection
-                            .baseUri(authorizationServerProperties.getApiPrefix().concat(AuthConstants.FEDERATION_LOGIN_REDIRECTION_URI))
-                    );
+                            .baseUri(authorizationServerProperties.getApiPrefix()
+                                    .concat(AuthConstants.FEDERATION_LOGIN_REDIRECTION_URI)));
                     x.userInfoEndpoint(userInfo -> userInfo
-                            .userService(customOAuth2UserService)
-                    );
+                            .userService(customOAuth2UserService));
                 });
     }
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
-        // 禁用 OidcAuthorizationCodeAuthenticationProvider 和 OAuth2LoginAuthenticationProvider
+        // 禁用 OidcAuthorizationCodeAuthenticationProvider 和
+        // OAuth2LoginAuthenticationProvider
         // 避免 OIDC id_token 认证失败
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
         if (authenticationManager instanceof ProviderManager providerManager) {
@@ -67,7 +65,6 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
 
         http.authenticationProvider(new CustomOAuth2LoginAuthenticationProvider(
                 new CustomAuthorizationCodeTokenResponseClient(identitySourceRegistrationService),
-                customOAuth2UserService
-        ));
+                customOAuth2UserService));
     }
 }

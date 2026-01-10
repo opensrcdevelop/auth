@@ -12,13 +12,6 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -27,6 +20,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -45,7 +44,8 @@ public class DataSourceMetaCollector {
     /**
      * 收集数据源元信息
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      */
     @Transactional
     public void collect(String dataSourceId) {
@@ -71,7 +71,7 @@ public class DataSourceMetaCollector {
                 tableService.removeBatchByIds(deleteTableIds);
             }
 
-            for (Table table: tables) {
+            for (Table table : tables) {
                 // 5. 添加或更新表信息
                 Table tmpTable = tableService.getOne(Wrappers.<Table>lambdaQuery()
                         .eq(Table::getTableName, table.getTableName())
@@ -95,20 +95,22 @@ public class DataSourceMetaCollector {
                 // 6. 获取表字段信息
                 // 6.1 获取已有的表字段信息
                 List<TableField> existTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                       .eq(TableField::getTableId, tableId));
+                        .eq(TableField::getTableId, tableId));
                 // 6.2 获取最新的表字段信息
-                List<TableField> tableFields = getTableFields(databaseMetaData, DataSourceType.valueOf(dataSourceConf.getDataSourceType()), table);
+                List<TableField> tableFields = getTableFields(databaseMetaData,
+                        DataSourceType.valueOf(dataSourceConf.getDataSourceType()), table);
 
                 // 7. 删除不存在的表字段信息
                 List<String> deleteTableFieldIds = CommonUtil.stream(existTableFields)
-                       .filter(tableField -> tableFields.stream().noneMatch(t -> t.getFieldName().equals(tableField.getFieldName())))
-                       .map(TableField::getFieldId)
-                       .toList();
+                        .filter(tableField -> tableFields.stream()
+                                .noneMatch(t -> t.getFieldName().equals(tableField.getFieldName())))
+                        .map(TableField::getFieldId)
+                        .toList();
                 if (CollectionUtils.isNotEmpty(deleteTableFieldIds)) {
                     tableFieldService.removeByIds(deleteTableFieldIds);
                 }
 
-                for (TableField tableField: tableFields) {
+                for (TableField tableField : tableFields) {
                     // 8. 添加或更新表字段信息
                     TableField tmpTableField = tableFieldService.getOne(Wrappers.<TableField>lambdaQuery()
                             .eq(TableField::getFieldName, tableField.getFieldName())
@@ -132,7 +134,8 @@ public class DataSourceMetaCollector {
             DataSourceConf updateDataSourceConf = new DataSourceConf();
             updateDataSourceConf.setDataSourceId(dataSourceId);
             updateDataSourceConf.setLastSyncTableTime(LocalDateTime.now());
-            updateDataSourceConf.setSyncTableCount(dataSourceConf.getSyncTableCount() == null ? 1 : dataSourceConf.getSyncTableCount() + 1);
+            updateDataSourceConf.setSyncTableCount(
+                    dataSourceConf.getSyncTableCount() == null ? 1 : dataSourceConf.getSyncTableCount() + 1);
             dataSourceConfService.updateById(updateDataSourceConf);
         } catch (SQLException ex) {
             log.error("收集数据库元信息失败，数据源ID：{}", dataSourceId);
@@ -146,8 +149,7 @@ public class DataSourceMetaCollector {
                 null,
                 null,
                 "%",
-                new String[]{"TABLE"}
-        )) {
+                new String[]{"TABLE"})) {
             while (rs.next()) {
                 Table table = new Table();
                 table.setTableName(rs.getString("TABLE_NAME"));
@@ -158,19 +160,20 @@ public class DataSourceMetaCollector {
         return tables;
     }
 
-    private List<TableField> getTableFields(DatabaseMetaData databaseMetaData, DataSourceType dataSourceType, Table table) throws SQLException {
+    private List<TableField> getTableFields(DatabaseMetaData databaseMetaData, DataSourceType dataSourceType,
+            Table table) throws SQLException {
         List<TableField> tableFields = new ArrayList<>();
 
         try (ResultSet rs = databaseMetaData.getColumns(
                 null,
                 null,
                 table.getTableName(),
-                "%"
-        )) {
+                "%")) {
             while (rs.next()) {
                 TableField tableField = new TableField();
                 tableField.setFieldName(rs.getString("COLUMN_NAME"));
-                tableField.setFieldType(tableFieldTypeConverter.convert(dataSourceType, rs.getString("TYPE_NAME")).name());
+                tableField.setFieldType(
+                        tableFieldTypeConverter.convert(dataSourceType, rs.getString("TYPE_NAME")).name());
                 tableField.setRemark(rs.getString("REMARKS"));
                 tableFields.add(tableField);
             }

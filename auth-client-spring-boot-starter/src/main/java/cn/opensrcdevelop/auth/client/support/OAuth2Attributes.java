@@ -1,12 +1,11 @@
 package cn.opensrcdevelop.auth.client.support;
 
-import lombok.Getter;
-import org.springframework.util.Assert;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import org.springframework.util.Assert;
 
 @Getter
 public class OAuth2Attributes implements Serializable {

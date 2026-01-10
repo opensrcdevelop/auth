@@ -16,14 +16,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.io.IOException;
 
 /**
  * 认证成功处理
@@ -42,7 +41,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         User user = (User) authentication.getPrincipal();
         setUserLoginInfo(user.getUserId());
         LoginResponseDto responseDto = new LoginResponseDto();
@@ -95,7 +95,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         responseDto.setConsoleAccess(Boolean.TRUE.equals(user.getConsoleAccess()));
 
         // 5. 检查密码强度
-        boolean checkRes = passwordPolicyService.checkLoginPasswordStrength(user.getUserId(), request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY));
+        boolean checkRes = passwordPolicyService.checkLoginPasswordStrength(user.getUserId(),
+                request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY));
         if (!checkRes) {
             responseDto.setNeedChangePwd(true);
             responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
@@ -111,7 +112,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 设置用户登录信息
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      */
     private void setUserLoginInfo(String userId) {
         // 1. 保存登录日志
@@ -127,7 +129,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 设置变更密码 Session 标识
      *
-     * @param request 请求
+     * @param request
+     *            请求
      */
     private void setChangePwdSessionFlag(HttpServletRequest request) {
         HttpSession session = request.getSession(true);

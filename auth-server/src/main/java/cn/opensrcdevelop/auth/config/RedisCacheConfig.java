@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.config;
 
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -18,9 +20,6 @@ import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.util.Objects;
-import java.util.Optional;
-
 @Configuration
 @RequiredArgsConstructor
 @EnableCaching
@@ -33,8 +32,10 @@ public class RedisCacheConfig {
         // 配置键值序列化方式
         return RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new JdkSerializationRedisSerializer()));
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new JdkSerializationRedisSerializer()));
     }
 
     @Bean
@@ -43,21 +44,26 @@ public class RedisCacheConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(name = {"host","port"}, prefix = "spring.data.redis")
-    public RedissonClient  redissonClient() {
+    @ConditionalOnProperty(name = {"host", "port"}, prefix = "spring.data.redis")
+    public RedissonClient redissonClient() {
         Config config = new Config();
         if (Objects.nonNull(redisProperties.getCluster())) {
             ClusterServersConfig clusterServersConfig = config.useClusterServers();
-            redisProperties.getCluster().getNodes().stream().map(node -> "redis://" + node).forEach(clusterServersConfig::addNodeAddress);
+            redisProperties.getCluster().getNodes().stream().map(node -> "redis://" + node)
+                    .forEach(clusterServersConfig::addNodeAddress);
             clusterServersConfig.setPassword(redisProperties.getPassword());
-            Optional.ofNullable(redisProperties.getTimeout()).ifPresent(t -> clusterServersConfig.setTimeout((int) redisProperties.getTimeout().toSeconds()));
-            Optional.ofNullable(redisProperties.getConnectTimeout()).ifPresent(t -> clusterServersConfig.setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis()));
+            Optional.ofNullable(redisProperties.getTimeout())
+                    .ifPresent(t -> clusterServersConfig.setTimeout((int) redisProperties.getTimeout().toSeconds()));
+            Optional.ofNullable(redisProperties.getConnectTimeout()).ifPresent(
+                    t -> clusterServersConfig.setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis()));
         } else {
             SingleServerConfig singleServerConfig = config.useSingleServer();
             singleServerConfig.setAddress("redis://" + redisProperties.getHost() + ":" + redisProperties.getPort());
             singleServerConfig.setPassword(redisProperties.getPassword());
-            Optional.ofNullable(redisProperties.getTimeout()).ifPresent(t -> singleServerConfig.setTimeout((int) redisProperties.getTimeout().toSeconds()));
-            Optional.ofNullable(redisProperties.getConnectTimeout()).ifPresent(t -> singleServerConfig.setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis()));
+            Optional.ofNullable(redisProperties.getTimeout())
+                    .ifPresent(t -> singleServerConfig.setTimeout((int) redisProperties.getTimeout().toSeconds()));
+            Optional.ofNullable(redisProperties.getConnectTimeout()).ifPresent(
+                    t -> singleServerConfig.setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis()));
         }
 
         return Redisson.create(config);

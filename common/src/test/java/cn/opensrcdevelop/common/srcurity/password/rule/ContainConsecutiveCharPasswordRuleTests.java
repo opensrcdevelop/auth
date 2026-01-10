@@ -1,15 +1,13 @@
 package cn.opensrcdevelop.common.srcurity.password.rule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cn.opensrcdevelop.common.security.password.rule.ContainConsecutiveCharPasswordRule;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ContainConsecutiveCharPasswordRuleTests {
 
@@ -36,10 +34,8 @@ class ContainConsecutiveCharPasswordRuleTests {
                 Arguments.of("abc1234", false),
                 Arguments.of("ab123abcdef", false),
                 Arguments.of("ad123acd", true),
-                Arguments.of("1234abcz", false)
-        );
+                Arguments.of("1234abcz", false));
     }
-
 
     @Test
     void testGetRuleName() {

@@ -3,9 +3,8 @@ package cn.opensrcdevelop.auth.biz.dto.auth;
 import cn.opensrcdevelop.common.validation.constraints.EnumValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "授权请求")
 @Data
@@ -31,6 +30,6 @@ public class AuthorizeRequestDto {
     private List<String> expressionIds;
 
     @Schema(description = "优先级")
-    @EnumValue({ "-1", "0", "1", "2", "3" })
-    private  Integer priority;
+    @EnumValue({"-1", "0", "1", "2", "3"})
+    private Integer priority;
 }

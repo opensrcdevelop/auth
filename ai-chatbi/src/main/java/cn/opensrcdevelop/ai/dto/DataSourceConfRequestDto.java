@@ -13,7 +13,7 @@ import lombok.Data;
 public class DataSourceConfRequestDto {
 
     @Schema(description = "数据源ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "数据源名称")

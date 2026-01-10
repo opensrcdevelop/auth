@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.auth.biz.entity.auth;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
+import lombok.Data;
 
 /**
  * 验证码

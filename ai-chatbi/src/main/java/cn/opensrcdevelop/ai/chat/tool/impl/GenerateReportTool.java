@@ -4,14 +4,13 @@ import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import java.util.Map;
+import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Objects;
 
 @Component(GenerateReportTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -22,10 +21,7 @@ public class GenerateReportTool implements MethodTool {
     private final AnalyzeAgent analyzeAgent;
     private final AnalyzeDataTool analyzeDataTool;
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Generate analysis report for the question"
-    )
+    @Tool(name = TOOL_NAME, description = "Generate analysis report for the question")
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         // 1. 未分析数据时，先执行分析数据工具
@@ -43,8 +39,7 @@ public class GenerateReportTool implements MethodTool {
                 chatContext.getChatClient(),
                 chatContext.getAnalyzeDataResult(),
                 chatContext.getAnalyzeDataSummary(),
-                request.instruction
-        );
+                request.instruction);
 
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(result.get("success"))) {

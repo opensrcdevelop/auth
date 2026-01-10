@@ -22,7 +22,7 @@ public class BizException extends RuntimeException {
     public BizException(Throwable e, String msgCode) {
         super(e.getMessage(), e);
         this.msgCode = msgCode;
-        this.params = new Object[] {};
+        this.params = new Object[]{};
     }
 
     public BizException(String msgCode, Object... params) {
@@ -32,6 +32,6 @@ public class BizException extends RuntimeException {
 
     public BizException(String msgCode) {
         this.msgCode = msgCode;
-        this.params = new Object[] {};
+        this.params = new Object[]{};
     }
 }

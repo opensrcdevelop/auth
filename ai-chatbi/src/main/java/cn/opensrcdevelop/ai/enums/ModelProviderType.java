@@ -7,9 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ModelProviderType {
 
-    OPENAI("OpenAI"),
-    OLLAMA("Ollama"),
-    ANTHROPIC("Anthropic"),;
+    OPENAI("OpenAI"), OLLAMA("Ollama"), ANTHROPIC("Anthropic"),;
 
     private final String displayName;
 }
