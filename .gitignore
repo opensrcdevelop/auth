@@ -50,3 +50,4 @@ ai-chatbi/src/main/resources/application-prompt_template.yml
 .env
 .claude/settings.local.json
 .claude/tmp/
+worktrees/
