@@ -9,8 +9,7 @@ import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import java.text.MessageFormat;
-import java.util.Collection;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -26,6 +25,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.text.MessageFormat;
+import java.util.Collection;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -156,7 +158,12 @@ public class RestExceptionHandler {
      */
     @ExceptionHandler({Exception.class, ServerException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public R<Object> exception(Exception e) {
+    public R<Object> exception(Exception e, HttpServletResponse response) {
+        // 如果 response 已经提交或 getOutputStream 已被调用，直接返回 null
+        if (response.isCommitted()) {
+            log.error("Response already committed, skipping error response. Original error: {}", e.getMessage(), e);
+            return null;
+        }
         log.error(e.getMessage(), e);
         return R.internalFail();
     }

@@ -8,10 +8,7 @@ import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
 import cn.opensrcdevelop.auth.client.support.PermissionVerifyRequestCustomizer;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.*;
-import java.util.stream.IntStream;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
@@ -27,6 +24,11 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * 客户端鉴权服务
@@ -163,7 +165,14 @@ public class PermissionService implements ApplicationContextAware {
 
         Map<String, Object> methodParams = LinkedHashMap.newLinkedHashMap(args.length);
         if (Objects.nonNull(paramNames) && args.length == paramNames.length) {
-            IntStream.range(0, args.length).forEach(i -> methodParams.put(paramNames[i], args[i]));
+            IntStream.range(0, args.length).forEach(i -> {
+                Object arg = args[i];
+                // 过滤掉 Servlet 相关的对象，避免序列化问题
+                if (!(arg instanceof HttpServletRequest)
+                        && !(arg instanceof HttpServletResponse)) {
+                    methodParams.put(paramNames[i], arg);
+                }
+            });
         }
         return methodParams;
     }

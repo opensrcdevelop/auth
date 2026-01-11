@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.common.aop;
 
+import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
@@ -31,7 +32,12 @@ public class RestResponseHandler implements ResponseBodyAdvice<Object> {
                 .getRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
         RestResponse ann = (RestResponse) request.getAttribute(CommonConstants.REST_RESPONSE_ATTR);
-        return ann != null;
+        if (ann == null) {
+            return false;
+        }
+        // 检查方法是否有 @NoRestResponse 注解
+        NoRestResponse noRestResponse = returnType.getMethodAnnotation(NoRestResponse.class);
+        return noRestResponse == null;
     }
 
     @Override
