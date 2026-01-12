@@ -15,7 +15,17 @@ export default userTs;
         <div class="title">用户列表</div>
         <div class="info">对用户进行统一管理。</div>
       </div>
-      <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      <a-space>
+        <a-button @click="handleDownloadTemplate">下载模版</a-button>
+        <a-button @click="handleExport(false)">导出当前页</a-button>
+        <a-button @click="handleExport(true)">导出全部</a-button>
+        <a-upload :custom-request="({ file }) => handleImport(file)" :show-file-list="false" accept=".xlsx,.xls">
+          <template #upload-button>
+            <a-button>导入数据</a-button>
+          </template>
+        </a-upload>
+        <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      </a-space>
     </div>
     <div class="user-list">
       <div class="user-operation">
@@ -416,5 +426,34 @@ export default userTs;
         </template>
       </a-table>
     </div>
+
+    <!-- 导入结果对话框 -->
+    <a-modal
+      v-model:visible="importResultVisible"
+      title="导入结果"
+      @ok="importResultVisible = false"
+      :footer="null"
+    >
+      <a-result
+        :status="importResult.failureCount > 0 ? 'warning' : 'success'"
+        :title="`导入完成：成功 ${importResult.successCount} 条，失败 ${importResult.failureCount} 条`"
+      >
+        <template #extra>
+          <a-table
+            v-if="importResult.errors.length > 0"
+            :data="importResult.errors"
+            :pagination="false"
+            size="small"
+            :scroll="{ x: 600, y: 300 }"
+          >
+            <template #columns>
+              <a-table-column title="行号" data-index="row" :width="80" />
+              <a-table-column title="列名" data-index="column" :width="120" />
+              <a-table-column title="错误信息" data-index="message" />
+            </template>
+          </a-table>
+        </template>
+      </a-result>
+    </a-modal>
   </div>
 </template>

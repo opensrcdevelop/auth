@@ -1,0 +1,17 @@
+export var CODE = "code";
+export var STATE = "state";
+export var AUTHORIZAION_CODE = "authorization_code";
+export var CODE_VERIFIER = "code_verifier";
+export var AUTH_TOKENS = "auth_tokens";
+export var ACCESS_TOKEN = "access_token";
+export var REFRESH_TOKEN = "refresh_token";
+export var TENANT_CODE = "tenant_code";
+export var TENANT_NAME = "tenant_name";
+export var OAUTH_ISSUER = "oauth_issuer";
+export var REDIRECT_PATH = "redirect_path";
+export var REDIRECT_QUERY = "redirect_query";
+export var PERSISTENT_PAGE_INFO = "persistent_page_info";
+export var AUTH_SUCCESS = "authSuccess";
+export var AUTH_FAILURE = "authFailure";
+export var BINDING_EXISTS = "bindingExists";
+export var USER_LOCKED = "userLocked";

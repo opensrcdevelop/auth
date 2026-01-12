@@ -1,4 +1,5 @@
-import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,} from "@/api/user";
+import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,
+  downloadUserTemplate, exportUsers, importUsers,} from "@/api/user";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
@@ -509,6 +510,68 @@ const handleUserColumnResize = (dataIndex: string, width: number) => {
   }, 800);
 };
 
+// 导入导出相关
+const importResultVisible = ref(false);
+const importResult = ref({
+  successCount: 0,
+  failureCount: 0,
+  errors: [],
+});
+
+// 下载模版
+const handleDownloadTemplate = async () => {
+  try {
+    const blob = (await downloadUserTemplate()) as unknown as Blob;
+    downloadBlob(blob, "用户导入模版.xlsx");
+    Notification.success("模版下载成功");
+  } catch (err) {
+    handleApiError(err, "模版下载");
+  }
+};
+
+// 导出数据
+const handleExport = async (exportAll: boolean) => {
+  try {
+    const filters = userListFilters.filters || [];
+    const blob = (await exportUsers(filters, exportAll)) as unknown as Blob;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `用户数据_${date}.xlsx`);
+    Notification.success(exportAll ? "全部数据导出成功" : "当前页导出成功");
+  } catch (err) {
+    handleApiError(err, "导出");
+  }
+};
+
+// 导入数据
+const handleImport = async (file: File) => {
+  try {
+    const result = (await importUsers(file)) as unknown as {
+      successCount: number;
+      failureCount: number;
+      errors: Array<{ row: number; column: string; message: string }>;
+    };
+    importResult.value = result;
+    importResultVisible.value = true;
+
+    if (result.failureCount === 0) {
+      // 刷新列表
+      handleGetUserList(1, 15);
+    }
+  } catch (err) {
+    handleApiError(err, "导入");
+  }
+};
+
+// 下载 Blob 工具函数
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export default defineComponent({
   setup() {
     userListPagination = usePagination("userList", ({ page, size }) => {
@@ -557,6 +620,12 @@ export default defineComponent({
       handleUserColumnResize,
       userListFilterd,
       handleUserListFilterHide,
+      // 导入导出
+      importResultVisible,
+      importResult,
+      handleDownloadTemplate,
+      handleExport,
+      handleImport,
     };
   },
 });

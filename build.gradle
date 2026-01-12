@@ -41,6 +41,8 @@ ext {
     springAiVer = '1.1.2'
     sqlFormatterVer = '2.0.5'
     snakeYamlVer = '2.5'
+    easyexcelVer = '4.0.3'
+    poiVer = '5.3.0'
 }
 
 allprojects {
@@ -48,11 +50,14 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/central/' }
         maven { url 'https://maven.aliyun.com/repository/public/'}
         mavenCentral()
-        maven {
-            url = 'https://packages.aliyun.com/6512e2d3db8fc6072ca0c88c/maven/repo-opensrcdevelop'
-            credentials {
-                username = '6512e2bc3f15d5487d5296cb'
-                password = System.getenv("REPO_OPENSRCDEVELOP_PASSWORD")
+        def repoPassword = System.getenv("REPO_OPENSRCDEVELOP_PASSWORD")
+        if (repoPassword != null && !repoPassword.isEmpty()) {
+            maven {
+                url = 'https://packages.aliyun.com/6512e2d3db8fc6072ca0c88c/maven/repo-opensrcdevelop'
+                credentials {
+                    username = '6512e2bc3f15d5487d5296cb'
+                    password = repoPassword
+                }
             }
         }
     }

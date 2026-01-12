@@ -236,7 +236,7 @@ public class AuthUtil {
         if (user == null) {
             return Collections.emptyMap();
         }
-        Map<String, Object> userMap = new HashMap<>();
+        Map<String, Object> userMap = new LinkedHashMap<>();
         // 普通字段属性
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUserId), user.getUserId());
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUsername), user.getUsername());

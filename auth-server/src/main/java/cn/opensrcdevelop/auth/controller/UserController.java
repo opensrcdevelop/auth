@@ -5,10 +5,13 @@ import cn.opensrcdevelop.auth.biz.dto.user.*;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.SetUserAttrDisplaySeqRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportResultDto;
 import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
+import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
+import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -18,15 +21,20 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -38,6 +46,7 @@ public class UserController {
     private final UserService userService;
     private final UserAttrService userAttrService;
     private final LoginLogService loginLogService;
+    private final UserExcelService userExcelService;
 
     @Operation(summary = "创建用户", description = "创建用户")
     @PostMapping
@@ -249,5 +258,42 @@ public class UserController {
     @Authorize({"allUserPermissions", "clearTokensByLoginId"})
     public void clearAuthorizedTokensByLoginId(@PathVariable @NotBlank String id) {
         userService.clearAuthorizedTokensByLoginId(id);
+    }
+
+    @Operation(summary = "下载用户导入模版", description = "下载用户导入模版")
+    @GetMapping("/excel/template")
+    @Authorize({"allUserPermissions", "exportUser"})
+    @NoRestResponse
+    public void downloadImportTemplate(HttpServletResponse response) throws IOException {
+        byte[] template = userExcelService.generateImportTemplate();
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        String filename = "user-import-template-" + timestamp + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        response.getOutputStream().write(template);
+        response.getOutputStream().flush();
+    }
+
+    @Operation(summary = "导出用户数据", description = "导出用户数据")
+    @PostMapping("/excel/export")
+    @Authorize({"allUserPermissions", "exportUser"})
+    @NoRestResponse
+    public void exportUsers(@RequestBody List<DataFilterDto> filters,
+            @RequestParam(defaultValue = "false") boolean all,
+            HttpServletResponse response) throws IOException {
+        byte[] data = userExcelService.exportUsers(filters, all);
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        String filename = "users-export-" + timestamp + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        response.getOutputStream().write(data);
+        response.getOutputStream().flush();
+    }
+
+    @Operation(summary = "导入用户数据", description = "导入用户数据")
+    @PostMapping("/excel/import")
+    @Authorize({"allUserPermissions", "importUser"})
+    public ExcelImportResultDto importUsers(@RequestParam("file") MultipartFile file) {
+        return userExcelService.importUsers(file);
     }
 }

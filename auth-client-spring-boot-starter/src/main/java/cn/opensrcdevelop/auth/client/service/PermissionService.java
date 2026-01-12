@@ -9,6 +9,10 @@ import cn.opensrcdevelop.auth.client.support.PermissionVerifyRequestCustomizer;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.*;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
@@ -24,11 +28,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.*;
-import java.util.stream.IntStream;
 
 /**
  * 客户端鉴权服务

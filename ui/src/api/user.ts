@@ -300,3 +300,48 @@ export function clearAuthorizedTokensByLoginId(id: string) {
     url: `/user/login/${id}/token`,
   });
 }
+
+/**
+ * 下载用户导入模版
+ *
+ * @returns 模版文件
+ */
+export function downloadUserTemplate() {
+  return apiRequest.get({
+    url: "/user/excel/template",
+    responseType: "blob",
+  });
+}
+
+/**
+ * 导出用户数据
+ *
+ * @param filters 筛选条件
+ * @param all 是否导出全部
+ * @returns 导出文件
+ */
+export function exportUsers(filters: any[], all = false) {
+  return apiRequest.post({
+    url: `/user/excel/export?all=${all}`,
+    data: filters,
+    responseType: "blob",
+  });
+}
+
+/**
+ * 导入用户数据
+ *
+ * @param file Excel 文件
+ * @returns 导入结果
+ */
+export function importUsers(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiRequest.post({
+    url: "/user/excel/import",
+    data: formData,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+}
