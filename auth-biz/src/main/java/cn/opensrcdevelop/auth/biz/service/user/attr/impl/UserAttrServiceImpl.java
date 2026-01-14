@@ -456,7 +456,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             Map.entry("phoneNumber", "手机号"),
             Map.entry("locked", "禁用账号"),
             Map.entry("consoleAccess", "允许控制台访问"),
-            Map.entry("enableMfa", "开启MFA"));
+            Map.entry("enableMfa", "开启MFA"),
+            Map.entry("createdAt", "创建时间"));
 
     /**
      * 基础字段数据类型映射
@@ -468,7 +469,8 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
             Map.entry("phoneNumber", "STRING"),
             Map.entry("locked", "BOOLEAN"),
             Map.entry("consoleAccess", "BOOLEAN"),
-            Map.entry("enableMfa", "BOOLEAN"));
+            Map.entry("enableMfa", "BOOLEAN"),
+            Map.entry("createdAt", "DATETIME"));
 
     /**
      * 获取所有用户字段（包括基础字段和扩展字段） 基础字段从代码定义读取，扩展字段从数据库读取 用于 Excel 导入导出功能

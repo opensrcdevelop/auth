@@ -60,6 +60,11 @@ export class Request {
           globalVariables.apiLoading = false;
         }
 
+        // 文件下载时直接返回原始响应
+        if (res.config.responseType === "blob") {
+          return res;
+        }
+
         if (res.data) {
           return res.data;
         }

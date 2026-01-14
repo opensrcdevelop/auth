@@ -532,10 +532,20 @@ const handleDownloadTemplate = async () => {
 // 导出数据
 const handleExport = async (exportAll: boolean) => {
   try {
-    const filters = userListFilters.filters || [];
+    // 只传递有效的筛选条件（key、filterType、value 都不为空）
+    const filters = (userListFilters.filters || []).filter(
+      (item: any) => item.key && item.filterType && item.value
+    );
     const blob = (await exportUsers(filters, exportAll)) as unknown as Blob;
-    const date = new Date().toISOString().slice(0, 10);
-    downloadBlob(blob, `用户数据_${date}.xlsx`);
+    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
+    const now = new Date();
+    const timestamp = now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0') +
+      String(now.getSeconds()).padStart(2, '0');
+    downloadBlob(blob, `用户数据_${timestamp}.xlsx`);
     Notification.success(exportAll ? "全部数据导出成功" : "当前页导出成功");
   } catch (err) {
     handleApiError(err, "导出");

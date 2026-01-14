@@ -15,15 +15,13 @@ import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
 import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
+import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.read.listener.PageReadListener;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,10 +30,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -49,29 +43,23 @@ public class UserExcelServiceImpl implements UserExcelService {
     private final UserAttrService userAttrService;
     private final DictDataService dictDataService;
     private final ExcelTemplateGenerator templateGenerator;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final UserExcelExporter userExcelExporter;
 
     @Override
     public byte[] generateImportTemplate() {
         // 获取所有用户字段（包括基础字段和扩展字段）
         List<UserAttrResponseDto> allFields = userAttrService.getAllUserAttrsForExcel();
-        return templateGenerator.generateTemplate(allFields);
+        // 导入模版不需要 createdAt 字段（创建时自动生成）
+        List<UserAttrResponseDto> templateFields = allFields.stream()
+                .filter(f -> !"createdAt".equals(f.getKey()))
+                .toList();
+        return templateGenerator.generateTemplate(templateFields);
     }
 
     @Override
     public byte[] exportUsers(List<DataFilterDto> filters, boolean exportAll) {
         // 1. 获取所有用户字段（包括基础字段和扩展字段）
         List<UserAttrResponseDto> allFields = userAttrService.getAllUserAttrsForExcel();
-
-        // 分离基础字段和扩展字段
-        List<UserAttrResponseDto> basicFields = CommonUtil.stream(allFields)
-                .filter(attr -> !BooleanUtils.isTrue(attr.getExtFlg()))
-                .toList();
-        List<UserAttrResponseDto> extAttrs = CommonUtil.stream(allFields)
-                .filter(attr -> BooleanUtils.isTrue(attr.getExtFlg()))
-                .toList();
 
         // 2. 获取用户数据（处理 filters 为 null 的情况）
         int size = exportAll ? Integer.MAX_VALUE : 100;
@@ -81,128 +69,8 @@ public class UserExcelServiceImpl implements UserExcelService {
         // 安全获取用户列表，防止空指针
         List<Map<String, Object>> userList = users.getList() != null ? users.getList() : new ArrayList<>();
 
-        // 3. 使用 POI 动态生成 Excel
-        try (Workbook workbook = new SXSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("用户数据");
-
-            // 4. 添加导出元数据（前 3 行）
-            int metaRowIdx = addExportMetadata(sheet, userList, safeFilters);
-
-            // 5. 创建表头
-            Row headerRow = sheet.createRow(metaRowIdx);
-            int colIdx = 0;
-
-            // 基础字段（从数据库获取字段名称）
-            for (UserAttrResponseDto field : basicFields) {
-                headerRow.createCell(colIdx++).setCellValue(field.getName());
-            }
-
-            // 扩展字段
-            Map<String, Integer> extAttrColIndex = new HashMap<>();
-            for (UserAttrResponseDto attr : extAttrs) {
-                headerRow.createCell(colIdx).setCellValue(attr.getName());
-                extAttrColIndex.put(attr.getKey(), colIdx);
-                colIdx++;
-            }
-
-            // 6. 填充数据
-            int rowIdx = metaRowIdx + 1;
-            for (Map<String, Object> userMap : userList) {
-                Row dataRow = sheet.createRow(rowIdx++);
-
-                // 填充基础字段（从数据库获取顺序）
-                colIdx = 0;
-                for (UserAttrResponseDto field : basicFields) {
-                    String value = getFieldValue(userMap, field.getKey(), field.getDataType());
-                    dataRow.createCell(colIdx++).setCellValue(value);
-                }
-
-                // 填充扩展字段
-                for (UserAttrResponseDto attr : extAttrs) {
-                    Integer attrColIdx = extAttrColIndex.get(attr.getKey());
-                    if (attrColIdx != null) {
-                        Object value = userMap.get(attr.getKey());
-                        String cellValue = formatExportValue(value, attr);
-                        dataRow.createCell(attrColIdx).setCellValue(cellValue);
-                    }
-                }
-            }
-
-            // 7. 冻结表头行
-            sheet.createFreezePane(0, metaRowIdx);
-
-            // 8. 写入输出流
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                workbook.write(out);
-                return out.toByteArray();
-            }
-        } catch (IOException e) {
-            log.error("导出用户数据失败", e);
-            throw new BizException("导出用户数据失败", e);
-        }
-    }
-
-    /**
-     * 添加导出元数据
-     *
-     * @param sheet
-     *            Excel sheet
-     * @param userList
-     *            用户数据列表
-     * @param filters
-     *            筛选条件
-     * @return 下一个可用的行号
-     */
-    private int addExportMetadata(Sheet sheet, List<Map<String, Object>> userList,
-            List<DataFilterDto> filters) {
-        int rowIdx = 0;
-
-        // 第 1 行：导出时间
-        Row timeRow = sheet.createRow(rowIdx++);
-        timeRow.createCell(0).setCellValue("导出时间");
-        timeRow.createCell(1).setCellValue(LocalDateTime.now().format(DATETIME_FORMATTER));
-
-        // 第 2 行：用户数
-        Row countRow = sheet.createRow(rowIdx++);
-        countRow.createCell(0).setCellValue("用户数");
-        countRow.createCell(1).setCellValue(userList.size());
-
-        // 第 3 行：筛选条件
-        if (filters != null && !filters.isEmpty()) {
-            Row filterRow = sheet.createRow(rowIdx++);
-            filterRow.createCell(0).setCellValue("筛选条件");
-            StringBuilder filterText = new StringBuilder();
-            for (int i = 0; i < filters.size(); i++) {
-                DataFilterDto filter = filters.get(i);
-                if (i > 0) {
-                    filterText.append("; ");
-                }
-                filterText.append(filter.getKey())
-                        .append(" ")
-                        .append(filter.getFilterType())
-                        .append(" ")
-                        .append(formatFilterValue(filter));
-            }
-            filterRow.createCell(1).setCellValue(filterText.toString());
-        }
-
-        // 空行分隔
-        sheet.createRow(rowIdx++);
-
-        return rowIdx;
-    }
-
-    /**
-     * 格式化筛选条件的值
-     */
-    private String formatFilterValue(DataFilterDto filter) {
-        Object value = filter.getValue();
-        if (value == null) {
-            return "";
-        }
-        // 当前实现直接返回值的字符串形式
-        // 如果需要字典数据转换为显示文本，可以根据字段 key 查找字典配置进行转换
-        return String.valueOf(value);
+        // 3. 使用新的导出器生成 Excel
+        return userExcelExporter.exportUsers(userList, allFields, filters);
     }
 
     @Override
@@ -474,65 +342,5 @@ public class UserExcelServiceImpl implements UserExcelService {
             }
         }
         return null;
-    }
-
-    /**
-     * 根据数据类型获取字段值
-     */
-    private String getFieldValue(Map<String, Object> map, String key, String dataType) {
-        Object value = map.get(key);
-        if (value == null) {
-            return "";
-        }
-
-        // BOOLEAN 类型转换为是/否
-        if ("BOOLEAN".equals(dataType)) {
-            if (value instanceof Boolean) {
-                return (Boolean) value ? "是" : "否";
-            }
-        }
-
-        return String.valueOf(value);
-    }
-
-    /**
-     * 格式化导出值
-     */
-    private String formatExportValue(Object value, UserAttrResponseDto attr) {
-        if (value == null) {
-            return "";
-        }
-
-        String dataType = attr.getDataType();
-        if ("DICT".equals(dataType)) {
-            // 字典类型返回显示文本
-            if (StringUtils.isNotBlank(attr.getDictId())) {
-                return formatDictValue(attr.getDictId(), String.valueOf(value));
-            }
-        } else if ("DATE".equals(dataType)) {
-            // 日期类型格式化
-            return value.toString();
-        } else if ("DATETIME".equals(dataType)) {
-            // 日期时间类型格式化
-            return value.toString();
-        }
-
-        return String.valueOf(value);
-    }
-
-    /**
-     * 格式化字典值为显示文本
-     */
-    private String formatDictValue(String dictId, String dataId) {
-        List<DictDataResponseDto> dictData = dictDataService.getEnabledDictData(dictId);
-        List<DictTreeFlattener.DictDisplayItem> items = DictTreeFlattener.flattenTreeWithId(dictData);
-
-        for (DictTreeFlattener.DictDisplayItem item : items) {
-            if (item.id().equals(dataId)) {
-                return item.displayText();
-            }
-        }
-
-        return dataId;
     }
 }

@@ -304,13 +304,15 @@ export function clearAuthorizedTokensByLoginId(id: string) {
 /**
  * 下载用户导入模版
  *
- * @returns 模版文件
+ * @returns 模版文件 Blob
  */
-export function downloadUserTemplate() {
-  return apiRequest.get({
-    url: "/user/excel/template",
-    responseType: "blob",
-  });
+export function downloadUserTemplate(): Promise<Blob> {
+  return apiRequest
+    .get({
+      url: "/user/excel/template",
+      responseType: "blob",
+    })
+    .then((res: any) => res.data);
 }
 
 /**
@@ -318,14 +320,16 @@ export function downloadUserTemplate() {
  *
  * @param filters 筛选条件
  * @param all 是否导出全部
- * @returns 导出文件
+ * @returns 导出文件 Blob
  */
-export function exportUsers(filters: any[], all = false) {
-  return apiRequest.post({
-    url: `/user/excel/export?all=${all}`,
-    data: filters,
-    responseType: "blob",
-  });
+export function exportUsers(filters: any[], all = false): Promise<Blob> {
+  return apiRequest
+    .post({
+      url: `/user/excel/export?all=${all}`,
+      data: filters,
+      responseType: "blob",
+    })
+    .then((res: any) => res.data);
 }
 
 /**

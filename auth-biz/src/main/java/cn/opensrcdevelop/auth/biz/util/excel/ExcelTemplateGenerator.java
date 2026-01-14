@@ -103,7 +103,7 @@ public class ExcelTemplateGenerator {
     }
 
     /**
-     * 计算列位置 字段顺序：操作类型 -> 基础字段 -> 扩展字段
+     * 计算列位置 字段顺序：操作类型 -> 基础字段(userId, username 优先) -> 扩展字段
      */
     private Map<String, Integer> calculateColumnPositions(List<UserAttrResponseDto> allFields) {
         Map<String, Integer> positions = new LinkedHashMap<>();
@@ -125,15 +125,40 @@ public class ExcelTemplateGenerator {
             positions.put("operationType", colNum++);
         }
 
-        // 基础字段（extFlg = false）
+        // 基础字段排序：userId 和 username 优先，其他按数据库顺序
+        UserAttrResponseDto userIdField = null;
+        UserAttrResponseDto usernameField = null;
+        List<UserAttrResponseDto> otherBasicFields = new ArrayList<>();
+
         for (UserAttrResponseDto field : allFields) {
             String key = field.getKey();
             if ("operationType".equals(key)) {
-                continue; // 跳过操作类型
+                continue;
             }
             if (!Boolean.TRUE.equals(field.getExtFlg())) {
-                positions.put(key, colNum++);
+                if ("userId".equals(key)) {
+                    userIdField = field;
+                } else if ("username".equals(key)) {
+                    usernameField = field;
+                } else {
+                    otherBasicFields.add(field);
+                }
             }
+        }
+
+        // 添加 userId（位置 1，在操作类型之后）
+        if (userIdField != null) {
+            positions.put("userId", colNum++);
+        }
+
+        // 添加 username（位置 2，在 userId 之后）
+        if (usernameField != null) {
+            positions.put("username", colNum++);
+        }
+
+        // 添加其他基础字段
+        for (UserAttrResponseDto field : otherBasicFields) {
+            positions.put(field.getKey(), colNum++);
         }
 
         // 扩展字段（extFlg = true）
