@@ -454,7 +454,6 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     public List<UserAttrResponseDto> getAllUserAttrsForExcel() {
         // 从数据库获取所有用户属性（包括基础字段 extFlg=false 和扩展字段 extFlg=true）
         List<UserAttr> allAttrs = super.list(Wrappers.<UserAttr>lambdaQuery()
-                .eq(UserAttr::getUserVisible, true)
                 .orderByAsc(UserAttr::getDisplaySeq));
 
         List<UserAttrResponseDto> allFields = new ArrayList<>();
