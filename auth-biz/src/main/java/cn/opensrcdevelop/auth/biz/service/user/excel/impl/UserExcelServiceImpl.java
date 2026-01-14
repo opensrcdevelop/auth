@@ -49,9 +49,9 @@ public class UserExcelServiceImpl implements UserExcelService {
     public byte[] generateImportTemplate() {
         // 获取所有用户字段（包括基础字段和扩展字段）
         List<UserAttrResponseDto> allFields = userAttrService.getAllUserAttrsForExcel();
-        // 导入模版不需要 createdAt 字段（创建时自动生成）
+        // 导入模版不需要 createTime 字段（创建时自动生成）
         List<UserAttrResponseDto> templateFields = allFields.stream()
-                .filter(f -> !"createdAt".equals(f.getKey()))
+                .filter(f -> !"createTime".equals(f.getKey()) && !"locked".equals(f.getKey()))
                 .toList();
         return templateGenerator.generateTemplate(templateFields);
     }

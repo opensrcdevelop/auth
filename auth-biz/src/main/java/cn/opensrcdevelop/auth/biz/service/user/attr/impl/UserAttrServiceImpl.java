@@ -32,7 +32,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -447,66 +446,29 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     }
 
     /**
-     * 基础字段定义（用于 Excel 导入导出） 这些字段不在 t_user_attr 表中，是用户表的核心字段
-     */
-    private static final Map<String, String> BASIC_FIELD_DEFINITIONS = Map.ofEntries(
-            Map.entry("userId", "用户ID"),
-            Map.entry("username", "用户名"),
-            Map.entry("emailAddress", "邮箱地址"),
-            Map.entry("phoneNumber", "手机号"),
-            Map.entry("locked", "禁用账号"),
-            Map.entry("consoleAccess", "允许控制台访问"),
-            Map.entry("enableMfa", "开启MFA"),
-            Map.entry("createdAt", "创建时间"));
-
-    /**
-     * 基础字段数据类型映射
-     */
-    private static final Map<String, String> BASIC_FIELD_DATA_TYPES = Map.ofEntries(
-            Map.entry("userId", "STRING"),
-            Map.entry("username", "STRING"),
-            Map.entry("emailAddress", "STRING"),
-            Map.entry("phoneNumber", "STRING"),
-            Map.entry("locked", "BOOLEAN"),
-            Map.entry("consoleAccess", "BOOLEAN"),
-            Map.entry("enableMfa", "BOOLEAN"),
-            Map.entry("createdAt", "DATETIME"));
-
-    /**
-     * 获取所有用户字段（包括基础字段和扩展字段） 基础字段从代码定义读取，扩展字段从数据库读取 用于 Excel 导入导出功能
+     * 获取所有用户字段（包括基础字段和扩展字段） 从数据库读取所有用户属性 用于 Excel 导入导出功能
      *
      * @return 所有用户字段列表
      */
     @Override
     public List<UserAttrResponseDto> getAllUserAttrsForExcel() {
+        // 从数据库获取所有用户属性（包括基础字段 extFlg=false 和扩展字段 extFlg=true）
+        List<UserAttr> allAttrs = super.list(Wrappers.<UserAttr>lambdaQuery()
+                .eq(UserAttr::getUserVisible, true)
+                .orderByAsc(UserAttr::getDisplaySeq));
+
         List<UserAttrResponseDto> allFields = new ArrayList<>();
 
-        // 1. 添加基础字段（extFlg = false）
-        for (Map.Entry<String, String> entry : BASIC_FIELD_DEFINITIONS.entrySet()) {
-            String key = entry.getKey();
-            UserAttrResponseDto field = new UserAttrResponseDto();
-            field.setId(key); // 使用 key 作为 id，便于识别
-            field.setKey(key);
-            field.setName(entry.getValue());
-            field.setDataType(BASIC_FIELD_DATA_TYPES.get(key));
-            field.setExtFlg(false);
-            field.setUserLstDisplay(true);
-            field.setDisplaySeq(0);
-            allFields.add(field);
-        }
-
-        // 2. 从数据库获取扩展字段（extFlg = true）
-        List<UserAttr> extAttrs = super.list(Wrappers.<UserAttr>lambdaQuery().eq(UserAttr::getExtAttrFlg, true));
-
-        for (UserAttr attr : extAttrs) {
+        for (UserAttr attr : allAttrs) {
             UserAttrResponseDto field = new UserAttrResponseDto();
             field.setId(attr.getAttrId());
             field.setKey(attr.getAttrKey());
             field.setName(attr.getAttrName());
             field.setDataType(attr.getAttrDataType());
-            field.setExtFlg(true);
+            field.setExtFlg(attr.getExtAttrFlg());
             field.setUserLstDisplay(attr.getUserLstDisplay());
             field.setDisplaySeq(attr.getDisplaySeq());
+            field.setDisplayWidth(attr.getDisplayWidth());
             field.setDictId(attr.getDictId());
 
             // 设置是否是级联字典

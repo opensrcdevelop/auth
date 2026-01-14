@@ -22,6 +22,7 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
@@ -115,7 +116,7 @@ public class UserExcelExporter {
     private void reorderBasicFields(List<UserAttrResponseDto> basicFields) {
         UserAttrResponseDto userIdField = null;
         UserAttrResponseDto usernameField = null;
-        UserAttrResponseDto createdAtField = null;
+        UserAttrResponseDto createTimeField = null;
         List<UserAttrResponseDto> others = new ArrayList<>();
 
         for (UserAttrResponseDto field : basicFields) {
@@ -127,8 +128,8 @@ public class UserExcelExporter {
                 userIdField = field;
             } else if ("username".equals(key)) {
                 usernameField = field;
-            } else if ("createdAt".equals(key)) {
-                createdAtField = field;
+            } else if ("createTime".equals(key)) {
+                createTimeField = field;
             } else {
                 others.add(field);
             }
@@ -142,8 +143,8 @@ public class UserExcelExporter {
             basicFields.add(usernameField);
         }
         // 将创建时间放在用户名后面
-        if (createdAtField != null) {
-            basicFields.add(createdAtField);
+        if (createTimeField != null) {
+            basicFields.add(createTimeField);
         }
         basicFields.addAll(others);
     }
@@ -245,6 +246,16 @@ public class UserExcelExporter {
             }
         }
 
+        // 如果是日期类型，需要格式化显示
+        if (field != null) {
+            String dataType = field.getDataType();
+            if ("DATE".equals(dataType)) {
+                return formatDateValue(value);
+            } else if ("DATETIME".equals(dataType)) {
+                return formatDateTimeValue(value);
+            }
+        }
+
         return valueStr;
     }
 
@@ -270,7 +281,7 @@ public class UserExcelExporter {
             // 如果基础字段大于1列，合并区域
             if (basicFieldCount > 1) {
                 sheet.addMergedRegion(
-                        new org.apache.poi.ss.util.CellRangeAddress(startRow, startRow, 0, basicFieldCount - 1));
+                        new CellRangeAddress(startRow, startRow, 0, basicFieldCount - 1));
             }
             // 填充基础字段跨越的单元格
             for (int i = 1; i < basicFieldCount; i++) {
@@ -285,7 +296,7 @@ public class UserExcelExporter {
             // 如果扩展字段大于1列，合并区域
             if (extFieldCount > 1) {
                 sheet.addMergedRegion(
-                        new org.apache.poi.ss.util.CellRangeAddress(startRow, startRow, basicFieldCount,
+                        new CellRangeAddress(startRow, startRow, basicFieldCount,
                                 totalCols - 1));
             }
             // 填充扩展字段跨越的单元格
@@ -300,7 +311,7 @@ public class UserExcelExporter {
             basicParent.setCellStyle(parentStyle);
             if (totalCols > 1) {
                 sheet.addMergedRegion(
-                        new org.apache.poi.ss.util.CellRangeAddress(startRow, startRow, 0, totalCols - 1));
+                        new CellRangeAddress(startRow, startRow, 0, totalCols - 1));
             }
             // 填充所有单元格
             for (int i = 1; i < totalCols; i++) {
@@ -314,7 +325,7 @@ public class UserExcelExporter {
             extParent.setCellStyle(parentStyle);
             if (totalCols > 1) {
                 sheet.addMergedRegion(
-                        new org.apache.poi.ss.util.CellRangeAddress(startRow, startRow, 0, totalCols - 1));
+                        new CellRangeAddress(startRow, startRow, 0, totalCols - 1));
             }
             // 填充所有单元格
             for (int i = 1; i < totalCols; i++) {
