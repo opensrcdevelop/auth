@@ -374,9 +374,9 @@ public class ExcelTemplateGenerator {
         } else if (UserAttrDataTypeEnum.BOOLEAN.getType().equals(field.getDataType())) {
             comment.append("是/否");
         } else if (UserAttrDataTypeEnum.DATE.getType().equals(field.getDataType())) {
-            comment.append("格式：yyyy-MM-dd");
+            comment.append("格式：20260109");
         } else if (UserAttrDataTypeEnum.DATETIME.getType().equals(field.getDataType())) {
-            comment.append("格式：yyyy-MM-dd HH:mm:ss");
+            comment.append("格式：20260109163045");
         } else if (UserAttrDataTypeEnum.NUMBER.getType().equals(field.getDataType())) {
             comment.append("请输入数字");
         }
