@@ -1,7 +1,7 @@
 ---
 name: tasks-planning
-version: "2.7.0"
-description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes hooks for task initialization validation and session management.
+version: "2.8.0"
+description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes hooks for task initialization validation and session management (externalized to separate scripts).
 user-invocable: true
 allowed-tools:
   - Read
@@ -17,111 +17,16 @@ hooks:
     - matcher: "Write|Edit|Bash"
       hooks:
         - type: command
-          command: |
-            # [tasks-planning] PreToolUse Hook Triggered
-            SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
-            TASKS_FILE=".claude/tmp/tasks/tasks.json"
-            TASKS_DIR=".claude/tmp/tasks"
-
-            echo "=== [tasks-planning] PreToolUse Hook ==="
-
-            # Check 1: Is there a task created?
-            if [ ! -f "$TASKS_FILE" ]; then
-              echo "⚠️  [tasks-planning] No task found!"
-              echo "   Please create a task first:"
-              echo "   python3 ${SCRIPT_DIR}/tasks-manager.py create \"Task Name\""
-              echo "   Then create task_plan.md, findings.md, progress.md"
-              exit 0
-            fi
-
-            # Check 2: Is there an active task?
-            TASK_OUTPUT=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null)
-            PENDING=$(echo "$TASK_OUTPUT" | grep -c "🔄" || echo "0")
-            if [ "$PENDING" = "0" ]; then
-              echo "⚠️  [tasks-planning] No active task!"
-              echo "   Run: python3 ${SCRIPT_DIR}/tasks-manager.py list"
-              echo "   Start a task: python3 ${SCRIPT_DIR}/tasks-manager.py start <task-id>"
-              exit 0
-            fi
-
-            # Check 3: Find task directory and check if task_plan.md exists
-            TASK_ID=$(echo "$TASK_OUTPUT" | grep "🔄" | awk '{print $1}' | head -1)
-            TASK_DIR=""
-            # Search in all date directories for the task
-            for DATE_DIR in "$TASKS_DIR"/*/; do
-              if [ -d "${DATE_DIR}${TASK_ID}" ]; then
-                TASK_DIR="${DATE_DIR}${TASK_ID}"
-                break
-              fi
-            done
-
-            if [ -z "$TASK_DIR" ] || [ ! -f "$TASK_DIR/task_plan.md" ]; then
-              echo "⚠️  [tasks-planning] Planning files not found!"
-              echo "   Create planning files in: ${TASKS_DIR}/<date>/${TASK_ID}/"
-              echo "   Required files: task_plan.md, findings.md, progress.md"
-              exit 0
-            fi
-
-            # Show current task status
-            echo "✅ [tasks-planning] Task initialized, proceeding..."
-            echo ""
-            echo "=== Current Task Status ==="
-            echo "$TASK_OUTPUT" | head -3
-
-            # Show phase progress
-            echo ""
-            echo "=== Current Phase ==="
-            grep -E "Phase|Status:" "$TASK_DIR/task_plan.md" 2>/dev/null | head -30 || true
+          command: bash ${CLAUDE_PROJECT_DIR}/.claude/skills/tasks-planning/scripts/hooks-pre-tool-use.sh
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
         - type: command
-          command: |
-            echo "[tasks-planning] File modified"
-            SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
-            TASKS_FILE=".claude/tmp/tasks/tasks.json"
-            TASKS_DIR=".claude/tmp/tasks"
-
-            # Get current task ID
-            TASK_ID=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | grep "🔄" | awk '{print $1}' | head -1)
-            if [ -z "$TASK_ID" ]; then
-              exit 0
-            fi
-
-            # Find task directory
-            TASK_DIR=""
-            for DATE_DIR in "$TASKS_DIR"/*/; do
-              if [ -d "${DATE_DIR}${TASK_ID}" ]; then
-                TASK_DIR="${DATE_DIR}${TASK_ID}"
-                break
-              fi
-            done
-
-            # Suggest updating task_plan.md if a phase is complete
-            if [ -n "$TASK_DIR" ] && [ -f "$TASK_DIR/task_plan.md" ]; then
-              CURRENT_PHASE=$(grep "Phase" "$TASK_DIR/task_plan.md" 2>/dev/null | grep -c "in_progress" || echo "0")
-              if [ "$CURRENT_PHASE" != "0" ]; then
-                echo "💡 [tasks-planning] Phase in progress - consider updating task_plan.md status when complete"
-              fi
-            fi
+          command: bash ${CLAUDE_PROJECT_DIR}/.claude/skills/tasks-planning/scripts/hooks-post-tool-use.sh
   Stop:
     - hooks:
         - type: command
-          command: |
-            echo "[tasks-planning] Stop Hook Triggered"
-            SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
-
-            # Check task completion
-            bash "${SCRIPT_DIR}/check-complete.sh"
-
-            # End session for in-progress tasks
-            TASK_ID=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | grep "🔄" | awk '{print $1}' | head -1)
-            if [ -n "$TASK_ID" ]; then
-              python3 "${SCRIPT_DIR}/tasks-manager.py" end-session "$TASK_ID" 2>/dev/null
-              echo "[tasks-planning] Session ended for task: $TASK_ID"
-            else
-              echo "[tasks-planning] No active task to end session"
-            fi
+          command: bash ${CLAUDE_PROJECT_DIR}/.claude/skills/tasks-planning/scripts/hooks-stop.sh
 ---
 
 # Tasks Planning
@@ -146,32 +51,6 @@ Filesystem = Disk (persistent, unlimited)
 | `.claude/tmp/tasks/tasks.json` | Task registry with session history |
 | `.claude/tmp/tasks/YYYY-MM-DD/task-name/` | `task_plan.md`, `findings.md`, `progress.md` |
 
-### tasks.json Structure
-
-```json
-{
-  "version": "1.0",
-  "tasks": [
-    {
-      "id": "user-export-import",
-      "name": "用户导出导入",
-      "startTime": "2026-01-18T10:00:00",
-      "endTime": null,
-      "status": "in_progress",
-      "sessions": [
-        {
-          "sessionId": "508e13a8-d3b7-449c-a7db-85c8e0675431",
-          "startTime": "2026-01-18T10:00:00",
-          "endTime": null
-        }
-      ]
-    }
-  ]
-}
-```
-
-> **Note:** sessionId uses UUID format (e.g., `508e13a8-d3b7-449c-a7db-85c8e0675431`) to match Claude Code session files.
-
 ## Workflow
 
 ### Step 1: Check for Pending Tasks
@@ -184,23 +63,7 @@ python3 scripts/tasks-manager.py pending
 
 ### Step 2: Ask User (Use AskUserQuestion Tool)
 
-Use the **AskUserQuestion** tool to present pending tasks and options:
-
-```python
-{
-  "questions": [
-    {
-      "question": "您有 2 个未完成的任务。是否继续之前的任务，还是开始新的任务？",
-      "header": "任务选择",
-      "options": [
-        {"label": "继续用户导出导入", "description": "从上次停止的地方继续，已完成 3/5 阶段"},
-        {"label": "开始新任务", "description": "创建新的任务文件夹和规划文件"}
-      ],
-      "multiSelect": false
-    }
-  ]
-}
-```
+Use the **AskUserQuestion** tool to present pending tasks and options.
 
 ### Step 3: Execute Selected Task
 
@@ -217,6 +80,9 @@ Use the **AskUserQuestion** tool to present pending tasks and options:
 3. Create planning files in `.claude/tmp/tasks/$(date +%Y-%m-%d)/<task-id>/`
 4. Get current session ID: `python3 tasks-manager.py current-session`
 5. Initialize session: `python3 tasks-manager.py add-session <task-id> <session-id>`
+
+### Step 5: Create Plan
+Never start a task without task_plan.md. Non-negotiable.
 
 ### Step 4: Complete Task
 
