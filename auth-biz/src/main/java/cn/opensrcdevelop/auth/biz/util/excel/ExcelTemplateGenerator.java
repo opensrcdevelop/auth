@@ -180,20 +180,43 @@ public class ExcelTemplateGenerator {
 
         int rowNum = 0;
 
-        // 写入字段映射信息
-        Row headerRow = hiddenSheet.createRow(rowNum++);
-        headerRow.createCell(0).setCellValue("字段Key");
-        headerRow.createCell(1).setCellValue("字段名称");
-        headerRow.createCell(2).setCellValue("数据类型");
-        headerRow.createCell(3).setCellValue("字典ID");
+        // 写入字段映射信息（中文标题 -> 字段 key）
+        Row mappingHeaderRow = hiddenSheet.createRow(rowNum++);
+        mappingHeaderRow.createCell(0).setCellValue("中文标题");
+        mappingHeaderRow.createCell(1).setCellValue("字段Key");
+        mappingHeaderRow.createCell(2).setCellValue("数据类型");
+        mappingHeaderRow.createCell(3).setCellValue("字典ID");
 
+        // 操作类型
+        Row operationRow = hiddenSheet.createRow(rowNum++);
+        operationRow.createCell(0).setCellValue("操作类型*");
+        operationRow.createCell(1).setCellValue("operationType");
+        operationRow.createCell(2).setCellValue("NUMBER");
+
+        // 基础字段
         for (UserAttrResponseDto field : allFields) {
-            Row row = hiddenSheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(field.getKey());
-            row.createCell(1).setCellValue(field.getName());
-            row.createCell(2).setCellValue(field.getDataType());
-            if (field.getDictId() != null) {
-                row.createCell(3).setCellValue(field.getDictId());
+            if (!Boolean.TRUE.equals(field.getExtFlg())) {
+                Row row = hiddenSheet.createRow(rowNum++);
+                String title = field.getName() + (REQUIRED_BASIC_FIELDS.contains(field.getKey()) ? "*" : "");
+                row.createCell(0).setCellValue(title);
+                row.createCell(1).setCellValue(field.getKey());
+                row.createCell(2).setCellValue(field.getDataType());
+                if (field.getDictId() != null) {
+                    row.createCell(3).setCellValue(field.getDictId());
+                }
+            }
+        }
+
+        // 扩展字段
+        for (UserAttrResponseDto field : allFields) {
+            if (Boolean.TRUE.equals(field.getExtFlg())) {
+                Row row = hiddenSheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(field.getName());
+                row.createCell(1).setCellValue(field.getKey());
+                row.createCell(2).setCellValue(field.getDataType());
+                if (field.getDictId() != null) {
+                    row.createCell(3).setCellValue(field.getDictId());
+                }
             }
         }
 
@@ -334,6 +357,7 @@ public class ExcelTemplateGenerator {
                 if (colPos != null) {
                     boolean isRequired = REQUIRED_BASIC_FIELDS.contains(key);
                     Cell cell = headerRow.createCell(colPos);
+                    // 使用中文名称作为列标题
                     cell.setCellValue(field.getName() + (isRequired ? "*" : ""));
                     cell.setCellStyle(basicStyle);
                     addCellComment(sheet, cell, key, 1, colPos);
@@ -349,6 +373,7 @@ public class ExcelTemplateGenerator {
                 Integer colPos = columnPositions.get(key);
                 if (colPos != null) {
                     Cell cell = headerRow.createCell(colPos);
+                    // 使用中文名称作为列标题
                     cell.setCellValue(field.getName());
                     cell.setCellStyle(extStyle);
                     // 为扩展字段添加说明

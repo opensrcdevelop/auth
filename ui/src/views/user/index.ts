@@ -522,7 +522,15 @@ const importResult = ref({
 const handleDownloadTemplate = async () => {
   try {
     const blob = (await downloadUserTemplate()) as unknown as Blob;
-    downloadBlob(blob, "用户导入模版.xlsx");
+    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
+    const now = new Date();
+    const timestamp = now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0') +
+      String(now.getSeconds()).padStart(2, '0');
+    downloadBlob(blob, `用户导入模版_${timestamp}.xlsx`);
     Notification.success("模版下载成功");
   } catch (err) {
     handleApiError(err, "模版下载");
@@ -553,8 +561,47 @@ const handleExport = async (exportAll: boolean) => {
 };
 
 // 导入数据
-const handleImport = async (file: File) => {
+const uploadRef = ref();
+const fileInputRef = ref();
+
+const handleImportClick = () => {
+  // 触发隐藏的 file input
+  fileInputRef.value?.click();
+};
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    try {
+      const result = (await importUsers(file)) as unknown as {
+        successCount: number;
+        failureCount: number;
+        errors: Array<{ row: number; column: string; message: string }>;
+      };
+      importResult.value = result;
+      importResultVisible.value = true;
+
+      if (result.failureCount === 0) {
+        // 刷新列表
+        handleGetUserList(1, 15);
+      }
+    } catch (err) {
+      handleApiError(err, "导入");
+    }
+  }
+  // 清空 input，允许重复选择同一文件
+  target.value = "";
+};
+
+// 导入数据（保留兼容）
+const handleImport = async (options: { file: any; onSuccess: () => void; onError: (err: any) => void }) => {
   try {
+    // Arco Upload 的 file 对象结构：file.file 是原生 File
+    const file = options.file?.file || options.file?.originFile || options.file;
+    if (!file) {
+      throw new Error("未找到文件");
+    }
     const result = (await importUsers(file)) as unknown as {
       successCount: number;
       failureCount: number;
@@ -562,12 +609,14 @@ const handleImport = async (file: File) => {
     };
     importResult.value = result;
     importResultVisible.value = true;
+    options.onSuccess();
 
     if (result.failureCount === 0) {
       // 刷新列表
       handleGetUserList(1, 15);
     }
   } catch (err) {
+    options.onError(err);
     handleApiError(err, "导入");
   }
 };
@@ -635,7 +684,9 @@ export default defineComponent({
       importResult,
       handleDownloadTemplate,
       handleExport,
-      handleImport,
+      handleImportClick,
+      handleFileChange,
+      fileInputRef,
     };
   },
 });

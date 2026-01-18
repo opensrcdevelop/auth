@@ -14,11 +14,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ExcelImportResultDto {
 
-    @Schema(description = "成功数量")
-    private Integer successCount;
+    @Schema(description = "创建的用户数量")
+    private Integer createdCount;
 
-    @Schema(description = "失败数量")
-    private Integer failureCount;
+    @Schema(description = "更新的用户数量")
+    private Integer updatedCount;
+
+    @Schema(description = "删除的用户数量")
+    private Integer deletedCount;
 
     @Schema(description = "错误详情列表")
     private List<ExcelImportErrorDto> errors;

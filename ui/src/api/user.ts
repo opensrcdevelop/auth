@@ -341,11 +341,9 @@ export function exportUsers(filters: any[], all = false): Promise<Blob> {
 export function importUsers(file: File) {
   const formData = new FormData();
   formData.append("file", file);
+  // http.ts 拦截器会自动处理 FormData 的 Content-Type
   return apiRequest.post({
     url: "/user/excel/import",
     data: formData,
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
   });
 }

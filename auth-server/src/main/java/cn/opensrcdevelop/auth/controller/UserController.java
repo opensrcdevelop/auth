@@ -293,6 +293,7 @@ public class UserController {
     @Operation(summary = "导入用户数据", description = "导入用户数据")
     @PostMapping("/excel/import")
     @Authorize({"allUserPermissions", "importUser"})
+    @NoRestResponse
     public ExcelImportResultDto importUsers(@RequestParam("file") MultipartFile file) {
         return userExcelService.importUsers(file);
     }

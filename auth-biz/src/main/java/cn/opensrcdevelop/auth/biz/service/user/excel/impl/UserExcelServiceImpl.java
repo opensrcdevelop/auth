@@ -6,21 +6,24 @@ import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportErrorDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportResultDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.UserExcelImportDto;
+import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
+import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupMappingService;
 import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
+import cn.opensrcdevelop.auth.biz.util.excel.UserExcelImportHandler;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.read.listener.PageReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +56,8 @@ public class UserExcelServiceImpl implements UserExcelService {
     private final UserAttrService userAttrService;
     private final UserAttrMappingService userAttrMappingService;
     private final DictDataService dictDataService;
+    private final RoleMappingService roleMappingService;
+    private final UserGroupMappingService userGroupMappingService;
     private final PasswordEncoder passwordEncoder;
     private final ExcelTemplateGenerator templateGenerator;
     private final UserExcelExporter userExcelExporter;
@@ -92,10 +98,10 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 1. 获取用户属性定义
         PageData<UserAttrResponseDto> allAttrs = userAttrService.listUserAttrs(1, Integer.MAX_VALUE, false, null);
-        Map<String, UserAttrResponseDto> attrMap = new HashMap<>();
+        Map<String, UserAttrResponseDto> attrMap = new LinkedHashMap<>();
         List<UserAttrResponseDto> extAttrs = new ArrayList<>();
         // 构建字典数据缓存
-        Map<String, Map<String, String>> dictValueToIdMap = new HashMap<>();
+        Map<String, Map<String, String>> dictValueToIdMap = new LinkedHashMap<>();
 
         for (UserAttrResponseDto attr : allAttrs.getList()) {
             attrMap.put(attr.getKey(), attr);
@@ -114,22 +120,27 @@ public class UserExcelServiceImpl implements UserExcelService {
         Set<String> excelPhones = new HashSet<>();
 
         try {
-            EasyExcel.read(file.getInputStream(), UserExcelImportDto.class,
-                    new PageReadListener<UserExcelImportDto>(dataList -> {
-                        for (int i = 0; i < dataList.size(); i++) {
-                            UserExcelImportDto dto = dataList.get(i);
-                            int rowNum = i + 2; // Excel 行号（表头是第1行）
-
-                            // 收集 Excel 中的用户名、邮箱、手机号用于重复性检查
-                            collectExcelValues(dto, rowNum, excelUsernames, excelEmails, excelPhones, errors);
-
-                            // 验证并收集数据（暂不检查数据库重复）
-                            validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap,
-                                    excelUsernames, excelEmails, excelPhones);
-                        }
-                    }))
+            // 使用自定义处理器读取 Excel（支持中文标题映射）
+            UserExcelImportHandler handler = new UserExcelImportHandler(attrMap, dictValueToIdMap);
+            EasyExcel.read(file.getInputStream())
+                    .registerReadListener(handler)
                     .sheet(0)
+                    .headRowNumber(2) // 前两行是标题
                     .doRead();
+
+            // 获取读取的数据并处理
+            List<UserExcelImportDto> allData = handler.getDataList();
+            for (int i = 0; i < allData.size(); i++) {
+                UserExcelImportDto dto = allData.get(i);
+                int rowNum = i + 3; // Excel 行号（第1、2行是标题，第3行开始是数据）
+
+                // 收集 Excel 中的用户名、邮箱、手机号用于重复性检查
+                collectExcelValues(dto, rowNum, excelUsernames, excelEmails, excelPhones, errors);
+
+                // 验证并收集数据（暂不检查数据库重复）
+                validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap,
+                        excelUsernames, excelEmails, excelPhones);
+            }
         } catch (IOException e) {
             log.error("读取 Excel 文件失败", e);
             throw new BizException("读取 Excel 文件失败", e);
@@ -390,11 +401,20 @@ public class UserExcelServiceImpl implements UserExcelService {
             }
 
             if (!deleteUserIds.isEmpty()) {
-                // 先删除扩展属性
+                // 1. 批量删除用户角色映射
+                roleMappingService.remove(
+                        new LambdaQueryWrapper<RoleMapping>()
+                                .in(RoleMapping::getUserId, deleteUserIds));
+                // 2. 批量删除用户组映射
+                userGroupMappingService.remove(
+                        new LambdaQueryWrapper<cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping>()
+                                .in(cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping::getUserId,
+                                        deleteUserIds));
+                // 3. 批量删除扩展属性
                 userAttrMappingService.remove(
                         new LambdaQueryWrapper<UserAttrMapping>()
                                 .in(UserAttrMapping::getUserId, deleteUserIds));
-                // 再删除用户
+                // 4. 批量删除用户
                 userService.removeBatchByIds(deleteUserIds);
             }
 

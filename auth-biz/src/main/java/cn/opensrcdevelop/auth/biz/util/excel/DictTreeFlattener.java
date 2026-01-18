@@ -39,30 +39,28 @@ public class DictTreeFlattener {
     }
 
     private static void flattenNode(DictDataResponseDto node, String prefix, List<String> result) {
-        // 如果有子节点，只处理子节点（不显示父节点），路径包含父节点
+        // 先添加当前节点（无论是否有子节点）
+        String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
+        result.add(currentPath);
+
+        // 如果有子节点，处理子节点
         if (node.getChildren() != null && !node.getChildren().isEmpty()) {
             for (DictDataResponseDto child : node.getChildren()) {
-                String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
                 flattenNode(child, currentPath, result);
             }
-        } else {
-            // 没有子节点，显示当前节点
-            String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
-            result.add(currentPath);
         }
     }
 
     private static void flattenNodeWithId(DictDataResponseDto node, String prefix, List<DictDisplayItem> result) {
-        // 如果有子节点，只处理子节点（不显示父节点），路径包含父节点
+        // 先添加当前节点（无论是否有子节点）
+        String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
+        result.add(new DictDisplayItem(node.getId(), currentPath));
+
+        // 如果有子节点，处理子节点
         if (node.getChildren() != null && !node.getChildren().isEmpty()) {
             for (DictDataResponseDto child : node.getChildren()) {
-                String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
                 flattenNodeWithId(child, currentPath, result);
             }
-        } else {
-            // 没有子节点，显示当前节点
-            String currentPath = prefix.isEmpty() ? node.getLabel() : prefix + SEPARATOR + node.getLabel();
-            result.add(new DictDisplayItem(node.getId(), currentPath));
         }
     }
 

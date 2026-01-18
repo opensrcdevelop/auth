@@ -10,11 +10,15 @@ import static org.mockito.Mockito.when;
 
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportResultDto;
+import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
+import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.excel.impl.UserExcelServiceImpl;
+import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupMappingService;
 import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
+import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
 import cn.opensrcdevelop.common.response.PageData;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -33,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * UserExcelServiceImpl 单元测试
@@ -51,17 +56,40 @@ class UserExcelServiceImplTest {
     private UserAttrService userAttrService;
 
     @Mock
+    private UserAttrMappingService userAttrMappingService;
+
+    @Mock
     private DictDataService dictDataService;
 
     @Mock
+    private RoleMappingService roleMappingService;
+
+    @Mock
+    private UserGroupMappingService userGroupMappingService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
     private ExcelTemplateGenerator templateGenerator;
+
+    @Mock
+    private UserExcelExporter userExcelExporter;
 
     private UserExcelServiceImpl userExcelService;
 
     @BeforeEach
     void setUp() {
-        userExcelService = new UserExcelServiceImpl(userService, userAttrService, dictDataService,
-                templateGenerator);
+        userExcelService = new UserExcelServiceImpl(
+                userService,
+                userAttrService,
+                userAttrMappingService,
+                dictDataService,
+                roleMappingService,
+                userGroupMappingService,
+                passwordEncoder,
+                templateGenerator,
+                userExcelExporter);
 
         // 默认 mock getAllUserAttrsForExcel 返回空列表
         when(userAttrService.getAllUserAttrsForExcel()).thenReturn(new ArrayList<>());
@@ -100,6 +128,9 @@ class UserExcelServiceImplTest {
     @Test
     void exportUsers_shouldReturnValidExcel_whenGivenUsers() {
         // Given
+        byte[] mockExcelBytes = createMockExcelBytes();
+        when(userExcelExporter.exportUsers(any(), any(), any())).thenReturn(mockExcelBytes);
+
         Map<String, Object> userMap = new HashMap<>();
         userMap.put("username", "testuser");
         userMap.put("emailAddress", "test@example.com");
@@ -123,6 +154,9 @@ class UserExcelServiceImplTest {
     @Test
     void exportUsers_shouldRequestMaxSize_whenExportAllIsTrue() {
         // Given
+        byte[] mockExcelBytes = createMockExcelBytes();
+        when(userExcelExporter.exportUsers(any(), any(), any())).thenReturn(mockExcelBytes);
+
         PageData<Map<String, Object>> mockPageData = new PageData<>();
         mockPageData.setList(List.of());
         when(userService.list(anyInt(), anyInt(), any())).thenReturn(mockPageData);
@@ -138,6 +172,9 @@ class UserExcelServiceImplTest {
     @Test
     void exportUsers_shouldRequestDefaultSize_whenExportAllIsFalse() {
         // Given
+        byte[] mockExcelBytes = createMockExcelBytes();
+        when(userExcelExporter.exportUsers(any(), any(), any())).thenReturn(mockExcelBytes);
+
         PageData<Map<String, Object>> mockPageData = new PageData<>();
         mockPageData.setList(List.of());
         when(userService.list(anyInt(), anyInt(), any())).thenReturn(mockPageData);
@@ -198,20 +235,32 @@ class UserExcelServiceImplTest {
     }
 
     /**
-     * 创建有效的导入 Excel 文件
+     * 创建有效的导入 Excel 文件（新格式：前两行标题，第3行示例，第4行开始数据）
      */
     private byte[] createValidImportExcel() throws Exception {
         try (Workbook workbook = new SXSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("用户导入模版");
 
-            // 表头
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("操作类型");
-            headerRow.createCell(1).setCellValue("用户名");
-            headerRow.createCell(2).setCellValue("邮箱");
+            // 第一行：父标题
+            Row parentRow = sheet.createRow(0);
+            parentRow.createCell(0).setCellValue("操作信息");
+            parentRow.createCell(1).setCellValue("基础信息");
+            parentRow.createCell(2).setCellValue("基础信息");
 
-            // 数据行
-            Row dataRow = sheet.createRow(1);
+            // 第二行：子标题（中文）
+            Row headerRow = sheet.createRow(1);
+            headerRow.createCell(0).setCellValue("操作类型*");
+            headerRow.createCell(1).setCellValue("用户名*");
+            headerRow.createCell(2).setCellValue("邮箱*");
+
+            // 第三行：示例行
+            Row exampleRow = sheet.createRow(2);
+            exampleRow.createCell(0).setCellValue("0");
+            exampleRow.createCell(1).setCellValue("");
+            exampleRow.createCell(2).setCellValue("");
+
+            // 第四行：数据行
+            Row dataRow = sheet.createRow(3);
             dataRow.createCell(0).setCellValue(0); // 添加操作
             dataRow.createCell(1).setCellValue("testuser");
             dataRow.createCell(2).setCellValue("test@example.com");
@@ -224,23 +273,31 @@ class UserExcelServiceImplTest {
     }
 
     /**
-     * 创建包含无效操作类型的 Excel 文件
+     * 创建包含无效操作类型的 Excel 文件（新格式）
      */
     private byte[] createInvalidOperationTypeExcel() throws Exception {
         try (Workbook workbook = new SXSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("用户导入模版");
 
-            // 表头
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("操作类型");
-            headerRow.createCell(1).setCellValue("用户名");
-            headerRow.createCell(2).setCellValue("邮箱");
+            // 第一行：父标题
+            Row parentRow = sheet.createRow(0);
+            parentRow.createCell(0).setCellValue("操作信息");
+            parentRow.createCell(1).setCellValue("基础信息");
 
-            // 数据行 - 无效的操作类型
-            Row dataRow = sheet.createRow(1);
+            // 第二行：子标题
+            Row headerRow = sheet.createRow(1);
+            headerRow.createCell(0).setCellValue("操作类型*");
+            headerRow.createCell(1).setCellValue("用户名*");
+
+            // 第三行：示例行
+            Row exampleRow = sheet.createRow(2);
+            exampleRow.createCell(0).setCellValue("0");
+            exampleRow.createCell(1).setCellValue("");
+
+            // 第四行：数据行 - 无效的操作类型
+            Row dataRow = sheet.createRow(3);
             dataRow.createCell(0).setCellValue(99); // 无效的操作类型
             dataRow.createCell(1).setCellValue("testuser");
-            dataRow.createCell(2).setCellValue("test@example.com");
 
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);
@@ -250,23 +307,31 @@ class UserExcelServiceImplTest {
     }
 
     /**
-     * 创建缺少必填字段的 Excel 文件
+     * 创建缺少必填字段的 Excel 文件（新格式）
      */
     private byte[] createMissingRequiredFieldsExcel() throws Exception {
         try (Workbook workbook = new SXSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("用户导入模版");
 
-            // 表头
-            Row headerRow = sheet.createRow(0);
-            headerRow.createCell(0).setCellValue("操作类型");
-            headerRow.createCell(1).setCellValue("用户名");
-            headerRow.createCell(2).setCellValue("邮箱");
+            // 第一行：父标题
+            Row parentRow = sheet.createRow(0);
+            parentRow.createCell(0).setCellValue("操作信息");
+            parentRow.createCell(1).setCellValue("基础信息");
 
-            // 数据行 - 缺少用户名
-            Row dataRow = sheet.createRow(1);
+            // 第二行：子标题
+            Row headerRow = sheet.createRow(1);
+            headerRow.createCell(0).setCellValue("操作类型*");
+            headerRow.createCell(1).setCellValue("用户名*");
+
+            // 第三行：示例行
+            Row exampleRow = sheet.createRow(2);
+            exampleRow.createCell(0).setCellValue("0");
+            exampleRow.createCell(1).setCellValue("");
+
+            // 第四行：数据行 - 缺少用户名
+            Row dataRow = sheet.createRow(3);
             dataRow.createCell(0).setCellValue(0); // 添加操作
             dataRow.createCell(1).setCellValue(""); // 空用户名
-            dataRow.createCell(2).setCellValue("test@example.com");
 
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 workbook.write(out);

@@ -130,7 +130,7 @@ class ExcelTemplateGeneratorTest {
             boolean foundFieldSection = false;
             for (Row row : hiddenSheet) {
                 org.apache.poi.ss.usermodel.Cell firstCell = row.getCell(0);
-                if (firstCell != null && "字段Key".equals(firstCell.getStringCellValue())) {
+                if (firstCell != null && "中文标题".equals(firstCell.getStringCellValue())) {
                     foundFieldSection = true;
                     break;
                 }

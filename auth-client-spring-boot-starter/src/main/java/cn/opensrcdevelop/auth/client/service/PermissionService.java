@@ -28,6 +28,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 客户端鉴权服务
@@ -168,7 +169,8 @@ public class PermissionService implements ApplicationContextAware {
                 Object arg = args[i];
                 // 过滤掉 Servlet 相关的对象，避免序列化问题
                 if (!(arg instanceof HttpServletRequest)
-                        && !(arg instanceof HttpServletResponse)) {
+                        && !(arg instanceof HttpServletResponse)
+                        && !(arg instanceof MultipartFile)) {
                     methodParams.put(paramNames[i], arg);
                 }
             });

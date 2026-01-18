@@ -19,11 +19,8 @@ export default userTs;
         <a-button @click="handleDownloadTemplate">下载模版</a-button>
         <a-button @click="handleExport(false)">导出当前页</a-button>
         <a-button @click="handleExport(true)">导出全部</a-button>
-        <a-upload :custom-request="({ file }) => handleImport(file)" :show-file-list="false" accept=".xlsx,.xls">
-          <template #upload-button>
-            <a-button>导入数据</a-button>
-          </template>
-        </a-upload>
+        <a-button @click="handleImportClick">导入数据</a-button>
+        <input type="file" ref="fileInputRef" style="display: none" accept=".xlsx,.xls" @change="handleFileChange" />
         <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
       </a-space>
     </div>
