@@ -177,6 +177,64 @@ npm run dev
 
 **验证通过后，告知用户进行检查确认。用户确认通过后，停止前后端服务，再执行后续步骤。**
 
+### 第 5.1 步：API 功能测试（使用 Python 脚本）
+
+项目提供了 `scripts/api_client.py` 工具类，可用于测试 API 功能：
+
+#### 前置条件
+
+```bash
+# 安装依赖
+python3 -m pip install requests --break-system-packages
+```
+
+#### 使用方式
+
+```bash
+cd /Users/lee0407/dev/projs/auth/scripts
+
+# 安装依赖
+python3 -m pip install requests --break-system-packages
+
+# 测试 API
+python3 -c "
+from api_client import AuthAPIClient
+
+client = AuthAPIClient()
+
+# 获取 Token（自动调用 /api/v1/oauth2/token）
+print('=== 获取 Token ===')
+token = client.get_token()
+print(f'Token: {token[:30]}...')
+
+# 测试获取用户信息
+print()
+print('=== 获取用户信息 ===')
+me = client.get('/user/me')
+print(f'用户名: {me.get(\"data\", {}).get(\"username\", \"N/A\")}')
+
+# 测试下载文件
+print()
+print('=== 下载模板 ===')
+template_path = client.download('/user/excel/template', '/tmp')
+print(f'模板已下载到: {template_path}')
+
+# 测试导出数据
+print()
+print('=== 导出用户数据 ===')
+export_path = client.download('/user/excel/export', '/tmp', params={'all': 'true'})
+print(f'导出文件已下载到: {export_path}')
+"
+```
+
+#### API 测试清单
+
+- [ ] Token 获取正常
+- [ ] GET 请求正常（如查询用户列表）
+- [ ] POST 请求正常（如创建资源）
+- [ ] 文件下载正常（如导出 Excel）
+- [ ] 响应数据格式正确
+
 ### 第 6 步：等待用户确认
 
 **验证结果：**
