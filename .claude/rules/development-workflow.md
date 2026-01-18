@@ -207,6 +207,12 @@ npm run dev
 
 项目提供了 `scripts/api_client.py` 工具类，可用于测试 API 功能：
 
+#### 注意事项
+
+**API 路径格式**：
+- 使用**相对路径**，如 `/user/me`，**不要**添加 `Host` 头和 `api/v1` 前缀
+- `api_client.py` 脚本会自动添加 `api/v1` 前缀和 `Host` 头
+
 #### 前置条件
 
 ```bash
@@ -283,9 +289,11 @@ print(f'导出文件已下载到: {export_path}')
 **用户确认验证通过后，执行以下操作：**
 
 ```bash
-# 1. 停止前后端服务
-pkill -f "auth-server.Application"
-pkill -f "vite"
+# 1. 停止前后端服务（通过杀死端口占用的进程）
+# 后端服务（6543 端口）
+lsof -ti:6543 | xargs kill -9
+# 前端服务（4321 端口）
+lsof -ti:4321 | xargs kill -9
 
 # 2. 查看变更
 git status

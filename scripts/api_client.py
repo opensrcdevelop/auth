@@ -222,6 +222,61 @@ class AuthAPIClient:
         # 默认文件名
         return "download"
 
+    def upload(
+        self,
+        path: str,
+        file_path: Union[str, Path],
+        file_field_name: str = "file",
+        data: Optional[dict] = None,
+        timeout: int = 300,
+    ) -> Any:
+        """上传文件
+
+        Args:
+            path: API 路径
+            file_path: 要上传的文件路径
+            file_field_name: 文件字段名（默认 "file"）
+            data: 附加的表单数据
+            timeout: 超时时间（默认 5 分钟）
+
+        Returns:
+            服务器响应（JSON）
+        """
+        url = self._build_url(path)
+        headers = self._get_headers()
+        # 上传文件时不需要 Content-Type，让 requests 自动设置
+        headers.pop("Content-Type", None)
+
+        file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+
+        files = {
+            file_field_name: (file_path.name, open(file_path, "rb"), self._get_content_type(file_path))
+        }
+
+        response = requests.post(url, headers=headers, files=files, data=data, timeout=timeout)
+        response.raise_for_status()
+        return response.json()
+
+    def _get_content_type(self, file_path: Path) -> str:
+        """根据文件扩展名获取 Content-Type"""
+        suffix = file_path.suffix.lower()
+        content_types = {
+            ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".xls": "application/vnd.ms-excel",
+            ".csv": "text/csv",
+            ".json": "application/json",
+            ".xml": "application/xml",
+            ".txt": "text/plain",
+            ".pdf": "application/pdf",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+        }
+        return content_types.get(suffix, "application/octet-stream")
+
 
 # 示例用法
 if __name__ == "__main__":
@@ -232,4 +287,9 @@ if __name__ == "__main__":
     print("获取当前用户信息:")
     me = client.get("/user/me")
     print(me)
-    
+
+    # 示例：上传文件
+    print("\n上传用户 Excel 文件:")
+    result = client.upload("/user/excel/import", "/tmp/user_import.xlsx")
+    print(result)
+
