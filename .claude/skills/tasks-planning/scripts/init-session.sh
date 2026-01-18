@@ -5,11 +5,15 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"  # 4 levels up to project root
+
 TASK_NAME="${1:-project}"
 DATE=$(date +%Y-%m-%d)
 
 # Create the directory structure
-TASK_DIR=".claude/tmp/tasks/$DATE/$TASK_NAME"
+TASK_DIR="$PROJECT_ROOT/.claude/tmp/tasks/$DATE/$TASK_NAME"
 mkdir -p "$TASK_DIR"
 
 echo "Initializing planning files for: $TASK_NAME"

@@ -19,7 +19,11 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
 PLANNING_FILES = ['task_plan.md', 'progress.md', 'findings.md']
-TASKS_FILE = Path('.claude/tmp/tasks/tasks.json')
+
+# Calculate paths relative to script location
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent.parent  # 4 levels up to project root
+TASKS_FILE = PROJECT_ROOT / '.claude' / 'tmp' / 'tasks' / 'tasks.json'
 
 
 def get_project_dir(project_path: str) -> Path:
@@ -159,8 +163,9 @@ def get_task_by_id(project_path: str, task_id: str) -> Optional[Dict]:
 
 def get_unsynced_context_for_task(project_path: str, task_id: str) -> List[Dict]:
     """
-    Get all unsynced context for a specific task.
-    Returns messages from sessions NOT yet recorded in the task.
+    Get unsynced context for a specific task.
+    Loads messages from previously recorded sessions to help model understand context.
+    Returns up to 100 key messages (user messages and assistant summaries).
     """
     task = get_task_by_id(project_path, task_id)
     if not task:
@@ -179,22 +184,64 @@ def get_unsynced_context_for_task(project_path: str, task_id: str) -> List[Dict]
     for session in task.get('sessions', []):
         task_session_ids.add(session['sessionId'])
 
-    unsynced_messages = []
-
-    # Process all sessions (sorted by time, newest first)
+    # Find recorded sessions that exist in the project
+    recorded_sessions = []
     for session in sessions:
         session_id = session.stem
+        if session_id in task_session_ids and session.exists():
+            recorded_sessions.append(session)
 
-        # Skip if this session is already in the task
-        if session_id in task_session_ids:
-            continue
+    if not recorded_sessions:
+        return []
 
-        # This is an unsynced session - get all its messages
+    # Collect key messages from all recorded sessions
+    # Priority: user messages with content, then assistant summaries
+    all_messages = []
+
+    for session in sorted(recorded_sessions, key=lambda s: s.stat().st_mtime):
         messages = parse_session_messages(session)
-        if messages:
-            unsynced_messages.extend(messages)
 
-    return unsynced_messages
+        for msg in messages:
+            msg_type = msg.get('type')
+
+            # Extract text content
+            msg_content = msg.get('message', {}).get('content', '')
+            text_content = ''
+            tools = []
+
+            if isinstance(msg_content, list):
+                for item in msg_content:
+                    if item.get('type') == 'text':
+                        text_content = item.get('text', '')
+                    elif item.get('type') == 'tool_use':
+                        tools.append(item.get('name', ''))
+            elif isinstance(msg_content, str):
+                text_content = msg_content
+
+            # Skip empty or meta messages
+            if msg.get('isMeta', False):
+                continue
+
+            # Include user messages with meaningful content
+            if msg_type == 'user':
+                if text_content and len(text_content.strip()) > 0:
+                    all_messages.append(msg)
+
+            # Include assistant messages that are summaries or have significant actions
+            elif msg_type == 'assistant':
+                # Include if: has tools (significant actions) OR has substantial text content
+                has_significant_tools = any(t in ['Bash', 'Read', 'Edit', 'Write'] for t in tools)
+                has_substantial_content = len(text_content) > 50
+
+                if has_significant_tools or has_substantial_content:
+                    all_messages.append(msg)
+
+    # Limit to 100 messages, prioritizing newer ones
+    if len(all_messages) > 100:
+        # Keep the most recent 100 messages
+        all_messages = all_messages[-100:]
+
+    return all_messages
 
 
 def get_all_pending_tasks(project_path: str) -> List[Dict]:
@@ -209,34 +256,49 @@ def get_all_pending_tasks(project_path: str) -> List[Dict]:
     return [t for t in data.get('tasks', []) if t['status'] != 'completed']
 
 
-def format_unsynced_messages(messages: List[Dict], max_items: int = 15) -> str:
+def format_unsynced_messages(messages: List[Dict], max_items: int = 100) -> str:
     """Format unsynced messages for display."""
     if not messages:
         return "No unsynced context found."
 
-    # Filter and format messages
+    # Format all messages (up to max_items)
     formatted = []
-    user_msgs = [m for m in messages if m.get('role') == 'user']
-    assistant_msgs = [m for m in messages if m.get('role') == 'assistant']
+    for i, msg in enumerate(messages[-max_items:], 1):
+        msg_type = msg.get('type', '')
+        content = msg.get('message', {}).get('content', '')
 
-    # Add user messages
-    for msg in user_msgs[-max_items:]:
-        content = msg.get('content', '')[:300]
-        formatted.append(f"USER: {content}")
+        if isinstance(content, list):
+            # Extract text from list content
+            text_content = ''
+            for item in content:
+                if item.get('type') == 'text':
+                    text_content = item.get('text', '')[:200]
+                    break
+            tools = []
+            for item in content:
+                if item.get('type') == 'tool_use':
+                    tools.append(item.get('name', 'unknown'))
+            content_str = text_content
+        elif isinstance(content, str):
+            content_str = content[:200]
+            tools = []
+        else:
+            content_str = str(content)[:200]
+            tools = []
 
-    # Add assistant messages
-    for msg in assistant_msgs[-max_items:]:
-        content = msg.get('content', '')[:300]
-        tools = msg.get('tools', [])
-        formatted.append(f"CLAUDE: {content}")
-        if tools:
-            formatted.append(f"  Tools: {', '.join(tools[:4])}")
+        if msg_type == 'user':
+            formatted.append(f"[{i}] USER: {content_str}")
+        elif msg_type == 'assistant':
+            formatted.append(f"[{i}] CLAUDE: {content_str}")
+            if tools:
+                formatted.append(f"      Tools: {', '.join(tools)}")
 
     return '\n'.join(formatted)
 
 
 def main():
-    project_path = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
+    # Use calculated PROJECT_ROOT instead of sys.argv or cwd
+    project_path = str(PROJECT_ROOT)
 
     # Check for --task flag
     target_task_id = None
@@ -249,7 +311,7 @@ def main():
 
     # Check if tasks.json exists
     if not TASKS_FILE.exists() and not target_task_id:
-        print("[planning-with-files] No tasks.json found. Create a task first:")
+        print("No tasks.json found. Create a task first:")
         print("  python3 scripts/tasks-manager.py create \"Task Name\"")
         return
 
@@ -257,7 +319,7 @@ def main():
     if target_task_id:
         task = get_task_by_id(project_path, target_task_id)
         if not task:
-            print(f"[planning-with-files] Task not found: {target_task_id}")
+            print(f"Task not found: {target_task_id}")
             return
 
         print(f"\n=== Unsynced Context for Task: {task['name']} ({task['id']}) ===")
@@ -279,12 +341,12 @@ def main():
     pending_tasks = get_all_pending_tasks(project_path)
 
     if not pending_tasks:
-        print("[planning-with-files] No pending tasks.")
+        print("No pending tasks.")
         print("Create a new task:")
         print("  python3 scripts/tasks-manager.py create \"Task Name\"")
         return
 
-    print(f"[planning-with-files] Found {len(pending_tasks)} pending task(s):\n")
+    print(f"Found {len(pending_tasks)} pending task(s):\n")
     for task in sorted(pending_tasks, key=lambda t: t.get('startTime', ''), reverse=True):
         session_count = len(task.get('sessions', []))
         print(f"  • {task['id']}: {task['name']} ({task['status']}, {session_count} sessions)")

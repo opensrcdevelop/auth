@@ -3,14 +3,18 @@
 # Exit 0 if complete, exit 1 if incomplete
 # Used by Stop hook to verify task completion
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"  # 4 levels up to project root
+
 # Try to find task_plan.md in the new directory structure
 if [ -z "$1" ]; then
     DATE=$(date +%Y-%m-%d)
     # Look for task_plan.md in .claude/tmp/tasks/{date}/*/
-    PLAN_FILE=$(find .claude/tmp/tasks/$DATE -name "task_plan.md" -type f 2>/dev/null | head -1)
+    PLAN_FILE=$(find "$PROJECT_ROOT/.claude/tmp/tasks/$DATE" -name "task_plan.md" -type f 2>/dev/null | head -1)
     if [ -z "$PLAN_FILE" ]; then
         # Fallback: try to find any task_plan.md in .claude/tmp/tasks/
-        PLAN_FILE=$(find .claude/tmp/tasks -name "task_plan.md" -type f 2>/dev/null | head -1)
+        PLAN_FILE=$(find "$PROJECT_ROOT/.claude/tmp/tasks" -name "task_plan.md" -type f 2>/dev/null | head -1)
     fi
     if [ -z "$PLAN_FILE" ]; then
         # Fallback to current directory
