@@ -1,7 +1,7 @@
 ---
 name: tasks-planning
-version: "2.6.0"
-description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes session-catchup.py for loading previous session context.
+version: "2.7.0"
+description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes hooks for task initialization validation and session management.
 user-invocable: true
 allowed-tools:
   - Read
@@ -14,55 +14,137 @@ allowed-tools:
   - WebSearch
 hooks:
   PreToolUse:
-    - matcher: "Write|Edit|Bash|Read|Glob|Grep"
+    - matcher: "Write|Edit|Bash"
       hooks:
         - type: command
           command: |
-            # Find and display current task_plan.md
+            # [tasks-planning] PreToolUse Hook Triggered
             SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
-            if [ -f ".claude/tmp/tasks/tasks.json" ]; then
-              python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | head -5 || true
+            TASKS_FILE=".claude/tmp/tasks/tasks.json"
+            TASKS_DIR=".claude/tmp/tasks"
+
+            echo "=== [tasks-planning] PreToolUse Hook ==="
+
+            # Check 1: Is there a task created?
+            if [ ! -f "$TASKS_FILE" ]; then
+              echo "⚠️  [tasks-planning] No task found!"
+              echo "   Please create a task first:"
+              echo "   python3 ${SCRIPT_DIR}/tasks-manager.py create \"Task Name\""
+              echo "   Then create task_plan.md, findings.md, progress.md"
+              exit 0
             fi
-            if [ -f ".claude/tmp/tasks/$(date +%Y-%m-%d)/*/task_plan.md" ]; then
-              cat .claude/tmp/tasks/$(date +%Y-%m-%d)/*/task_plan.md 2>/dev/null | head -30
-            fi || true
+
+            # Check 2: Is there an active task?
+            TASK_OUTPUT=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null)
+            PENDING=$(echo "$TASK_OUTPUT" | grep -c "🔄" || echo "0")
+            if [ "$PENDING" = "0" ]; then
+              echo "⚠️  [tasks-planning] No active task!"
+              echo "   Run: python3 ${SCRIPT_DIR}/tasks-manager.py list"
+              echo "   Start a task: python3 ${SCRIPT_DIR}/tasks-manager.py start <task-id>"
+              exit 0
+            fi
+
+            # Check 3: Find task directory and check if task_plan.md exists
+            TASK_ID=$(echo "$TASK_OUTPUT" | grep "🔄" | awk '{print $1}' | head -1)
+            TASK_DIR=""
+            # Search in all date directories for the task
+            for DATE_DIR in "$TASKS_DIR"/*/; do
+              if [ -d "${DATE_DIR}${TASK_ID}" ]; then
+                TASK_DIR="${DATE_DIR}${TASK_ID}"
+                break
+              fi
+            done
+
+            if [ -z "$TASK_DIR" ] || [ ! -f "$TASK_DIR/task_plan.md" ]; then
+              echo "⚠️  [tasks-planning] Planning files not found!"
+              echo "   Create planning files in: ${TASKS_DIR}/<date>/${TASK_ID}/"
+              echo "   Required files: task_plan.md, findings.md, progress.md"
+              exit 0
+            fi
+
+            # Show current task status
+            echo "✅ [tasks-planning] Task initialized, proceeding..."
+            echo ""
+            echo "=== Current Task Status ==="
+            echo "$TASK_OUTPUT" | head -3
+
+            # Show phase progress
+            echo ""
+            echo "=== Current Phase ==="
+            grep -E "Phase|Status:" "$TASK_DIR/task_plan.md" 2>/dev/null | head -30 || true
   PostToolUse:
     - matcher: "Write|Edit"
       hooks:
         - type: command
-          command: "echo '[tasks-planning] File updated. If this completes a phase, update task_plan.md status.'"
+          command: |
+            echo "[tasks-planning] File modified"
+            SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
+            TASKS_FILE=".claude/tmp/tasks/tasks.json"
+            TASKS_DIR=".claude/tmp/tasks"
+
+            # Get current task ID
+            TASK_ID=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | grep "🔄" | awk '{print $1}' | head -1)
+            if [ -z "$TASK_ID" ]; then
+              exit 0
+            fi
+
+            # Find task directory
+            TASK_DIR=""
+            for DATE_DIR in "$TASKS_DIR"/*/; do
+              if [ -d "${DATE_DIR}${TASK_ID}" ]; then
+                TASK_DIR="${DATE_DIR}${TASK_ID}"
+                break
+              fi
+            done
+
+            # Suggest updating task_plan.md if a phase is complete
+            if [ -n "$TASK_DIR" ] && [ -f "$TASK_DIR/task_plan.md" ]; then
+              CURRENT_PHASE=$(grep "Phase" "$TASK_DIR/task_plan.md" 2>/dev/null | grep -c "in_progress" || echo "0")
+              if [ "$CURRENT_PHASE" != "0" ]; then
+                echo "💡 [tasks-planning] Phase in progress - consider updating task_plan.md status when complete"
+              fi
+            fi
   Stop:
     - hooks:
         - type: command
           command: |
-            # Use fixed path from project root
+            echo "[tasks-planning] Stop Hook Triggered"
             SCRIPT_DIR=".claude/skills/tasks-planning/scripts"
+
+            # Check task completion
             bash "${SCRIPT_DIR}/check-complete.sh"
-            python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | grep "🔄" | awk '{print $1}' | head -1 | xargs -I {} python3 "${SCRIPT_DIR}/tasks-manager.py" end-session {} 2>/dev/null || true
+
+            # End session for in-progress tasks
+            TASK_ID=$(python3 "${SCRIPT_DIR}/tasks-manager.py" pending 2>/dev/null | grep "🔄" | awk '{print $1}' | head -1)
+            if [ -n "$TASK_ID" ]; then
+              python3 "${SCRIPT_DIR}/tasks-manager.py" end-session "$TASK_ID" 2>/dev/null
+              echo "[tasks-planning] Session ended for task: $TASK_ID"
+            else
+              echo "[tasks-planning] No active task to end session"
+            fi
 ---
 
-# Planning with Files (v2.6.0)
+# Tasks Planning
 
 Work like Manus: Use persistent markdown files as your "working memory on disk."
 
-## Task Management Overview (v2.6.0)
-
-This version includes **session-catchup.py** for loading previous session context (up to 100 messages) to help model understand task progress.
+## The Core Pattern
 
 ```
-.claude/tmp/tasks/
-├── tasks.json              # Task registry with session history
-├── 2026-01-18/
-│   └── user-export-import/
-│       ├── task_plan.md
-│       ├── findings.md
-│       └── progress.md
-└── 2026-01-19/
-    └── feature-login/
-        ├── task_plan.md
-        ├── findings.md
-        └── progress.md
+Context Window = RAM (volatile, limited)
+Filesystem = Disk (persistent, unlimited)
+
+→ Anything important gets written to disk.
+→ Tasks and sessions tracked in tasks.json.
 ```
+
+## Important: Where Files Go
+
+| Location | What Goes There |
+|----------|-----------------|
+| Skill directory (`./`) | Templates, scripts, reference docs |
+| `.claude/tmp/tasks/tasks.json` | Task registry with session history |
+| `.claude/tmp/tasks/YYYY-MM-DD/task-name/` | `task_plan.md`, `findings.md`, `progress.md` |
 
 ### tasks.json Structure
 
@@ -90,7 +172,7 @@ This version includes **session-catchup.py** for loading previous session contex
 
 > **Note:** sessionId uses UUID format (e.g., `508e13a8-d3b7-449c-a7db-85c8e0675431`) to match Claude Code session files.
 
-## New Session Workflow
+## Workflow
 
 ### Step 1: Check for Pending Tasks
 
@@ -143,67 +225,6 @@ When all phases are complete:
 python3 tasks-manager.py complete <task-id>
 ```
 
-### Session Context Recovery
-
-When continuing a task in a new session, `session-catchup.py` loads previous session messages:
-
-```bash
-python3 scripts/session-catchup.py --task <task-id>
-```
-
-**Output includes:**
-- Up to 100 key messages (user requests + Claude summaries)
-- Filtered to remove empty messages
-- Prioritizes recent messages for context relevance
-
-**Example output:**
-```
-=== Unsynced Context for Task: 用户 Excel 导入导出 (用户-excel-导入导出) ===
-Status: in_progress
-Recorded sessions: 1
-
-Unsynced messages: 100
-
---- UNSYNCED CONTEXT ---
-[1] USER: 请完善 skill【/Users/.../tasks-manager.py】...
-[2] CLAUDE: `tasks-manager.py` 已完善。以下是更新摘要...
-[3] USER: 请确认 tasks.json 的位置
-...
-```
-
-## Important: Where Files Go
-
-| Location | What Goes There |
-|----------|-----------------|
-| Skill directory (`./`) | Templates, scripts, reference docs |
-| `.claude/tmp/tasks/tasks.json` | Task registry with session history |
-| `.claude/tmp/tasks/YYYY-MM-DD/task-name/` | `task_plan.md`, `findings.md`, `progress.md` |
-
-## Quick Start (Updated)
-
-Before ANY complex task:
-
-1. **Check pending tasks** — Run `python3 scripts/tasks-manager.py pending`
-2. **Ask user** — Use AskUserQuestion to select or create task
-3. **Create task directory** — `.claude/tmp/tasks/$(date +%Y-%m-%d)/{task-name}/`
-4. **Create `task_plan.md`** — Use [templates/task_plan.md](templates/task_plan.md) as reference
-5. **Create `findings.md`** — Use [templates/findings.md](templates/findings.md) as reference
-6. **Create `progress.md`** — Use [templates/progress.md](templates/progress.md) as reference
-7. **Re-read plan before decisions** — Refreshes goals in attention window
-8. **Update after each phase** — Mark complete, log errors
-
-> **Note:** Planning files go in `.claude/tmp/tasks/YYYY-MM-DD/task-name/`, not the skill installation folder.
-
-## The Core Pattern
-
-```
-Context Window = RAM (volatile, limited)
-Filesystem = Disk (persistent, unlimited)
-
-→ Anything important gets written to disk.
-→ Tasks and sessions tracked in tasks.json.
-```
-
 ## File Purposes
 
 | File | Purpose | When to Update |
@@ -220,9 +241,9 @@ Never start a complex task without creating a task entry in tasks.json.
 
 ### 2. Track Every Session
 At session start:
-1. Get current session ID: `python3 tasks-manager.py current-session`
-2. Add session to task: `python3 tasks-manager.py add-session <task-id> <session-id>`
-3. Optional: Load context from previous sessions: `python3 session-catchup.py --task <task-id>`
+1. Load context from previous sessions: `python3 session-catchup.py --task <task-id>`
+2. Get current session ID: `python3 tasks-manager.py current-session`
+3. Add session to task: `python3 tasks-manager.py add-session <task-id> <session-id>`
 
 ### 3. The 2-Action Rule
 > "After every 2 view/browser/search operations, IMMEDIATELY save key findings to text files."
