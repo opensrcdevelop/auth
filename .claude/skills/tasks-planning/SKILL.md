@@ -30,7 +30,7 @@ hooks:
     - matcher: "Write|Edit"
       hooks:
         - type: command
-          command: "echo '[planning-with-files] File updated. If this completes a phase, update task_plan.md status.'"
+          command: "echo '[tasks-planning] File updated. If this completes a phase, update task_plan.md status.'"
   Stop:
     - hooks:
         - type: command
@@ -133,7 +133,8 @@ Use the **AskUserQuestion** tool to present pending tasks and options:
 1. Create task: `python3 tasks-manager.py create "任务名称"`
 2. Start task: `python3 tasks-manager.py start <task-id>`
 3. Create planning files in `.claude/tmp/tasks/$(date +%Y-%m-%d)/<task-id>/`
-4. Initialize session: `python3 tasks-manager.py add-session <task-id> <session-id>`
+4. Get current session ID: `python3 tasks-manager.py current-session`
+5. Initialize session: `python3 tasks-manager.py add-session <task-id> <session-id>`
 
 ### Step 4: Complete Task
 
