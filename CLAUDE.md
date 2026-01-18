@@ -173,6 +173,18 @@ AI 功能需要配置环境变量（参考 `.env.example`）：
 
 详细文档参见 `/auth-client-spring-boot-starter/README.md`
 
+## 开发规范
+
+项目规则文件位于 `.claude/rules/` 目录，这些规则会在 Claude Code 执行任务时自动加载：
+
+| 规则文件 | 说明 |
+|---------|------|
+| `development-workflow.md` | 完整开发流程规范（从创建 worktree 到 PR 合并） |
+| `git-workflow.md` | Git 工作流规范（分支策略、提交规范、PR 模板） |
+| `quality-gate.md` | 质量红线规则（提交前强制检查、禁止行为清单） |
+
+所有开发任务必须严格遵循这些规则。
+
 ## 外部文档
 
 - Notion 指南：https://zippy-fireplace-aab.notion.site/Auth-Server-Guide-2131bf1df6e180b49026e77aade2878c

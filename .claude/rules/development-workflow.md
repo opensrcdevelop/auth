@@ -2,36 +2,71 @@
 
 本文规范了从任务开始到 PR 合并的完整开发流程。所有开发任务必须严格遵循此流程。
 
+## 工作目录检查
+
+**在开始编码前，请确认当前工作目录：**
+
+```bash
+# 检查当前是否在 worktree 中
+git worktree list
+```
+
+- **如果在 worktrees/ 目录下**：直接开始编码（第 3 步）
+- **如果在主目录或不在 worktree 中**：请选择以下方式之一：
+  - **方式一**：使用 `/git-worktree` skill 创建 worktree 后再作业
+  - **方式二**：直接在当前目录作业（不推荐，可能污染主分支）
 
 ## 流程概览
 
 ```mermaid
 flowchart TD
-    A[1. 创建 Worktree<br/>在 worktrees/ 目录下创建作业分支] --> B[2. 迁移至作业目录<br/>cd worktrees/feature-xxx]
-    B --> C[3. 编码实现<br/>编写代码、添加测试]
-    C --> D[4. 代码质量检查<br/>格式化、编译、测试]
-    D --> E[5. 启动验证<br/>启动前后端，验证功能正常]
-    E --> F[6. 提交代码<br/>规范的提交信息]
-    F --> G[7. 推送到远程<br/>git push -u origin]
-    G --> H[8. 创建 PR<br/>向 develop 分支创建 PR]
-    H --> I[9. 清理 Worktree<br/>完成后删除 worktree]
+    A{检查工作目录} --> B[在 worktrees/ 中]
+    A --> C[不在 worktrees/ 中]
+    B --> D[直接开始编码]
+    C --> E{选择作业方式}
+    E --> F[/git-worktree skill<br/>创建 worktree]
+    E --> G[直接作业<br/>不推荐]
+    F --> D
+    D --> H[3. 编码实现<br/>编写代码、添加测试]
+    H --> I[4. 代码质量检查<br/>格式化、编译、测试]
+    I --> J[5. 启动验证<br/>启动前后端，验证功能正常]
+    J --> K[6. 提交代码<br/>规范的提交信息]
+    K --> L[7. 推送到远程<br/>git push -u origin]
+    L --> M[8. 创建 PR<br/>向 develop 分支创建 PR]
+    M --> N[9. 清理 Worktree<br/>完成后删除 worktree]
 
     style A fill:#e1f5ff
-    style B fill:#e1f5ff
-    style C fill:#fff4e1
+    style B fill:#e1ffe1
+    style C fill:#ffe1f5
     style D fill:#fff4e1
     style E fill:#ffe1f5
-    style F fill:#e1ffe1
-    style G fill:#e1ffe1
-    style H fill:#f5e1ff
-    style I fill:#e1e1f5
+    style F fill:#e1f5ff
+    style G fill:#ffe1e1
+    style H fill:#fff4e1
+    style I fill:#fff4e1
+    style J fill:#ffe1f5
+    style K fill:#e1ffe1
+    style L fill:#e1ffe1
+    style M fill:#f5e1ff
+    style N fill:#e1e1f5
 ```
 
 ## 详细步骤
 
-### 第 1 步：创建 Worktree
+### 第 1 步：创建 Worktree（如需要）
 
-在项目根目录下执行：
+如果当前不在 worktree 中，使用 `/git-worktree` skill 创建：
+
+```
+/git-worktree init feature/任务描述
+```
+
+该命令会自动：
+1. 切换到 develop 分支并更新
+2. 创建新的功能分支
+3. 在 `worktrees/` 目录下创建 worktree
+
+**或者**手动执行：
 
 ```bash
 # 1. 确保 develop 分支是最新的
@@ -39,34 +74,25 @@ git checkout develop
 git pull origin develop
 
 # 2. 创建新的功能分支
-git checkout -b feature/excel-import-export
+git checkout -b feature/任务描述
 
 # 3. 创建 worktree（必须在 worktrees/ 目录下）
-git worktree add worktrees/feature-excel-import-export feature/excel-import-export
+git worktree add worktrees/feature-xxx feature/xxx
 
-# 4. 验证 worktree 创建成功
-git worktree list
+# 4. 切换到 worktree 目录
+cd worktrees/feature-xxx
 ```
 
-预期输出：
-```
-/Users/lee0407/dev/projs/auth                                   abc1234 [develop]
-/Users/lee0407/dev/projs/auth/worktrees/feature-excel-import-export  def5678 [feature/excel-import-export]
-```
-
-### 第 2 步：迁移至作业目录
+### 第 2 步：验证工作环境
 
 ```bash
-# 进入 worktree 目录
-cd /Users/lee0407/dev/projs/auth/worktrees/feature-excel-import-export
-
 # 验证当前分支
 git branch
-# 应显示 * feature/excel-import-export
+# 应显示 * feature/xxx
 
 # 验证工作目录
 pwd
-# 应显示 /Users/lee0407/dev/projs/auth/worktrees/feature-excel-import-export
+# 应显示 .../auth/worktrees/feature-xxx
 ```
 
 ### 第 3 步：编码实现
@@ -177,6 +203,64 @@ npm run dev
 
 **验证通过后，告知用户进行检查确认。用户确认通过后，停止前后端服务，再执行后续步骤。**
 
+### 第 5.1 步：API 功能测试（使用 Python 脚本）
+
+项目提供了 `scripts/api_client.py` 工具类，可用于测试 API 功能：
+
+#### 前置条件
+
+```bash
+# 安装依赖
+python3 -m pip install requests --break-system-packages
+```
+
+#### 使用方式
+
+```bash
+cd /Users/lee0407/dev/projs/auth/scripts
+
+# 安装依赖
+python3 -m pip install requests --break-system-packages
+
+# 测试 API
+python3 -c "
+from api_client import AuthAPIClient
+
+client = AuthAPIClient()
+
+# 获取 Token（自动调用 /api/v1/oauth2/token）
+print('=== 获取 Token ===')
+token = client.get_token()
+print(f'Token: {token[:30]}...')
+
+# 测试获取用户信息
+print()
+print('=== 获取用户信息 ===')
+me = client.get('/user/me')
+print(f'用户名: {me.get(\"data\", {}).get(\"username\", \"N/A\")}')
+
+# 测试下载文件
+print()
+print('=== 下载模板 ===')
+template_path = client.download('/user/excel/template', '/tmp')
+print(f'模板已下载到: {template_path}')
+
+# 测试导出数据
+print()
+print('=== 导出用户数据 ===')
+export_path = client.download('/user/excel/export', '/tmp', params={'all': 'true'})
+print(f'导出文件已下载到: {export_path}')
+"
+```
+
+#### API 测试清单
+
+- [ ] Token 获取正常
+- [ ] GET 请求正常（如查询用户列表）
+- [ ] POST 请求正常（如创建资源）
+- [ ] 文件下载正常（如导出 Excel）
+- [ ] 响应数据格式正确
+
 ### 第 6 步：等待用户确认
 
 **验证结果：**
@@ -189,7 +273,7 @@ npm run dev
 
 **前端服务：**
 - ✓ 启动成功，无编译错误
-- ✓ 页面地址：http://auth.local.opensrcdevelop.cn:4322/ui
+- ✓ 页面地址：http://auth.local.opensrcdevelop.cn:4321/ui
 - ✓ 新增功能可正常使用
 
 请用户验证上述功能是否正常。验证通过后，通知 AI 停止服务并继续后续步骤。
@@ -244,7 +328,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ```bash
 # 推送分支到远程仓库
-git push -u origin feature/excel-import-export
+git push -u origin feature/xxx
 
 # 验证推送成功
 git status
@@ -277,7 +361,7 @@ gh pr create \
 - [ ] 手动测试完成
 
 ## 相关 Issue
-Closes #
+Closes #(issue_number)
 
 ## 截图/演示
 （添加相关截图）
@@ -292,22 +376,22 @@ EOF
 ```
 
 或使用 GitHub Web UI 创建 PR：
-1. 访问 https://github.com/opensrcdevelop/auth/pull/new/develop...feature/excel-import-export
+1. 访问 https://github.com/opensrcdevelop/auth/pull/new/develop...feature/xxx
 2. 填写 PR 标题和描述
 3. 创建 PR
 
 ### 第 9 步：清理 Worktree
 
-PR 创建后，可以清理 worktree：
+PR 创建后，清理 worktree：
 
 ```bash
-# 1. 返回主目录
+# 返回主目录
 cd /Users/lee0407/dev/projs/auth
 
-# 2. 删除 worktree
-git worktree remove worktrees/feature-excel-import-export
+# 删除 worktree
+git worktree remove worktrees/feature-xxx
 
-# 3. 验证删除
+# 验证删除
 git worktree list
 ```
 
@@ -375,18 +459,11 @@ git worktree add worktrees/feature-xxx feature/xxx
 
 ## 快捷命令
 
-### 创建新功能的完整流程
+### 使用 skill 创建 worktree
 
 ```bash
-# 一键创建并进入 worktree
-git checkout develop && \
-git pull origin develop && \
-git checkout -b $1 && \
-git worktree add worktrees/$1 $1 && \
-cd worktrees/$1
-
-# 使用方式：
-# ./create-worktree.sh feature/excel-import-export
+# 使用 /git-worktree skill 创建 worktree
+/git-worktree init feature/xxx
 ```
 
 ### 提交并推送的标准流程
@@ -448,8 +525,8 @@ cd ui && npm run dev
 
 ## 记住
 
-1. **始终在 worktrees/ 目录下创建 worktree**
-2. **迁移到 worktree 目录后再开始编码**
+1. **优先在 worktrees/ 目录下的 worktree 中作业**
+2. **如不在 worktree 中，使用 `/git-worktree` skill 创建后再作业**
 3. **提交前必须通过所有检查**
 4. **使用规范的提交信息**
 5. **完成任务后及时清理 worktree**
