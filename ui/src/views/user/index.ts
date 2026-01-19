@@ -1,4 +1,5 @@
-import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,} from "@/api/user";
+import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,
+  downloadUserTemplate, exportUsers, importUsers,} from "@/api/user";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
@@ -373,6 +374,13 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
   )
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
+        console.log('=== 获取用户列表 ===', {
+          current: data.current,
+          total: data.total,
+          size: data.size,
+          listLength: data.list ? data.list.length : 0,
+          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
+        });
         userList.length = 0;
         userList.push(...data.list);
 
@@ -413,6 +421,14 @@ const handleSearchUser = (
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
+        console.log('=== 搜索用户 ===', {
+          username,
+          current: data.current,
+          total: data.total,
+          size: data.size,
+          listLength: data.list ? data.list.length : 0,
+          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
+        });
         userList.length = 0;
         userList.push(...data.list);
 
@@ -509,6 +525,152 @@ const handleUserColumnResize = (dataIndex: string, width: number) => {
   }, 800);
 };
 
+// 导入导出相关
+const importResultVisible = ref(false);
+const importResult = ref({
+  createdCount: 0,
+  updatedCount: 0,
+  deletedCount: 0,
+  failureCount: 0,
+  errors: [],
+});
+
+// 下载模版
+const handleDownloadTemplate = async () => {
+  try {
+    const blob = (await downloadUserTemplate()) as unknown as Blob;
+    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
+    const now = new Date();
+    const timestamp = now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0') +
+      String(now.getSeconds()).padStart(2, '0');
+    downloadBlob(blob, `用户导入模版_${timestamp}.xlsx`);
+    Notification.success("模版下载成功");
+  } catch (err) {
+    handleApiError(err, "模版下载");
+  }
+};
+
+// 导出数据
+const handleExport = async (exportAll: boolean) => {
+  try {
+    // 只传递有效的筛选条件（key、filterType、value 都不为空）
+    const filters = (userListFilters.filters || []).filter(
+      (item: any) => item.key && item.filterType && item.value
+    );
+    // 如果导出当前页，提取当前页的用户 ID 列表
+    const userIds = exportAll ? undefined : userList.map((u: any) => u.userId).filter(Boolean);
+    console.log('=== 调试信息 ===', {
+      exportAll,
+      userListLength: userList.length,
+      userListFirst5: userList.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })),
+      userIdsLength: userIds ? userIds.length : 0,
+      userIdsFirst5: userIds ? userIds.slice(0, 5) : []
+    });
+    const blob = (await exportUsers(filters, exportAll, userIds)) as unknown as Blob;
+    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
+    const now = new Date();
+    const timestamp = now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0') +
+      String(now.getSeconds()).padStart(2, '0');
+    downloadBlob(blob, `用户数据_${timestamp}.xlsx`);
+    Notification.success(exportAll ? "全部数据导出成功" : "当前页导出成功");
+  } catch (err) {
+    handleApiError(err, "导出");
+  }
+};
+
+// 导入数据
+const uploadRef = ref();
+const fileInputRef = ref();
+
+const handleImportClick = () => {
+  // 触发隐藏的 file input
+  fileInputRef.value?.click();
+};
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    try {
+      const result = (await importUsers(file)) as unknown as {
+        createdCount: number;
+        updatedCount: number;
+        deletedCount: number;
+        errors: Array<{ row: number; column: string; message: string }>;
+      };
+      importResult.value = {
+        createdCount: result.createdCount || 0,
+        updatedCount: result.updatedCount || 0,
+        deletedCount: result.deletedCount || 0,
+        failureCount: result.errors?.length || 0,
+        errors: result.errors || []
+      };
+      importResultVisible.value = true;
+
+      if (result.errors?.length === 0) {
+        // 刷新列表
+        handleGetUserList(1, 15);
+      }
+    } catch (err) {
+      handleApiError(err, "导入");
+    }
+  }
+  // 清空 input，允许重复选择同一文件
+  target.value = "";
+};
+
+// 导入数据（保留兼容）
+const handleImport = async (options: { file: any; onSuccess: () => void; onError: (err: any) => void }) => {
+  try {
+    // Arco Upload 的 file 对象结构：file.file 是原生 File
+    const file = options.file?.file || options.file?.originFile || options.file;
+    if (!file) {
+      throw new Error("未找到文件");
+    }
+    const result = (await importUsers(file)) as unknown as {
+      createdCount: number;
+      updatedCount: number;
+      deletedCount: number;
+      errors: Array<{ row: number; column: string; message: string }>;
+    };
+    importResult.value = {
+      createdCount: result.createdCount || 0,
+      updatedCount: result.updatedCount || 0,
+      deletedCount: result.deletedCount || 0,
+      failureCount: result.errors?.length || 0,
+      errors: result.errors || []
+    };
+    importResultVisible.value = true;
+    options.onSuccess();
+
+    if (result.errors?.length === 0) {
+      // 刷新列表
+      handleGetUserList(1, 15);
+    }
+  } catch (err) {
+    options.onError(err);
+    handleApiError(err, "导入");
+  }
+};
+
+// 下载 Blob 工具函数
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export default defineComponent({
   setup() {
     userListPagination = usePagination("userList", ({ page, size }) => {
@@ -557,6 +719,14 @@ export default defineComponent({
       handleUserColumnResize,
       userListFilterd,
       handleUserListFilterHide,
+      // 导入导出
+      importResultVisible,
+      importResult,
+      handleDownloadTemplate,
+      handleExport,
+      handleImportClick,
+      handleFileChange,
+      fileInputRef,
     };
   },
 });

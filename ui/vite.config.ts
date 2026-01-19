@@ -22,6 +22,8 @@ export default ({ mode }) => {
       host: "0.0.0.0",
       port: 4321,
       open: false,
+      strictPort: true,
+      allowedHosts: ["auth.local.opensrcdevelop.cn", "localhost", ".local"],
     },
   });
 };

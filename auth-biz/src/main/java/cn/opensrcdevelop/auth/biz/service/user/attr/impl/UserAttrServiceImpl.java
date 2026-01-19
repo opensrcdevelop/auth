@@ -446,6 +446,42 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
     }
 
     /**
+     * 获取所有用户字段（包括基础字段和扩展字段） 从数据库读取所有用户属性 用于 Excel 导入导出功能
+     *
+     * @return 所有用户字段列表
+     */
+    @Override
+    public List<UserAttrResponseDto> getAllUserAttrsForExcel() {
+        // 从数据库获取所有用户属性（包括基础字段 extFlg=false 和扩展字段 extFlg=true）
+        List<UserAttr> allAttrs = super.list(Wrappers.<UserAttr>lambdaQuery()
+                .orderByAsc(UserAttr::getDisplaySeq));
+
+        List<UserAttrResponseDto> allFields = new ArrayList<>();
+
+        for (UserAttr attr : allAttrs) {
+            UserAttrResponseDto field = new UserAttrResponseDto();
+            field.setId(attr.getAttrId());
+            field.setKey(attr.getAttrKey());
+            field.setName(attr.getAttrName());
+            field.setDataType(attr.getAttrDataType());
+            field.setExtFlg(attr.getExtAttrFlg());
+            field.setUserLstDisplay(attr.getUserLstDisplay());
+            field.setDisplaySeq(attr.getDisplaySeq());
+            field.setDisplayWidth(attr.getDisplayWidth());
+            field.setDictId(attr.getDictId());
+
+            // 设置是否是级联字典
+            if (attr.getDictId() != null) {
+                field.setCascadeDict(dictService.hasChildDict(attr.getDictId()));
+            }
+
+            allFields.add(field);
+        }
+
+        return allFields;
+    }
+
+    /**
      * 获取数据库中不存在的用户属性
      */
     private List<UserAttrMappingRequestDto> getNotExistAttributes(List<UserAttrMappingRequestDto> attributes,

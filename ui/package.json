@@ -8,7 +8,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "type-check": "vue-tsc --build --force"
+    "type-check": "vue-tsc --build --force",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:install": "playwright install",
+    "test:fixtures": "tsx e2e/fixtures/create-fixtures.ts"
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
@@ -30,12 +35,15 @@
   },
   "devDependencies": {
     "@arco-design/web-vue": "^2.57.0",
+    "@playwright/test": "^1.49.1",
     "@tsconfig/node20": "^20.1.4",
     "@types/node": "^22.10.5",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
+    "exceljs": "^4.4.0",
     "npm-run-all2": "^8.0.4",
     "sass": "^1.83.0",
+    "tsx": "^4.19.2",
     "typescript": "~5.8.3",
     "unplugin-vue-components": "^28.7.0",
     "vite": "^6.0.7",

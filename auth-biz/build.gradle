@@ -22,4 +22,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     implementation 'org.springframework.boot:spring-boot-starter-freemarker'
+    implementation "com.alibaba:easyexcel:$rootProject.easyexcelVer"
+    implementation "org.apache.poi:poi:$rootProject.poiVer"
+    implementation "org.apache.poi:poi-ooxml:$rootProject.poiVer"
 }

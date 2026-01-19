@@ -15,7 +15,14 @@ export default userTs;
         <div class="title">用户列表</div>
         <div class="info">对用户进行统一管理。</div>
       </div>
-      <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      <a-space>
+        <a-button @click="handleDownloadTemplate">下载模版</a-button>
+        <a-button @click="handleExport(false)">导出当前页</a-button>
+        <a-button @click="handleExport(true)">导出全部</a-button>
+        <a-button @click="handleImportClick">导入数据</a-button>
+        <input type="file" ref="fileInputRef" style="display: none" accept=".xlsx,.xls" @change="handleFileChange" />
+        <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      </a-space>
     </div>
     <div class="user-list">
       <div class="user-operation">
@@ -416,5 +423,39 @@ export default userTs;
         </template>
       </a-table>
     </div>
+
+    <!-- 导入结果对话框 -->
+    <a-modal
+      v-model:visible="importResultVisible"
+      title="导入结果"
+      @ok="importResultVisible = false"
+      :footer="null"
+      :width="importResult.errors.length > 0 ? 1000 : 400"
+    >
+      <a-result
+        :status="importResult.failureCount > 0 ? 'warning' : 'success'"
+        :title="importResult.failureCount > 0 ? `导入完成，发现 ${importResult.failureCount} 处错误` : '导入成功'"
+        :sub-title="importResult.failureCount > 0
+          ? `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`
+          : `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`"
+      >
+        <template #extra>
+          <a-table
+            v-if="importResult.errors.length > 0"
+            :data="importResult.errors"
+            :pagination="false"
+            size="small"
+            :scroll="{ x: 800, y: 400 }"
+            :bordered="true"
+          >
+            <template #columns>
+              <a-table-column title="行号" data-index="row" :width="80" />
+              <a-table-column title="列名" data-index="column" :width="120" />
+              <a-table-column title="错误信息" data-index="message" :width="400" />
+            </template>
+          </a-table>
+        </template>
+      </a-result>
+    </a-modal>
   </div>
 </template>
