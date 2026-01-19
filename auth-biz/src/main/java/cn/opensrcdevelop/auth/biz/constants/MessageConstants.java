@@ -65,16 +65,4 @@ public class MessageConstants {
     public static final String AUDIT_LOG_MSG_1001 = "audit.log.msg.1001";
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1000 = "permission.exp.template.msg.1000";
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1001 = "permission.exp.template.msg.1001";
-
-    // Excel 导入导出相关
-    public static final String EXCEL_IMPORT_TEMPLATE_ERROR = "excel.import.template.error";
-    public static final String EXCEL_IMPORT_FILE_INVALID = "excel.import.file.invalid";
-    public static final String EXCEL_IMPORT_ROW_REQUIRED = "excel.import.row.required";
-    public static final String EXCEL_IMPORT_INVALID_TYPE = "excel.import.invalid.type";
-    public static final String EXCEL_IMPORT_INVALID_DICT = "excel.import.invalid.dict";
-    public static final String EXCEL_IMPORT_USERNAME_EXISTS = "excel.import.username.exists";
-    public static final String EXCEL_IMPORT_USER_NOT_FOUND = "excel.import.user.not.found";
-    public static final String EXCEL_IMPORT_SUCCESS = "excel.import.success";
-    public static final String EXCEL_IMPORT_PARTIAL = "excel.import.partial";
-    public static final String EXCEL_EXPORT_FAILED = "excel.export.failed";
 }
