@@ -4,9 +4,9 @@ import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.UserExcelImportDto;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.metadata.CellExtra;
-import com.alibaba.excel.metadata.data.ReadCellData;
 import com.alibaba.excel.read.listener.ReadListener;
-import com.alibaba.excel.read.metadata.ReadSheet;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetVisibility;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
@@ -34,23 +35,64 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
     /** 中文标题 -> 字段 key 的映射 */
     private Map<String, String> headerToKeyMap = new HashMap<>();
 
+    /** 字段 key -> 中文标题的反向映射（用于错误显示） */
+    private Map<String, String> keyToHeaderMap = new HashMap<>();
+
     /** 列索引 -> 字段 key 的映射 */
     private Map<Integer, String> headerIndexToKeyMap = new LinkedHashMap<>();
 
+    /** Excel 文件字节数组副本（用于多次读取） */
+    private byte[] excelBytes;
+
     public UserExcelImportHandler(Map<String, UserAttrResponseDto> attrMap,
             Map<String, Map<String, String>> dictValueToIdMap,
-            InputStream excelStream) {
+            InputStream excelStream) throws Exception {
         this.attrMap = attrMap;
         this.dictValueToIdMap = dictValueToIdMap;
+        // 复制 InputStream 到字节数组，避免后续被关闭
+        this.excelBytes = copyToByteArray(excelStream);
         // 从隐藏 sheet 读取中文标题到字段 key 的映射
-        readHeaderMappingFromHiddenSheet(excelStream);
+        readHeaderMappingFromHiddenSheet();
+        // 读取第1行（Excel 中的列标题行）建立 headerIndexToKeyMap
+        readTitleRowMapping();
+    }
+
+    /**
+     * 将 InputStream 复制到字节数组
+     */
+    private byte[] copyToByteArray(InputStream inputStream) throws Exception {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] data = new byte[4096];
+        int nRead;
+        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
+
+    /**
+     * 判断字符串是否为 UUID 格式
+     */
+    private boolean isUUID(String str) {
+        if (str == null || str.length() != 36) {
+            return false;
+        }
+        return str.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     }
 
     /**
      * 从隐藏 sheet 读取中文标题到字段 key 的映射
      */
-    private void readHeaderMappingFromHiddenSheet(InputStream excelStream) {
-        try (XSSFWorkbook workbook = new XSSFWorkbook(excelStream)) {
+    private void readHeaderMappingFromHiddenSheet() {
+        log.info("开始读取隐藏 sheet _field_mapping...");
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(excelBytes))) {
+            // 先将隐藏 sheet 设为可见，以便 EasyExcel 能读取
+            int sheetIndex = workbook.getSheetIndex("_field_mapping");
+            if (sheetIndex >= 0) {
+                workbook.setSheetVisibility(sheetIndex, SheetVisibility.VISIBLE);
+            }
+
             Sheet hiddenSheet = workbook.getSheet("_field_mapping");
             if (hiddenSheet == null) {
                 log.warn("未找到隐藏 sheet '_field_mapping'，使用备用映射方式");
@@ -58,7 +100,13 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
                 return;
             }
 
-            // 读取字段映射（中文标题 -> 字段 key）
+            // 用于存储字段 key -> 字典ID 的映射
+            Map<String, String> fieldKeyToDictIdMap = new HashMap<>();
+
+            // 用于记录字典数据区域的起始行
+            Integer dictDataStartRow = null;
+
+            // 直接从隐藏 sheet 读取字段映射（XSSFWorkbook 自动处理共享字符串）
             for (int i = 0; i <= hiddenSheet.getLastRowNum(); i++) {
                 Row row = hiddenSheet.getRow(i);
                 if (row == null) {
@@ -67,32 +115,107 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
 
                 Cell chineseTitleCell = row.getCell(0);
                 Cell fieldKeyCell = row.getCell(1);
+                Cell dictIdCell = row.getCell(3);
 
                 if (chineseTitleCell != null && fieldKeyCell != null) {
                     String chineseTitle = chineseTitleCell.getStringCellValue();
                     String fieldKey = fieldKeyCell.getStringCellValue();
+
+                    log.debug("Row {}: chineseTitle='{}', fieldKey='{}'", i, chineseTitle, fieldKey);
 
                     // 跳过表头行和非映射数据
                     if ("中文标题".equals(chineseTitle) || chineseTitle.isEmpty()) {
                         continue;
                     }
 
-                    // 跳过字典数据区域（从"字典ID"开始是字典数据）
+                    // 记录字典数据区域的起始行
                     if ("字典ID".equals(chineseTitle)) {
-                        break;
+                        dictDataStartRow = i + 1; // 字典数据从下一行开始
+                        continue;
                     }
 
                     if (!chineseTitle.isEmpty() && !fieldKey.isEmpty()) {
+                        // 跳过 UUID 格式的标题（这些是字典数据区域的行）
+                        if (isUUID(chineseTitle)) {
+                            continue;
+                        }
+
                         headerToKeyMap.put(chineseTitle, fieldKey);
+                        keyToHeaderMap.put(fieldKey, chineseTitle); // 反向映射：字段key -> 中文标题
                         log.debug("映射建立: '{}' -> '{}'", chineseTitle, fieldKey);
+
+                        // 记录字典类型字段的字典ID
+                        if (dictIdCell != null) {
+                            String dictId = dictIdCell.getStringCellValue();
+                            if (dictId != null && !dictId.isEmpty()) {
+                                fieldKeyToDictIdMap.put(fieldKey, dictId);
+                                log.debug("字典字段 '{}' -> 字典ID '{}'", fieldKey, dictId);
+                            }
+                        }
                     }
                 }
             }
 
-            log.info("从隐藏 sheet 读取到 {} 个字段映射", headerToKeyMap.size());
+            // 读取字典数据区域（如果存在）
+            if (dictDataStartRow != null) {
+                readDictDataFromHiddenSheet(hiddenSheet, dictDataStartRow, fieldKeyToDictIdMap);
+            } else {
+                log.warn("未找到字典数据区域");
+            }
+
+            // 补充操作类型的默认中文标题映射
+            keyToHeaderMap.putIfAbsent("operationType", "操作类型");
         } catch (Exception e) {
             log.error("读取隐藏 sheet 失败，使用备用映射方式", e);
             buildFallbackMapping();
+        }
+    }
+
+    /**
+     * 从隐藏 sheet 读取字典数据区域，建立显示文本到数据ID的映射 字典数据区域格式：A列=字典ID，B列=数据ID，C列=显示文本
+     */
+    private void readDictDataFromHiddenSheet(Sheet hiddenSheet, int startRow, Map<String, String> fieldKeyToDictIdMap) {
+        // 建立字典ID -> (显示文本 -> 数据ID) 的映射
+        Map<String, Map<String, String>> dictIdToValueIdMap = new HashMap<>();
+
+        for (int i = startRow; i <= hiddenSheet.getLastRowNum(); i++) {
+            Row row = hiddenSheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+
+            Cell dictIdCell = row.getCell(0);
+            Cell dataIdCell = row.getCell(1); // B列=数据ID（UUID）
+            Cell displayTextCell = row.getCell(2); // C列=显示文本（用户看到的值）
+
+            if (dictIdCell == null || dataIdCell == null || displayTextCell == null) {
+                continue;
+            }
+
+            String dictId = dictIdCell.getStringCellValue();
+            String dataId = dataIdCell.getStringCellValue(); // 数据ID（UUID）
+            String displayText = displayTextCell.getStringCellValue(); // 显示文本
+
+            if (dictId == null || dictId.isEmpty() || displayText == null || displayText.isEmpty() || dataId == null
+                    || dataId.isEmpty()) {
+                continue;
+            }
+
+            // 建立字典ID到显示文本/数据ID的映射
+            dictIdToValueIdMap.computeIfAbsent(dictId, k -> new HashMap<>()).put(displayText, dataId);
+        }
+
+        // 将字典数据映射合并到 dictValueToIdMap（使用字段 key 作为 key）
+        for (Map.Entry<String, String> entry : fieldKeyToDictIdMap.entrySet()) {
+            String fieldKey = entry.getKey();
+            String dictId = entry.getValue();
+
+            Map<String, String> valueToIdMap = dictIdToValueIdMap.get(dictId);
+            if (valueToIdMap != null && !valueToIdMap.isEmpty()) {
+                dictValueToIdMap.put(fieldKey, valueToIdMap);
+            } else {
+                log.warn("字段 '{}' 使用的字典 '{}' 在隐藏 sheet 中未找到数据", fieldKey, dictId);
+            }
         }
     }
 
@@ -103,29 +226,76 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
         for (Map.Entry<String, UserAttrResponseDto> entry : attrMap.entrySet()) {
             UserAttrResponseDto attr = entry.getValue();
             if (attr.getName() != null) {
-                headerToKeyMap.put(attr.getName(), entry.getKey());
+                String fieldKey = entry.getKey();
+                headerToKeyMap.put(attr.getName(), fieldKey);
+                keyToHeaderMap.put(fieldKey, attr.getName()); // 反向映射
             }
         }
-        // 添加操作类型映射
-        headerToKeyMap.put("操作类型*", "operationType");
-        log.info("备用映射建立: {} 个字段", headerToKeyMap.size());
+        // 添加操作类型的中文标题映射
+        headerToKeyMap.put("操作类型", "operationType");
+        keyToHeaderMap.put("operationType", "操作类型");
+    }
+
+    /**
+     * 读取第1行（Excel 中的列标题行）建立 headerIndexToKeyMap
+     */
+    private void readTitleRowMapping() {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(excelBytes))) {
+            Sheet mainSheet = workbook.getSheetAt(0);
+            Row titleRow = mainSheet.getRow(1); // 第1行是列标题行
+
+            if (titleRow == null) {
+                log.warn("未找到列标题行（第1行）");
+                return;
+            }
+
+            for (int colIndex = 0; colIndex <= titleRow.getLastCellNum(); colIndex++) {
+                Cell cell = titleRow.getCell(colIndex);
+                if (cell == null) {
+                    continue;
+                }
+
+                String chineseTitle = cell.getStringCellValue();
+                if (chineseTitle == null || chineseTitle.isEmpty()) {
+                    continue;
+                }
+
+                // 从 headerToKeyMap 中查找对应的字段 key
+                String fieldKey = headerToKeyMap.get(chineseTitle);
+
+                if (fieldKey != null) {
+                    headerIndexToKeyMap.put(colIndex, fieldKey);
+                    keyToHeaderMap.put(fieldKey, chineseTitle); // 反向映射：字段key -> 中文标题
+                } else {
+                    // 尝试模糊匹配（不含 * 的情况）
+                    for (Map.Entry<String, String> entry : headerToKeyMap.entrySet()) {
+                        if (entry.getKey().replace("*", "").equals(chineseTitle.replace("*", ""))) {
+                            headerIndexToKeyMap.put(colIndex, entry.getValue());
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("读取列标题行失败", e);
+        }
     }
 
     @Override
     public void invoke(Map<Integer, String> rowData, AnalysisContext context) {
         int rowIndex = context.readRowHolder().getRowIndex();
 
-        // 第2行是示例行，建立中文标题到列索引的映射
-        if (rowIndex == 2) {
-            buildHeaderMapping(rowData);
-            return;
-        }
+        // headRowNumber=2，所以：
+        // rowIndex=0 -> 第3行（第一条数据行：示例数据）
+        // rowIndex=1 -> 第4行（第二条数据行：测试数据）
+        // ...
 
-        // 第3行开始是数据行
-        if (rowIndex >= 3) {
-            UserExcelImportDto dto = convertToDto(rowData);
-            dataList.add(dto);
-        }
+        // 注意：headerIndexToKeyMap 已在构造函数中的 readTitleRowMapping() 中建立
+        // 不需要在这里重新建立映射
+
+        // 所有行都是数据行
+        UserExcelImportDto dto = convertToDto(rowData);
+        dataList.add(dto);
     }
 
     @Override
@@ -157,11 +327,8 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
             String fieldKey = headerToKeyMap.get(chineseTitle);
             if (fieldKey != null) {
                 headerIndexToKeyMap.put(colIndex, fieldKey);
-                log.debug("列 {} -> 字段 '{}' (中文: '{}')", colIndex, fieldKey, chineseTitle);
             }
         }
-
-        log.info("标题映射已建立: {}", headerIndexToKeyMap);
     }
 
     /**
@@ -170,6 +337,7 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
     private UserExcelImportDto convertToDto(Map<Integer, String> rowData) {
         UserExcelImportDto dto = new UserExcelImportDto();
         Map<String, Object> extAttrs = new HashMap<>();
+        Map<String, Integer> extAttrColumnIndex = new HashMap<>();
 
         for (Map.Entry<Integer, String> cellEntry : rowData.entrySet()) {
             Integer colIndex = cellEntry.getKey();
@@ -184,6 +352,9 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
             switch (fieldKey) {
                 case "operationType" :
                     dto.setOperationType(parseInteger(value));
+                    break;
+                case "userId" :
+                    dto.setUserId(value);
                     break;
                 case "username" :
                     dto.setUsername(value);
@@ -225,12 +396,15 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
                         }
 
                         extAttrs.put(fieldKey, processedValue);
+                        // 记录扩展字段的列索引（1-indexed，用于显示列号）
+                        extAttrColumnIndex.put(fieldKey, colIndex + 1);
                     }
                     break;
             }
         }
 
         dto.setExtAttrs(extAttrs);
+        dto.setExtAttrColumnIndex(extAttrColumnIndex);
         return dto;
     }
 
@@ -261,11 +435,12 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
         }
         try {
             int year = Integer.parseInt(dateStr.substring(0, 4));
-            int month = Integer.parseInt(dateStr.substring(4, 6)) - 1;
+            int month = Integer.parseInt(dateStr.substring(4, 6));
             int day = Integer.parseInt(dateStr.substring(6, 8));
             java.time.LocalDate date = java.time.LocalDate.of(year, month, day);
             return String.valueOf(date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());
         } catch (Exception e) {
+            log.warn("日期转换失败: {}, 错误: {}", dateStr, e.getMessage());
             return dateStr;
         }
     }
@@ -279,7 +454,7 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
         }
         try {
             int year = Integer.parseInt(dateTimeStr.substring(0, 4));
-            int month = Integer.parseInt(dateTimeStr.substring(4, 6)) - 1;
+            int month = Integer.parseInt(dateTimeStr.substring(4, 6));
             int day = Integer.parseInt(dateTimeStr.substring(6, 8));
             int hour = Integer.parseInt(dateTimeStr.substring(8, 10));
             int minute = Integer.parseInt(dateTimeStr.substring(10, 12));
@@ -287,11 +462,19 @@ public class UserExcelImportHandler implements ReadListener<Map<Integer, String>
             java.time.LocalDateTime dateTime = java.time.LocalDateTime.of(year, month, day, hour, minute, second);
             return String.valueOf(dateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());
         } catch (Exception e) {
+            log.warn("日期时间转换失败: {}, 错误: {}", dateTimeStr, e.getMessage());
             return dateTimeStr;
         }
     }
 
     public List<UserExcelImportDto> getDataList() {
         return dataList;
+    }
+
+    /**
+     * 获取字段 key -> 中文标题的映射（用于错误显示）
+     */
+    public Map<String, String> getKeyToHeaderMap() {
+        return keyToHeaderMap;
     }
 }

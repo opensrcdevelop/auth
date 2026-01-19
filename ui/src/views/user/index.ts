@@ -513,7 +513,9 @@ const handleUserColumnResize = (dataIndex: string, width: number) => {
 // 导入导出相关
 const importResultVisible = ref(false);
 const importResult = ref({
-  successCount: 0,
+  createdCount: 0,
+  updatedCount: 0,
+  deletedCount: 0,
   failureCount: 0,
   errors: [],
 });
@@ -575,14 +577,21 @@ const handleFileChange = async (event: Event) => {
   if (file) {
     try {
       const result = (await importUsers(file)) as unknown as {
-        successCount: number;
-        failureCount: number;
+        createdCount: number;
+        updatedCount: number;
+        deletedCount: number;
         errors: Array<{ row: number; column: string; message: string }>;
       };
-      importResult.value = result;
+      importResult.value = {
+        createdCount: result.createdCount || 0,
+        updatedCount: result.updatedCount || 0,
+        deletedCount: result.deletedCount || 0,
+        failureCount: result.errors?.length || 0,
+        errors: result.errors || []
+      };
       importResultVisible.value = true;
 
-      if (result.failureCount === 0) {
+      if (result.errors?.length === 0) {
         // 刷新列表
         handleGetUserList(1, 15);
       }

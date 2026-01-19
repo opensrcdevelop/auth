@@ -197,8 +197,8 @@ public class ExcelTemplateGenerator {
         for (UserAttrResponseDto field : allFields) {
             if (!Boolean.TRUE.equals(field.getExtFlg())) {
                 Row row = hiddenSheet.createRow(rowNum++);
-                String title = field.getName() + (REQUIRED_BASIC_FIELDS.contains(field.getKey()) ? "*" : "");
-                row.createCell(0).setCellValue(title);
+                // 使用与 attrMap.getName() 一致的标题（不带 * 号），便于导入时匹配
+                row.createCell(0).setCellValue(field.getName());
                 row.createCell(1).setCellValue(field.getKey());
                 row.createCell(2).setCellValue(field.getDataType());
                 if (field.getDictId() != null) {

@@ -430,10 +430,14 @@ export default userTs;
       title="导入结果"
       @ok="importResultVisible = false"
       :footer="null"
+      :width="importResult.errors.length > 0 ? 700 : 400"
     >
       <a-result
         :status="importResult.failureCount > 0 ? 'warning' : 'success'"
-        :title="`导入完成：成功 ${importResult.successCount} 条，失败 ${importResult.failureCount} 条`"
+        :title="importResult.failureCount > 0 ? `导入完成，发现 ${importResult.failureCount} 处错误` : '导入成功'"
+        :sub-title="importResult.failureCount > 0
+          ? `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`
+          : `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`"
       >
         <template #extra>
           <a-table
@@ -441,12 +445,13 @@ export default userTs;
             :data="importResult.errors"
             :pagination="false"
             size="small"
-            :scroll="{ x: 600, y: 300 }"
+            :scroll="{ x: 650, y: 400 }"
+            :bordered="true"
           >
             <template #columns>
               <a-table-column title="行号" data-index="row" :width="80" />
               <a-table-column title="列名" data-index="column" :width="120" />
-              <a-table-column title="错误信息" data-index="message" />
+              <a-table-column title="错误信息" data-index="message" :width="400" />
             </template>
           </a-table>
         </template>

@@ -12,6 +12,9 @@ public class UserExcelImportDto {
     @Schema(description = "操作类型：0-添加，1-更新，2-删除")
     private Integer operationType;
 
+    @Schema(description = "用户ID")
+    private String userId;
+
     @Schema(description = "用户名")
     private String username;
 
@@ -32,4 +35,7 @@ public class UserExcelImportDto {
 
     @Schema(description = "扩展属性（动态字段）")
     private Map<String, Object> extAttrs = new HashMap<>();
+
+    @Schema(description = "扩展字段对应的列索引（1-indexed，用于显示列号）")
+    private Map<String, Integer> extAttrColumnIndex = new HashMap<>();
 }
