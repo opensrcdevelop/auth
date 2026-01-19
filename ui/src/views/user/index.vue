@@ -430,7 +430,7 @@ export default userTs;
       title="导入结果"
       @ok="importResultVisible = false"
       :footer="null"
-      :width="importResult.errors.length > 0 ? 700 : 400"
+      :width="importResult.errors.length > 0 ? 1000 : 400"
     >
       <a-result
         :status="importResult.failureCount > 0 ? 'warning' : 'success'"
@@ -445,7 +445,7 @@ export default userTs;
             :data="importResult.errors"
             :pagination="false"
             size="small"
-            :scroll="{ x: 650, y: 400 }"
+            :scroll="{ x: 800, y: 400 }"
             :bordered="true"
           >
             <template #columns>

@@ -33,8 +33,11 @@
             GROUP BY
                 t_user.user_id
             ORDER BY MAX(t_user.create_time) DESC
-        <if test="limit > 0 and offset > 0">
-            LIMIT #{limit} OFFSET #{offset}
+        <if test="limit > 0">
+            LIMIT #{limit}
+            <if test="offset > 0">
+                OFFSET #{offset}
+            </if>
         </if>
         ) SELECT
             t1.user_id,

@@ -374,6 +374,13 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
   )
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
+        console.log('=== 获取用户列表 ===', {
+          current: data.current,
+          total: data.total,
+          size: data.size,
+          listLength: data.list ? data.list.length : 0,
+          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
+        });
         userList.length = 0;
         userList.push(...data.list);
 
@@ -414,6 +421,14 @@ const handleSearchUser = (
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
+        console.log('=== 搜索用户 ===', {
+          username,
+          current: data.current,
+          total: data.total,
+          size: data.size,
+          listLength: data.list ? data.list.length : 0,
+          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
+        });
         userList.length = 0;
         userList.push(...data.list);
 
@@ -546,7 +561,16 @@ const handleExport = async (exportAll: boolean) => {
     const filters = (userListFilters.filters || []).filter(
       (item: any) => item.key && item.filterType && item.value
     );
-    const blob = (await exportUsers(filters, exportAll)) as unknown as Blob;
+    // 如果导出当前页，提取当前页的用户 ID 列表
+    const userIds = exportAll ? undefined : userList.map((u: any) => u.userId).filter(Boolean);
+    console.log('=== 调试信息 ===', {
+      exportAll,
+      userListLength: userList.length,
+      userListFirst5: userList.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })),
+      userIdsLength: userIds ? userIds.length : 0,
+      userIdsFirst5: userIds ? userIds.slice(0, 5) : []
+    });
+    const blob = (await exportUsers(filters, exportAll, userIds)) as unknown as Blob;
     // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
     const now = new Date();
     const timestamp = now.getFullYear() +
@@ -612,15 +636,22 @@ const handleImport = async (options: { file: any; onSuccess: () => void; onError
       throw new Error("未找到文件");
     }
     const result = (await importUsers(file)) as unknown as {
-      successCount: number;
-      failureCount: number;
+      createdCount: number;
+      updatedCount: number;
+      deletedCount: number;
       errors: Array<{ row: number; column: string; message: string }>;
     };
-    importResult.value = result;
+    importResult.value = {
+      createdCount: result.createdCount || 0,
+      updatedCount: result.updatedCount || 0,
+      deletedCount: result.deletedCount || 0,
+      failureCount: result.errors?.length || 0,
+      errors: result.errors || []
+    };
     importResultVisible.value = true;
     options.onSuccess();
 
-    if (result.failureCount === 0) {
+    if (result.errors?.length === 0) {
       // 刷新列表
       handleGetUserList(1, 15);
     }

@@ -20,9 +20,11 @@ public interface UserExcelService {
      *            筛选条件
      * @param exportAll
      *            是否导出全部
+     * @param userIds
+     *            用户ID列表（用于导出当前页）
      * @return Excel 文件字节数组
      */
-    byte[] exportUsers(java.util.List<DataFilterDto> filters, boolean exportAll);
+    byte[] exportUsers(java.util.List<DataFilterDto> filters, boolean exportAll, java.util.List<String> userIds);
 
     /**
      * 导入用户数据

@@ -280,8 +280,9 @@ public class UserController {
     @NoRestResponse
     public void exportUsers(@RequestBody List<DataFilterDto> filters,
             @RequestParam(defaultValue = "false") boolean all,
+            @RequestParam(required = false) List<String> userIds,
             HttpServletResponse response) throws IOException {
-        byte[] data = userExcelService.exportUsers(filters, all);
+        byte[] data = userExcelService.exportUsers(filters, all, userIds);
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
         String filename = "users-export-" + timestamp + ".xlsx";
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

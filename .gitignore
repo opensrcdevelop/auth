@@ -42,6 +42,9 @@ ui/node_modules/**
 ui/.frontend-gradle-plugin/**
 auth-server/src/main/resources/ui/**
 ui/package-lock.json
+ui/tsconfig.tsbuildinfo
+# Vite 生成的 .vue.js 文件
+**/*.vue.js
 
 ### chatbi ###
 ai-chatbi/src/main/resources/application-prompt_template.yml

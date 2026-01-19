@@ -75,20 +75,45 @@ public class UserExcelServiceImpl implements UserExcelService {
     }
 
     @Override
-    public byte[] exportUsers(List<DataFilterDto> filters, boolean exportAll) {
+    public byte[] exportUsers(List<DataFilterDto> filters, boolean exportAll, List<String> userIds) {
         // 1. 获取所有用户字段（包括基础字段和扩展字段）
         List<UserAttrResponseDto> allFields = userAttrService.getAllUserAttrsForExcel();
 
-        // 2. 获取用户数据（处理 filters 为 null 的情况）
-        int size = exportAll ? Integer.MAX_VALUE : 100;
-        List<DataFilterDto> safeFilters = filters != null ? filters : new ArrayList<>();
-        PageData<Map<String, Object>> users = userService.list(1, size, safeFilters);
-
-        // 安全获取用户列表，防止空指针
-        List<Map<String, Object>> userList = users.getList() != null ? users.getList() : new ArrayList<>();
+        // 2. 获取用户数据
+        List<Map<String, Object>> userList;
+        if (userIds != null && !userIds.isEmpty()) {
+            // 导出指定用户ID列表（当前页）
+            userList = userService.lambdaQuery()
+                    .in(User::getUserId, userIds)
+                    .list()
+                    .stream()
+                    .map(this::convertUserToMap)
+                    .toList();
+        } else {
+            // 导出全部或按条件筛选
+            int size = exportAll ? Integer.MAX_VALUE : 100;
+            List<DataFilterDto> safeFilters = filters != null ? filters : new ArrayList<>();
+            PageData<Map<String, Object>> users = userService.list(1, size, safeFilters);
+            userList = users.getList() != null ? users.getList() : new ArrayList<>();
+        }
 
         // 3. 使用新的导出器生成 Excel
         return userExcelExporter.exportUsers(userList, allFields, filters);
+    }
+
+    /**
+     * 将 User 对象转换为 Map
+     */
+    private Map<String, Object> convertUserToMap(User user) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("userId", user.getUserId());
+        map.put("username", user.getUsername());
+        map.put("emailAddress", user.getEmailAddress());
+        map.put("phoneNumber", user.getPhoneNumber());
+        map.put("locked", user.getLocked());
+        map.put("consoleAccess", user.getConsoleAccess());
+        map.put("enableMfa", user.getEnableMfa());
+        return map;
     }
 
     @Override

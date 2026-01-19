@@ -320,12 +320,17 @@ export function downloadUserTemplate(): Promise<Blob> {
  *
  * @param filters 筛选条件
  * @param all 是否导出全部
+ * @param userIds 用户ID列表（用于导出当前页）
  * @returns 导出文件 Blob
  */
-export function exportUsers(filters: any[], all = false): Promise<Blob> {
+export function exportUsers(filters: any[], all = false, userIds?: string[]): Promise<Blob> {
+  let url = `/user/excel/export?all=${all}`;
+  if (userIds && userIds.length > 0) {
+    url += `&userIds=${userIds.join(",")}`;
+  }
   return apiRequest
     .post({
-      url: `/user/excel/export?all=${all}`,
+      url,
       data: filters,
       responseType: "blob",
     })
