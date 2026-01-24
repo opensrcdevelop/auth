@@ -47,6 +47,7 @@ import org.springframework.util.ReflectionUtils;
 public class CommonUtil {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER_ALLOW_NULL = createObjectMapperAllowNull();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base32 BASE32 = new Base32();
     private static final Base64 BASE64 = new Base64();
@@ -55,6 +56,14 @@ public class CommonUtil {
         OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         OBJECT_MAPPER.registerModule(new JavaTimeModule());
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    private static ObjectMapper createObjectMapperAllowNull() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.registerModule(new JavaTimeModule());
+        mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        return mapper;
     }
 
     private CommonUtil() {
@@ -166,9 +175,8 @@ public class CommonUtil {
     public static String serializeObjectAllowNull(Object obj) {
         String val = null;
         try {
-            // json 序列化
-            OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-            val = OBJECT_MAPPER.writeValueAsString(obj);
+            // json 序列化，使用独立的 ObjectMapper 避免全局配置污染
+            val = OBJECT_MAPPER_ALLOW_NULL.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             // jdk 序列化
             val = javaSerialize(obj);
