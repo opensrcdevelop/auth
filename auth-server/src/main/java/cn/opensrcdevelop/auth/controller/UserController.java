@@ -26,15 +26,16 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -294,7 +295,6 @@ public class UserController {
     @Operation(summary = "导入用户数据", description = "导入用户数据")
     @PostMapping("/excel/import")
     @Authorize({"allUserPermissions", "importUser"})
-    @NoRestResponse
     public ExcelImportResultDto importUsers(@RequestParam("file") MultipartFile file) {
         return userExcelService.importUsers(file);
     }

@@ -14,13 +14,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.jackson2.CoreJackson2Module;
@@ -34,6 +29,13 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 认证工具
@@ -377,8 +379,12 @@ public class AuthUtil {
             case NE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ne(valueKey, value));
             case LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.like(valueKey, value));
             case NOT_LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notLike(valueKey, value));
-            case IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.in(valueKey, value));
-            case NOT_IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notIn(valueKey, value));
+            case IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.in(valueKey,
+                    CommonUtil.stream(Arrays.asList(value.toString().split(CommonConstants.COMMA)))
+                            .filter(StringUtils::isNotEmpty).toList()));
+            case NOT_IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notIn(valueKey,
+                    CommonUtil.stream(Arrays.asList(value.toString().split(CommonConstants.COMMA)))
+                            .filter(StringUtils::isNotEmpty).toList()));
             case GT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.gt(valueKey, value));
             case GE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ge(valueKey, value));
             case LT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.lt(valueKey, value));
@@ -400,6 +406,7 @@ public class AuthUtil {
         return sqlSegment;
     }
 
+    @SuppressWarnings({"java:S6541", "java:S3776"})
     private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper,
             DataFilterEnum filterType,
             String attrKey, Object value,
@@ -445,16 +452,24 @@ public class AuthUtil {
             }
             case IN -> {
                 if (isOr) {
-                    queryWrapper.or(q -> q.in(queryKey, queryValue));
+                    queryWrapper.or(q -> q.in(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList()));
                 } else {
-                    queryWrapper.in(queryKey, queryValue);
+                    queryWrapper.in(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList());
                 }
             }
             case NOT_IN -> {
                 if (isOr) {
-                    queryWrapper.or(q -> q.notIn(queryKey, queryValue));
+                    queryWrapper.or(q -> q.notIn(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList()));
                 } else {
-                    queryWrapper.notIn(queryKey, queryValue);
+                    queryWrapper.notIn(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList());
                 }
             }
             case GT -> {

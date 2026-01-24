@@ -4,6 +4,18 @@ import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
+import cn.opensrcdevelop.common.exception.ServerException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.springframework.stereotype.Component;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -12,22 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
-import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.apache.poi.xssf.usermodel.XSSFFont;
-import org.springframework.stereotype.Component;
 
 /**
  * 用户数据导出器
@@ -39,13 +35,14 @@ public class UserExcelExporter {
 
     private final DictDataService dictDataService;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // 颜色定义
     private static final byte[] HEADER_BASIC_COLOR = new byte[]{(byte) 0x99, (byte) 0xCC, (byte) 0xFF};
     private static final byte[] HEADER_EXT_COLOR = new byte[]{(byte) 0xCC, (byte) 0xFF, (byte) 0xCC};
     private static final byte[] CELL_BORDER_COLOR = new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00};
+
+    private static final Map<String, List<DictDataResponseDto>> DICT_DATA_MAP = new HashMap<>();
 
     /**
      * 导出用户数据
@@ -72,6 +69,7 @@ public class UserExcelExporter {
                 if (field == null || field.getKey() == null) {
                     continue;
                 }
+
                 fieldMap.put(field.getKey(), field);
                 if (Boolean.TRUE.equals(field.getExtFlg())) {
                     extAttrs.add(field);
@@ -80,7 +78,7 @@ public class UserExcelExporter {
                 }
             }
 
-            // 按用户要求重新排序：userId 第一，username 第二
+            // 重新排序：userId 第一，username 第二
             reorderBasicFields(basicFields);
 
             // 2. 添加导出元数据
@@ -105,8 +103,7 @@ public class UserExcelExporter {
                 return out.toByteArray();
             }
         } catch (IOException e) {
-            log.error("导出用户数据失败", e);
-            throw new RuntimeException("导出用户数据失败", e);
+            throw new ServerException("导出用户数据失败", e);
         }
     }
 
@@ -116,36 +113,30 @@ public class UserExcelExporter {
     private void reorderBasicFields(List<UserAttrResponseDto> basicFields) {
         UserAttrResponseDto userIdField = null;
         UserAttrResponseDto usernameField = null;
-        UserAttrResponseDto createTimeField = null;
         List<UserAttrResponseDto> others = new ArrayList<>();
 
         for (UserAttrResponseDto field : basicFields) {
             if (field == null || field.getKey() == null) {
                 continue;
             }
+
             String key = field.getKey();
-            if ("userId".equals(key)) {
-                userIdField = field;
-            } else if ("username".equals(key)) {
-                usernameField = field;
-            } else if ("createTime".equals(key)) {
-                createTimeField = field;
-            } else {
-                others.add(field);
+            switch (key) {
+                case "userId" -> userIdField = field;
+                case "username" -> usernameField = field;
+                default -> others.add(field);
             }
         }
 
         basicFields.clear();
+
         if (userIdField != null) {
             basicFields.add(userIdField);
         }
         if (usernameField != null) {
             basicFields.add(usernameField);
         }
-        // 将创建时间放在用户名后面
-        if (createTimeField != null) {
-            basicFields.add(createTimeField);
-        }
+
         basicFields.addAll(others);
     }
 
@@ -211,6 +202,7 @@ public class UserExcelExporter {
         if (filterType == null) {
             return "";
         }
+
         return switch (filterType) {
             case "EQ" -> "等于";
             case "NE" -> "不等于";
@@ -262,6 +254,7 @@ public class UserExcelExporter {
     /**
      * 创建导出表头
      */
+    @SuppressWarnings("java:S3776")
     private int createExportHeader(Sheet sheet, List<UserAttrResponseDto> basicFields,
             List<UserAttrResponseDto> extAttrs, int startRow, SXSSFWorkbook workbook) {
         // 计算列范围
@@ -278,11 +271,13 @@ public class UserExcelExporter {
             Cell basicParent = parentRow.createCell(0);
             basicParent.setCellValue("基础信息");
             basicParent.setCellStyle(parentStyle);
+
             // 如果基础字段大于1列，合并区域
             if (basicFieldCount > 1) {
                 sheet.addMergedRegion(
                         new CellRangeAddress(startRow, startRow, 0, basicFieldCount - 1));
             }
+
             // 填充基础字段跨越的单元格
             for (int i = 1; i < basicFieldCount; i++) {
                 Cell cell = parentRow.createCell(i);
@@ -293,12 +288,14 @@ public class UserExcelExporter {
             Cell extParent = parentRow.createCell(basicFieldCount);
             extParent.setCellValue("扩展信息");
             extParent.setCellStyle(parentStyle);
+
             // 如果扩展字段大于1列，合并区域
             if (extFieldCount > 1) {
                 sheet.addMergedRegion(
                         new CellRangeAddress(startRow, startRow, basicFieldCount,
                                 totalCols - 1));
             }
+
             // 填充扩展字段跨越的单元格
             for (int i = basicFieldCount + 1; i < totalCols; i++) {
                 Cell cell = parentRow.createCell(i);
@@ -313,6 +310,7 @@ public class UserExcelExporter {
                 sheet.addMergedRegion(
                         new CellRangeAddress(startRow, startRow, 0, totalCols - 1));
             }
+
             // 填充所有单元格
             for (int i = 1; i < totalCols; i++) {
                 Cell cell = parentRow.createCell(i);
@@ -327,6 +325,7 @@ public class UserExcelExporter {
                 sheet.addMergedRegion(
                         new CellRangeAddress(startRow, startRow, 0, totalCols - 1));
             }
+
             // 填充所有单元格
             for (int i = 1; i < totalCols; i++) {
                 Cell cell = parentRow.createCell(i);
@@ -348,6 +347,7 @@ public class UserExcelExporter {
             cell.setCellStyle(basicStyle);
             colIdx++;
         }
+
         // 扩展字段
         for (UserAttrResponseDto field : extAttrs) {
             Cell cell = headerRow.createCell(colIdx);
@@ -442,7 +442,7 @@ public class UserExcelExporter {
         if (text == null || text.isEmpty()) {
             return 0;
         }
-        int width = 0;
+        double width = 0;
         for (char c : text.toCharArray()) {
             if (c >= 0x4E00 && c <= 0x9FA5) {
                 width += 2;
@@ -556,7 +556,12 @@ public class UserExcelExporter {
      */
     private String formatDictValue(String dictId, String dataId) {
         try {
-            List<DictDataResponseDto> dictData = dictDataService.getEnabledDictData(dictId);
+            List<DictDataResponseDto> dictData = DICT_DATA_MAP.get(dictId);
+            if (CollectionUtils.isEmpty(dictData)) {
+                dictData = dictDataService.getEnabledDictData(dictId);
+                DICT_DATA_MAP.put(dataId, dictData);
+            }
+
             // 使用 DictTreeFlattener 构建完整路径
             List<DictTreeFlattener.DictDisplayItem> items = DictTreeFlattener.flattenTreeWithId(dictData);
 
@@ -566,46 +571,12 @@ public class UserExcelExporter {
                     return item.displayText();
                 }
             }
-
-            // 如果扁平化列表中没找到，直接在树中查找并构建路径
-            String displayText = findDisplayTextWithPath(dictData, dataId, "");
-            if (displayText != null && !displayText.isEmpty()) {
-                return displayText;
-            }
+            return dataId;
         } catch (Exception e) {
             log.warn("获取字典数据失败: dictId={}, dataId={}", dictId, dataId);
         }
         return dataId;
     }
-
-    /**
-     * 在字典树中查找数据ID并构建完整路径
-     */
-    private String findDisplayTextWithPath(List<DictDataResponseDto> dictData, String targetId, String currentPath) {
-        for (DictDataResponseDto node : dictData) {
-            // 构建当前节点的路径
-            String nodePath = currentPath.isEmpty() ? node.getLabel() : currentPath + " / " + node.getLabel();
-
-            // 如果是目标节点且没有子节点，返回完整路径
-            if (node.getId().equals(targetId)) {
-                if (node.getChildren() == null || node.getChildren().isEmpty()) {
-                    return nodePath;
-                }
-                return null; // 有子节点不显示
-            }
-
-            // 递归查找子节点
-            if (node.getChildren() != null) {
-                String result = findDisplayTextWithPath(node.getChildren(), targetId, nodePath);
-                if (result != null) {
-                    return result;
-                }
-            }
-        }
-        return null;
-    }
-
-    // ========== 样式创建方法 ==========
 
     private CellStyle createMetaStyle(SXSSFWorkbook workbook) {
         XSSFCellStyle style = (XSSFCellStyle) workbook.createCellStyle();

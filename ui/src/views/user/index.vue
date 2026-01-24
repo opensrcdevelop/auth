@@ -433,11 +433,8 @@ export default userTs;
       :width="importResult.errors.length > 0 ? 1000 : 400"
     >
       <a-result
-        :status="importResult.failureCount > 0 ? 'warning' : 'success'"
-        :title="importResult.failureCount > 0 ? `导入完成，发现 ${importResult.failureCount} 处错误` : '导入成功'"
-        :sub-title="importResult.failureCount > 0
-          ? `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`
-          : `创建: ${importResult.createdCount} 条 | 更新: ${importResult.updatedCount} 条 | 删除: ${importResult.deletedCount} 条`"
+        :status="importResult.errors.length > 0 ? 'warning' : 'success'"
+        :title="importResult.errors.length > 0 ? `数据校验失败，无法导入` : '导入成功'"
       >
         <template #extra>
           <a-table
@@ -454,6 +451,11 @@ export default userTs;
               <a-table-column title="错误信息" data-index="message" :width="400" />
             </template>
           </a-table>
+          <a-descriptions v-else bordered :column="1">
+            <a-descriptions-item label="创建用户数量">{{ importResult.createdCount }}</a-descriptions-item>
+            <a-descriptions-item label="更新用户数量">{{ importResult.updatedCount }}</a-descriptions-item>
+            <a-descriptions-item label="删除用户数量">{{ importResult.deletedCount }}</a-descriptions-item>
+          </a-descriptions>
         </template>
       </a-result>
     </a-modal>

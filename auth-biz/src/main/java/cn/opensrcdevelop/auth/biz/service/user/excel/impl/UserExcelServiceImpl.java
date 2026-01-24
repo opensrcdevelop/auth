@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
+import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
@@ -9,7 +11,9 @@ import cn.opensrcdevelop.auth.biz.dto.user.excel.UserExcelImportDto;
 import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
+import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
+import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
@@ -20,25 +24,14 @@ import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelImportHandler;
-import cn.opensrcdevelop.common.exception.BizException;
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import io.vavr.Tuple;
+import io.vavr.Tuple2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -47,6 +40,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -62,6 +61,10 @@ public class UserExcelServiceImpl implements UserExcelService {
     private final PasswordEncoder passwordEncoder;
     private final ExcelTemplateGenerator templateGenerator;
     private final UserExcelExporter userExcelExporter;
+    private final MailService mailService;
+
+    private static final String EMAIL_ADDRESS_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+    private static final String PHONE_NUMBER_REGEX = "^1[3-9]\\d{9}$";
 
     @Override
     public byte[] generateImportTemplate() {
@@ -69,7 +72,7 @@ public class UserExcelServiceImpl implements UserExcelService {
         List<UserAttrResponseDto> allFields = userAttrService.getAllUserAttrsForExcel();
         // 导入模版不需要 createTime 字段（创建时自动生成）
         List<UserAttrResponseDto> templateFields = allFields.stream()
-                .filter(f -> !"createTime".equals(f.getKey()) && !"locked".equals(f.getKey()))
+                .filter(f -> !"createTime".equals(f.getKey()))
                 .toList();
         return templateGenerator.generateTemplate(templateFields);
     }
@@ -83,37 +86,22 @@ public class UserExcelServiceImpl implements UserExcelService {
         List<Map<String, Object>> userList;
         if (userIds != null && !userIds.isEmpty()) {
             // 导出指定用户ID列表（当前页）
-            userList = userService.lambdaQuery()
-                    .in(User::getUserId, userIds)
-                    .list()
-                    .stream()
-                    .map(this::convertUserToMap)
-                    .toList();
+            DataFilterDto filter = new DataFilterDto();
+            filter.setDataType(UserAttrDataTypeEnum.STRING.getType());
+            filter.setKey(CommonUtil.extractFieldNameFromGetter(User::getUserId));
+            filter.setExtFlg(false);
+            filter.setFilterType(DataFilterEnum.IN.getType());
+            filter.setValue(StringUtils.join(userIds, CommonConstants.COMMA));
+            userList = userService.list(1, Integer.MAX_VALUE, List.of(filter)).getList();
         } else {
             // 导出全部或按条件筛选
-            int size = exportAll ? Integer.MAX_VALUE : 100;
             List<DataFilterDto> safeFilters = filters != null ? filters : new ArrayList<>();
-            PageData<Map<String, Object>> users = userService.list(1, size, safeFilters);
+            PageData<Map<String, Object>> users = userService.list(1, Integer.MAX_VALUE, safeFilters);
             userList = users.getList() != null ? users.getList() : new ArrayList<>();
         }
 
         // 3. 使用新的导出器生成 Excel
         return userExcelExporter.exportUsers(userList, allFields, filters);
-    }
-
-    /**
-     * 将 User 对象转换为 Map
-     */
-    private Map<String, Object> convertUserToMap(User user) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("userId", user.getUserId());
-        map.put("username", user.getUsername());
-        map.put("emailAddress", user.getEmailAddress());
-        map.put("phoneNumber", user.getPhoneNumber());
-        map.put("locked", user.getLocked());
-        map.put("consoleAccess", user.getConsoleAccess());
-        map.put("enableMfa", user.getEnableMfa());
-        return map;
     }
 
     @Override
@@ -134,7 +122,7 @@ public class UserExcelServiceImpl implements UserExcelService {
             if (BooleanUtils.isTrue(attr.getExtFlg())) {
                 extAttrs.add(attr);
                 // 预加载字典数据
-                if ("DICT".equals(attr.getDataType()) && attr.getDictId() != null) {
+                if (UserAttrDataTypeEnum.DICT.getType().equals(attr.getDataType()) && attr.getDictId() != null) {
                     dictValueToIdMap.put(attr.getKey(), loadDictValueToIdMap(attr.getDictId()));
                 }
             }
@@ -145,18 +133,22 @@ public class UserExcelServiceImpl implements UserExcelService {
         Set<String> excelEmails = new HashSet<>();
         Set<String> excelPhones = new HashSet<>();
         // 字段 key -> 中文标题的映射（用于错误显示）
-        Map<String, String> keyToHeaderMap = new HashMap<>();
+        Map<String, String> keyToHeaderMap;
 
         // 读取文件内容到字节数组（避免多次调用 getInputStream）
         byte[] fileBytes;
         try {
             fileBytes = file.getBytes();
         } catch (IOException e) {
-            log.error("读取上传文件失败", e);
-            throw new BizException("读取上传文件失败", e);
+            throw new ServerException("读取上传文件失败", e);
         }
         if (fileBytes.length == 0) {
-            throw new BizException("上传的文件为空");
+            return ExcelImportResultDto.builder()
+                    .createdCount(0)
+                    .updatedCount(0)
+                    .deletedCount(0)
+                    .errors(errors)
+                    .build();
         }
 
         // 使用字节数组创建 InputStream
@@ -169,7 +161,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
             // 重置流位置（因为 UserExcelImportHandler 读取后位置已移动）
             excelStream.reset();
-            EasyExcel.read(excelStream)
+            EasyExcelFactory.read(excelStream)
                     .registerReadListener(handler)
                     .sheet(0)
                     .headRowNumber(2) // 前两行是标题
@@ -186,18 +178,20 @@ public class UserExcelServiceImpl implements UserExcelService {
                 collectExcelValues(dto, rowNum, excelUsernames, excelEmails, excelPhones, errors, keyToHeaderMap);
 
                 // 验证并收集数据（暂不检查数据库重复）
-                validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap,
-                        excelUsernames, excelEmails, excelPhones, keyToHeaderMap);
+                validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap, keyToHeaderMap);
             }
         } catch (Exception e) {
             log.error("读取 Excel 文件失败", e);
-            throw new BizException("读取 Excel 文件失败", e);
+            throw new ServerException("读取 Excel 文件失败", e);
         }
 
         // 3. 批量查询数据库中已存在的用户名、邮箱、手机号
-        Set<String> existUsernames = batchQueryExistingUsers(excelUsernames, "username");
-        Set<String> existEmails = batchQueryExistingUsers(excelEmails, "emailAddress");
-        Set<String> existPhones = batchQueryExistingUsers(excelPhones, "phoneNumber");
+        Set<String> existUsernames = batchQueryExistingUsers(excelUsernames,
+                CommonUtil.extractFieldNameFromGetter(User::getUsername));
+        Set<String> existEmails = batchQueryExistingUsers(excelEmails,
+                CommonUtil.extractFieldNameFromGetter(User::getEmailAddress));
+        Set<String> existPhones = batchQueryExistingUsers(excelPhones,
+                CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber));
 
         // 4. 检查新增用户是否与数据库重复
         List<ExcelImportErrorDto> dbDuplicateErrors = checkDbDuplicates(validData, existUsernames, existEmails,
@@ -215,7 +209,7 @@ public class UserExcelServiceImpl implements UserExcelService {
         }
 
         // 6. 批量执行数据库操作（只有所有数据校验通过才会执行到这里）
-        ImportStats stats = batchExecuteDatabaseOperations(validData, extAttrs, attrMap, errors, keyToHeaderMap);
+        ImportStats stats = batchExecuteDatabaseOperations(validData, extAttrs, errors);
 
         return ExcelImportResultDto.builder()
                 .createdCount(stats.createdCount)
@@ -234,11 +228,10 @@ public class UserExcelServiceImpl implements UserExcelService {
     /**
      * 批量执行数据库操作
      */
+    @SuppressWarnings("java:S3776")
     private ImportStats batchExecuteDatabaseOperations(List<UserExcelImportDto> validData,
-            List<UserAttrResponseDto> extAttrs, Map<String, UserAttrResponseDto> attrMap,
-            List<ExcelImportErrorDto> errors, Map<String, String> keyToHeaderMap) {
-        int createdCount = 0;
-        int updatedCount = 0;
+            List<UserAttrResponseDto> extAttrs,
+            List<ExcelImportErrorDto> errors) {
         int deletedCount = 0;
 
         // 1. 收集不同操作类型的 DTO
@@ -256,122 +249,26 @@ public class UserExcelServiceImpl implements UserExcelService {
             }
         }
 
-        // 2. 验证更新/删除用户的 userId 是否存在，并收集 userId
-        // 同时验证 userId 和 username 是否匹配
-        Map<String, String> usernameToUserId = new HashMap<>();
-        List<String> allUserIds = new ArrayList<>();
-        List<String> updateUsernames = new ArrayList<>();
-        List<String> deleteUsernames = new ArrayList<>();
-
-        for (UserExcelImportDto dto : updateDtos) {
-            String userId = dto.getUserId();
-            String username = dto.getUsername();
-            if (StringUtils.isNotBlank(userId)) {
-                allUserIds.add(userId);
-                updateUsernames.add(username);
-                usernameToUserId.put(username, userId);
-            }
-        }
-        for (UserExcelImportDto dto : deleteDtos) {
-            String userId = dto.getUserId();
-            String username = dto.getUsername();
-            if (StringUtils.isNotBlank(userId)) {
-                allUserIds.add(userId);
-                deleteUsernames.add(username);
-                usernameToUserId.put(username, userId);
-            }
-        }
-
-        // 批量查询用户，验证 userId 和 username 是否匹配
-        if (!allUserIds.isEmpty()) {
-            List<User> existingUsers = userService.lambdaQuery()
-                    .in(User::getUserId, allUserIds)
-                    .list();
-            Map<String, User> userIdToUser = new HashMap<>();
-            for (User user : existingUsers) {
-                userIdToUser.put(user.getUserId(), user);
-            }
-
-            // 验证更新用户
-            for (UserExcelImportDto dto : updateDtos) {
-                String userId = dto.getUserId();
-                if (StringUtils.isNotBlank(userId)) {
-                    User user = userIdToUser.get(userId);
-                    if (user == null) {
-                        errors.add(ExcelImportErrorDto.builder()
-                                .row(validData.indexOf(dto) + 2)
-                                .column(keyToHeaderMap.getOrDefault("userId", "用户ID"))
-                                .message("用户ID不存在: " + userId)
-                                .build());
-                    } else if (!user.getUsername().equals(dto.getUsername())) {
-                        errors.add(ExcelImportErrorDto.builder()
-                                .row(validData.indexOf(dto) + 2)
-                                .column(keyToHeaderMap.getOrDefault("username", "用户名*"))
-                                .message("用户名与用户ID不匹配")
-                                .build());
-                    }
-                }
-            }
-            // 验证删除用户
-            for (UserExcelImportDto dto : deleteDtos) {
-                String userId = dto.getUserId();
-                if (StringUtils.isNotBlank(userId)) {
-                    User user = userIdToUser.get(userId);
-                    if (user == null) {
-                        errors.add(ExcelImportErrorDto.builder()
-                                .row(validData.indexOf(dto) + 2)
-                                .column(keyToHeaderMap.getOrDefault("userId", "用户ID"))
-                                .message("用户ID不存在: " + userId)
-                                .build());
-                    } else if (!user.getUsername().equals(dto.getUsername())) {
-                        errors.add(ExcelImportErrorDto.builder()
-                                .row(validData.indexOf(dto) + 2)
-                                .column(keyToHeaderMap.getOrDefault("username", "用户名*"))
-                                .message("用户名与用户ID不匹配")
-                                .build());
-                    }
-                }
-            }
-        }
-
-        // 如果有错误，不执行数据库操作
-        if (!errors.isEmpty()) {
-            return new ImportStats(0, 0, 0);
-        }
-
-        // 3. 批量创建用户
-        List<User> createUsers = new ArrayList<>();
+        // 2. 批量创建用户
+        List<Tuple2<User, String>> createUsers = new ArrayList<>();
         List<UserAttrMapping> createAttrMappings = new ArrayList<>();
         for (UserExcelImportDto dto : createDtos) {
-            User user = buildUserFromExcel(dto, extAttrs, null);
-            createUsers.add(user);
+            Tuple2<User, String> userRes = buildUserFromExcel(dto);
+            createUsers.add(userRes);
+            dto.setUserId(userRes._1().getUserId());
         }
 
         try {
             // 批量保存用户
             if (!createUsers.isEmpty()) {
-                userService.saveBatch(createUsers);
+                userService.saveBatch(CommonUtil.stream(createUsers).map(Tuple2::_1).toList());
             }
 
-            // 批量查询新创建用户的 ID
             if (!createDtos.isEmpty()) {
-                List<String> createdUsernames = createDtos.stream()
-                        .map(UserExcelImportDto::getUsername)
-                        .toList();
-                List<User> createdUsers = userService.lambdaQuery()
-                        .in(User::getUsername, createdUsernames)
-                        .list();
-                for (User user : createdUsers) {
-                    usernameToUserId.put(user.getUsername(), user.getUserId());
-                }
-
                 // 构建新用户的扩展属性映射
                 for (UserExcelImportDto dto : createDtos) {
-                    String userId = usernameToUserId.get(dto.getUsername());
-                    if (userId != null) {
-                        List<UserAttrMapping> mappings = buildAttrMappingsFromExcel(dto, extAttrs, userId);
-                        createAttrMappings.addAll(mappings);
-                    }
+                    List<UserAttrMapping> mappings = buildAttrMappingsFromExcel(dto, extAttrs);
+                    createAttrMappings.addAll(mappings);
                 }
 
                 // 批量保存扩展属性
@@ -380,7 +277,7 @@ public class UserExcelServiceImpl implements UserExcelService {
                 }
             }
 
-            // 4. 批量更新用户
+            // 3. 批量更新用户
             List<User> updateUsers = new ArrayList<>();
             // 收集更新用户的扩展属性映射
             List<UserAttrMapping> updateAttrMappings = new ArrayList<>();
@@ -388,8 +285,8 @@ public class UserExcelServiceImpl implements UserExcelService {
             // 批量查询所有需要更新用户的现有扩展属性（直接使用 dto 中的 userId）
             Set<String> allUserIdsForUpdate = updateDtos.stream()
                     .map(UserExcelImportDto::getUserId)
-                    .filter(id -> id != null)
-                    .collect(java.util.stream.Collectors.toSet());
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
 
             // 查询现有映射
             Map<String, Map<String, UserAttrMapping>> existingMappings = new HashMap<>();
@@ -417,7 +314,7 @@ public class UserExcelServiceImpl implements UserExcelService {
                     continue;
                 }
 
-                User user = buildUserFromExcel(dto, extAttrs, userId);
+                User user = buildUserFromExcel(dto)._1;
                 updateUsers.add(user);
 
                 // 处理扩展属性：只更新 Excel 中有值的属性
@@ -441,26 +338,6 @@ public class UserExcelServiceImpl implements UserExcelService {
                         }
 
                         String attrValue = String.valueOf(value);
-
-                        // 处理字典类型 - 存储字典数据ID
-                        UserAttrResponseDto attr = attrMap.get(attrKey);
-                        if (attr != null && "DICT".equals(attr.getDataType())
-                                && StringUtils.isNotBlank(attr.getDictId())) {
-                            String dictDataId = findDictDataIdByLabel(attr.getDictId(), attrValue);
-                            if (dictDataId != null) {
-                                attrValue = dictDataId;
-                            }
-                        }
-
-                        // 处理日期类型 - 转换为时间戳
-                        if (attr != null) {
-                            if ("DATE".equals(attr.getDataType())) {
-                                attrValue = convertDateToTimestamp(attrValue);
-                            } else if ("DATETIME".equals(attr.getDataType())) {
-                                attrValue = convertDateTimeToTimestamp(attrValue);
-                            }
-                        }
-
                         // 检查是否已存在该映射
                         UserAttrMapping existingMapping = userExistingMappings.get(attrId);
                         if (existingMapping != null) {
@@ -495,38 +372,44 @@ public class UserExcelServiceImpl implements UserExcelService {
                 userAttrMappingService.saveBatch(updateAttrMappings);
             }
 
-            // 5. 批量删除用户（直接使用 dto 中的 userId）
+            // 4. 批量删除用户（直接使用 dto 中的 userId）
             List<String> deleteUserIds = deleteDtos.stream()
                     .map(UserExcelImportDto::getUserId)
-                    .filter(id -> id != null)
+                    .filter(Objects::nonNull)
                     .toList();
 
             if (!deleteUserIds.isEmpty()) {
-                // 1. 批量删除用户角色映射
+                // 4.1. 批量删除用户角色映射
                 roleMappingService.remove(
                         new LambdaQueryWrapper<RoleMapping>()
                                 .in(RoleMapping::getUserId, deleteUserIds));
-                // 2. 批量删除用户组映射
+                // 4.2. 批量删除用户组映射
                 userGroupMappingService.remove(
-                        new LambdaQueryWrapper<cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping>()
-                                .in(cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping::getUserId,
+                        new LambdaQueryWrapper<UserGroupMapping>()
+                                .in(UserGroupMapping::getUserId,
                                         deleteUserIds));
-                // 3. 批量删除扩展属性
+                // 4.3. 批量删除扩展属性
                 userAttrMappingService.remove(
                         new LambdaQueryWrapper<UserAttrMapping>()
                                 .in(UserAttrMapping::getUserId, deleteUserIds));
-                // 4. 批量删除用户
+                // 4.4. 批量删除用户
                 userService.removeBatchByIds(deleteUserIds);
                 deletedCount = deleteUserIds.size();
             }
 
+            // 5. 为新创建的用户发送邮件
+            if (!createUsers.isEmpty()) {
+                CompletableFuture.runAsync(() -> CommonUtil.stream(createUsers)
+                        .filter(userRes -> StringUtils.isNotBlank(userRes._1.getEmailAddress()))
+                        .forEach(userRes -> mailService.sendCreateUserNotice(userRes._1.getEmailAddress(),
+                                userRes._1.getUsername(), userRes._2)));
+            }
         } catch (Exception e) {
             log.error("批量数据库操作失败", e);
             for (UserExcelImportDto dto : validData) {
                 errors.add(ExcelImportErrorDto.builder()
                         .row(validData.indexOf(dto) + 2)
-                        .column("数据处理")
-                        .message("批量操作失败: " + e.getMessage())
+                        .message("数据库操作失败")
                         .build());
             }
             return new ImportStats(0, 0, 0);
@@ -538,32 +421,36 @@ public class UserExcelServiceImpl implements UserExcelService {
     /**
      * 从 Excel 构建用户实体（基础字段）
      */
-    private User buildUserFromExcel(UserExcelImportDto dto, List<UserAttrResponseDto> extAttrs, String userId) {
+    private Tuple2<User, String> buildUserFromExcel(UserExcelImportDto dto) {
         User user = new User();
-        if (userId != null) {
-            user.setUserId(userId);
-        } else if (dto.getOperationType() == 0) {
+        String newPwd = null;
+
+        user.setUserId(dto.getUserId());
+        if (dto.getOperationType() == 0) {
             // 创建新用户时生成 userId
             user.setUserId(CommonUtil.getUUIDV7String());
         }
         user.setUsername(dto.getUsername());
         // 只有创建用户时才生成随机密码并加密
         if (dto.getOperationType() == 0) {
-            user.setPassword(passwordEncoder.encode(CommonUtil.generateRandomString(12)));
+            newPwd = CommonUtil.generateRandomString(12);
+            user.setPassword(passwordEncoder.encode(newPwd));
             user.setNeedChangePwd(true);
         }
         user.setEmailAddress(dto.getEmailAddress());
         user.setPhoneNumber(dto.getPhoneNumber());
         user.setConsoleAccess(dto.getConsoleAccess());
         user.setEnableMfa(dto.getEnableMfa());
-        return user;
+        user.setLocked(dto.getLocked());
+
+        return Tuple.of(user, newPwd);
     }
 
     /**
      * 从 Excel 构建扩展属性映射列表
      */
     private List<UserAttrMapping> buildAttrMappingsFromExcel(UserExcelImportDto dto,
-            List<UserAttrResponseDto> extAttrs, String userId) {
+            List<UserAttrResponseDto> extAttrs) {
         List<UserAttrMapping> mappings = new ArrayList<>();
         Map<String, Object> extAttrMap = dto.getExtAttrs();
 
@@ -577,27 +464,10 @@ public class UserExcelServiceImpl implements UserExcelService {
                 continue;
             }
 
-            String attrValue = String.valueOf(value);
-
-            // 处理字典类型 - 存储字典数据ID
-            if ("DICT".equals(attr.getDataType()) && StringUtils.isNotBlank(attr.getDictId())) {
-                String dictDataId = findDictDataIdByLabel(attr.getDictId(), attrValue);
-                if (dictDataId != null) {
-                    attrValue = dictDataId;
-                }
-            }
-
-            // 处理日期类型 - 转换为时间戳
-            if ("DATE".equals(attr.getDataType())) {
-                attrValue = convertDateToTimestamp(attrValue);
-            } else if ("DATETIME".equals(attr.getDataType())) {
-                attrValue = convertDateTimeToTimestamp(attrValue);
-            }
-
             UserAttrMapping mapping = new UserAttrMapping();
-            mapping.setUserId(userId);
+            mapping.setUserId(dto.getUserId());
             mapping.setAttrId(attr.getId());
-            mapping.setAttrValue(attrValue);
+            mapping.setAttrValue(value.toString());
             mappings.add(mapping);
         }
 
@@ -615,9 +485,12 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 批量查询（使用 IN 查询）
         List<User> users = userService.lambdaQuery()
-                .in(fieldName.equals("username"), User::getUsername, values)
-                .in(fieldName.equals("emailAddress"), User::getEmailAddress, values)
-                .in(fieldName.equals("phoneNumber"), User::getPhoneNumber, values)
+                .in(fieldName.equals(CommonUtil.extractFieldNameFromGetter(User::getUsername)), User::getUsername,
+                        values)
+                .in(fieldName.equals(CommonUtil.extractFieldNameFromGetter(User::getEmailAddress)),
+                        User::getEmailAddress, values)
+                .in(fieldName.equals(CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber)), User::getPhoneNumber,
+                        values)
                 .list();
 
         for (User user : users) {
@@ -665,7 +538,7 @@ public class UserExcelServiceImpl implements UserExcelService {
             if (StringUtils.isNotBlank(dto.getUsername()) && existUsernames.contains(dto.getUsername())) {
                 errors.add(ExcelImportErrorDto.builder()
                         .row(rowNum)
-                        .column(keyToHeaderMap.getOrDefault("username", "用户名*"))
+                        .column(keyToHeaderMap.getOrDefault("username", "用户名"))
                         .message("用户名已存在: " + dto.getUsername())
                         .build());
             }
@@ -674,7 +547,7 @@ public class UserExcelServiceImpl implements UserExcelService {
             if (StringUtils.isNotBlank(dto.getEmailAddress()) && existEmails.contains(dto.getEmailAddress())) {
                 errors.add(ExcelImportErrorDto.builder()
                         .row(rowNum)
-                        .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址*"))
+                        .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址"))
                         .message("邮箱已被注册: " + dto.getEmailAddress())
                         .build());
             }
@@ -699,37 +572,32 @@ public class UserExcelServiceImpl implements UserExcelService {
             Set<String> excelUsernames, Set<String> excelEmails, Set<String> excelPhones,
             List<ExcelImportErrorDto> errors, Map<String, String> keyToHeaderMap) {
         // 收集用户名
-        if (StringUtils.isNotBlank(dto.getUsername())) {
-            if (!excelUsernames.add(dto.getUsername())) {
-                errors.add(ExcelImportErrorDto.builder()
-                        .row(rowNum)
-                        .column(keyToHeaderMap.getOrDefault("username", "用户名*"))
-                        .message("用户名在 Excel 中重复")
-                        .build());
-            }
+        if (StringUtils.isNotBlank(dto.getUsername()) && !excelUsernames.add(dto.getUsername())) {
+            errors.add(ExcelImportErrorDto.builder()
+                    .row(rowNum)
+                    .column(keyToHeaderMap.getOrDefault("username", "用户名"))
+                    .message("用户名在 Excel 中重复")
+                    .build());
         }
 
         // 收集邮箱
-        if (StringUtils.isNotBlank(dto.getEmailAddress())) {
-            if (!excelEmails.add(dto.getEmailAddress())) {
-                errors.add(ExcelImportErrorDto.builder()
-                        .row(rowNum)
-                        .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址*"))
-                        .message("邮箱在 Excel 中重复")
-                        .build());
-            }
+        if (StringUtils.isNotBlank(dto.getEmailAddress()) && !excelEmails.add(dto.getEmailAddress())) {
+            errors.add(ExcelImportErrorDto.builder()
+                    .row(rowNum)
+                    .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址"))
+                    .message("邮箱在 Excel 中重复")
+                    .build());
         }
 
         // 收集手机号
-        if (StringUtils.isNotBlank(dto.getPhoneNumber())) {
-            if (!excelPhones.add(dto.getPhoneNumber())) {
-                errors.add(ExcelImportErrorDto.builder()
-                        .row(rowNum)
-                        .column(keyToHeaderMap.getOrDefault("phoneNumber", "手机号码"))
-                        .message("手机号在 Excel 中重复")
-                        .build());
-            }
+        if (StringUtils.isNotBlank(dto.getPhoneNumber()) && !excelPhones.add(dto.getPhoneNumber())) {
+            errors.add(ExcelImportErrorDto.builder()
+                    .row(rowNum)
+                    .column(keyToHeaderMap.getOrDefault("phoneNumber", "手机号码"))
+                    .message("手机号在 Excel 中重复")
+                    .build());
         }
+
     }
 
     /**
@@ -746,14 +614,12 @@ public class UserExcelServiceImpl implements UserExcelService {
     }
 
     /**
-     * 验证基础规则（格式验证、必填验证等） 注意：数据库重复性检查在 batchQueryExistingUsers 和 checkDbDuplicates
-     * 中批量进行
+     * 验证基础规则（格式验证、必填验证等）
      */
+    @SuppressWarnings("java:S3776")
     private void validateBasicRules(UserExcelImportDto dto, int rowNum, List<ExcelImportErrorDto> errors,
             List<UserExcelImportDto> validData, Map<String, UserAttrResponseDto> attrMap,
-            Map<String, Map<String, String>> dictValueToIdMap,
-            Set<String> excelUsernames, Set<String> excelEmails, Set<String> excelPhones,
-            Map<String, String> keyToHeaderMap) {
+            Map<String, Map<String, String>> dictValueToIdMap, Map<String, String> keyToHeaderMap) {
         List<String> rowErrors = new ArrayList<>();
 
         // 验证操作类型
@@ -768,22 +634,55 @@ public class UserExcelServiceImpl implements UserExcelService {
             switch (dto.getOperationType()) {
                 case 0 : // 添加
                     if (StringUtils.isBlank(dto.getUsername())) {
-                        rowErrors.add("用户名不能为空");
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault("username", "用户名"))
+                                        .message("用户名不能为空")
+                                        .build());
                     }
                     if (StringUtils.isBlank(dto.getEmailAddress())) {
-                        rowErrors.add("邮箱不能为空");
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址"))
+                                        .message("邮箱地址不能为空")
+                                        .build());
                     }
                     break;
-                case 1 : // 更新
-                case 2 : // 删除
+                case 1, 2 : // 删除
                     if (StringUtils.isBlank(dto.getUserId())) {
-                        rowErrors.add("用户ID不能为空");
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault("userId", "用户ID"))
+                                        .message("用户ID不能为空")
+                                        .build());
                     }
-                    if (StringUtils.isBlank(dto.getUsername())) {
-                        rowErrors.add("用户名不能为空");
-                    }
+                    break;
+                default :
                     break;
             }
+        }
+
+        // 验证邮箱地址格式
+        if (StringUtils.isNotEmpty(dto.getEmailAddress()) && !isValidEmailAddress(dto.getEmailAddress())) {
+            errors.add(
+                    ExcelImportErrorDto.builder()
+                            .row(rowNum)
+                            .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址"))
+                            .message("邮箱地址格式无效")
+                            .build());
+        }
+
+        // 验证手机号格式
+        if (StringUtils.isNotEmpty(dto.getPhoneNumber()) && !isValidPhoneNumber(dto.getPhoneNumber())) {
+            errors.add(
+                    ExcelImportErrorDto.builder()
+                            .row(rowNum)
+                            .column(keyToHeaderMap.getOrDefault("phoneNumber", "手机号"))
+                            .message("手机号格式无效")
+                            .build());
         }
 
         // 验证扩展字段
@@ -791,10 +690,12 @@ public class UserExcelServiceImpl implements UserExcelService {
             String key = entry.getKey();
             Object value = entry.getValue();
             UserAttrResponseDto attr = attrMap.get(key);
+
             // 跳过空值和 null 值
             if (attr == null || value == null || "null".equals(String.valueOf(value))) {
                 continue;
             }
+
             String valueStr = String.valueOf(value);
             if (StringUtils.isBlank(valueStr)) {
                 continue;
@@ -807,31 +708,47 @@ public class UserExcelServiceImpl implements UserExcelService {
                     try {
                         Double.parseDouble(valueStr);
                     } catch (NumberFormatException e) {
-                        rowErrors.add("必须是数字");
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault(key, key))
+                                        .message("必须是数字")
+                                        .build());
                     }
                     break;
                 case "DATE" :
                     // 注意：日期在 UserExcelImportHandler 中已转换为时间戳（12-13位数字）
                     // 如果值是12-13位数字，说明转换成功；否则说明原值格式有问题
-                    int len = valueStr.length();
-                    boolean isValidLength = (len == 12 || len == 13);
-                    if (!isValidLength || !isValidTimestamp(valueStr)) {
-                        rowErrors.add("日期格式无效，正确格式：20260109");
+                    if (isValidTimestamp(valueStr)) {
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault(key, key))
+                                        .message("日期格式无效，正确格式：yyyymmdd")
+                                        .build());
                     }
                     break;
                 case "DATETIME" :
                     // 注意：日期时间在 UserExcelImportHandler 中已转换为时间戳（12-13位数字）
                     // 如果值是12-13位数字，说明转换成功；否则说明原值格式有问题
-                    len = valueStr.length();
-                    isValidLength = (len == 12 || len == 13);
-                    if (!isValidLength || !isValidTimestamp(valueStr)) {
-                        rowErrors.add("日期时间格式无效，正确格式：20260109163045");
+                    if (isValidTimestamp(valueStr)) {
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault(key, key))
+                                        .message("日期时间格式无效，正确格式：yyyymmddhhmmss")
+                                        .build());
                     }
                     break;
                 case "BOOLEAN" :
                     // 验证布尔值：是/否
                     if (!"是".equals(valueStr) && !"否".equals(valueStr)) {
-                        rowErrors.add("必须是 是 或 否");
+                        errors.add(
+                                ExcelImportErrorDto.builder()
+                                        .row(rowNum)
+                                        .column(keyToHeaderMap.getOrDefault(key, key))
+                                        .message("必须是 是 或 否")
+                                        .build());
                     }
                     break;
                 case "DICT" :
@@ -844,13 +761,17 @@ public class UserExcelServiceImpl implements UserExcelService {
                         boolean isValidValue = valueToIdMap.containsValue(valueStr);
 
                         if (!isValidKey && !isValidValue) {
-                            rowErrors.add("值不在有效范围内");
+                            errors.add(
+                                    ExcelImportErrorDto.builder()
+                                            .row(rowNum)
+                                            .column(keyToHeaderMap.getOrDefault(key, key))
+                                            .message("值不在有效范围内")
+                                            .build());
                         } else if (isValidKey) {
                             // 值是显示文本，找到对应的 UUID 并存储
                             String uuid = valueToIdMap.get(valueStr);
                             dto.getExtAttrs().put(key, uuid);
                         }
-                        // 如果 isValidValue 为 true，保持原值不变（已经是 UUID）
                     }
                     break;
                 default :
@@ -860,73 +781,6 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         if (rowErrors.isEmpty()) {
             validData.add(dto);
-        } else {
-            for (String error : rowErrors) {
-                // 从错误消息中提取字段名（格式：字段 [xxx] 的...）
-                String column = extractFieldNameFromError(error, keyToHeaderMap);
-                errors.add(ExcelImportErrorDto.builder()
-                        .row(rowNum)
-                        .column(column)
-                        .message(error)
-                        .build());
-            }
-        }
-    }
-
-    /**
-     * 从错误消息中提取字段名 错误消息格式：字段 [xxx] 的值不在有效范围内 如果无法提取，返回实际字段标题
-     */
-    private String extractFieldNameFromError(String error, Map<String, String> keyToHeaderMap) {
-        if (error == null) {
-            return "未知";
-        }
-
-        // 尝试从错误消息中提取字段名（格式：字段 [xxx] 的...）
-        int start = error.indexOf('[');
-        int end = error.indexOf(']');
-        if (start >= 0 && end > start) {
-            String fieldName = error.substring(start + 1, end);
-            // 如果提取到的字段名已经在 keyToHeaderMap 中有映射，返回映射后的中文标题
-            // 否则直接返回提取到的字段名
-            return keyToHeaderMap.getOrDefault(fieldName, fieldName);
-        }
-
-        // 对于没有 "字段 [xxx]" 格式的错误消息，只有操作类型可以硬编码处理
-        if (error.contains("操作类型")) {
-            return "操作类型";
-        }
-
-        // 如果无法从错误消息提取，返回"未知"
-        return "未知";
-    }
-
-    /**
-     * 验证日期格式 yyyyMMdd
-     */
-    private boolean isValidDateFormat(String value) {
-        if (value == null || value.length() != 8) {
-            return false;
-        }
-        try {
-            Integer.parseInt(value);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    /**
-     * 验证日期时间格式 yyyyMMddHHmmss
-     */
-    private boolean isValidDateTimeFormat(String value) {
-        if (value == null || value.length() != 14) {
-            return false;
-        }
-        try {
-            Long.parseLong(value);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
         }
     }
 
@@ -935,66 +789,33 @@ public class UserExcelServiceImpl implements UserExcelService {
      */
     private boolean isValidTimestamp(String value) {
         if (value == null) {
-            return false;
+            return true;
         }
+
         int len = value.length();
         if (len != 12 && len != 13) {
-            return false;
+            return true;
         }
+
         try {
             Long.parseLong(value);
-            return true;
-        } catch (NumberFormatException e) {
             return false;
+        } catch (NumberFormatException e) {
+            return true;
         }
     }
 
-    /**
-     * 根据标签查找字典数据ID
-     */
-    private String findDictDataIdByLabel(String dictId, String label) {
-        List<DictDataResponseDto> dictData = dictDataService.getEnabledDictData(dictId);
-        List<DictTreeFlattener.DictDisplayItem> itemsWithId = DictTreeFlattener.flattenTreeWithId(dictData);
-
-        // 构建 displayText -> id 的映射
-        Map<String, String> displayTextToId = new HashMap<>();
-        for (DictTreeFlattener.DictDisplayItem item : itemsWithId) {
-            displayTextToId.put(item.displayText(), item.id());
+    private boolean isValidEmailAddress(String emailAddress) {
+        if (StringUtils.isNotBlank(emailAddress)) {
+            return emailAddress.matches(EMAIL_ADDRESS_REGEX);
         }
-
-        // 查找匹配的显示文本
-        for (Map.Entry<String, String> entry : displayTextToId.entrySet()) {
-            if (entry.getKey().endsWith(label)) {
-                return entry.getValue();
-            }
-        }
-        return null;
+        return false;
     }
 
-    /**
-     * 将日期格式 yyyymmdd 转换为时间戳
-     */
-    private String convertDateToTimestamp(String dateStr) {
-        try {
-            LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-            return String.valueOf(date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-        } catch (DateTimeParseException e) {
-            log.warn("日期转换失败: {}", dateStr);
-            return dateStr;
+    private boolean isValidPhoneNumber(String phoneNumber) {
+        if (StringUtils.isNotBlank(phoneNumber)) {
+            return phoneNumber.matches(PHONE_NUMBER_REGEX);
         }
-    }
-
-    /**
-     * 将日期时间格式 yyyymmddhhmmss 转换为时间戳
-     */
-    private String convertDateTimeToTimestamp(String dateTimeStr) {
-        try {
-            LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr,
-                    DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-            return String.valueOf(dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
-        } catch (DateTimeParseException e) {
-            log.warn("日期时间转换失败: {}", dateTimeStr);
-            return dateTimeStr;
-        }
+        return false;
     }
 }

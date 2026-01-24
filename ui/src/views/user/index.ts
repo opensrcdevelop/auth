@@ -1,5 +1,14 @@
-import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,
-  downloadUserTemplate, exportUsers, importUsers,} from "@/api/user";
+import {
+  downloadUserTemplate,
+  exportUsers,
+  getUserAttrs,
+  getUserList,
+  importUsers,
+  removeUser,
+  searchUser,
+  setUserAttrDisplaySeq,
+  updateUserAttr,
+} from "@/api/user";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
@@ -206,7 +215,7 @@ const handleSetUserAttrDisplaySeq = () => {
         id: item.id,
         seq: tableColumns.indexOf(item),
       };
-    })
+    }),
   )
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -275,7 +284,7 @@ const handleUserColumnsSelectChange = (value: any) => {
   const column = allUserColumnsForFilter.find((item) => item.key === value);
   if (column) {
     const filter = userListFilters.filters.find(
-      (item) => item.key === column.key
+      (item) => item.key === column.key,
     );
     filter.dataType = column.dataType;
     filter.extFlg = column.extFlg;
@@ -362,7 +371,7 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
   }
 
   const filters = userListFilters.filters.filter(
-    (item) => item.key && item.filterType && item.value
+    (item) => item.key && item.filterType && item.value,
   );
 
   getUserList(
@@ -370,24 +379,17 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
       page,
       size,
     },
-    filters
+    filters,
   )
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
-        console.log('=== 获取用户列表 ===', {
-          current: data.current,
-          total: data.total,
-          size: data.size,
-          listLength: data.list ? data.list.length : 0,
-          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
-        });
         userList.length = 0;
         userList.push(...data.list);
 
         userListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
 
         if (filters.length > 0) {
@@ -413,7 +415,7 @@ const userSerachKeyword = ref(null);
 const handleSearchUser = (
   username: string,
   page: number = 1,
-  size: number = 15
+  size: number = 15,
 ) => {
   searchUser(username, {
     page,
@@ -421,21 +423,13 @@ const handleSearchUser = (
   })
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
-        console.log('=== 搜索用户 ===', {
-          username,
-          current: data.current,
-          total: data.total,
-          size: data.size,
-          listLength: data.list ? data.list.length : 0,
-          listFirst5: data.list ? data.list.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })) : []
-        });
         userList.length = 0;
         userList.push(...data.list);
 
         userListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -541,12 +535,13 @@ const handleDownloadTemplate = async () => {
     const blob = (await downloadUserTemplate()) as unknown as Blob;
     // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
     const now = new Date();
-    const timestamp = now.getFullYear() +
-      String(now.getMonth() + 1).padStart(2, '0') +
-      String(now.getDate()).padStart(2, '0') +
-      String(now.getHours()).padStart(2, '0') +
-      String(now.getMinutes()).padStart(2, '0') +
-      String(now.getSeconds()).padStart(2, '0');
+    const timestamp =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
     downloadBlob(blob, `用户导入模版_${timestamp}.xlsx`);
     Notification.success("模版下载成功");
   } catch (err) {
@@ -559,26 +554,26 @@ const handleExport = async (exportAll: boolean) => {
   try {
     // 只传递有效的筛选条件（key、filterType、value 都不为空）
     const filters = (userListFilters.filters || []).filter(
-      (item: any) => item.key && item.filterType && item.value
+      (item: any) => item.key && item.filterType && item.value,
     );
     // 如果导出当前页，提取当前页的用户 ID 列表
-    const userIds = exportAll ? undefined : userList.map((u: any) => u.userId).filter(Boolean);
-    console.log('=== 调试信息 ===', {
+    const userIds = exportAll
+      ? undefined
+      : userList.map((u: any) => u.userId).filter(Boolean);
+    const blob = (await exportUsers(
+      filters,
       exportAll,
-      userListLength: userList.length,
-      userListFirst5: userList.slice(0, 5).map(u => ({ userId: u.userId, username: u.username })),
-      userIdsLength: userIds ? userIds.length : 0,
-      userIdsFirst5: userIds ? userIds.slice(0, 5) : []
-    });
-    const blob = (await exportUsers(filters, exportAll, userIds)) as unknown as Blob;
+      userIds,
+    )) as unknown as Blob;
     // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
     const now = new Date();
-    const timestamp = now.getFullYear() +
-      String(now.getMonth() + 1).padStart(2, '0') +
-      String(now.getDate()).padStart(2, '0') +
-      String(now.getHours()).padStart(2, '0') +
-      String(now.getMinutes()).padStart(2, '0') +
-      String(now.getSeconds()).padStart(2, '0');
+    const timestamp =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
     downloadBlob(blob, `用户数据_${timestamp}.xlsx`);
     Notification.success(exportAll ? "全部数据导出成功" : "当前页导出成功");
   } catch (err) {
@@ -587,7 +582,6 @@ const handleExport = async (exportAll: boolean) => {
 };
 
 // 导入数据
-const uploadRef = ref();
 const fileInputRef = ref();
 
 const handleImportClick = () => {
@@ -599,66 +593,33 @@ const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
-    try {
-      const result = (await importUsers(file)) as unknown as {
-        createdCount: number;
-        updatedCount: number;
-        deletedCount: number;
-        errors: Array<{ row: number; column: string; message: string }>;
-      };
-      importResult.value = {
-        createdCount: result.createdCount || 0,
-        updatedCount: result.updatedCount || 0,
-        deletedCount: result.deletedCount || 0,
-        failureCount: result.errors?.length || 0,
-        errors: result.errors || []
-      };
-      importResultVisible.value = true;
+    importUsers(file)
+      .then((result: any) => {
+        handleApiSuccess(result, (data: any) => {
+          importResult.value = {
+            createdCount: data.createdCount || 0,
+            updatedCount: data.updatedCount || 0,
+            deletedCount: data.deletedCount || 0,
+            failureCount: data.errors?.length || 0,
+            errors: data.errors || [],
+          };
+          importResultVisible.value = true;
 
-      if (result.errors?.length === 0) {
-        // 刷新列表
-        handleGetUserList(1, 15);
-      }
-    } catch (err) {
-      handleApiError(err, "导入");
-    }
+          if (
+            data.errors?.length === 0 &&
+            (data.createdCount || data.updatedCount || data.deletedCount)
+          ) {
+            // 刷新列表
+            handleGetUserList(1, 15);
+          }
+        });
+      })
+      .catch((err: any) => {
+        handleApiError(err, "导入用户数据");
+      });
   }
   // 清空 input，允许重复选择同一文件
   target.value = "";
-};
-
-// 导入数据（保留兼容）
-const handleImport = async (options: { file: any; onSuccess: () => void; onError: (err: any) => void }) => {
-  try {
-    // Arco Upload 的 file 对象结构：file.file 是原生 File
-    const file = options.file?.file || options.file?.originFile || options.file;
-    if (!file) {
-      throw new Error("未找到文件");
-    }
-    const result = (await importUsers(file)) as unknown as {
-      createdCount: number;
-      updatedCount: number;
-      deletedCount: number;
-      errors: Array<{ row: number; column: string; message: string }>;
-    };
-    importResult.value = {
-      createdCount: result.createdCount || 0,
-      updatedCount: result.updatedCount || 0,
-      deletedCount: result.deletedCount || 0,
-      failureCount: result.errors?.length || 0,
-      errors: result.errors || []
-    };
-    importResultVisible.value = true;
-    options.onSuccess();
-
-    if (result.errors?.length === 0) {
-      // 刷新列表
-      handleGetUserList(1, 15);
-    }
-  } catch (err) {
-    options.onError(err);
-    handleApiError(err, "导入");
-  }
 };
 
 // 下载 Blob 工具函数
@@ -719,7 +680,6 @@ export default defineComponent({
       handleUserColumnResize,
       userListFilterd,
       handleUserListFilterHide,
-      // 导入导出
       importResultVisible,
       importResult,
       handleDownloadTemplate,
