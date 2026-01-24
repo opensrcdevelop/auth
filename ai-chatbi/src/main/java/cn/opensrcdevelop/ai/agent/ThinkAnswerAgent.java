@@ -111,7 +111,9 @@ public class ThinkAnswerAgent {
                     ChatContextHolder.setChatContext(chatContext);
                     SecurityContextHolder.setContext(securityContext);
                     String outputText = chatResponse.getResult().getOutput().getText();
-                    fullOutput.append(outputText);
+                    if (outputText != null) {
+                        fullOutput.append(outputText);
+                    }
                     if (outputText != null && outputText.contains("```")) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
