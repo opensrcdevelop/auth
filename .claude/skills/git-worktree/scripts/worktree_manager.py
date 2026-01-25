@@ -9,8 +9,9 @@ import os
 import sys
 import subprocess
 import re
+from datetime import datetime
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 WORKTREES_DIR = os.path.join(PROJECT_ROOT, "worktrees")
 
 
@@ -76,15 +77,22 @@ def infer_branch_type(description):
 
 
 def sanitize_branch_name(description):
-    """将描述转换为合法的分支名称"""
-    # 转换为小写，用连字符替换空格和特殊字符
+    """将描述转换为合法的英文分支名称"""
+    # 转换为小写
     name = description.lower()
-    name = re.sub(r"[^\w\s-]", "", name)
+    # 移除非 ASCII 字符（保留英文、数字、连字符、空格）
+    name = name.encode('ascii', 'ignore').decode('ascii')
+    # 用连字符替换空格和下划线
     name = re.sub(r"[\s_]+", "-", name)
+    # 移除非字母、数字、连字符的字符
+    name = re.sub(r"[^a-z0-9-]", "", name)
     name = name.strip("-")
     # 限制长度
     if len(name) > 50:
         name = name[:50].strip("-")
+    # 如果结果为空，使用带时间戳的后缀
+    if not name:
+        name = datetime.now().strftime("%y%m%d%H%M%S")
     return name
 
 
@@ -98,58 +106,68 @@ def cmd_init(description):
     print(f"正在为任务创建 worktree: {description}")
     print("-" * 50)
 
-    # 1. 确保 develop 分支是最新的
-    print("步骤 1/4: 更新 develop 分支...")
-    success, _, stderr = run_command("git checkout develop")
-    if not success:
-        print(f"切换到 develop 分支失败: {stderr}")
+    # 1. 获取当前本地分支的远程跟踪分支
+    print("步骤 1/4: 获取当前分支的远程分支...")
+    _, current_branch, _ = run_command("git branch --show-current")
+    if not current_branch:
+        print("无法获取当前分支")
         return False
 
-    success, _, stderr = run_command("git pull origin develop")
-    if not success:
-        print(f"拉取最新代码失败: {stderr}")
-        return False
-    print("✓ develop 分支已更新")
+    # 获取当前分支的远程跟踪分支
+    success, upstream, stderr = run_command(f"git rev-parse --abbrev-ref --symbolic-full-name @{current_branch}")
+    if not success or not upstream:
+        # 如果获取失败，使用默认的 origin/{branch} 格式
+        upstream = f"origin/{current_branch}"
+        print(f"当前分支: {current_branch}")
+        print(f"远程跟踪分支: {upstream} (自动推断)")
+    else:
+        print(f"当前分支: {current_branch}")
+        print(f"远程跟踪分支: {upstream}")
 
-    # 2. 推断分支类型并生成分支名
+    # 2. 拉取远程分支最新代码
+    print("\n步骤 2/4: 拉取远程分支最新代码...")
+    success, _, stderr = run_command(f"git fetch origin")
+    if not success:
+        print(f"拉取远程信息失败: {stderr}")
+        return False
+
+    # 验证远程分支存在
+    success, stdout, _ = run_command(f"git branch -r | grep ' {upstream}$' || true")
+    if not stdout:
+        print(f"远程分支 '{upstream}' 不存在")
+        return False
+    print("✓ 远程分支已更新")
+
+    # 3. 推断分支类型并生成新的分支名
     branch_type = infer_branch_type(description)
     branch_name_base = sanitize_branch_name(description)
-    branch_name = f"{branch_type}/{branch_name_base}"
+    new_branch_name = f"{branch_type}/{branch_name_base}"
 
-    print(f"\n步骤 2/4: 创建分支 '{branch_name}'...")
+    print(f"\n步骤 3/4: 创建 worktree...")
 
-    # 检查分支是否已存在
-    success, stdout, _ = run_command(f"git branch -a | grep '^{branch_name}$' || true")
-    if stdout:
-        print(f"⚠ 分支 '{branch_name}' 已存在，将使用现有分支")
-    else:
-        success, _, stderr = run_command(f"git checkout -b {branch_name}")
-        if not success:
-            print(f"创建分支失败: {stderr}")
-            return False
-        print(f"✓ 分支 '{branch_name}' 已创建")
-
-    # 3. 创建 worktree
-    print("\n步骤 3/4: 创建 worktree...")
+    # 4. 创建 worktree（基于远程分支创建新分支）
     worktree_path = os.path.join(WORKTREES_DIR, branch_name_base)
 
     if os.path.exists(worktree_path):
         print(f"⚠ worktree 目录已存在: {worktree_path}")
+        return False
 
-    success, _, stderr = run_command(f"git worktree add {worktree_path} {branch_name}")
+    # 基于远程跟踪分支创建新的本地分支和 worktree
+    success, _, stderr = run_command(f"git worktree add -b {new_branch_name} {worktree_path} {upstream}")
     if not success:
         print(f"创建 worktree 失败: {stderr}")
         return False
     print(f"✓ Worktree 已创建: {worktree_path}")
 
-    # 4. 切换到 worktree
+    # 切换回原分支
+    run_command(f"git checkout {current_branch}")
+
     print("\n步骤 4/4: 完成")
     print("=" * 50)
     print(f"✓ Worktree 创建成功！")
-    print(f"\n下一步操作：")
-    print(f"  1. cd {worktree_path}")
-    print(f"  2. 开始编码工作")
-    print(f"  3. 完成后使用 /git-worktree:remove 清理")
+    print(f"\nWorktree 路径: {worktree_path}")
+    print(f"新分支名称: {new_branch_name}")
+    print(f"基于分支: {upstream}")
     print("=" * 50)
 
     return True
@@ -335,7 +353,7 @@ end tell
         return False
 
 
-def cmd_init_with_iterm(description):
+def cmd_init_with_iterm(description, branch_name=None):
     """初始化新的 worktree，创建完成后询问用户是否打开 iTerm2"""
     if not description:
         print("错误：请提供任务描述")
@@ -345,64 +363,78 @@ def cmd_init_with_iterm(description):
     print(f"正在为任务创建 worktree: {description}")
     print("-" * 50)
 
-    # 1. 确保 develop 分支是最新的
-    print("步骤 1/5: 更新 develop 分支...")
-    success, _, stderr = run_command("git checkout develop")
-    if not success:
-        print(f"切换到 develop 分支失败: {stderr}")
+    # 1. 获取当前本地分支的远程跟踪分支
+    print("步骤 1/5: 获取当前分支的远程分支...")
+    _, current_branch, _ = run_command("git branch --show-current")
+    if not current_branch:
+        print("无法获取当前分支")
         return False
 
-    success, _, stderr = run_command("git pull origin develop")
-    if not success:
-        print(f"拉取最新代码失败: {stderr}")
-        return False
-    print("✓ develop 分支已更新")
-
-    # 2. 推断分支类型并生成分支名
-    branch_type = infer_branch_type(description)
-    branch_name_base = sanitize_branch_name(description)
-    branch_name = f"{branch_type}/{branch_name_base}"
-
-    print(f"\n步骤 2/5: 创建分支 '{branch_name}'...")
-
-    # 检查分支是否已存在
-    success, stdout, _ = run_command(f"git branch -a | grep '^{branch_name}$' || true")
-    if stdout:
-        print(f"⚠ 分支 '{branch_name}' 已存在，将使用现有分支")
+    # 获取当前分支的远程跟踪分支
+    success, upstream, stderr = run_command(f"git rev-parse --abbrev-ref --symbolic-full-name @{current_branch}")
+    if not success or not upstream:
+        # 如果获取失败，使用默认的 origin/{branch} 格式
+        upstream = f"origin/{current_branch}"
+        print(f"当前分支: {current_branch}")
+        print(f"远程跟踪分支: {upstream} (自动推断)")
     else:
-        success, _, stderr = run_command(f"git checkout -b {branch_name}")
-        if not success:
-            print(f"创建分支失败: {stderr}")
-            return False
-        print(f"✓ 分支 '{branch_name}' 已创建")
+        print(f"当前分支: {current_branch}")
+        print(f"远程跟踪分支: {upstream}")
 
-    # 3. 创建 worktree
-    print("\n步骤 3/5: 创建 worktree...")
+    # 2. 拉取远程分支最新代码
+    print("\n步骤 2/5: 拉取远程分支最新代码...")
+    success, _, stderr = run_command(f"git fetch origin")
+    if not success:
+        print(f"拉取远程信息失败: {stderr}")
+        return False
+
+    # 验证远程分支存在
+    success, stdout, _ = run_command(f"git branch -r | grep ' {upstream}$' || true")
+    if not stdout:
+        print(f"远程分支 '{upstream}' 不存在")
+        return False
+    print("✓ 远程分支已更新")
+
+    # 3. 确定分支名
+    if branch_name:
+        # 使用指定的分支名（包含类型前缀）
+        new_branch_name = branch_name
+        # 从分支名中提取目录名
+        branch_name_base = branch_name.split("/")[-1]
+        print(f"\n步骤 3/5: 使用指定分支名 '{new_branch_name}'...")
+    else:
+        # 自动推断分支类型并生成新的分支名
+        branch_type = infer_branch_type(description)
+        branch_name_base = sanitize_branch_name(description)
+        new_branch_name = f"{branch_type}/{branch_name_base}"
+        print(f"\n步骤 3/5: 创建新分支 '{new_branch_name}'...")
+
+    # 4. 创建 worktree（基于远程分支创建新分支）
+    print("\n步骤 4/5: 创建 worktree...")
     worktree_path = os.path.join(WORKTREES_DIR, branch_name_base)
 
     if os.path.exists(worktree_path):
         print(f"⚠ worktree 目录已存在: {worktree_path}")
+        return False
 
-    success, _, stderr = run_command(f"git worktree add {worktree_path} {branch_name}")
+    # 基于远程跟踪分支创建新的本地分支和 worktree
+    success, _, stderr = run_command(f"git worktree add -b {new_branch_name} {worktree_path} {upstream}")
     if not success:
         print(f"创建 worktree 失败: {stderr}")
         return False
     print(f"✓ Worktree 已创建: {worktree_path}")
 
-    # 4. 切换回 develop 分支
-    print("\n步骤 4/5: 切换回 develop 分支...")
-    run_command("git checkout develop")
-    print("✓ 已切换回 develop")
-
-    # 5. 完成
+    # 5. 切换回原分支
     print("\n步骤 5/5: 完成")
+    run_command(f"git checkout {current_branch}")
     print("=" * 50)
     print(f"✓ Worktree 创建成功！")
     print(f"\nWorktree 路径: {worktree_path}")
-    print(f"分支名称: {branch_name}")
+    print(f"新分支名称: {new_branch_name}")
+    print(f"基于分支: {upstream}")
     print("=" * 50)
 
-    return worktree_path, branch_name, description
+    return worktree_path, new_branch_name, description
 
 
 def main():
@@ -413,22 +445,35 @@ def main():
         print("用法：python3 worktree_manager.py <命令> [参数]")
         print()
         print("可用命令：")
-        print("  init <描述>      - 创建新的 worktree（创建后询问是否打开 iTerm2）")
-        print("  list             - 列出所有 worktree")
-        print("  remove           - 交互式删除 worktree")
-        print("  remove <索引>    - 删除指定索引的 worktree")
-        print("  remove <路径>    - 删除指定路径的 worktree")
+        print("  init <描述>              - 创建新的 worktree（创建后询问是否打开 iTerm2）")
+        print("  init <描述> --branch <分支名>  - 创建新的 worktree，使用指定的分支名")
+        print("  list                     - 列出所有 worktree")
+        print("  remove                   - 交互式删除 worktree")
+        print("  remove <索引>            - 删除指定索引的 worktree")
+        print("  remove <路径>            - 删除指定路径的 worktree")
         return
 
     command = sys.argv[1]
 
     if command == "init":
         description = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else ""
-        result = cmd_init_with_iterm(description)
+        # 解析 --branch 参数
+        branch_name = None
+        if "--branch" in sys.argv:
+            idx = sys.argv.index("--branch")
+            if idx + 1 < len(sys.argv):
+                branch_name = sys.argv[idx + 1]
+                # 从 description 中移除 --branch 和分支名
+                args = sys.argv[2:]
+                if "--branch" in args:
+                    b_idx = args.index("--branch")
+                    description = " ".join(args[:b_idx])
+
+        result = cmd_init_with_iterm(description, branch_name)
         if result:
-            worktree_path, branch_name, desc = result
+            worktree_path, branch_name_result, desc = result
             print(f"\n[ASK_USER_OPEN_ITERM]")
-            print(f"{worktree_path}|{branch_name}|{desc}")
+            print(f"{worktree_path}|{branch_name_result}|{desc}")
             print(f"[/ASK_USER_OPEN_ITERM]")
 
     elif command == "list":
