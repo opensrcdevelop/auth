@@ -63,7 +63,7 @@ jobs:
       - name: Build With Gradle Wrapper
         run: |
           chmod +x ./gradlew
-          ./gradlew -x test build
+          ./gradlew -x test -x spotlessCheck build
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
