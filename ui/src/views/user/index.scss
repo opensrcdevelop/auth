@@ -150,11 +150,43 @@
   width: 595px;
   padding: 12px;
 
-  .remove-filter {
-    color: #86909c;
-    cursor: pointer;
-    margin-left: 8px;
-    font-size: 16px;
+  .filter-row {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    position: relative;
+    padding-right: 24px;
+
+    .filter-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+
+      .arco-form-item {
+        margin-bottom: 0;
+      }
+    }
+
+    .remove-filter {
+      color: #86909c;
+      cursor: pointer;
+      font-size: 16px;
+      position: absolute;
+      right: 0;
+      top: 6px;
+    }
+
+    .no-value-hint {
+      color: #86909c;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+
+    .no-value-hint-wrapper {
+      height: 32px;
+      line-height: 32px;
+    }
   }
 
   .operation-container {

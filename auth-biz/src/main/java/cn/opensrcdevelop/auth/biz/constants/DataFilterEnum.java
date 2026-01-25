@@ -35,7 +35,13 @@ public enum DataFilterEnum {
     LT("LT"),
 
     /** 小于等于 */
-    LE("LE");
+    LE("LE"),
+
+    /** 为空 */
+    IS_NULL("IS_NULL"),
+
+    /** 不为空 */
+    IS_NOT_NULL("IS_NOT_NULL");
 
     private final String type;
 }
