@@ -30,15 +30,16 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -293,7 +294,7 @@ public class UserAttrServiceImpl extends ServiceImpl<UserAttrMapper, UserAttr> i
      * @param requestDto
      *            更新用户属性请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_ATTR, sysOperation = SysOperationType.UPDATE, success = "修改了用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）", fail = "修改用户属性（{{ @linkGen.toLink(#userAttrId, T(ResourceType).USER_ATTR) }}）失败")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER_ATTR, sysOperation = SysOperationType.UPDATE, success = "修改了用户属性（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_ATTR) }}）", fail = "修改用户属性（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).USER_ATTR) }}）失败")
     @Transactional
     @Override
     public void updateUserAttr(UserAttrRequestDto requestDto) {

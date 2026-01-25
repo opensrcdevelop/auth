@@ -17,6 +17,7 @@
             <result column="attr_name" property="attrName" />
             <result column="attr_data_type"  property="attrDataType" />
             <result column="attr_value"  property="attrValue" />
+            <result column="dict_id" property="dictId" />
         </collection>
     </resultMap>
 
@@ -52,6 +53,7 @@
             t3.attr_key,
             t3.attr_name,
             t3.attr_data_type,
+            t3.dict_id,
             t2.attr_value
         FROM
             filtered_users fu

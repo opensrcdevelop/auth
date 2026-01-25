@@ -12,6 +12,9 @@ const operationTypes = [
   { value: 1, label: "创建" },
   { value: 2, label: "修改" },
   { value: 3, label: "删除" },
+  { value: 4, label: "导入" },
+  { value: 5, label: "导出" },
+  { value: 6, label: "下载" },
 ];
 
 /**

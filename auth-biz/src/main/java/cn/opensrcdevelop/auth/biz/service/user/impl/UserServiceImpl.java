@@ -53,13 +53,11 @@ import io.vavr.Tuple2;
 import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -75,6 +73,10 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -353,7 +355,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String newPwd = requestDto.getNewPwd();
 
         // 1. 校验
-        if (StringUtils.equals(rawPwd, newPwd)) {
+        if (Strings.CS.equals(rawPwd, newPwd)) {
             throw new BizException(MessageConstants.LOGIN_MSG_1001);
         }
 
@@ -454,7 +456,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             var visibleUserAttrs = userAttrService.getVisibleUserAttrs();
             // 2.2 删除不可见的用户信息
             var unVisibleUserMapKeys = userMap.keySet().stream().filter(
-                    k -> CommonUtil.stream(visibleUserAttrs).noneMatch(attr -> StringUtils.equals(attr.getKey(), k)))
+                    k -> CommonUtil.stream(visibleUserAttrs).noneMatch(attr -> Strings.CS.equals(attr.getKey(), k)))
                     .collect(Collectors.toSet());
             CommonUtil.stream(unVisibleUserMapKeys).forEach(userMap::remove);
             // 2.3 添加控制台访问权限
@@ -786,7 +788,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserAttrResponseDto userAttrResponse = new UserAttrResponseDto();
             userAttrResponse.setId(attr.getAttrId());
             userAttrResponse.setKey(attr.getAttrKey());
-            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr.getAttrValue(),
+            userAttrResponse.setValue(AuthUtil.convertUserAttrData(attr,
                     UserAttrDataTypeEnum.valueOf(attr.getAttrDataType()), true, true));
             userAttrResponse.setDataType(attr.getAttrDataType());
             userAttrResponse.setExtFlg(attr.getExtAttrFlg());
@@ -876,7 +878,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User rawUser = super.getById(AuthUtil.getCurrentUserId());
 
         // 4. 检查当前用户的邮箱是否与请求的邮箱一致
-        if (!isBinding && !StringUtils.equals(email, rawUser.getEmailAddress())) {
+        if (!isBinding && !Strings.CS.equals(email, rawUser.getEmailAddress())) {
             throw new BizException(MessageConstants.UNBIND_EMAIL_MSG_1000);
         }
 
@@ -889,7 +891,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private void checkUsername(UserRequestDto requestDto, User rawUser) {
-        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getUsername(), rawUser.getUsername())) {
+        if (Objects.nonNull(rawUser) && Strings.CS.equals(requestDto.getUsername(), rawUser.getUsername())) {
             return;
         }
 
@@ -900,7 +902,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private void checkEmailAddress(UserRequestDto requestDto, User rawUser) {
-        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getEmailAddress(), rawUser.getEmailAddress())) {
+        if (Objects.nonNull(rawUser) && Strings.CS.equals(requestDto.getEmailAddress(), rawUser.getEmailAddress())) {
             return;
         }
 
@@ -911,7 +913,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private void checkPhoneNumber(UserRequestDto requestDto, User rawUser) {
-        if (Objects.nonNull(rawUser) && StringUtils.equals(requestDto.getPhoneNumber(), rawUser.getPhoneNumber())) {
+        if (Objects.nonNull(rawUser) && Strings.CS.equals(requestDto.getPhoneNumber(), rawUser.getPhoneNumber())) {
             return;
         }
 

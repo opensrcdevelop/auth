@@ -430,7 +430,7 @@ public class UserExcelExporter {
             maxWidth = Math.max(maxWidth, 8);
 
             int width = (maxWidth + 2) * 256;
-            width = Math.min(Math.max(width, 2000), 20000);
+            width = Math.clamp(width, 2000, 20000);
             sheet.setColumnWidth(colIdx, width);
         }
     }
@@ -493,9 +493,7 @@ public class UserExcelExporter {
         }
 
         String dataType = attr.getDataType();
-        if ("DICT".equals(dataType) && attr.getDictId() != null) {
-            return formatDictValue(attr.getDictId(), String.valueOf(value));
-        } else if ("BOOLEAN".equals(dataType)) {
+        if ("BOOLEAN".equals(dataType)) {
             return "true".equalsIgnoreCase(String.valueOf(value)) ? "是" : "否";
         } else if ("DATE".equals(dataType)) {
             return formatDateValue(value);
@@ -565,9 +563,9 @@ public class UserExcelExporter {
             // 使用 DictTreeFlattener 构建完整路径
             List<DictTreeFlattener.DictDisplayItem> items = DictTreeFlattener.flattenTreeWithId(dictData);
 
-            // 查找匹配的显示文本（精确匹配或末尾匹配）
+            // 查找匹配的显示文本
             for (DictTreeFlattener.DictDisplayItem item : items) {
-                if (item.id().equals(dataId) || item.displayText().endsWith(dataId)) {
+                if (item.id().equals(dataId)) {
                     return item.displayText();
                 }
             }

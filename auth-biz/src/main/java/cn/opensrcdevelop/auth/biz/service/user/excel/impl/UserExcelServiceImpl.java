@@ -1,5 +1,10 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel.impl;
 
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
@@ -68,6 +73,7 @@ public class UserExcelServiceImpl implements UserExcelService {
     private static final String EMAIL_ADDRESS_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private static final String PHONE_NUMBER_REGEX = "^1[3-9]\\d{9}$";
 
+    @Audit(type = AuditType.SYS_OPERATION, sysOperation = SysOperationType.DOWNLOAD, resource = ResourceType.USER, success = "下载了用户导入模版", fail = "下载用户导入模版失败")
     @Override
     public byte[] generateImportTemplate() {
         // 获取所有用户字段（包括基础字段和扩展字段）
@@ -79,6 +85,7 @@ public class UserExcelServiceImpl implements UserExcelService {
         return templateGenerator.generateTemplate(templateFields);
     }
 
+    @Audit(type = AuditType.SYS_OPERATION, sysOperation = SysOperationType.EXPORT, resource = ResourceType.USER, success = "导出了共 {{ #total }} 条用户数据（{{ #exportAll ? '导出全部' : '导出当前页' }}），筛选条件（{{ #hasFilters }}）", fail = "导出用户数据失败（{{ #exportAll ? '导出全部' : '导出当前页' }}）")
     @Override
     public byte[] exportUsers(List<DataFilterDto> filters, boolean exportAll, List<String> userIds) {
         // 1. 获取所有用户字段（包括基础字段和扩展字段）
@@ -102,10 +109,14 @@ public class UserExcelServiceImpl implements UserExcelService {
             userList = users.getList() != null ? users.getList() : new ArrayList<>();
         }
 
+        AuditContext.setSpelVariable("total", userList.size());
+        AuditContext.setSpelVariable("hasFilters", Objects.isNull(filters) ? "无" : filters.size() + " 条");
+
         // 3. 使用新的导出器生成 Excel
         return userExcelExporter.exportUsers(userList, allFields, filters);
     }
 
+    @Audit(type = AuditType.SYS_OPERATION, sysOperation = SysOperationType.IMPORT, resource = ResourceType.USER, success = "{{ #excelImportResult.errors.size() == 0 ? '导入用户数据成功（ ' + #excelImportResult.createdCount + ' 条新增，' + #excelImportResult.updatedCount + ' 条更新，' + #excelImportResult.deletedCount + ' 条删除）' : '数据校验失败，无法导入用户数据（ ' + #excelImportResult.errors.size() + ' 条错误）'}}", fail = "导入用户数据失败")
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ExcelImportResultDto importUsers(MultipartFile file) {
@@ -145,12 +156,14 @@ public class UserExcelServiceImpl implements UserExcelService {
             throw new ServerException("读取上传文件失败", e);
         }
         if (fileBytes.length == 0) {
-            return ExcelImportResultDto.builder()
+            ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
                     .createdCount(0)
                     .updatedCount(0)
                     .deletedCount(0)
                     .errors(errors)
                     .build();
+            AuditContext.setSpelVariable("excelImportResult", excelImportResult);
+            return excelImportResult;
         }
 
         // 使用字节数组创建 InputStream
@@ -202,23 +215,27 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 5. 如果有错误，不执行数据库操作
         if (!errors.isEmpty()) {
-            return ExcelImportResultDto.builder()
+            ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
                     .createdCount(0)
                     .updatedCount(0)
                     .deletedCount(0)
                     .errors(errors)
                     .build();
+            AuditContext.setSpelVariable("excelImportResult", excelImportResult);
+            return excelImportResult;
         }
 
         // 6. 批量执行数据库操作（只有所有数据校验通过才会执行到这里）
         ImportStats stats = batchExecuteDatabaseOperations(validData, extAttrs, errors);
 
-        return ExcelImportResultDto.builder()
+        ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
                 .createdCount(stats.createdCount)
                 .updatedCount(stats.updatedCount)
                 .deletedCount(stats.deletedCount)
                 .errors(errors)
                 .build();
+        AuditContext.setSpelVariable("excelImportResult", excelImportResult);
+        return excelImportResult;
     }
 
     /**
@@ -553,7 +570,8 @@ public class UserExcelServiceImpl implements UserExcelService {
             // 检查用户名
             if (StringUtils.isNotBlank(dto.getUsername()) && existUsernames.contains(dto.getUsername())) {
                 // 检查更新操作时，用户名与当前用户一致，忽略错误
-                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getUsername().equals(dto.getUsername())) {
+                if (dto.getOperationType() == 1
+                        && updateUsers.get(dto.getUserId()).getUsername().equals(dto.getUsername())) {
                     continue;
                 }
 
@@ -567,7 +585,8 @@ public class UserExcelServiceImpl implements UserExcelService {
             // 检查邮箱
             if (StringUtils.isNotBlank(dto.getEmailAddress()) && existEmails.contains(dto.getEmailAddress())) {
                 // 检查更新操作时，邮箱与当前用户一致，忽略错误
-                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getEmailAddress().equals(dto.getEmailAddress())) {
+                if (dto.getOperationType() == 1
+                        && updateUsers.get(dto.getUserId()).getEmailAddress().equals(dto.getEmailAddress())) {
                     continue;
                 }
 
@@ -581,7 +600,8 @@ public class UserExcelServiceImpl implements UserExcelService {
             // 检查手机号
             if (StringUtils.isNotBlank(dto.getPhoneNumber()) && existPhones.contains(dto.getPhoneNumber())) {
                 // 检查更新操作时，手机号与当前用户一致，忽略错误
-                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getPhoneNumber().equals(dto.getPhoneNumber())) {
+                if (dto.getOperationType() == 1
+                        && updateUsers.get(dto.getUserId()).getPhoneNumber().equals(dto.getPhoneNumber())) {
                     continue;
                 }
 

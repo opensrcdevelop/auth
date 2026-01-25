@@ -6,7 +6,9 @@ import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
+import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -256,7 +258,7 @@ public class AuthUtil {
 
         // 扩展字段属性
         CommonUtil.stream(user.getUserAttrs())
-                .forEach(userAttr -> userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr.getAttrValue(),
+                .forEach(userAttr -> userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr,
                         UserAttrDataTypeEnum.valueOf(userAttr.getAttrDataType()), withDictDataId, withTimestamp)));
         return userMap;
     }
@@ -264,21 +266,8 @@ public class AuthUtil {
     /**
      * 转换用户扩展属性值
      *
-     * @param value
-     *            用户扩展属性值
-     * @param dataType
-     *            数据类型
-     * @return 用户扩展属性值
-     */
-    public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType) {
-        return convertUserAttrData(value, dataType, false, false);
-    }
-
-    /**
-     * 转换用户扩展属性值
-     *
-     * @param value
-     *            用户扩展属性值
+     * @param userAttr
+     *            用户扩展属性
      * @param dataType
      *            数据类型
      * @param withDictDataId
@@ -287,8 +276,9 @@ public class AuthUtil {
      *            日期 / 日期时间类型返回时间戳
      * @return 用户扩展属性值
      */
-    public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType, boolean withDictDataId,
+    public static Object convertUserAttrData(UserAttr userAttr, UserAttrDataTypeEnum dataType, boolean withDictDataId,
             boolean withTimestamp) {
+        String value = userAttr.getAttrValue();
         if (Objects.isNull(value)) {
             return null;
         }
@@ -304,9 +294,22 @@ public class AuthUtil {
                     ? Long.parseLong(value)
                     : CommonUtil.convertTimestamp2String(Long.parseLong(value),
                             CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDD);
-            case DICT -> withDictDataId
-                    ? SpringContextUtil.getBean(DictDataService.class).detail(value).getId()
-                    : SpringContextUtil.getBean(DictDataService.class).detail(value).getLabel();
+            case DICT -> {
+                if (withDictDataId) {
+                    yield value;
+                } else {
+                    DictDataService dictDataService = SpringContextUtil.getBean(DictDataService.class);
+                    Optional<DictTreeFlattener.DictDisplayItem> dictDisplayItem = CommonUtil
+                            .stream(DictTreeFlattener
+                                    .flattenTreeWithId(dictDataService.getEnabledDictData(userAttr.getDictId())))
+                            .filter(x -> x.id().equals(userAttr.getAttrValue())).findFirst();
+                    if (dictDisplayItem.isPresent()) {
+                        yield dictDisplayItem.get().displayText();
+                    } else {
+                        yield value;
+                    }
+                }
+            }
             default -> value;
         };
     }
