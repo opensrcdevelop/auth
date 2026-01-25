@@ -45,6 +45,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -193,7 +194,7 @@ public class UserExcelServiceImpl implements UserExcelService {
         Set<String> existPhones = batchQueryExistingUsers(excelPhones,
                 CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber));
 
-        // 4. 检查新增用户是否与数据库重复
+        // 4. 检查新增/更新用户是否与数据库重复
         List<ExcelImportErrorDto> dbDuplicateErrors = checkDbDuplicates(validData, existUsernames, existEmails,
                 existPhones, keyToHeaderMap);
         errors.addAll(dbDuplicateErrors);
@@ -521,21 +522,37 @@ public class UserExcelServiceImpl implements UserExcelService {
     /**
      * 检查数据库重复
      */
+    @SuppressWarnings("java:S3776")
     private List<ExcelImportErrorDto> checkDbDuplicates(List<UserExcelImportDto> validData,
             Set<String> existUsernames, Set<String> existEmails, Set<String> existPhones,
             Map<String, String> keyToHeaderMap) {
         List<ExcelImportErrorDto> errors = new ArrayList<>();
 
+        // 批量获取更新用户的用户名、邮箱、手机号
+        Set<String> updateUserIds = CommonUtil.stream(validData)
+                .filter(dto -> dto.getOperationType() == 1)
+                .map(UserExcelImportDto::getUserId).collect(Collectors.toSet());
+        Map<String, User> updateUsers = userService.lambdaQuery()
+                .in(User::getUserId, updateUserIds)
+                .list()
+                .stream()
+                .collect(Collectors.toMap(User::getUserId, Function.identity()));
+
         for (int i = 0; i < validData.size(); i++) {
             UserExcelImportDto dto = validData.get(i);
-            int rowNum = i + 2;
+            int rowNum = i + 3;
 
-            if (dto.getOperationType() == null || dto.getOperationType() != 0) {
-                continue; // 只检查新增操作
+            if (dto.getOperationType() == null || dto.getOperationType() == 2) {
+                continue; // 只检查新增/更新操作
             }
 
             // 检查用户名
             if (StringUtils.isNotBlank(dto.getUsername()) && existUsernames.contains(dto.getUsername())) {
+                // 检查更新操作时，用户名与当前用户一致，忽略错误
+                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getUsername().equals(dto.getUsername())) {
+                    continue;
+                }
+
                 errors.add(ExcelImportErrorDto.builder()
                         .row(rowNum)
                         .column(keyToHeaderMap.getOrDefault("username", "用户名"))
@@ -545,6 +562,11 @@ public class UserExcelServiceImpl implements UserExcelService {
 
             // 检查邮箱
             if (StringUtils.isNotBlank(dto.getEmailAddress()) && existEmails.contains(dto.getEmailAddress())) {
+                // 检查更新操作时，邮箱与当前用户一致，忽略错误
+                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getEmailAddress().equals(dto.getEmailAddress())) {
+                    continue;
+                }
+
                 errors.add(ExcelImportErrorDto.builder()
                         .row(rowNum)
                         .column(keyToHeaderMap.getOrDefault("emailAddress", "邮箱地址"))
@@ -554,6 +576,11 @@ public class UserExcelServiceImpl implements UserExcelService {
 
             // 检查手机号
             if (StringUtils.isNotBlank(dto.getPhoneNumber()) && existPhones.contains(dto.getPhoneNumber())) {
+                // 检查更新操作时，手机号与当前用户一致，忽略错误
+                if (dto.getOperationType() == 1 && updateUsers.get(dto.getUserId()).getPhoneNumber().equals(dto.getPhoneNumber())) {
+                    continue;
+                }
+
                 errors.add(ExcelImportErrorDto.builder()
                         .row(rowNum)
                         .column(keyToHeaderMap.getOrDefault("phoneNumber", "手机号码"))
