@@ -23,12 +23,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.util.List;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.sql.DataSource;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -153,6 +156,17 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
 
         // 3. 数据据操作
         super.updateById(updateTenant);
+
+        // 4. 执行数据库迁移
+        if (Boolean.TRUE.equals(updateTenant.getEnabled())) {
+            DataSource dataSource = TenantHelper.createTenantDataSource(rawTenant.getTenantCode());
+            TenantHelper.executeTenantDbMigrations(dataSource, Collections.emptyMap());
+        }
+
+        // 5. 删除租户数据源
+        if (Boolean.FALSE.equals(updateTenant.getEnabled())) {
+            TenantHelper.removeTenantDs(rawTenant.getTenantCode());
+        }
 
         compareObjBuilder.after(super.getById(tenantId));
         AuditContext.addCompareObj(compareObjBuilder.build());

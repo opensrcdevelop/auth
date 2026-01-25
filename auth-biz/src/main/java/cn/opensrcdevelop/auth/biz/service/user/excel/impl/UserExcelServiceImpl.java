@@ -6,6 +6,7 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
@@ -30,28 +31,32 @@ import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelImportHandler;
 import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -71,6 +76,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
     private static final String EMAIL_ADDRESS_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private static final String PHONE_NUMBER_REGEX = "^1[3-9]\\d{9}$";
+    private static final String IMPORT_USER_LOCK = "import_user_lock";
 
     @Audit(type = AuditType.SYS_OPERATION, sysOperation = SysOperationType.DOWNLOAD, resource = ResourceType.USER, success = "下载了用户导入模版", fail = "下载用户导入模版失败")
     @Override
@@ -119,122 +125,135 @@ public class UserExcelServiceImpl implements UserExcelService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ExcelImportResultDto importUsers(MultipartFile file) {
-        List<ExcelImportErrorDto> errors = new ArrayList<>();
-        List<UserExcelImportDto> validData = new ArrayList<>();
+        if (RedisUtil.getLock(IMPORT_USER_LOCK).isLocked()) {
+            throw new BizException(MessageConstants.USER_MSG_1003);
+        }
 
-        // 1. 获取用户属性定义
-        PageData<UserAttrResponseDto> allAttrs = userAttrService.listUserAttrs(1, Integer.MAX_VALUE, false, null);
-        Map<String, UserAttrResponseDto> attrMap = new LinkedHashMap<>();
-        List<UserAttrResponseDto> extAttrs = new ArrayList<>();
-        // 构建字典数据缓存
-        Map<String, Map<String, String>> dictValueToIdMap = new LinkedHashMap<>();
+        RLock lock = RedisUtil.getLock(IMPORT_USER_LOCK);
+        try {
+            if (!lock.tryLock()) {
+                throw new BizException(MessageConstants.USER_MSG_1003);
+            }
+            List<ExcelImportErrorDto> errors = new ArrayList<>();
+            List<UserExcelImportDto> validData = new ArrayList<>();
 
-        for (UserAttrResponseDto attr : allAttrs.getList()) {
-            attrMap.put(attr.getKey(), attr);
-            if (BooleanUtils.isTrue(attr.getExtFlg())) {
-                extAttrs.add(attr);
-                // 预加载字典数据
-                if (UserAttrDataTypeEnum.DICT.getType().equals(attr.getDataType()) && attr.getDictId() != null) {
-                    dictValueToIdMap.put(attr.getKey(), loadDictValueToIdMap(attr.getDictId()));
+            // 1. 获取用户属性定义
+            PageData<UserAttrResponseDto> allAttrs = userAttrService.listUserAttrs(1, Integer.MAX_VALUE, false, null);
+            Map<String, UserAttrResponseDto> attrMap = new LinkedHashMap<>();
+            List<UserAttrResponseDto> extAttrs = new ArrayList<>();
+            // 构建字典数据缓存
+            Map<String, Map<String, String>> dictValueToIdMap = new LinkedHashMap<>();
+
+            for (UserAttrResponseDto attr : allAttrs.getList()) {
+                attrMap.put(attr.getKey(), attr);
+                if (BooleanUtils.isTrue(attr.getExtFlg())) {
+                    extAttrs.add(attr);
+                    // 预加载字典数据
+                    if (UserAttrDataTypeEnum.DICT.getType().equals(attr.getDataType()) && attr.getDictId() != null) {
+                        dictValueToIdMap.put(attr.getKey(), loadDictValueToIdMap(attr.getDictId()));
+                    }
                 }
             }
-        }
 
-        // 2. 读取 Excel 数据并收集所有用户名、邮箱、手机号
-        Set<String> excelUsernames = new HashSet<>();
-        Set<String> excelEmails = new HashSet<>();
-        Set<String> excelPhones = new HashSet<>();
-        // 字段 key -> 中文标题的映射（用于错误显示）
-        Map<String, String> keyToHeaderMap;
+            // 2. 读取 Excel 数据并收集所有用户名、邮箱、手机号
+            Set<String> excelUsernames = new HashSet<>();
+            Set<String> excelEmails = new HashSet<>();
+            Set<String> excelPhones = new HashSet<>();
+            // 字段 key -> 中文标题的映射（用于错误显示）
+            Map<String, String> keyToHeaderMap;
 
-        // 读取文件内容到字节数组（避免多次调用 getInputStream）
-        byte[] fileBytes;
-        try {
-            fileBytes = file.getBytes();
-        } catch (IOException e) {
-            throw new ServerException("读取上传文件失败", e);
-        }
-        if (fileBytes.length == 0) {
-            ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
-                    .createdCount(0)
-                    .updatedCount(0)
-                    .deletedCount(0)
-                    .errors(errors)
-                    .build();
-            AuditContext.setSpelVariable("excelImportResult", excelImportResult);
-            return excelImportResult;
-        }
-
-        // 使用字节数组创建 InputStream
-        ByteArrayInputStream excelStream = new ByteArrayInputStream(fileBytes);
-        try {
-            // 使用自定义处理器读取 Excel（支持中文标题映射）
-            UserExcelImportHandler handler = new UserExcelImportHandler(attrMap, dictValueToIdMap, excelStream);
-            // 获取字段 key -> 中文标题的映射（用于错误显示）
-            keyToHeaderMap = handler.getKeyToHeaderMap();
-
-            // 重置流位置（因为 UserExcelImportHandler 读取后位置已移动）
-            excelStream.reset();
-            EasyExcelFactory.read(excelStream)
-                    .registerReadListener(handler)
-                    .sheet(0)
-                    .headRowNumber(2) // 前两行是标题
-                    .doRead();
-
-            // 获取读取的数据并处理
-            List<UserExcelImportDto> allData = handler.getDataList();
-            log.info("总共读取到 {} 条数据", allData.size());
-            for (int i = 0; i < allData.size(); i++) {
-                UserExcelImportDto dto = allData.get(i);
-                int rowNum = i + 3; // Excel 行号（第1、2行是标题，第3行开始是数据）
-
-                // 收集 Excel 中的用户名、邮箱、手机号用于重复性检查
-                collectExcelValues(dto, rowNum, excelUsernames, excelEmails, excelPhones, errors, keyToHeaderMap);
-
-                // 验证并收集数据（暂不检查数据库重复）
-                validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap, keyToHeaderMap);
+            // 读取文件内容到字节数组（避免多次调用 getInputStream）
+            byte[] fileBytes;
+            try {
+                fileBytes = file.getBytes();
+            } catch (IOException e) {
+                throw new ServerException("读取上传文件失败", e);
             }
-        } catch (Exception e) {
-            log.error("读取 Excel 文件失败", e);
-            throw new ServerException("读取 Excel 文件失败", e);
-        }
+            if (fileBytes.length == 0) {
+                ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
+                        .createdCount(0)
+                        .updatedCount(0)
+                        .deletedCount(0)
+                        .errors(errors)
+                        .build();
+                AuditContext.setSpelVariable("excelImportResult", excelImportResult);
+                return excelImportResult;
+            }
 
-        // 3. 批量查询数据库中已存在的用户名、邮箱、手机号
-        Set<String> existUsernames = batchQueryExistingUsers(excelUsernames,
-                CommonUtil.extractFieldNameFromGetter(User::getUsername));
-        Set<String> existEmails = batchQueryExistingUsers(excelEmails,
-                CommonUtil.extractFieldNameFromGetter(User::getEmailAddress));
-        Set<String> existPhones = batchQueryExistingUsers(excelPhones,
-                CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber));
+            // 使用字节数组创建 InputStream
+            try (ByteArrayInputStream excelStream = new ByteArrayInputStream(fileBytes)) {
+                // 使用自定义处理器读取 Excel（支持中文标题映射）
+                UserExcelImportHandler handler = new UserExcelImportHandler(attrMap, dictValueToIdMap, excelStream);
+                // 获取字段 key -> 中文标题的映射（用于错误显示）
+                keyToHeaderMap = handler.getKeyToHeaderMap();
 
-        // 4. 检查新增/更新用户是否与数据库重复
-        List<ExcelImportErrorDto> dbDuplicateErrors = checkDbDuplicates(validData, existUsernames, existEmails,
-                existPhones, keyToHeaderMap);
-        errors.addAll(dbDuplicateErrors);
+                // 重置流位置（因为 UserExcelImportHandler 读取后位置已移动）
+                excelStream.reset();
+                EasyExcelFactory.read(excelStream)
+                        .registerReadListener(handler)
+                        .sheet(0)
+                        .headRowNumber(2) // 前两行是标题
+                        .doRead();
 
-        // 5. 如果有错误，不执行数据库操作
-        if (!errors.isEmpty()) {
+                // 获取读取的数据并处理
+                List<UserExcelImportDto> allData = handler.getDataList();
+                log.info("总共读取到 {} 条数据", allData.size());
+                for (int i = 0; i < allData.size(); i++) {
+                    UserExcelImportDto dto = allData.get(i);
+                    int rowNum = i + 3; // Excel 行号（第1、2行是标题，第3行开始是数据）
+
+                    // 收集 Excel 中的用户名、邮箱、手机号用于重复性检查
+                    collectExcelValues(dto, rowNum, excelUsernames, excelEmails, excelPhones, errors, keyToHeaderMap);
+
+                    // 验证并收集数据（暂不检查数据库重复）
+                    validateBasicRules(dto, rowNum, errors, validData, attrMap, dictValueToIdMap, keyToHeaderMap);
+                }
+            } catch (Exception e) {
+                log.error("读取 Excel 文件失败", e);
+                throw new ServerException("读取 Excel 文件失败", e);
+            }
+
+            // 3. 批量查询数据库中已存在的用户名、邮箱、手机号
+            Set<String> existUsernames = batchQueryExistingUsers(excelUsernames,
+                    CommonUtil.extractFieldNameFromGetter(User::getUsername));
+            Set<String> existEmails = batchQueryExistingUsers(excelEmails,
+                    CommonUtil.extractFieldNameFromGetter(User::getEmailAddress));
+            Set<String> existPhones = batchQueryExistingUsers(excelPhones,
+                    CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber));
+
+            // 4. 检查新增/更新用户是否与数据库重复
+            List<ExcelImportErrorDto> dbDuplicateErrors = checkDbDuplicates(validData, existUsernames, existEmails,
+                    existPhones, keyToHeaderMap);
+            errors.addAll(dbDuplicateErrors);
+
+            // 5. 如果有错误，不执行数据库操作
+            if (!errors.isEmpty()) {
+                ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
+                        .createdCount(0)
+                        .updatedCount(0)
+                        .deletedCount(0)
+                        .errors(errors)
+                        .build();
+                AuditContext.setSpelVariable("excelImportResult", excelImportResult);
+                return excelImportResult;
+            }
+
+            // 6. 批量执行数据库操作（只有所有数据校验通过才会执行到这里）
+            ImportStats stats = batchExecuteDatabaseOperations(validData, extAttrs, errors);
+
             ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
-                    .createdCount(0)
-                    .updatedCount(0)
-                    .deletedCount(0)
+                    .createdCount(stats.createdCount)
+                    .updatedCount(stats.updatedCount)
+                    .deletedCount(stats.deletedCount)
                     .errors(errors)
                     .build();
             AuditContext.setSpelVariable("excelImportResult", excelImportResult);
             return excelImportResult;
+        } finally {
+            if (lock.isLocked()) {
+                lock.unlock();
+            }
         }
-
-        // 6. 批量执行数据库操作（只有所有数据校验通过才会执行到这里）
-        ImportStats stats = batchExecuteDatabaseOperations(validData, extAttrs, errors);
-
-        ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
-                .createdCount(stats.createdCount)
-                .updatedCount(stats.updatedCount)
-                .deletedCount(stats.deletedCount)
-                .errors(errors)
-                .build();
-        AuditContext.setSpelVariable("excelImportResult", excelImportResult);
-        return excelImportResult;
     }
 
     /**

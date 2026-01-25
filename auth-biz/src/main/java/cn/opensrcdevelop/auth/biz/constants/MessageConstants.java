@@ -36,6 +36,7 @@ public class MessageConstants {
     public static final String USER_MSG_1000 = "user.msg.1000";
     public static final String USER_MSG_1001 = "user.msg.1001";
     public static final String USER_MSG_1002 = "user.msg.1002";
+    public static final String USER_MSG_1003 = "user.msg.1003";
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
     public static final String USER_GROUP_MSG_1001 = "user.group.msg.1001";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
