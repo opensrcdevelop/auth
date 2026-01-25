@@ -368,6 +368,18 @@ public class AuthUtil {
 
     private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value,
             UserAttrDataTypeEnum valueDataType) {
+        // IS_NULL 和 IS_NOT_NULL 需要特殊处理，使用 EXISTS/NOT EXISTS 判断属性记录是否存在
+        if (filterType == DataFilterEnum.IS_NULL) {
+            return String.format(
+                    "NOT EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
+                    attrKey);
+        }
+        if (filterType == DataFilterEnum.IS_NOT_NULL) {
+            return String.format(
+                    "EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
+                    attrKey);
+        }
+
         String queryKey = "t_user_attr.attr_key";
         String valueKey;
         // 日期、日期时间、数字类型进行 sql 类型强制转换为数值类型进行条件判断
@@ -395,8 +407,6 @@ public class AuthUtil {
             case GE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ge(valueKey, value));
             case LT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.lt(valueKey, value));
             case LE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.le(valueKey, value));
-            case IS_NULL -> queryWrapper.eq(queryKey, attrKey).and(o -> o.isNull(valueKey));
-            case IS_NOT_NULL -> queryWrapper.eq(queryKey, attrKey).and(o -> o.isNotNull(valueKey));
         }
 
         // 替换参数
@@ -404,15 +414,12 @@ public class AuthUtil {
         String paramName2 = "#{ew.paramNameValuePairs.MPGENVAL2}";
         String sqlSegment = queryWrapper.getSqlSegment();
         sqlSegment = sqlSegment.replace(paramName1, "'" + attrKey + "'");
-        // IS_NULL 和 IS_NOT_NULL 不需要替换 paramName2
-        if (filterType != DataFilterEnum.IS_NULL && filterType != DataFilterEnum.IS_NOT_NULL) {
-            if (value instanceof Number) {
-                sqlSegment = sqlSegment.replace(paramName2, value.toString());
-            } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)) {
-                sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
-            } else {
-                sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
-            }
+        if (value instanceof Number) {
+            sqlSegment = sqlSegment.replace(paramName2, value.toString());
+        } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)) {
+            sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
+        } else {
+            sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
         }
         return sqlSegment;
     }
