@@ -34,6 +34,7 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -532,11 +533,14 @@ public class UserExcelServiceImpl implements UserExcelService {
         Set<String> updateUserIds = CommonUtil.stream(validData)
                 .filter(dto -> dto.getOperationType() == 1)
                 .map(UserExcelImportDto::getUserId).collect(Collectors.toSet());
-        Map<String, User> updateUsers = userService.lambdaQuery()
-                .in(User::getUserId, updateUserIds)
-                .list()
-                .stream()
-                .collect(Collectors.toMap(User::getUserId, Function.identity()));
+        Map<String, User> updateUsers = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(updateUserIds)) {
+            updateUsers = userService.lambdaQuery()
+                    .in(User::getUserId, updateUserIds)
+                    .list()
+                    .stream()
+                    .collect(Collectors.toMap(User::getUserId, Function.identity()));
+        }
 
         for (int i = 0; i < validData.size(); i++) {
             UserExcelImportDto dto = validData.get(i);
