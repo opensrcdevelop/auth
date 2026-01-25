@@ -370,9 +370,13 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
     return;
   }
 
-  const filters = userListFilters.filters.filter(
-    (item) => item.key && item.filterType && item.value,
-  );
+  const filters = userListFilters.filters.filter((item) => {
+    // IS_NULL 和 IS_NOT_NULL 不需要值
+    if (item.filterType === "IS_NULL" || item.filterType === "IS_NOT_NULL") {
+      return item.key && item.filterType;
+    }
+    return item.key && item.filterType && item.value;
+  });
 
   getUserList(
     {
@@ -552,10 +556,14 @@ const handleDownloadTemplate = async () => {
 // 导出数据
 const handleExport = async (exportAll: boolean) => {
   try {
-    // 只传递有效的筛选条件（key、filterType、value 都不为空）
-    const filters = (userListFilters.filters || []).filter(
-      (item: any) => item.key && item.filterType && item.value,
-    );
+    // 只传递有效的筛选条件（key、filterType 都不为空，IS_NULL/IS_NOT_NULL 不需要 value）
+    const filters = (userListFilters.filters || []).filter((item: any) => {
+      // IS_NULL 和 IS_NOT_NULL 不需要值
+      if (item.filterType === "IS_NULL" || item.filterType === "IS_NOT_NULL") {
+        return item.key && item.filterType;
+      }
+      return item.key && item.filterType && item.value;
+    });
     // 如果导出当前页，提取当前页的用户 ID 列表
     const userIds = exportAll
       ? undefined

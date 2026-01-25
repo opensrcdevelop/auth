@@ -112,11 +112,20 @@
                       "
                       >小于</a-option
                     >
+                    <a-option
+                      value="IS_NULL"
+                      >为空</a-option
+                    >
+                    <a-option
+                      value="IS_NOT_NULL"
+                      >不为空</a-option
+                    >
                   </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="10">
                 <a-form-item
+                  v-if="filter.filterType !== 'IS_NULL' && filter.filterType !== 'IS_NOT_NULL'"
                   :field="`filters[${index}].value`"
                   hide-label
                   :rules="[{ required: true, message: '未输入 / 选择' }]"
@@ -173,6 +182,10 @@
                     :options="allDictDatas[filter.key]"
                     :field-names="{ value: 'id', label: 'label' }"
                   />
+                  <span
+                    v-if="filter.filterType === 'IS_NULL' || filter.filterType === 'IS_NOT_NULL'"
+                    class="no-value-hint"
+                  >无需输入</span>
                   <icon-minus-circle
                     class="remove-filter"
                     v-if="canRemove"

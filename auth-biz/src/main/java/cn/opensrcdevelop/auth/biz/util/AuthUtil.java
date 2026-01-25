@@ -16,6 +16,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
@@ -31,13 +37,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 认证工具
@@ -329,10 +328,14 @@ public class AuthUtil {
     public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterDto filter, ConjunctionType conjunction) {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         UserAttrDataTypeEnum dataType = UserAttrDataTypeEnum.valueOf(filter.getDataType());
+        // IS_NULL 和 IS_NOT_NULL 不需要值，直接传 null
+        Object value = (filterType == DataFilterEnum.IS_NULL || filterType == DataFilterEnum.IS_NOT_NULL)
+                ? null
+                : filter.getValue();
         if (Boolean.TRUE.equals(filter.getExtFlg())) {
-            editExistsQuery(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
+            editExistsQuery(queryWrapper, filterType, filter.getKey(), value, dataType, conjunction);
         } else {
-            editQueryCondition(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
+            editQueryCondition(queryWrapper, filterType, filter.getKey(), value, dataType, conjunction);
         }
     }
 
@@ -392,6 +395,8 @@ public class AuthUtil {
             case GE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ge(valueKey, value));
             case LT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.lt(valueKey, value));
             case LE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.le(valueKey, value));
+            case IS_NULL -> queryWrapper.eq(queryKey, attrKey).and(o -> o.isNull(valueKey));
+            case IS_NOT_NULL -> queryWrapper.eq(queryKey, attrKey).and(o -> o.isNotNull(valueKey));
         }
 
         // 替换参数
@@ -399,12 +404,15 @@ public class AuthUtil {
         String paramName2 = "#{ew.paramNameValuePairs.MPGENVAL2}";
         String sqlSegment = queryWrapper.getSqlSegment();
         sqlSegment = sqlSegment.replace(paramName1, "'" + attrKey + "'");
-        if (value instanceof Number) {
-            sqlSegment = sqlSegment.replace(paramName2, value.toString());
-        } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)) {
-            sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
-        } else {
-            sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
+        // IS_NULL 和 IS_NOT_NULL 不需要替换 paramName2
+        if (filterType != DataFilterEnum.IS_NULL && filterType != DataFilterEnum.IS_NOT_NULL) {
+            if (value instanceof Number) {
+                sqlSegment = sqlSegment.replace(paramName2, value.toString());
+            } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)) {
+                sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
+            } else {
+                sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
+            }
         }
         return sqlSegment;
     }
@@ -501,6 +509,20 @@ public class AuthUtil {
                     queryWrapper.or(q -> q.le(queryKey, queryValue));
                 } else {
                     queryWrapper.le(queryKey, queryValue);
+                }
+            }
+            case IS_NULL -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.isNull(queryKey));
+                } else {
+                    queryWrapper.isNull(queryKey);
+                }
+            }
+            case IS_NOT_NULL -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.isNotNull(queryKey));
+                } else {
+                    queryWrapper.isNotNull(queryKey);
                 }
             }
         }
