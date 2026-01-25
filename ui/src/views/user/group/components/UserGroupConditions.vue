@@ -186,9 +186,9 @@
                         />
                       </a-form-item>
                     </template>
-                    <template v-else>
+                    <div v-else class="no-value-hint-wrapper">
                       <span class="no-value-hint">无需输入</span>
-                    </template>
+                    </div>
                   </div>
                   <icon-minus-circle
                     class="remove-filter"
@@ -478,8 +478,10 @@ defineExpose({
 
     .filter-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       width: 100%;
+      position: relative;
+      padding-right: 24px;
 
       .filter-content {
         flex: 1;
@@ -489,7 +491,6 @@ defineExpose({
 
         .arco-form-item {
           margin-bottom: 0;
-          width: 100%;
         }
       }
 
@@ -497,16 +498,20 @@ defineExpose({
         color: #86909c;
         font-size: 14px;
         margin-left: 8px;
+      }
+
+      .no-value-hint-wrapper {
+        height: 32px;
         line-height: 32px;
       }
 
       .remove-filter {
         color: #86909c;
         cursor: pointer;
-        margin-left: 8px;
         font-size: 16px;
-        flex-shrink: 0;
-        line-height: 32px;
+        position: absolute;
+        right: 0;
+        top: 6px;
       }
     }
 

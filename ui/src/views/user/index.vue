@@ -228,9 +228,9 @@ export default userTs;
                               />
                             </a-form-item>
                           </template>
-                          <template v-else>
+                          <div v-else class="no-value-hint-wrapper">
                             <span class="no-value-hint">无需输入</span>
-                          </template>
+                          </div>
                         </div>
                         <icon-minus-circle
                           class="remove-filter"
