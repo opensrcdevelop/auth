@@ -164,76 +164,80 @@ export default userTs;
                       </a-form-item>
                     </a-col>
                     <a-col :span="10">
-                      <a-form-item
-                        v-if="filter.filterType !== 'IS_NULL' && filter.filterType !== 'IS_NOT_NULL'"
-                        :field="`filters[${index}].value`"
-                        hide-label
-                        :rules="[{ required: true, message: '未输入 / 选择' }]"
-                      >
-                        <a-input-number
-                          v-if="filter.dataType === 'NUMBER'"
-                          hide-button
-                          v-model="filter.value"
-                          placeholder="请输入"
-                        />
-                        <a-input
-                          v-if="filter.dataType === 'STRING'"
-                          v-model="filter.value"
-                          placeholder="请输入"
-                        />
-                        <a-select
-                          v-if="filter.dataType === 'BOOLEAN'"
-                          v-model="filter.value"
-                          placeholder="请选择"
-                        >
-                          <a-option value="true">是</a-option>
-                          <a-option value="false">否</a-option>
-                        </a-select>
-                        <a-date-picker
-                          v-if="filter.dataType === 'DATETIME'"
-                          show-time
-                          value-format="timestamp"
-                          v-model="filter.value"
-                        />
-                        <a-date-picker
-                          v-if="filter.dataType === 'DATE'"
-                          value-format="timestamp"
-                          v-model="filter.value"
-                        />
-                        <a-select
-                          v-if="
-                            filter.dataType === 'DICT' && !filter.cascadeDict
-                          "
-                          v-model="filter.value"
-                          placeholder="请选择"
-                        >
-                          <a-option
-                            :value="dictData.id"
-                            v-for="dictData in allDictDatas[filter.key]"
-                            :key="dictData.id"
-                            >{{ dictData.label }}</a-option
-                          >
-                        </a-select>
-                        <a-cascader
-                          v-if="
-                            filter.dataType === 'DICT' && filter.cascadeDict
-                          "
-                          v-model="filter.value"
-                          placeholder="请选择"
-                          expand-trigger="hover"
-                          :options="allDictDatas[filter.key]"
-                          :field-names="{ value: 'id', label: 'label' }"
-                        />
-                        <span
-                          v-if="filter.filterType === 'IS_NULL' || filter.filterType === 'IS_NOT_NULL'"
-                          class="no-value-hint"
-                        >无需输入</span>
+                      <div class="filter-row">
+                        <div class="filter-content">
+                          <template v-if="filter.filterType !== 'IS_NULL' && filter.filterType !== 'IS_NOT_NULL'">
+                            <a-form-item
+                              :field="`filters[${index}].value`"
+                              hide-label
+                              :rules="[{ required: true, message: '未输入 / 选择' }]"
+                            >
+                              <a-input-number
+                                v-if="filter.dataType === 'NUMBER'"
+                                hide-button
+                                v-model="filter.value"
+                                placeholder="请输入"
+                              />
+                              <a-input
+                                v-if="filter.dataType === 'STRING'"
+                                v-model="filter.value"
+                                placeholder="请输入"
+                              />
+                              <a-select
+                                v-if="filter.dataType === 'BOOLEAN'"
+                                v-model="filter.value"
+                                placeholder="请选择"
+                              >
+                                <a-option value="true">是</a-option>
+                                <a-option value="false">否</a-option>
+                              </a-select>
+                              <a-date-picker
+                                v-if="filter.dataType === 'DATETIME'"
+                                show-time
+                                value-format="timestamp"
+                                v-model="filter.value"
+                              />
+                              <a-date-picker
+                                v-if="filter.dataType === 'DATE'"
+                                value-format="timestamp"
+                                v-model="filter.value"
+                              />
+                              <a-select
+                                v-if="
+                                  filter.dataType === 'DICT' && !filter.cascadeDict
+                                "
+                                v-model="filter.value"
+                                placeholder="请选择"
+                              >
+                                <a-option
+                                  :value="dictData.id"
+                                  v-for="dictData in allDictDatas[filter.key]"
+                                  :key="dictData.id"
+                                  >{{ dictData.label }}</a-option
+                                >
+                              </a-select>
+                              <a-cascader
+                                v-if="
+                                  filter.dataType === 'DICT' && filter.cascadeDict
+                                "
+                                v-model="filter.value"
+                                placeholder="请选择"
+                                expand-trigger="hover"
+                                :options="allDictDatas[filter.key]"
+                                :field-names="{ value: 'id', label: 'label' }"
+                              />
+                            </a-form-item>
+                          </template>
+                          <template v-else>
+                            <span class="no-value-hint">无需输入</span>
+                          </template>
+                        </div>
                         <icon-minus-circle
                           class="remove-filter"
                           v-if="userListFilters.filters.length > 1"
                           @click="handleRemoveUserListFilter(index)"
                         />
-                      </a-form-item>
+                      </div>
                     </a-col>
                   </a-row>
                   <a-form-item hide-label>
