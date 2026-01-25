@@ -16,11 +16,6 @@ export default userTs;
         <div class="info">对用户进行统一管理。</div>
       </div>
       <a-space>
-        <a-button @click="handleDownloadTemplate">下载模版</a-button>
-        <a-button @click="handleExport(false)">导出当前页</a-button>
-        <a-button @click="handleExport(true)">导出全部</a-button>
-        <a-button @click="handleImportClick">导入数据</a-button>
-        <input type="file" ref="fileInputRef" style="display: none" accept=".xlsx,.xls" @change="handleFileChange" />
         <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
       </a-space>
     </div>
@@ -36,10 +31,18 @@ export default userTs;
             @keyup.enter.native="handleGetUserList(1, 15)"
             @clear="handleSearchUserClear"
           />
-          <a-trigger trigger="click" :popup-offset="8" @hide="handleUserListFilterHide">
+          <a-trigger
+            trigger="click"
+            :popup-offset="8"
+            @hide="handleUserListFilterHide"
+          >
             <a-button>
               <template #icon>
-                <icon-font type="icon-filter-fill" style="font-size: 16px;" v-if="userListFilterd" />
+                <icon-font
+                  type="icon-filter-fill"
+                  style="font-size: 16px"
+                  v-if="userListFilterd"
+                />
                 <icon-filter v-else />
               </template>
             </a-button>
@@ -74,7 +77,7 @@ export default userTs;
                             :value="column.key"
                             :disabled="
                               userListFilters.filters.some(
-                                (item) => item.key === column.key
+                                (item) => item.key === column.key,
                               )
                             "
                           >
@@ -135,7 +138,7 @@ export default userTs;
                             value="GT"
                             v-if="
                               ['NUMBER', 'DATETIME', 'DATE'].includes(
-                                filter.dataType
+                                filter.dataType,
                               )
                             "
                             >大于</a-option
@@ -144,7 +147,7 @@ export default userTs;
                             value="LT"
                             v-if="
                               ['NUMBER', 'DATETIME', 'DATE'].includes(
-                                filter.dataType
+                                filter.dataType,
                               )
                             "
                             >小于</a-option
@@ -339,6 +342,39 @@ export default userTs;
             </template>
           </a-trigger>
         </a-space>
+        <a-space>
+          <a-dropdown>
+            <a-button>
+              <template #icon>
+                <icon-import />
+              </template>
+              导入
+            </a-button>
+            <template #content>
+              <a-doption @click="handleDownloadTemplate"> 下载模版 </a-doption>
+              <a-doption @click="handleImportClick">导入数据 </a-doption>
+            </template>
+          </a-dropdown>
+          <a-dropdown>
+            <a-button>
+              <template #icon>
+                <icon-export />
+              </template>
+              导出</a-button
+            >
+            <template #content>
+              <a-doption @click="handleExport(false)"> 导出当前页 </a-doption>
+              <a-doption @click="handleExport(true)">导出全部 </a-doption>
+            </template>
+          </a-dropdown>
+          <input
+            type="file"
+            ref="fileInputRef"
+            style="display: none"
+            accept=".xlsx,.xls"
+            @change="handleFileChange"
+          />
+        </a-space>
       </div>
       <a-table
         :bordered="false"
@@ -434,7 +470,9 @@ export default userTs;
     >
       <a-result
         :status="importResult.errors.length > 0 ? 'warning' : 'success'"
-        :title="importResult.errors.length > 0 ? `数据校验失败，无法导入` : '导入成功'"
+        :title="
+          importResult.errors.length > 0 ? `数据校验失败，无法导入` : '导入成功'
+        "
       >
         <template #extra>
           <a-table
@@ -448,13 +486,23 @@ export default userTs;
             <template #columns>
               <a-table-column title="行号" data-index="row" :width="80" />
               <a-table-column title="列名" data-index="column" :width="120" />
-              <a-table-column title="错误信息" data-index="message" :width="400" />
+              <a-table-column
+                title="错误信息"
+                data-index="message"
+                :width="400"
+              />
             </template>
           </a-table>
           <a-descriptions v-else bordered :column="1">
-            <a-descriptions-item label="创建用户数量">{{ importResult.createdCount }}</a-descriptions-item>
-            <a-descriptions-item label="更新用户数量">{{ importResult.updatedCount }}</a-descriptions-item>
-            <a-descriptions-item label="删除用户数量">{{ importResult.deletedCount }}</a-descriptions-item>
+            <a-descriptions-item label="创建用户数量">{{
+              importResult.createdCount
+            }}</a-descriptions-item>
+            <a-descriptions-item label="更新用户数量">{{
+              importResult.updatedCount
+            }}</a-descriptions-item>
+            <a-descriptions-item label="删除用户数量">{{
+              importResult.deletedCount
+            }}</a-descriptions-item>
           </a-descriptions>
         </template>
       </a-result>
