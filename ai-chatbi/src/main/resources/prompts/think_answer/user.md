@@ -25,32 +25,22 @@ The following are the user's previous questions in this conversation for context
 </#list>
 </#if>
 
+### Multiple SQL Execution Support
+You can generate and execute multiple SQL queries in a single conversation. If more data is needed to answer the user's question:
+1. Generate a new SQL query based on the current data analysis needs
+2. Execute the SQL to get additional data
+3. Use the new data along with previous results to form a complete answer
+
 ### Decision Criteria
-1. **Sufficient Results**: If all tool execution results are sufficient to answer the question, output the final answer.
-2. **Insufficient Results with No Next Step**: If tool execution results are insufficient to answer the question AND there is no logical next tool to execute, output the final answer with clear explanation of why it cannot be answered.
-3. **Next Step Available**: If results are insufficient but there is a logical next tool to execute, proceed with the next tool .
+1. **Output Final Answer**: If you have gathered enough data to answer the question, OR if no more useful data can be obtained, output the final answer.
+2. **Generate/Execute More SQL**: If you can generate a new SQL query that would provide additional useful data, proceed with generate_sql tool.
 
-### Insufficient Results Assessment
-Consider results insufficient when:
-- All executed tools returned failure status
-- Critical data is missing from successful tool results
-- Tool results contradict each other
-- Required information for answering is not available in any tool result
-- Maximum retry attempts have been exhausted without success
-
-### No Next Step Conditions
-Consider no next step available when:
-- All relevant tools have been executed and retried
-- No additional tools can provide the missing information
-- Question requires capabilities beyond available tools
-- Data source limitations prevent further analysis
-
-### Final Answer Requirements for Insufficient Results
-When outputting final answer due to insufficient results:
-- Clearly state that the question cannot be answered with available tools and data
-- Specify the specific reasons why it cannot be answered
-- List the limitations encountered (e.g., missing data, tool failures, etc.)
-- Provide helpful suggestions if possible (e.g., rephrase question, check data availability)
+### When to Output Final Answer
+Output the final answer when ANY of the following is true:
+- You have sufficient data to answer the user's question
+- You have tried multiple SQL queries but cannot get more useful data
+- The data source doesn't contain information to answer the question
+- Maximum tool execution attempts have been reached
 
 ### Tool Execution Results
 <#if tool_execution_results??>
@@ -70,8 +60,8 @@ ${raw_question}
 
 ### Decision Output
 Based on the above analysis, either:
-- Output the final answer (use Final Answer Format) if results are sufficient OR insufficient with no next step, 
-- Select the next tool to execute (use Tool Calling Result Format) if results are insufficient but next step is available
+- Output the final answer (use Final Answer Format) - Prefer this option when data is sufficient or no more useful data can be obtained
+- Generate a new SQL query (use Tool Calling Result Format with generate_sql) - Only if you believe another query would provide additional useful data
 
 </#if>
 
