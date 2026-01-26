@@ -192,8 +192,35 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setRepTokens(ChatContextHolder.getChatContext().getRepTokens().get());
 
         // 3.1 直接回答
+        String answerText = null;
         if (answer.containsKey("final_answer")) {
-            String answerText = (String) answer.get("final_answer");
+            Object finalAnswerValue = answer.get("final_answer");
+            if (finalAnswerValue instanceof String) {
+                answerText = (String) finalAnswerValue;
+            } else if (finalAnswerValue instanceof Map) {
+                // 如果 final_answer 被解析为 Map，尝试获取 content 或 text 字段
+                Map<String, Object> finalAnswerMap = (Map<String, Object>) finalAnswerValue;
+                if (finalAnswerMap.containsKey("content")) {
+                    Object content = finalAnswerMap.get("content");
+                    answerText = content instanceof String ? (String) content : content.toString();
+                } else if (finalAnswerMap.containsKey("text")) {
+                    Object text = finalAnswerMap.get("text");
+                    answerText = text instanceof String ? (String) text : text.toString();
+                } else {
+                    answerText = finalAnswerMap.toString();
+                }
+            }
+        } else if (answer.containsKey("content")) {
+            // final_answer 已被解析，content 在外层
+            Object content = answer.get("content");
+            answerText = content instanceof String ? (String) content : content.toString();
+        } else if (answer.containsKey("text")) {
+            // final_answer 已被解析，text 在外层
+            Object text = answer.get("text");
+            answerText = text instanceof String ? (String) text : text.toString();
+        }
+
+        if (answerText != null) {
             chatAnswer.setAnswer(answerText);
             SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 500);
         }
