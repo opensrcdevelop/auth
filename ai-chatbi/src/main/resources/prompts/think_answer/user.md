@@ -2,11 +2,28 @@
 
 Based on the following question, consider the execution of the first step.
 
+### Historical Questions
+<#if historical_questions?? && historical_questions?size gt 0>
+<#list historical_questions as histQuestion>
+
+- ${histQuestion}
+</#list>
+</#if>
+
 Question: ${question}
 
 <#else>
 
 Analyze the below tool execution results and the raw user question to determine the next step.
+
+### Historical Questions
+<#if historical_questions?? && historical_questions?size gt 0>
+The following are the user's previous questions in this conversation for context:
+<#list historical_questions as histQuestion>
+
+- ${histQuestion}
+</#list>
+</#if>
 
 ### Decision Criteria
 1. **Sufficient Results**: If all tool execution results are sufficient to answer the question, output the final answer.

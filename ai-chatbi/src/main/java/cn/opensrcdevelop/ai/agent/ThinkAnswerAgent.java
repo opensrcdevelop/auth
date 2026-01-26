@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -46,6 +47,48 @@ public class ThinkAnswerAgent {
     private final PromptTemplate promptTemplate;
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
+
+    /** JSON 模式检测正则：检测 { "key": value } 或类似的 JSON 对象模式 */
+    private static final Pattern JSON_OBJECT_PATTERN = Pattern.compile(
+            "\\{[\\s]*\"[^\"]+\"[\\s]*:[^}]*\\}", Pattern.CASE_INSENSITIVE);
+
+    /** 检测文本中是否包含 JSON 对象模式（不在代码块中） */
+    private boolean containsJsonPattern(String text) {
+        if (text == null) {
+            return false;
+        }
+        // 排除代码块中的内容
+        String[] lines = text.split("\n");
+        boolean inCodeBlock = false;
+        StringBuilder currentLine = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            // 检查代码块标记
+            if (line.trim().startsWith("```")) {
+                inCodeBlock = !inCodeBlock;
+                continue;
+            }
+            if (inCodeBlock) {
+                continue;
+            }
+            // 检测 JSON 模式
+            if (JSON_OBJECT_PATTERN.matcher(line.trim()).find()) {
+                // 排除明显不是 JSON 的情况，如 "{思考内容}"
+                String trimmed = line.trim();
+                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    // 可能是 final_answer 或 tool call，视为 JSON
+                    return true;
+                }
+                // 检测 name:, parameters:, final_answer: 等模式
+                if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
+                        || trimmed.contains("\"final_answer\"") || trimmed.contains("\"chart\"")
+                        || trimmed.contains("\"report\"")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     /**
      * 思考并回答用户提问
@@ -114,7 +157,8 @@ public class ThinkAnswerAgent {
                     if (outputText != null) {
                         fullOutput.append(outputText);
                     }
-                    if (outputText != null && outputText.contains("```")) {
+                    // 检测是否包含 JSON 内容（代码块或 JSON 模式）
+                    if (outputText != null && (outputText.contains("```") || containsJsonPattern(outputText))) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
@@ -147,10 +191,17 @@ public class ThinkAnswerAgent {
     }
 
     private Prompt getPrompt(String question) {
+        // 获取会话历史用户消息
+        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
+                ChatContextHolder.getChatContext().getChatId());
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
+                .param("historical_questions", CollectionUtils.isEmpty(historicalQuestions)
+                        ? new ArrayList<>()
+                        : new ArrayList<>(historicalQuestions))
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults());
         Prompt.Builder builder = Prompt.builder();
