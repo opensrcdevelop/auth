@@ -216,23 +216,26 @@ public class ThinkAnswerAgent {
     @SuppressWarnings("all")
     private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
-        String toolName = toolCall.get("name").toString();
-        String parameters = toolCall.get("parameters").toString();
+        Object toolNameObj = toolCall.get("name");
+        Object parametersObj = toolCall.get("parameters");
 
-        if (Objects.isNull(toolName)) {
+        if (Objects.isNull(toolNameObj)) {
             toolCallResult = Map.of(
                     "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
 
-        if (Objects.isNull(parameters)) {
+        if (Objects.isNull(parametersObj)) {
             toolCallResult = Map.of(
                     "error",
                     "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
+
+        String toolName = toolNameObj.toString();
+        String parameters = parametersObj.toString();
 
         String executeTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
@@ -359,7 +362,7 @@ public class ThinkAnswerAgent {
             if (Objects.isNull(chatContext.getReqTokens())) {
                 chatContext.setReqTokens(new AtomicInteger(reqTokens));
             } else {
-                chatContext.getRepTokens().getAndAdd(reqTokens);
+                chatContext.getReqTokens().getAndAdd(reqTokens);
             }
 
             if (Objects.isNull(chatContext.getRepTokens())) {

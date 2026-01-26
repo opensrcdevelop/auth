@@ -206,4 +206,28 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 .eq(TableField::getToUse, false));
         return CommonUtil.stream(forbiddenFields).map(TableField::getFieldName).toList();
     }
+
+    /**
+     * 获取表的字段定义
+     *
+     * @param tableId
+     *            表ID
+     * @return 表的字段定义
+     */
+    @Override
+    public List<Map<String, Object>> getTableFields(String tableId) {
+        List<TableField> tableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+                .eq(TableField::getTableId, tableId)
+                .eq(TableField::getToUse, true));
+
+        return CommonUtil.stream(tableFields).map(x -> {
+            Map<String, Object> fieldDescription = new HashMap<>();
+            fieldDescription.put("field_name", x.getFieldName());
+            fieldDescription.put("field_data_type", x.getFieldType());
+            fieldDescription.put("description", x.getRemark() == null ? "No description available" : x.getRemark());
+            fieldDescription.put("additional_info",
+                    x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
+            return fieldDescription;
+        }).toList();
+    }
 }

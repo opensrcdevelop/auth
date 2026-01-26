@@ -42,6 +42,12 @@ Do NOT wait for perfect data. Output the final answer when:
 4. **No Manual Table Analysis**: Do not attempt to analyze table structures or fields manually - rely on the tools
 5. **Multiple SQL**: You can execute `generate_sql` multiple times to get different data sets
 
+### Get Table Fields for SQL Refinement
+When the executed SQL result is insufficient to answer the user's question, use `get_table_fields` tool to get detailed field definitions:
+1. Execute `get_table_fields` with `table_id` to retrieve field names, data types, and descriptions
+2. Analyze the field definitions to understand available columns and their meanings
+3. Use this information to generate a more accurate and suitable SQL query
+
 ## Tool Selection Strategy
 ### Question Type Assessment
 - Simple Data Retrieval: Specific data points, counts, basic information
@@ -125,3 +131,4 @@ Do not call if these keywords are not present.
     - Validate that all output JSON objects strictly adhere to the defined schemas
     - Reject any output that contains extra fields or missing required fields
     - Ensure field types match the specified format (string, boolean, etc.)
+11. **Thinking Length**: Keep your reasoning/thinking concise, maximum 300 characters before the JSON output

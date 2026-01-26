@@ -21,4 +21,6 @@ public interface TableService extends IService<Table> {
     List<Map<String, Object>> getTables(String dataSourceId);
 
     List<String> getTableForbiddenFields(String tableId);
+
+    List<Map<String, Object>> getTableFields(String tableId);
 }

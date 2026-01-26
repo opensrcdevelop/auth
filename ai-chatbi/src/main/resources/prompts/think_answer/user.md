@@ -67,3 +67,4 @@ Based on the above analysis, either:
 
 ### Mandatory Matters
 - The thinking part of the output format cannot contain any Markdown characters('`', '*', '#').
+- Keep your thinking/reasoning concise, maximum 300 characters.
