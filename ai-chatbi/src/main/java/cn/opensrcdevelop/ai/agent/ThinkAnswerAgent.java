@@ -322,6 +322,31 @@ public class ThinkAnswerAgent {
         Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json,
                 new TypeReference<Map<String, Object>>() {
                 });
+
+        // 处理 final_answer 字段值可能是 JSON 字符串的情况
+        if (jsonMap.containsKey("final_answer")) {
+            Object finalAnswerValue = jsonMap.get("final_answer");
+            if (finalAnswerValue instanceof String) {
+                String answerStr = (String) finalAnswerValue;
+                // 如果 final_answer 值是 JSON 字符串，尝试解析
+                if (answerStr.trim().startsWith("{") && answerStr.trim().endsWith("}")) {
+                    try {
+                        Map<String, Object> nestedJson = CommonUtil.nonJdkDeserializeObject(answerStr,
+                                new TypeReference<Map<String, Object>>() {
+                                });
+                        // 将解析后的 JSON 扁平化，把嵌套的内容放到外层
+                        for (Map.Entry<String, Object> entry : nestedJson.entrySet()) {
+                            jsonMap.put(entry.getKey(), entry.getValue());
+                        }
+                        jsonMap.remove("final_answer");
+                    } catch (Exception e) {
+                        // 解析失败，保持原样
+                        log.debug("Failed to parse nested JSON in final_answer: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+
         return Tuple.of(reason, jsonMap);
     }
 
