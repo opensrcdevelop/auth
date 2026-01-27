@@ -124,8 +124,11 @@ public class ThinkAnswerAgent {
 
             String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
+            String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
-            chatMessageHistoryService.createChatMessageHistory(parseResult._1(), ChatContentType.THINKING);
+            chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
+            // 保存思考内容到上下文，供下一轮使用
+            saveThinkingContent(thinkingContent);
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
@@ -195,6 +198,9 @@ public class ThinkAnswerAgent {
         List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
                 ChatContextHolder.getChatContext().getChatId());
 
+        // 获取上一轮的思考内容
+        String previousThinking = ChatContextHolder.getChatContext().getPreviousThinking();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -203,7 +209,8 @@ public class ThinkAnswerAgent {
                         ? new ArrayList<>()
                         : new ArrayList<>(historicalQuestions))
                 .param("tool_definitions", getToolDefinitions())
-                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults());
+                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
+                .param("previous_thinking", previousThinking != null ? previousThinking : "");
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -306,6 +313,16 @@ public class ThinkAnswerAgent {
             chatContext.setToolCallResults(new ArrayList<>());
         }
         chatContext.getToolCallResults().addFirst(toolCallResult);
+    }
+
+    /**
+     * 保存思考内容到上下文，供下一轮推理使用 只保留上一轮的思考内容
+     *
+     * @param thinkingContent
+     *            思考内容
+     */
+    private void saveThinkingContent(String thinkingContent) {
+        ChatContextHolder.getChatContext().setPreviousThinking(thinkingContent);
     }
 
     private Tuple2<String, Map<String, Object>> parseLlmResult(String llmResult) {

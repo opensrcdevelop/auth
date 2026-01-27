@@ -47,5 +47,8 @@ public class ChatContext {
 
     private List<Map<String, Object>> toolCallResults;
 
+    /** 上一轮的思考内容，用于连贯推理 */
+    private String previousThinking;
+
     private Boolean terminated = false;
 }

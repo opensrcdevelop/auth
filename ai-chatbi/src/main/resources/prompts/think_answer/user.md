@@ -55,6 +55,11 @@ Output the final answer when ANY of the following is true:
 
 </#if>
 
+### Previous Thinking
+<#if previous_thinking?? && previous_thinking != "">
+Your previous thinking: ${previous_thinking}
+</#if>
+
 ### Raw User Question
 ${raw_question}
 
