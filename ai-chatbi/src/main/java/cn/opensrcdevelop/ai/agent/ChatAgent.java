@@ -4,6 +4,8 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,37 +84,36 @@ public class ChatAgent {
     }
 
     /**
-     * 批量判断历史问题与当前问题的关联性，返回相关的问题-SQL 对
+     * 批量判断历史问题与当前问题的关联性，返回相关的 answerId 列表
      *
      * @param chatClient
      *            ChatClient
      * @param currentQuestion
      *            当前问题
-     * @param historicalPairs
-     *            历史问题-SQL 对列表
+     * @param historicalAnswers
+     *            历史回答列表（包含 answerId 和 question）
      * @param maxSamples
      *            返回的最大数量
-     * @return 相关的问题-SQL 对列表
+     * @return 相关的 answerId 列表
      */
-    public List<Map<String, String>> filterRelatedHistoricalAnswers(ChatClient chatClient,
+    public List<String> filterRelatedHistoricalAnswers(ChatClient chatClient,
             String currentQuestion,
-            List<Map<String, String>> historicalPairs,
+            List<Map<String, String>> historicalAnswers,
             int maxSamples) {
-        if (historicalPairs == null || historicalPairs.isEmpty()) {
+        if (historicalAnswers == null || historicalAnswers.isEmpty()) {
             return new ArrayList<>();
         }
 
         // 构建批量判断的提示词
         StringBuilder sb = new StringBuilder();
         sb.append("当前问题: ").append(currentQuestion).append("\n\n");
-        sb.append("历史问题-SQL 对:\n");
-        for (int i = 0; i < historicalPairs.size(); i++) {
-            Map<String, String> pair = historicalPairs.get(i);
-            sb.append(i + 1).append(". 问题: ").append(pair.get("question")).append("\n");
-            sb.append("   SQL: ").append(pair.get("sql")).append("\n\n");
+        sb.append("历史回答列表:\n");
+        for (int i = 0; i < historicalAnswers.size(); i++) {
+            Map<String, String> answer = historicalAnswers.get(i);
+            sb.append(i + 1).append(". ").append(answer.get("question")).append("\n");
         }
-        sb.append("请判断上述哪些历史问题与当前问题语义相关，返回相关的问题-SQL 对（最多").append(maxSamples).append("个）。\n");
-        sb.append("只返回 JSON 数组格式，例如: [{\"question\": \"问题1\", \"sql\": \"SQL1\"}, ...]\n");
+        sb.append("请判断上述哪些历史问题与当前问题语义相关，返回相关的序号（最多").append(maxSamples).append("个）。\n");
+        sb.append("只返回 JSON 数组格式，例如: [1, 3, 5]\n");
         sb.append("如果不相关，返回空数组: []");
 
         try {
@@ -122,35 +123,35 @@ public class ChatAgent {
                     .call()
                     .content();
 
-            // 解析返回的 JSON 数组
-            return parseRelatedHistoricalAnswers(result, maxSamples);
+            // 解析返回的序号数组
+            return parseRelatedAnswerIds(result, historicalAnswers, maxSamples);
         } catch (Exception e) {
             return new ArrayList<>();
         }
     }
 
-    private List<Map<String, String>> parseRelatedHistoricalAnswers(String result, int maxSamples) {
-        List<Map<String, String>> related = new ArrayList<>();
+    private List<String> parseRelatedAnswerIds(String result, List<Map<String, String>> historicalAnswers,
+            int maxSamples) {
+        List<String> relatedAnswerIds = new ArrayList<>();
         try {
-            // 简单解析 JSON 数组
+            // 简单解析 JSON 数组（序号）
             result = result.trim();
             if (result.startsWith("[")) {
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                List<Map<String, String>> parsed = mapper.readValue(result,
-                        new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, String>>>() {
-                        });
-                for (Map<String, String> item : parsed) {
-                    if (related.size() >= maxSamples) {
+                ObjectMapper mapper = new ObjectMapper();
+                List<Integer> parsed = mapper.readValue(result, new TypeReference<List<Integer>>() {
+                });
+                for (Integer index : parsed) {
+                    if (relatedAnswerIds.size() >= maxSamples) {
                         break;
                     }
-                    if (item.containsKey("question") && item.containsKey("sql")) {
-                        related.add(item);
+                    if (index > 0 && index <= historicalAnswers.size()) {
+                        relatedAnswerIds.add(historicalAnswers.get(index - 1).get("answerId"));
                     }
                 }
             }
         } catch (Exception e) {
             // 解析失败返回空列表
         }
-        return related;
+        return relatedAnswerIds;
     }
 }

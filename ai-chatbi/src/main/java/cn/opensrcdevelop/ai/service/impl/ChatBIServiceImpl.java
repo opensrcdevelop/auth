@@ -366,23 +366,58 @@ public class ChatBIServiceImpl implements ChatBIService {
     private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
             ChatClient chatClient) {
         try {
-            // 获取历史 LIKE 回答
-            List<SampleSqlDto> historicalAnswers = chatAnswerService.getHistoricalAnswers(dataSourceId, 10);
+            // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
+            List<ChatAnswer> historicalAnswers = getHistoricalAnswersWithAnswerId(dataSourceId, 500);
             if (historicalAnswers.isEmpty()) {
                 return new ArrayList<>();
             }
 
-            // 转换为 Map 列表
-            List<Map<String, String>> pairs = new ArrayList<>();
-            for (SampleSqlDto dto : historicalAnswers) {
-                pairs.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
+            // 2. 转换为 Map 列表（只包含 answerId 和 question）
+            List<Map<String, String>> answerMaps = new ArrayList<>();
+            for (ChatAnswer answer : historicalAnswers) {
+                answerMaps.add(Map.of("answerId", answer.getAnswerId(), "question", answer.getQuestion()));
             }
 
-            // 让 Agent 判断相关性
-            return chatAgent.filterRelatedHistoricalAnswers(chatClient, currentQuestion, pairs, 5);
+            // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
+            List<String> relatedAnswerIds = chatAgent.filterRelatedHistoricalAnswers(
+                    chatClient, currentQuestion, answerMaps, 5);
+
+            if (relatedAnswerIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            // 4. 根据 answerId 查询对应的 SQL
+            List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
+
+            // 5. 转换为 Map 列表返回
+            List<Map<String, String>> result = new ArrayList<>();
+            for (SampleSqlDto dto : sampleSqls) {
+                result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
+            }
+
+            return result;
         } catch (Exception e) {
             log.error("获取示例 SQL 失败", e);
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * 获取历史回答列表（包含 answerId 和 question）
+     *
+     * @param dataSourceId
+     *            数据源ID
+     * @param limit
+     *            返回数量限制
+     * @return 历史回答列表
+     */
+    private List<ChatAnswer> getHistoricalAnswersWithAnswerId(String dataSourceId, int limit) {
+        return chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
+                .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
+                .eq(ChatAnswer::getDataSourceId, dataSourceId)
+                .eq(ChatAnswer::getFeedback, "LIKE")
+                .isNotNull(ChatAnswer::getSql)
+                .ne(ChatAnswer::getSql, "")
+                .last("LIMIT " + limit));
     }
 }

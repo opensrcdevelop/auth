@@ -75,7 +75,7 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
         }
 
         List<ChatAnswer> likedAnswers = super.list(Wrappers.<ChatAnswer>lambdaQuery()
-                .select(ChatAnswer::getQuestion, ChatAnswer::getSql)
+                .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion, ChatAnswer::getSql)
                 .eq(ChatAnswer::getDataSourceId, dataSourceId)
                 .eq(ChatAnswer::getFeedback, "LIKE")
                 .isNotNull(ChatAnswer::getSql)
@@ -117,5 +117,47 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
         // 该方法已废弃，由 Agent 判断关联性
         // 使用 getHistoricalAnswers 获取历史回答，由 ChatAgent 判断相关性
         return getHistoricalAnswers(dataSourceId, limit);
+    }
+
+    /**
+     * 根据 answerId 列表查询对应的 SQL
+     *
+     * @param answerIds
+     *            回答ID列表
+     * @return 示例 SQL 列表
+     */
+    @Override
+    public List<SampleSqlDto> getSqlsByAnswerIds(List<String> answerIds) {
+        if (answerIds == null || answerIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<ChatAnswer> answers = super.list(Wrappers.<ChatAnswer>lambdaQuery()
+                .select(ChatAnswer::getQuestion, ChatAnswer::getSql)
+                .in(ChatAnswer::getAnswerId, answerIds));
+
+        if (answers.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 按 answerId 列表的顺序返回结果
+        List<SampleSqlDto> result = new ArrayList<>();
+        for (String answerId : answerIds) {
+            for (ChatAnswer answer : answers) {
+                if (answerId.equals(answer.getAnswerId())) {
+                    String sql = answer.getSql();
+                    if (StringUtils.isNotEmpty(sql)) {
+                        sql = SqlFormatter.standard().format(sql);
+                    }
+                    result.add(SampleSqlDto.builder()
+                            .question(answer.getQuestion())
+                            .sql(sql)
+                            .build());
+                    break;
+                }
+            }
+        }
+
+        return result;
     }
 }

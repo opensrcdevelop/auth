@@ -35,4 +35,13 @@ public interface ChatAnswerService extends IService<ChatAnswer> {
      * @return 示例 SQL 列表
      */
     List<SampleSqlDto> getSampleSqls(String dataSourceId, String question, int limit);
+
+    /**
+     * 根据 answerId 列表查询对应的 SQL
+     *
+     * @param answerIds
+     *            回答ID列表
+     * @return 示例 SQL 列表
+     */
+    List<SampleSqlDto> getSqlsByAnswerIds(List<String> answerIds);
 }
