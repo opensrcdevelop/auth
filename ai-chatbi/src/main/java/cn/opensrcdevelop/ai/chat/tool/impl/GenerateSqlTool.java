@@ -46,7 +46,8 @@ public class GenerateSqlTool implements MethodTool {
                 query,
                 tables,
                 chatContext.getDataSourceId(),
-                request.instruction);
+                request.instruction,
+                chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             String sql = (String) result.get("sql");

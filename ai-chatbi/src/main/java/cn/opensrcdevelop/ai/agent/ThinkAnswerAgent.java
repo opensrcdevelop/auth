@@ -101,6 +101,8 @@ public class ThinkAnswerAgent {
      *            ChatClient
      * @param userQuestion
      *            用户提问
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对）
      * @param maxSteps
      *            最大执行步数
      */
@@ -108,7 +110,11 @@ public class ThinkAnswerAgent {
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
             String userQuestion,
+            List<Map<String, String>> sampleSqls,
             int maxSteps) {
+        // 将示例 SQL 存储到上下文
+        ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
+
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
@@ -201,6 +207,9 @@ public class ThinkAnswerAgent {
         // 获取上一轮的思考内容
         String previousThinking = ChatContextHolder.getChatContext().getPreviousThinking();
 
+        // 获取示例 SQL
+        List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -210,7 +219,8 @@ public class ThinkAnswerAgent {
                         : new ArrayList<>(historicalQuestions))
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
-                .param("previous_thinking", previousThinking != null ? previousThinking : "");
+                .param("previous_thinking", previousThinking != null ? previousThinking : "")
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());

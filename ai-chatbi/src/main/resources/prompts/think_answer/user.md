@@ -10,6 +10,19 @@ Based on the following question, consider the execution of the first step.
 </#list>
 </#if>
 
+### Sample SQL References
+<#if sample_sqls?? && sample_sqls?size gt 0>
+The following are similar questions and their SQL queries for reference:
+<#list sample_sqls as sample>
+
+**Question:** ${sample.question}
+**SQL:**
+```sql
+${sample.sql}
+```
+</#list>
+</#if>
+
 Question: ${question}
 
 <#else>
@@ -22,6 +35,19 @@ The following are the user's previous questions in this conversation for context
 <#list historical_questions as histQuestion>
 
 - ${histQuestion}
+</#list>
+</#if>
+
+### Sample SQL References
+<#if sample_sqls?? && sample_sqls?size gt 0>
+The following are similar questions and their SQL queries for reference:
+<#list sample_sqls as sample>
+
+**Question:** ${sample.question}
+**SQL:**
+```sql
+${sample.sql}
+```
 </#list>
 </#if>
 

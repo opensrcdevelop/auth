@@ -23,4 +23,13 @@ public interface ChatMessageHistoryService extends IService<ChatMessageHistory> 
     List<String> getUserHistoryQuestions(String chatId);
 
     void removeUserChatMessageHistory(String chatId);
+
+    /**
+     * 获取会话用户消息数量
+     *
+     * @param chatId
+     *            对话ID
+     * @return 用户消息数量
+     */
+    int countUserMessages(String chatId);
 }
