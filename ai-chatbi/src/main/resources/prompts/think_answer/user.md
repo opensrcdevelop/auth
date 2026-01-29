@@ -69,14 +69,14 @@ Output the final answer when ANY of the following is true:
 - Maximum tool execution attempts have been reached
 
 ### Tool Execution Results
-<#if tool_execution_results??>
+<#if tool_execution_results?? && tool_execution_results?size gt 0>
 
 <#list tool_execution_results as item>
-
+<#if item.tool_name??>
 - tool: ${item.tool_name}
 - execute time: ${item.execute_time}
 - result: ${item.result}
-
+</#if>
 </#list>
 
 </#if>
