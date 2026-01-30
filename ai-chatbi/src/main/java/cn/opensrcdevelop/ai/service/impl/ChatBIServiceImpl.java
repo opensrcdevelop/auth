@@ -360,7 +360,13 @@ public class ChatBIServiceImpl implements ChatBIService {
             ChatClient chatClient) {
         try {
             // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
-            List<ChatAnswer> historicalAnswers = getHistoricalAnswersWithAnswerId(dataSourceId, 500);
+            List<ChatAnswer> historicalAnswers = chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
+                    .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
+                    .eq(ChatAnswer::getDataSourceId, dataSourceId)
+                    .eq(ChatAnswer::getFeedback, "LIKE")
+                    .isNotNull(ChatAnswer::getSql)
+                    .ne(ChatAnswer::getSql, "")
+                    .last("LIMIT 500"));
             if (historicalAnswers.isEmpty()) {
                 return new ArrayList<>();
             }
@@ -403,24 +409,5 @@ public class ChatBIServiceImpl implements ChatBIService {
             log.error("获取示例 SQL 失败", e);
             return new ArrayList<>();
         }
-    }
-
-    /**
-     * 获取历史回答列表（包含 answerId 和 question）
-     *
-     * @param dataSourceId
-     *            数据源ID
-     * @param limit
-     *            返回数量限制
-     * @return 历史回答列表
-     */
-    private List<ChatAnswer> getHistoricalAnswersWithAnswerId(String dataSourceId, int limit) {
-        return chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
-                .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
-                .eq(ChatAnswer::getDataSourceId, dataSourceId)
-                .eq(ChatAnswer::getFeedback, "LIKE")
-                .isNotNull(ChatAnswer::getSql)
-                .ne(ChatAnswer::getSql, "")
-                .last("LIMIT " + limit));
     }
 }
