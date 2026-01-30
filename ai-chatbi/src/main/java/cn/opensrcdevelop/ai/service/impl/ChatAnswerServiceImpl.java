@@ -60,48 +60,6 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
     }
 
     /**
-     * 获取数据源下所有 LIKE 反馈的历史回答（问题和 SQL）
-     *
-     * @param dataSourceId
-     *            数据源ID
-     * @param limit
-     *            返回数量限制
-     * @return 历史问题和 SQL 列表
-     */
-    @Override
-    public List<SampleSqlDto> getHistoricalAnswers(String dataSourceId, int limit) {
-        if (StringUtils.isBlank(dataSourceId)) {
-            return new ArrayList<>();
-        }
-
-        List<ChatAnswer> likedAnswers = super.list(Wrappers.<ChatAnswer>lambdaQuery()
-                .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion, ChatAnswer::getSql)
-                .eq(ChatAnswer::getDataSourceId, dataSourceId)
-                .eq(ChatAnswer::getFeedback, "LIKE")
-                .isNotNull(ChatAnswer::getSql)
-                .ne(ChatAnswer::getSql, "")
-                .last("LIMIT " + limit));
-
-        if (likedAnswers.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<SampleSqlDto> result = new ArrayList<>();
-        for (ChatAnswer answer : likedAnswers) {
-            String sql = answer.getSql();
-            if (StringUtils.isNotEmpty(sql)) {
-                sql = SqlFormatter.standard().format(sql);
-            }
-            result.add(SampleSqlDto.builder()
-                    .question(answer.getQuestion())
-                    .sql(sql)
-                    .build());
-        }
-
-        return result;
-    }
-
-    /**
      * 根据 answerId 列表查询对应的 SQL
      *
      * @param answerIds
