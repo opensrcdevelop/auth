@@ -102,24 +102,6 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
     }
 
     /**
-     * 获取与当前问题相关的示例 SQL（用户反馈为 LIKE）
-     *
-     * @param dataSourceId
-     *            数据源ID
-     * @param question
-     *            当前用户问题
-     * @param limit
-     *            返回数量限制
-     * @return 示例 SQL 列表
-     */
-    @Override
-    public List<SampleSqlDto> getSampleSqls(String dataSourceId, String question, int limit) {
-        // 该方法已废弃，由 Agent 判断关联性
-        // 使用 getHistoricalAnswers 获取历史回答，由 ChatAgent 判断相关性
-        return getHistoricalAnswers(dataSourceId, limit);
-    }
-
-    /**
      * 根据 answerId 列表查询对应的 SQL
      *
      * @param answerIds
