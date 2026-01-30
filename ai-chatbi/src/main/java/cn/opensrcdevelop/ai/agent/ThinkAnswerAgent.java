@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -174,8 +172,6 @@ public class ThinkAnswerAgent {
                     if (!hasJsonOutput.get()) {
                         SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
-
-                    setTokenUsage(chatResponse.getMetadata());
                 }, error -> {
                     log.error("Error in chat response stream", error);
                     latch.countDown();
@@ -378,25 +374,5 @@ public class ThinkAnswerAgent {
         }
 
         return Tuple.of(reason, jsonMap);
-    }
-
-    private void setTokenUsage(ChatResponseMetadata chatResponseMetadata) {
-        ChatContext chatContext = ChatContextHolder.getChatContext();
-        if (Objects.nonNull(chatContext) && Objects.nonNull(chatResponseMetadata)) {
-            int reqTokens = chatResponseMetadata.getUsage().getPromptTokens();
-            int repTokens = chatResponseMetadata.getUsage().getCompletionTokens();
-
-            if (Objects.isNull(chatContext.getReqTokens())) {
-                chatContext.setReqTokens(new AtomicInteger(reqTokens));
-            } else {
-                chatContext.getReqTokens().getAndAdd(reqTokens);
-            }
-
-            if (Objects.isNull(chatContext.getRepTokens())) {
-                chatContext.setRepTokens(new AtomicInteger(repTokens));
-            } else {
-                chatContext.getRepTokens().getAndAdd(repTokens);
-            }
-        }
     }
 }
