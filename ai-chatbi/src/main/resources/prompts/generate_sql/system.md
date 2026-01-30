@@ -7,9 +7,9 @@ Relevant Tables:
 <#list relevant_tables as table>
 
 - **Table**: ${table.table_name}
-- **Description**: ${table.description}
-- **Additional Info**: ${table.additional_info}
-- **Columns**:
+<#if table.description?? && table.description != "">- **Description**: ${table.description}
+</#if><#if table.additional_info?? && table.additional_info != "">- **Additional Info**: ${table.additional_info}
+</#if>- **Columns**:
 
 <#list table.fields as item>
 
