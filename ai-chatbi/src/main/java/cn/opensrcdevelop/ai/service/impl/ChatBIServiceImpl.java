@@ -241,10 +241,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 3.2 图表
-        if (answer.containsKey("chart") && Boolean.TRUE.equals(answer.get("chart"))) {
-
-            // 3.2.1 生成图表
-            Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
+        Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
+        if (MapUtils.isNotEmpty(chartConfig)) {
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
             var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
             if ("table".equals(renderResult._1)) {
@@ -255,14 +253,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 3.3 报告
-        if (answer.containsKey("report") && Boolean.TRUE.equals(answer.get("report"))) {
-
-            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
-
-            String reportType = ChatContextHolder.getChatContext().getReportType();
-            String reportText = ChatContextHolder.getChatContext().getReport();
+        String reportType = ChatContextHolder.getChatContext().getReportType();
+        String reportText = ChatContextHolder.getChatContext().getReport();
+        if (StringUtils.isNotBlank(reportType) && StringUtils.isNotBlank(reportText)) {
             chatAnswer.setReportType(reportType);
             chatAnswer.setReport(reportText);
+
+            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
 
             if ("markdown".equals(reportType)) {
                 SseUtil.sendChatBIMd(emitter, reportText);
