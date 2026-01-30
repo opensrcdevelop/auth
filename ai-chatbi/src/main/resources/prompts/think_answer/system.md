@@ -69,10 +69,10 @@ Call ONLY when user question contains these keywords: 报告, 文档, 总结, �
 Do not call if these keywords are not present.
 
 ### Execution Paths
-- Path A (Comprehensive): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_chart/generate_report
-- Path B (Simple): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql
-- Path C (Visualization): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) generate_chart
-- Path D (Reporting): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
+- Path A (Comprehensive): get_relevant_tables → generate_sql → execute_sql → (conditional) generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_chart/generate_report
+- Path B (Simple): get_relevant_tables → generate_sql → execute_sql
+- Path C (Visualization): get_relevant_tables → generate_sql → execute_sql → (conditional) generate_chart
+- Path D (Reporting): get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
 - Path E (Multiple SQL): generate_sql → execute_sql → generate_sql → execute_sql → ... → final_answer
 
 ## Error Handling and Retry Strategy

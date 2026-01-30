@@ -168,12 +168,12 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatId);
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
-        // 2.1 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
-        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, question, chatClient);
+        // 2.1 第一步：重写用户问题
+        String rewrittenQuestion = rewriteUserQuestion(chatId, question, chatClient);
+        String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
-        // 3. 检查是否需要重写用户问题（会话消息数大于 1 且未重写问题）
-        String rewrittenQuestion = rewriteUserQuestionIfNeeded(chatId, question, chatClient);
-        String finalQuestion = rewrittenQuestion != null ? rewrittenQuestion : question;
+        // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
+        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion, chatClient);
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -303,7 +303,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     }
 
     /**
-     * 检查是否需要重写用户问题，并在需要时执行重写
+     * 重写用户问题，作为对话的第一步执行
      *
      * @param chatId
      *            对话ID
@@ -311,24 +311,17 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            原始问题
      * @param chatClient
      *            ChatClient
-     * @return 重写后的问题，如果不需要重写则返回 null
+     * @return 重写后的问题，如果重写失败则返回原始问题
      */
-    private String rewriteUserQuestionIfNeeded(String chatId, String rawQuestion, ChatClient chatClient) {
-        // 检查是否是首次对话（用户消息数量为 0）
-        int userMessageCount = chatMessageHistoryService.countUserMessages(chatId);
-        if (userMessageCount == 0) {
-            // 首次对话，不需要重写
-            return null;
-        }
-
+    private String rewriteUserQuestion(String chatId, String rawQuestion, ChatClient chatClient) {
         // 检查 ChatContext 中的 question 是否已被重写
         String currentQuestion = ChatContextHolder.getChatContext().getQuestion();
         if (StringUtils.isNotBlank(currentQuestion) && !currentQuestion.equals(rawQuestion)) {
-            // 已经被重写过了
-            return null;
+            // 已经被重写过了，直接返回
+            return currentQuestion;
         }
 
-        // 需要重写用户问题
+        // 执行重写
         try {
             RewriteUserQuestionTool.Request request = new RewriteUserQuestionTool.Request();
             request.setInstruction(null);
@@ -344,11 +337,11 @@ public class ChatBIServiceImpl implements ChatBIService {
                 return rewrittenQuestion;
             } else {
                 log.warn("会话 {} 重写问题失败，使用原始问题", chatId);
-                return null;
+                return rawQuestion;
             }
         } catch (Exception e) {
             log.error("会话 {} 重写问题时发生异常", chatId, e);
-            return null;
+            return rawQuestion;
         }
     }
 
