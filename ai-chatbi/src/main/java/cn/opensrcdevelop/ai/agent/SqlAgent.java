@@ -36,12 +36,15 @@ public class SqlAgent {
      *            数据源ID
      * @param instruction
      *            指令
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对列表）
      * @return 相关表
      */
     public Map<String, Object> getRelevantTables(ChatClient chatClient,
             String userQuestion,
             String dataSourceId,
-            String instruction) {
+            String instruction,
+            List<Map<String, String>> sampleSqls) {
         // 1. 获取数据源中的表信息
         List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
         if (CollectionUtils.isEmpty(candidateTables)) {
@@ -54,7 +57,8 @@ public class SqlAgent {
                 .param("question", userQuestion)
                 .param("table_descriptions",
                         CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList())
-                .param("instruction", instruction);
+                .param("instruction", instruction)
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
 
         // 2. 推测关联表
         return chatClient.prompt()
