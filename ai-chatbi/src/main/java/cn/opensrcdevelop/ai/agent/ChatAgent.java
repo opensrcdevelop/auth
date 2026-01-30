@@ -4,8 +4,6 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -96,62 +94,28 @@ public class ChatAgent {
      *            返回的最大数量
      * @return 相关的 answerId 列表
      */
-    public List<String> filterRelatedHistoricalAnswers(ChatClient chatClient,
+    public Map<String, Object> filterRelatedHistoricalAnswers(ChatClient chatClient,
             String currentQuestion,
             List<Map<String, String>> historicalAnswers,
             int maxSamples) {
         if (historicalAnswers == null || historicalAnswers.isEmpty()) {
-            return new ArrayList<>();
+            return Map.of(
+                    "success", true,
+                    "related_answer_ids", new ArrayList<>());
         }
 
-        // 构建批量判断的提示词
-        StringBuilder sb = new StringBuilder();
-        sb.append("当前问题: ").append(currentQuestion).append("\n\n");
-        sb.append("历史回答列表:\n");
-        for (int i = 0; i < historicalAnswers.size(); i++) {
-            Map<String, String> answer = historicalAnswers.get(i);
-            sb.append(i + 1).append(". ").append(answer.get("question")).append("\n");
-        }
-        sb.append("请判断上述哪些历史问题与当前问题语义相关，返回相关的序号（最多").append(maxSamples).append("个）。\n");
-        sb.append("只返回 JSON 数组格式，例如: [1, 3, 5]\n");
-        sb.append("如果不相关，返回空数组: []");
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS)
+                .param("question", currentQuestion)
+                .param("historical_answers", historicalAnswers)
+                .param("max_samples", maxSamples);
 
-        try {
-            String result = chatClient.prompt()
-                    .system("你是一个问题关联性判断助手。需要判断历史问题与当前问题是否语义相关。")
-                    .user(sb.toString())
-                    .call()
-                    .content();
-
-            // 解析返回的序号数组
-            return parseRelatedAnswerIds(result, historicalAnswers, maxSamples);
-        } catch (Exception e) {
-            return new ArrayList<>();
-        }
-    }
-
-    private List<String> parseRelatedAnswerIds(String result, List<Map<String, String>> historicalAnswers,
-            int maxSamples) {
-        List<String> relatedAnswerIds = new ArrayList<>();
-        try {
-            // 简单解析 JSON 数组（序号）
-            result = result.trim();
-            if (result.startsWith("[")) {
-                ObjectMapper mapper = new ObjectMapper();
-                List<Integer> parsed = mapper.readValue(result, new TypeReference<List<Integer>>() {
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .user(prompt.buildUserPrompt(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .advisors(
+                        a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
-                for (Integer index : parsed) {
-                    if (relatedAnswerIds.size() >= maxSamples) {
-                        break;
-                    }
-                    if (index > 0 && index <= historicalAnswers.size()) {
-                        relatedAnswerIds.add(historicalAnswers.get(index - 1).get("answerId"));
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败返回空列表
-        }
-        return relatedAnswerIds;
     }
 }

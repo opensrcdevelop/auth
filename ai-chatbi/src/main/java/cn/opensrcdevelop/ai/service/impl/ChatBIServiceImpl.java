@@ -372,8 +372,18 @@ public class ChatBIServiceImpl implements ChatBIService {
             }
 
             // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
-            List<String> relatedAnswerIds = chatAgent.filterRelatedHistoricalAnswers(
+            Map<String, Object> filterResult = chatAgent.filterRelatedHistoricalAnswers(
                     chatClient, currentQuestion, answerMaps, 5);
+            List<String> relatedAnswerIds = new ArrayList<>();
+            if (filterResult.containsKey("related_answer_ids")
+                    && filterResult.get("related_answer_ids") instanceof List) {
+                Object ids = filterResult.get("related_answer_ids");
+                for (Object id : (List<?>) ids) {
+                    if (id instanceof String) {
+                        relatedAnswerIds.add((String) id);
+                    }
+                }
+            }
 
             if (relatedAnswerIds.isEmpty()) {
                 return new ArrayList<>();
