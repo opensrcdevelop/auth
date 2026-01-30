@@ -73,7 +73,7 @@ public class ChatAnswerServiceImpl extends ServiceImpl<ChatAnswerMapper, ChatAns
         }
 
         List<ChatAnswer> answers = super.list(Wrappers.<ChatAnswer>lambdaQuery()
-                .select(ChatAnswer::getQuestion, ChatAnswer::getSql)
+                .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion, ChatAnswer::getSql)
                 .in(ChatAnswer::getAnswerId, answerIds));
 
         if (answers.isEmpty()) {
