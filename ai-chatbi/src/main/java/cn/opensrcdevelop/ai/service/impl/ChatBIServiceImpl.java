@@ -367,6 +367,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                     .isNotNull(ChatAnswer::getSql)
                     .ne(ChatAnswer::getSql, "")
                     .last("LIMIT 500"));
+            log.info("获取到 {} 条历史 LIKE 回答", historicalAnswers.size());
             if (historicalAnswers.isEmpty()) {
                 return new ArrayList<>();
             }
@@ -390,6 +391,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                     }
                 }
             }
+            log.info("Agent 返回 {} 个相关 answerId: {}", relatedAnswerIds.size(), relatedAnswerIds);
 
             if (relatedAnswerIds.isEmpty()) {
                 return new ArrayList<>();
@@ -397,6 +399,7 @@ public class ChatBIServiceImpl implements ChatBIService {
 
             // 4. 根据 answerId 查询对应的 SQL
             List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
+            log.info("根据 answerId 查询到 {} 条示例 SQL", sampleSqls.size());
 
             // 5. 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
