@@ -169,7 +169,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
         // 2.1 第一步：重写用户问题
-        String rewrittenQuestion = rewriteUserQuestion(chatId, question, chatClient);
+        rewriteUserQuestion(chatId, question, chatClient);
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
