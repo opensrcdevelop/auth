@@ -86,7 +86,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
+          docker build --build-arg VERSION=${{ inputs.imageTag }} -t ${{ inputs.registry }}:${{ inputs.imageTag }} .
 
       - name: Login Registry
         run: |

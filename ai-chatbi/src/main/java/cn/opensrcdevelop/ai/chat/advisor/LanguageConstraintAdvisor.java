@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.chat.advisor;
 
+import java.util.Map;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -10,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component
 public class LanguageConstraintAdvisor implements BaseAdvisor {
