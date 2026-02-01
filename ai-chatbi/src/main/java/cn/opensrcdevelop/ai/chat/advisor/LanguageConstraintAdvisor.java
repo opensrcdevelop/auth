@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.chat.advisor;
 
-import java.util.Map;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -12,12 +11,14 @@ import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 public class LanguageConstraintAdvisor implements BaseAdvisor {
 
     private static final PromptTemplate SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
             {instructions}
-            Please answer in language: {lang}
+            ** MUST: Answer in language **: {lang}
             """);
 
     @Value("${ai.chat.language:简体中文}")

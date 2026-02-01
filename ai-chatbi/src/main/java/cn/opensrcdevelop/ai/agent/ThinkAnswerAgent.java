@@ -14,14 +14,6 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,6 +29,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -49,44 +50,6 @@ public class ThinkAnswerAgent {
     /** JSON 模式检测正则：检测 { "key": value } 或类似的 JSON 对象模式 */
     private static final Pattern JSON_OBJECT_PATTERN = Pattern.compile(
             "\\{[\\s]*\"[^\"]+\"[\\s]*:[^}]*\\}", Pattern.CASE_INSENSITIVE);
-
-    /** 检测文本中是否包含 JSON 对象模式（不在代码块中） */
-    private boolean containsJsonPattern(String text) {
-        if (text == null) {
-            return false;
-        }
-        // 排除代码块中的内容
-        String[] lines = text.split("\n");
-        boolean inCodeBlock = false;
-        StringBuilder currentLine = new StringBuilder();
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            // 检查代码块标记
-            if (line.trim().startsWith("```")) {
-                inCodeBlock = !inCodeBlock;
-                continue;
-            }
-            if (inCodeBlock) {
-                continue;
-            }
-            // 检测 JSON 模式
-            if (JSON_OBJECT_PATTERN.matcher(line.trim()).find()) {
-                // 排除明显不是 JSON 的情况，如 "{思考内容}"
-                String trimmed = line.trim();
-                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-                    // 可能是 final_answer 或 tool call，视为 JSON
-                    return true;
-                }
-                // 检测 name:, parameters:, final_answer: 等模式
-                if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
-                        || trimmed.contains("\"final_answer\"") || trimmed.contains("\"chart\"")
-                        || trimmed.contains("\"report\"")) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     /**
      * 思考并回答用户提问
@@ -352,27 +315,58 @@ public class ThinkAnswerAgent {
         // 处理 final_answer 字段值可能是 JSON 字符串的情况
         if (jsonMap.containsKey("final_answer")) {
             Object finalAnswerValue = jsonMap.get("final_answer");
-            if (finalAnswerValue instanceof String) {
-                String answerStr = (String) finalAnswerValue;
-                // 如果 final_answer 值是 JSON 字符串，尝试解析
-                if (answerStr.trim().startsWith("{") && answerStr.trim().endsWith("}")) {
-                    try {
-                        Map<String, Object> nestedJson = CommonUtil.nonJdkDeserializeObject(answerStr,
-                                new TypeReference<Map<String, Object>>() {
-                                });
-                        // 将解析后的 JSON 扁平化，把嵌套的内容放到外层
-                        for (Map.Entry<String, Object> entry : nestedJson.entrySet()) {
-                            jsonMap.put(entry.getKey(), entry.getValue());
-                        }
-                        jsonMap.remove("final_answer");
-                    } catch (Exception e) {
-                        // 解析失败，保持原样
-                        log.debug("Failed to parse nested JSON in final_answer: {}", e.getMessage());
-                    }
+            if (finalAnswerValue instanceof String answerStr &&
+                    answerStr.trim().startsWith("{") && answerStr.trim().endsWith("}")) {
+                try {
+                    Map<String, Object> nestedJson = CommonUtil.nonJdkDeserializeObject(answerStr,
+                            new TypeReference<Map<String, Object>>() {
+                            });
+                    // 将解析后的 JSON 扁平化，把嵌套的内容放到外层
+                    jsonMap.putAll(nestedJson);
+                    jsonMap.remove("final_answer");
+                } catch (Exception e) {
+                    // 解析失败，保持原样
+                    log.debug("Failed to parse nested JSON in final_answer: {}", e.getMessage());
                 }
             }
+
         }
 
         return Tuple.of(reason, jsonMap);
+    }
+
+    /** 检测文本中是否包含 JSON 对象模式（不在代码块中） */
+    private boolean containsJsonPattern(String text) {
+        if (text == null) {
+            return false;
+        }
+        // 排除代码块中的内容
+        String[] lines = text.split("\n");
+        boolean inCodeBlock = false;
+        for (String line : lines) {
+            // 检查代码块标记
+            if (line.trim().startsWith("```")) {
+                inCodeBlock = !inCodeBlock;
+                continue;
+            }
+            if (inCodeBlock) {
+                continue;
+            }
+            // 检测 JSON 模式
+            if (JSON_OBJECT_PATTERN.matcher(line.trim()).find()) {
+                // 排除明显不是 JSON 的情况，如 "{思考内容}"
+                String trimmed = line.trim();
+                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    // 可能是 final_answer 或 tool call，视为 JSON
+                    return true;
+                }
+                // 检测 name:, parameters:, final_answer: 等模式
+                if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
+                        || trimmed.contains("\"final_answer\"")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

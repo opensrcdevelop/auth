@@ -32,13 +32,6 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -48,6 +41,14 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -169,7 +170,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
         // 2.1 第一步：重写用户问题
-        rewriteUserQuestion(chatId, question, chatClient);
+        rewriteUserQuestion(chatId, question);
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
@@ -302,20 +303,15 @@ public class ChatBIServiceImpl implements ChatBIService {
     /**
      * 重写用户问题，作为对话的第一步执行
      *
-     * @param chatId
-     *            对话ID
-     * @param rawQuestion
-     *            原始问题
-     * @param chatClient
-     *            ChatClient
-     * @return 重写后的问题，如果重写失败则返回原始问题
+     * @param chatId      对话ID
+     * @param rawQuestion 原始问题
      */
-    private String rewriteUserQuestion(String chatId, String rawQuestion, ChatClient chatClient) {
+    private void rewriteUserQuestion(String chatId, String rawQuestion) {
         // 检查 ChatContext 中的 question 是否已被重写
         String currentQuestion = ChatContextHolder.getChatContext().getQuestion();
         if (StringUtils.isNotBlank(currentQuestion) && !currentQuestion.equals(rawQuestion)) {
             // 已经被重写过了，直接返回
-            return currentQuestion;
+            return;
         }
 
         // 执行重写
@@ -326,19 +322,14 @@ public class ChatBIServiceImpl implements ChatBIService {
 
             if (Boolean.TRUE.equals(response.getSuccess()) && StringUtils.isNotBlank(response.getRewrittenQuestion())) {
                 String rewrittenQuestion = response.getRewrittenQuestion();
-                // 更新 ChatContext 中的 question
-                ChatContextHolder.getChatContext().setQuestion(rewrittenQuestion);
                 // 更新 ChatHistory 的标题
                 chatHistoryService.updateChatHistory(chatId, rewrittenQuestion);
                 log.info("会话 {} 重写问题: {} -> {}", chatId, rawQuestion, rewrittenQuestion);
-                return rewrittenQuestion;
             } else {
                 log.warn("会话 {} 重写问题失败，使用原始问题", chatId);
-                return rawQuestion;
             }
         } catch (Exception e) {
             log.error("会话 {} 重写问题时发生异常", chatId, e);
-            return rawQuestion;
         }
     }
 
@@ -383,8 +374,8 @@ public class ChatBIServiceImpl implements ChatBIService {
                     && filterResult.get("related_answer_ids") instanceof List) {
                 Object ids = filterResult.get("related_answer_ids");
                 for (Object id : (List<?>) ids) {
-                    if (id instanceof String) {
-                        relatedAnswerIds.add((String) id);
+                    if (id instanceof String strId) {
+                        relatedAnswerIds.add(strId);
                     }
                 }
             }
