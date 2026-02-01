@@ -42,7 +42,8 @@ public class GetRelevantTablesTool implements MethodTool {
                 chatContext.getChatClient(),
                 query,
                 chatContext.getDataSourceId(),
-                request.instruction);
+                request.instruction,
+                chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             List<Map<String, Object>> tables = (List<Map<String, Object>>) result.get("tables");

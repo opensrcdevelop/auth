@@ -47,5 +47,11 @@ public class ChatContext {
 
     private List<Map<String, Object>> toolCallResults;
 
+    /** 上一轮的思考内容，用于连贯推理 */
+    private String previousThinking;
+
+    /** 示例 SQL（问题-SQL 对列表） */
+    private List<Map<String, String>> sampleSqls;
+
     private Boolean terminated = false;
 }

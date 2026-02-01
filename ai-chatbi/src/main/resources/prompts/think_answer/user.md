@@ -10,6 +10,19 @@ Based on the following question, consider the execution of the first step.
 </#list>
 </#if>
 
+### Sample SQL References
+<#if sample_sqls?? && sample_sqls?size gt 0>
+The following are similar questions and their SQL queries for reference:
+<#list sample_sqls as sample>
+
+**Question:** ${sample.question}
+**SQL:**
+```sql
+${sample.sql}
+```
+</#list>
+</#if>
+
 Question: ${question}
 
 <#else>
@@ -22,6 +35,19 @@ The following are the user's previous questions in this conversation for context
 <#list historical_questions as histQuestion>
 
 - ${histQuestion}
+</#list>
+</#if>
+
+### Sample SQL References
+<#if sample_sqls?? && sample_sqls?size gt 0>
+The following are similar questions and their SQL queries for reference:
+<#list sample_sqls as sample>
+
+**Question:** ${sample.question}
+**SQL:**
+```sql
+${sample.sql}
+```
 </#list>
 </#if>
 
@@ -43,16 +69,21 @@ Output the final answer when ANY of the following is true:
 - Maximum tool execution attempts have been reached
 
 ### Tool Execution Results
-<#if tool_execution_results??>
+<#if tool_execution_results?? && tool_execution_results?size gt 0>
 
 <#list tool_execution_results as item>
-
+<#if item.tool_name??>
 - tool: ${item.tool_name}
 - execute time: ${item.execute_time}
 - result: ${item.result}
-
+</#if>
 </#list>
 
+</#if>
+
+### Previous Thinking
+<#if previous_thinking?? && previous_thinking != "">
+Your previous thinking: ${previous_thinking}
 </#if>
 
 ### Raw User Question

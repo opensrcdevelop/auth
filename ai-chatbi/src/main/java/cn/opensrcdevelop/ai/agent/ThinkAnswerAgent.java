@@ -21,7 +21,6 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -101,6 +99,8 @@ public class ThinkAnswerAgent {
      *            ChatClient
      * @param userQuestion
      *            用户提问
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对）
      * @param maxSteps
      *            最大执行步数
      */
@@ -108,7 +108,11 @@ public class ThinkAnswerAgent {
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
             String userQuestion,
+            List<Map<String, String>> sampleSqls,
             int maxSteps) {
+        // 将示例 SQL 存储到上下文
+        ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
+
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
@@ -124,8 +128,11 @@ public class ThinkAnswerAgent {
 
             String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
+            String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
-            chatMessageHistoryService.createChatMessageHistory(parseResult._1(), ChatContentType.THINKING);
+            chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
+            // 保存思考内容到上下文，供下一轮使用
+            saveThinkingContent(thinkingContent);
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
@@ -165,8 +172,6 @@ public class ThinkAnswerAgent {
                     if (!hasJsonOutput.get()) {
                         SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
-
-                    setTokenUsage(chatResponse.getMetadata());
                 }, error -> {
                     log.error("Error in chat response stream", error);
                     latch.countDown();
@@ -195,6 +200,12 @@ public class ThinkAnswerAgent {
         List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
                 ChatContextHolder.getChatContext().getChatId());
 
+        // 获取上一轮的思考内容
+        String previousThinking = ChatContextHolder.getChatContext().getPreviousThinking();
+
+        // 获取示例 SQL
+        List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -203,7 +214,9 @@ public class ThinkAnswerAgent {
                         ? new ArrayList<>()
                         : new ArrayList<>(historicalQuestions))
                 .param("tool_definitions", getToolDefinitions())
-                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults());
+                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
+                .param("previous_thinking", previousThinking != null ? previousThinking : "")
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -308,6 +321,16 @@ public class ThinkAnswerAgent {
         chatContext.getToolCallResults().addFirst(toolCallResult);
     }
 
+    /**
+     * 保存思考内容到上下文，供下一轮推理使用 只保留上一轮的思考内容
+     *
+     * @param thinkingContent
+     *            思考内容
+     */
+    private void saveThinkingContent(String thinkingContent) {
+        ChatContextHolder.getChatContext().setPreviousThinking(thinkingContent);
+    }
+
     private Tuple2<String, Map<String, Object>> parseLlmResult(String llmResult) {
         int startIndex = llmResult.indexOf("{");
         int endIndex = llmResult.lastIndexOf("}");
@@ -351,25 +374,5 @@ public class ThinkAnswerAgent {
         }
 
         return Tuple.of(reason, jsonMap);
-    }
-
-    private void setTokenUsage(ChatResponseMetadata chatResponseMetadata) {
-        ChatContext chatContext = ChatContextHolder.getChatContext();
-        if (Objects.nonNull(chatContext) && Objects.nonNull(chatResponseMetadata)) {
-            int reqTokens = chatResponseMetadata.getUsage().getPromptTokens();
-            int repTokens = chatResponseMetadata.getUsage().getCompletionTokens();
-
-            if (Objects.isNull(chatContext.getReqTokens())) {
-                chatContext.setReqTokens(new AtomicInteger(reqTokens));
-            } else {
-                chatContext.getReqTokens().getAndAdd(reqTokens);
-            }
-
-            if (Objects.isNull(chatContext.getRepTokens())) {
-                chatContext.setRepTokens(new AtomicInteger(repTokens));
-            } else {
-                chatContext.getRepTokens().getAndAdd(repTokens);
-            }
-        }
     }
 }

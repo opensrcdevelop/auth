@@ -1,12 +1,15 @@
 package cn.opensrcdevelop.ai.service.impl;
 
+import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.agent.ThinkAnswerAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.client.ChatClientManager;
+import cn.opensrcdevelop.ai.chat.tool.impl.RewriteUserQuestionTool;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
+import cn.opensrcdevelop.ai.dto.SampleSqlDto;
 import cn.opensrcdevelop.ai.dto.VoteAnswerRequestDto;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -31,6 +34,8 @@ import io.vavr.control.Try;
 import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,8 +61,10 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatClientManager chatClientManager;
     private final DataSourceConfService dataSourceConfService;
     private final ThinkAnswerAgent thinkAnswerAgent;
+    private final ChatAgent chatAgent;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatHistoryService chatHistoryService;
+    private final RewriteUserQuestionTool rewriteUserQuestionTool;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -161,13 +168,21 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatId);
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
+        // 2.1 第一步：重写用户问题
+        rewriteUserQuestion(chatId, question, chatClient);
+        String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
+
+        // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
+        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion, chatClient);
+
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
         Map<String, Object> answer = thinkAnswerAgent.thinkAnswer(
                 emitter,
                 interruptFlag,
                 chatClient,
-                question,
+                finalQuestion,
+                sampleSqls,
                 30);
 
         if (interruptFlag.get()) {
@@ -186,7 +201,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setDataSourceId(dataSourceId);
         chatAnswer.setChatId(chatId);
         chatAnswer.setQuestionId(requestDto.getQuestionId());
-        chatAnswer.setQuestion(requestDto.getQuestion());
+        chatAnswer.setQuestion(finalQuestion);
         chatAnswer.setSql(ChatContextHolder.getChatContext().getSql());
         chatAnswer.setReqTokens(ChatContextHolder.getChatContext().getReqTokens().get());
         chatAnswer.setRepTokens(ChatContextHolder.getChatContext().getRepTokens().get());
@@ -226,10 +241,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 3.2 图表
-        if (answer.containsKey("chart") && Boolean.TRUE.equals(answer.get("chart"))) {
-
-            // 3.2.1 生成图表
-            Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
+        Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
+        if (MapUtils.isNotEmpty(chartConfig)) {
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
             var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
             if ("table".equals(renderResult._1)) {
@@ -240,14 +253,13 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 3.3 报告
-        if (answer.containsKey("report") && Boolean.TRUE.equals(answer.get("report"))) {
-
-            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
-
-            String reportType = ChatContextHolder.getChatContext().getReportType();
-            String reportText = ChatContextHolder.getChatContext().getReport();
+        String reportType = ChatContextHolder.getChatContext().getReportType();
+        String reportText = ChatContextHolder.getChatContext().getReport();
+        if (StringUtils.isNotBlank(reportType) && StringUtils.isNotBlank(reportText)) {
             chatAnswer.setReportType(reportType);
             chatAnswer.setReport(reportText);
+
+            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
 
             if ("markdown".equals(reportType)) {
                 SseUtil.sendChatBIMd(emitter, reportText);
@@ -285,5 +297,117 @@ public class ChatBIServiceImpl implements ChatBIService {
             }).toList();
         }
         return true;
+    }
+
+    /**
+     * 重写用户问题，作为对话的第一步执行
+     *
+     * @param chatId
+     *            对话ID
+     * @param rawQuestion
+     *            原始问题
+     * @param chatClient
+     *            ChatClient
+     * @return 重写后的问题，如果重写失败则返回原始问题
+     */
+    private String rewriteUserQuestion(String chatId, String rawQuestion, ChatClient chatClient) {
+        // 检查 ChatContext 中的 question 是否已被重写
+        String currentQuestion = ChatContextHolder.getChatContext().getQuestion();
+        if (StringUtils.isNotBlank(currentQuestion) && !currentQuestion.equals(rawQuestion)) {
+            // 已经被重写过了，直接返回
+            return currentQuestion;
+        }
+
+        // 执行重写
+        try {
+            RewriteUserQuestionTool.Request request = new RewriteUserQuestionTool.Request();
+            request.setInstruction(null);
+            RewriteUserQuestionTool.Response response = rewriteUserQuestionTool.execute(request);
+
+            if (Boolean.TRUE.equals(response.getSuccess()) && StringUtils.isNotBlank(response.getRewrittenQuestion())) {
+                String rewrittenQuestion = response.getRewrittenQuestion();
+                // 更新 ChatContext 中的 question
+                ChatContextHolder.getChatContext().setQuestion(rewrittenQuestion);
+                // 更新 ChatHistory 的标题
+                chatHistoryService.updateChatHistory(chatId, rewrittenQuestion);
+                log.info("会话 {} 重写问题: {} -> {}", chatId, rawQuestion, rewrittenQuestion);
+                return rewrittenQuestion;
+            } else {
+                log.warn("会话 {} 重写问题失败，使用原始问题", chatId);
+                return rawQuestion;
+            }
+        } catch (Exception e) {
+            log.error("会话 {} 重写问题时发生异常", chatId, e);
+            return rawQuestion;
+        }
+    }
+
+    /**
+     * 获取与当前问题相关的示例 SQL
+     *
+     * @param dataSourceId
+     *            数据源ID
+     * @param currentQuestion
+     *            当前问题
+     * @param chatClient
+     *            ChatClient
+     * @return 相关的问题-SQL 对列表
+     */
+    private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
+            ChatClient chatClient) {
+        try {
+            // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
+            List<ChatAnswer> historicalAnswers = chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
+                    .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
+                    .eq(ChatAnswer::getDataSourceId, dataSourceId)
+                    .eq(ChatAnswer::getFeedback, "LIKE")
+                    .isNotNull(ChatAnswer::getSql)
+                    .ne(ChatAnswer::getSql, "")
+                    .last("LIMIT 500"));
+            log.info("获取到 {} 条历史 LIKE 回答", historicalAnswers.size());
+            if (historicalAnswers.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            // 2. 转换为 Map 列表（只包含 answerId 和 question）
+            List<Map<String, String>> answerMaps = new ArrayList<>();
+            for (ChatAnswer answer : historicalAnswers) {
+                answerMaps.add(Map.of("answerId", answer.getAnswerId(), "question", answer.getQuestion()));
+            }
+
+            // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
+            Map<String, Object> filterResult = chatAgent.filterRelatedHistoricalAnswers(
+                    chatClient, currentQuestion, answerMaps, 5);
+            List<String> relatedAnswerIds = new ArrayList<>();
+            if (filterResult.containsKey("related_answer_ids")
+                    && filterResult.get("related_answer_ids") instanceof List) {
+                Object ids = filterResult.get("related_answer_ids");
+                for (Object id : (List<?>) ids) {
+                    if (id instanceof String) {
+                        relatedAnswerIds.add((String) id);
+                    }
+                }
+            }
+            log.info("Agent 返回 {} 个相关 answerId: {}", relatedAnswerIds.size(), relatedAnswerIds);
+
+            if (relatedAnswerIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            // 4. 根据 answerId 查询对应的 SQL
+            List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
+            log.info("根据 answerId 查询到 {} 条示例 SQL", sampleSqls.size());
+
+            // 5. 转换为 Map 列表返回
+            List<Map<String, String>> result = new ArrayList<>();
+            for (SampleSqlDto dto : sampleSqls) {
+                result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("获取示例 SQL 失败", e);
+            return new ArrayList<>();
+        }
     }
 }

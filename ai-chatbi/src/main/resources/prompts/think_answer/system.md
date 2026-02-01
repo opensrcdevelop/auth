@@ -69,10 +69,10 @@ Call ONLY when user question contains these keywords: 报告, 文档, 总结, �
 Do not call if these keywords are not present.
 
 ### Execution Paths
-- Path A (Comprehensive): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_chart/generate_report
-- Path B (Simple): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql
-- Path C (Visualization): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) generate_chart
-- Path D (Reporting): rewrite_user_question → extract_user_query → get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
+- Path A (Comprehensive): get_relevant_tables → generate_sql → execute_sql → (conditional) generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_chart/generate_report
+- Path B (Simple): get_relevant_tables → generate_sql → execute_sql
+- Path C (Visualization): get_relevant_tables → generate_sql → execute_sql → (conditional) generate_chart
+- Path D (Reporting): get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
 - Path E (Multiple SQL): generate_sql → execute_sql → generate_sql → execute_sql → ... → final_answer
 
 ## Error Handling and Retry Strategy
@@ -108,9 +108,7 @@ Do not call if these keywords are not present.
 <Language-specific plain text of the consideration of the final answer.>
 ```json
 {
-"final_answer": "Comprehensive answer integrating all execution results",
-"chart": "<the tool generate_chart calling result's success field value>",
-"report": "<the tool generate_report calling result's success field value>"
+"final_answer": "Comprehensive answer integrating all execution results"
 }
 ```
 
@@ -118,14 +116,12 @@ Do not call if these keywords are not present.
 1. **Parameter Format**: Tool parameters MUST be valid JSON strings that satisfy the tool's input schema
 2. **Error Recovery**: When parameter format errors occur, modify parameters and re-execute
 3. Final Answer: Must be pure JSON format only, no additional text
-4. If generate_chart was not executed, set final answer's "chart" field to false
-5. If generate_report was not executed, set final answer's "report" field to false
-6. No fabrication of tool results
-7. Handle tool failures gracefully with retry mechanism
-8. Avoid tool execution loops by tracking retry counts
-9. **Schema Compliance**:
+4. No fabrication of tool results
+5. Handle tool failures gracefully with retry mechanism
+6. Avoid tool execution loops by tracking retry counts
+7. **Schema Compliance**:
    - Thinking Result Format must contain exactly: "name" and "parameters" fields
-   - Final Answer Format must contain exactly: "final_answer", "chart", and "report" fields
+   - Final Answer Format must contain exactly: "final_answer" field
    - No other fields are permitted in either format
 10. **Field Validation**:
     - Validate that all output JSON objects strictly adhere to the defined schemas

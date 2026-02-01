@@ -216,6 +216,20 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                 .eq(ChatMessageHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName()));
     }
 
+    /**
+     * 获取会话用户消息数量
+     *
+     * @param chatId
+     *            对话ID
+     * @return 用户消息数量
+     */
+    @Override
+    public int countUserMessages(String chatId) {
+        return Math.toIntExact(super.count(Wrappers.<ChatMessageHistory>lambdaQuery()
+                .eq(ChatMessageHistory::getChatId, chatId)
+                .eq(ChatMessageHistory::getRole, ChatRole.USER.name())));
+    }
+
     private void asyncSaveChatMessageHistory(ChatMessageHistory chatMessageHistory) {
         CompletableFuture.runAsync(() -> super.save(chatMessageHistory));
     }

@@ -80,4 +80,42 @@ public class ChatAgent {
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
     }
+
+    /**
+     * 批量判断历史问题与当前问题的关联性，返回相关的 answerId 列表
+     *
+     * @param chatClient
+     *            ChatClient
+     * @param currentQuestion
+     *            当前问题
+     * @param historicalAnswers
+     *            历史回答列表（包含 answerId 和 question）
+     * @param maxSamples
+     *            返回的最大数量
+     * @return 相关的 answerId 列表
+     */
+    public Map<String, Object> filterRelatedHistoricalAnswers(ChatClient chatClient,
+            String currentQuestion,
+            List<Map<String, String>> historicalAnswers,
+            int maxSamples) {
+        if (historicalAnswers == null || historicalAnswers.isEmpty()) {
+            return Map.of(
+                    "success", true,
+                    "related_answer_ids", new ArrayList<>());
+        }
+
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS)
+                .param("question", currentQuestion)
+                .param("historical_answers", historicalAnswers)
+                .param("max_samples", maxSamples);
+
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .user(prompt.buildUserPrompt(PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .advisors(
+                        a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.FILTER_RELATED_HISTORICAL_ANSWERS))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
 }

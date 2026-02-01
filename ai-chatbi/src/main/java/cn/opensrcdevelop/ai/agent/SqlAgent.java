@@ -8,6 +8,7 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +36,15 @@ public class SqlAgent {
      *            数据源ID
      * @param instruction
      *            指令
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对列表）
      * @return 相关表
      */
     public Map<String, Object> getRelevantTables(ChatClient chatClient,
             String userQuestion,
             String dataSourceId,
-            String instruction) {
+            String instruction,
+            List<Map<String, String>> sampleSqls) {
         // 1. 获取数据源中的表信息
         List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
         if (CollectionUtils.isEmpty(candidateTables)) {
@@ -53,7 +57,8 @@ public class SqlAgent {
                 .param("question", userQuestion)
                 .param("table_descriptions",
                         CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList())
-                .param("instruction", instruction);
+                .param("instruction", instruction)
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
 
         // 2. 推测关联表
         return chatClient.prompt()
@@ -78,13 +83,16 @@ public class SqlAgent {
      *            数据源ID
      * @param instruction
      *            指令
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对列表）
      * @return SQL
      */
     public Map<String, Object> generateSql(ChatClient chatClient,
             String userQuestion,
             List<Map<String, Object>> relevantTables,
             String dataSourceId,
-            String instruction) {
+            String instruction,
+            List<Map<String, String>> sampleSqls) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -95,7 +103,8 @@ public class SqlAgent {
                                 DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("question", userQuestion)
                 .param("relevant_tables", schemas)
-                .param("instruction", instruction);
+                .param("instruction", instruction)
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
 
         // 2. 生成 SQL
         return chatClient.prompt()
