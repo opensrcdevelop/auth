@@ -2,11 +2,15 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationFilter;
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvider;
+import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationFilter;
+import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationProvider;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
+import cn.opensrcdevelop.auth.biz.repository.auth.WebAuthnCredentialRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
-import cn.opensrcdevelop.auth.filter.TotpValidFilter;
+import cn.opensrcdevelop.auth.filter.MfaValidFilter;
 import cn.opensrcdevelop.auth.handler.*;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -28,7 +32,7 @@ import org.springframework.web.filter.CorsFilter;
 public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceServerConfigurer, HttpSecurity> {
 
     private final CorsFilter corsFilter;
-    private final TotpValidFilter totpValidFilter;
+    private final MfaValidFilter mfaValidFilter;
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OpaqueTokenIntrospector tokenIntrospector;
@@ -90,8 +94,8 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         http.addFilter(corsFilter);
         // 添加变更密码检查过滤器
         http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
-        // 添加 Totp 校验过滤器
-        http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
+        // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
+        http.addFilterAfter(mfaValidFilter, UsernamePasswordAuthenticationFilter.class);
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
@@ -101,5 +105,15 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         http.authenticationProvider(
                 new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class),
                         SpringContextUtil.getBean(VerificationCodeService.class)));
+
+        // 添加 Passkey 登录
+        PasskeyAuthenticationFilter passkeyAuthenticationFilter = new PasskeyAuthenticationFilter(
+                authenticationManager);
+        http.addFilterBefore(passkeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.authenticationProvider(
+                new PasskeyAuthenticationProvider(
+                        (UserDetailsService) SpringContextUtil.getBean(UserService.class),
+                        SpringContextUtil.getBean(WebAuthnService.class),
+                        SpringContextUtil.getBean(WebAuthnCredentialRepository.class)));
     }
 }

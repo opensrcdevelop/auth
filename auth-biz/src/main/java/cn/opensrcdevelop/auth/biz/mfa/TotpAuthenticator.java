@@ -12,9 +12,9 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base32;
 
-public class MultiFactorAuthenticator {
+public class TotpAuthenticator {
 
-    private MultiFactorAuthenticator() {
+    private TotpAuthenticator() {
     }
 
     private static final String RANDOM_NUMBER_ALGORITHM = "SHA1PRNG";

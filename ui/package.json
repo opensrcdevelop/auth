@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
+    "@simplewebauthn/browser": "^11.0.0",
     "ant-design-vue": "^4.2.6",
     "axios": "^1.7.9",
     "crypto-js": "^4.2.0",

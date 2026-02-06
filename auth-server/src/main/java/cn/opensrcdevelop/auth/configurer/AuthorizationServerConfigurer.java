@@ -6,8 +6,8 @@ import cn.opensrcdevelop.auth.biz.component.authserver.OidcUserInfoService;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
+import cn.opensrcdevelop.auth.filter.MfaValidFilter;
 import cn.opensrcdevelop.auth.filter.OAuth2AuthorizeRememberMeAuthenticationFilter;
-import cn.opensrcdevelop.auth.filter.TotpValidFilter;
 import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
@@ -39,7 +39,7 @@ import org.springframework.web.filter.CorsFilter;
 public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<AuthorizationServerConfigurer, HttpSecurity> {
 
     private final CorsFilter corsFilter;
-    private final TotpValidFilter totpValidFilter;
+    private final MfaValidFilter mfaValidFilter;
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final CaptchaVerificationCheckFilter captchaVerificationCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
@@ -88,8 +88,8 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         http.addFilter(corsFilter);
         // 添加变更密码检查过滤器
         http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
-        // 添加 Totp 校验过滤器
-        http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
+        // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
+        http.addFilterAfter(mfaValidFilter, UsernamePasswordAuthenticationFilter.class);
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
         // 添加 OAuth2 Authorize 记住我过滤器

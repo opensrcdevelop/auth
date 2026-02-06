@@ -2,7 +2,7 @@ package cn.opensrcdevelop.auth.filter;
 
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
+import cn.opensrcdevelop.auth.biz.mfa.MfaValidContext;
 import cn.opensrcdevelop.common.filter.RestFilter;
 import cn.opensrcdevelop.common.response.R;
 import cn.opensrcdevelop.common.util.WebUtil;
@@ -15,16 +15,20 @@ import java.io.IOException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
 
-public class TotpValidFilter extends RestFilter {
+/**
+ * MFA 验证过滤器（统一处理 TOTP 和 WebAuthn 验证）
+ */
+public class MfaValidFilter extends RestFilter {
 
     @Override
     protected void doSubFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session != null) {
-            TotpValidContext totpValidContext = (TotpValidContext) session
-                    .getAttribute(AuthConstants.TOTP_VALID_CONTEXT);
-            if (totpValidContext != null && BooleanUtils.isFalse(totpValidContext.getValid())) {
+            MfaValidContext mfaValidContext = (MfaValidContext) session
+                    .getAttribute(AuthConstants.MFA_VALID_CONTEXT);
+            if (mfaValidContext != null && BooleanUtils.isFalse(mfaValidContext.getValid())) {
+                // MFA 未验证通过，返回错误
                 WebUtil.sendJsonResponse(R.optFail(MessageConstants.TOTP_MSG_1001, new Object()),
                         HttpStatus.UNAUTHORIZED);
                 return;

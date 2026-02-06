@@ -17,6 +17,13 @@ import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Message, Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import {useRoute} from "vue-router";
+import webauthn from "@/util/webauthn";
+import {
+    completeWebAuthnRegistration,
+    deleteWebAuthnCredential,
+    getWebAuthnRegisterOptions,
+    listWebAuthnCredentials,
+} from "@/api/webauthn";
 
 const activeTab = ref("user_info");
 
@@ -49,6 +56,7 @@ const handleTabInit = (tabKey: string) => {
     case "account_binding":
       initPromises.push(handleGetUserInfo());
       initPromises.push(handleGetBoundIdentitySource());
+      initPromises.push(handleGetWebAuthnCredentials());
       break;
   }
 
@@ -458,6 +466,84 @@ const handleSendEmailCode = () => {
 /** 绑定的身份源 */
 const boundIdentitySource = reactive([]);
 
+/** WebAuthn 凭证列表 */
+const webAuthnCredentials = reactive<any[]>([]);
+
+/** 是否支持 WebAuthn */
+const isWebAuthnSupported = ref(false);
+
+/** 是否正在添加凭证 */
+const addingWebAuthnCredential = ref(false);
+
+/**
+ * 获取 WebAuthn 凭证列表
+ */
+const handleGetWebAuthnCredentials = () => {
+  listWebAuthnCredentials()
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        webAuthnCredentials.length = 0;
+        webAuthnCredentials.push(...data);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取 WebAuthn 凭证");
+    });
+};
+
+/**
+ * 添加 WebAuthn 凭证
+ */
+const handleAddWebAuthnCredential = () => {
+  addingWebAuthnCredential.value = true;
+  getWebAuthnRegisterOptions()
+    .then((result: any) => {
+      handleApiSuccess(result, async (data: any) => {
+        try {
+          const credential = await webauthn.startRegistration(data);
+          const responseResult = await completeWebAuthnRegistration({
+            id: credential.id,
+            response: credential.response.attestationObject,
+            clientDataJSON: credential.response.clientDataJSON,
+            transports: (credential as any).transports?.join(","),
+          });
+          handleApiSuccess(responseResult, () => {
+            Notification.success("添加 Passkey 凭证成功");
+            handleGetWebAuthnCredentials();
+          });
+        } catch (error: any) {
+          if (error.message && error.message.includes("NotAllowedError")) {
+            Notification.warning("已取消添加凭证");
+          } else {
+            Notification.error("添加凭证失败: " + (error.message || "未知错误"));
+          }
+        }
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取注册选项");
+    })
+    .finally(() => {
+      addingWebAuthnCredential.value = false;
+    });
+};
+
+/**
+ * 删除 WebAuthn 凭证
+ */
+const handleDeleteWebAuthnCredential = (credential: any) => {
+  deleteWebAuthnCredential(credential.id)
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("删除凭证成功");
+        handleGetWebAuthnCredentials();
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "删除凭证");
+    });
+};
+
 /**
  * 获取绑定的身份源
  */
@@ -555,6 +641,9 @@ export default defineComponent({
       }
       handleTabInit(activeTab.value);
       window.addEventListener("message", handleAuthWindowResponse);
+
+      // 检测浏览器是否支持 WebAuthn
+      isWebAuthnSupported.value = webauthn.isSupported();
     });
 
     return {
@@ -597,6 +686,11 @@ export default defineComponent({
       boundIdentitySource,
       handleBindUser,
       handleUnbindUser,
+      webAuthnCredentials,
+      isWebAuthnSupported,
+      addingWebAuthnCredential,
+      handleAddWebAuthnCredential,
+      handleDeleteWebAuthnCredential,
     };
   },
 });

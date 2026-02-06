@@ -53,11 +53,17 @@ public class User extends BaseEntity implements UserDetails, OAuth2User, Seriali
 
     private Boolean enableMfa;
 
-    private String mfaSecret;
+    /**
+     * TOTP 密钥
+     */
+    private String totpSecret;
 
     private Boolean needChangePwd;
 
-    private Boolean mfaDeviceBind;
+    /**
+     * TOTP 设备绑定状态
+     */
+    private Boolean totpDeviceBind;
 
     private Boolean locked;
 

@@ -120,6 +120,27 @@ export default loginTs;
             <span style="color: var(--color-text-2)"> 记住我 </span>
           </a-checkbox>
         </a-tab-pane>
+        <a-tab-pane key="3" title="Passkey 登录" v-if="isWebAuthnSupported">
+          <a-form
+            ref="passkeyLoginFormRef"
+            size="large"
+            @submit-success="handlePasskeyLoginFormSubmit"
+          >
+            <a-form-item hide-label>
+              <a-button
+                html-type="submit"
+                type="primary"
+                class="login-btn"
+                :loading="passkeyLoginLoading"
+              >
+                <template #icon>
+                  <icon-safe />
+                </template>
+                使用 Passkey 登录
+              </a-button>
+            </a-form-item>
+          </a-form>
+        </a-tab-pane>
       </a-tabs>
       <FederationLogin />
     </div>
@@ -132,14 +153,34 @@ export default loginTs;
           </template>
         </a-button>
         <div class="title">MFA认证</div>
-        <div class="mfa-info">请输入 6 位动态安全码，进行多因素认证</div>
-        <div class="mfa-code">
+        <div class="mfa-info" v-if="supportedMfaMethods.includes('TOTP') && !supportedMfaMethods.includes('WEBAUTHN')">请输入 6 位动态安全码，进行多因素认证</div>
+        <div class="mfa-info" v-else-if="supportedMfaMethods.includes('WEBAUTHN') && !supportedMfaMethods.includes('TOTP')">请使用 Passkey 进行身份验证</div>
+        <div class="mfa-info" v-else-if="supportedMfaMethods.length > 0">请选择一种方式进行多因素认证</div>
+        <div class="mfa-info" v-else>请完成多因素认证</div>
+
+        <!-- TOTP 验证码输入 -->
+        <div class="mfa-code" v-if="supportedMfaMethods.includes('TOTP')">
           <a-verification-code
             size="large"
             v-model="totpValidForm.code"
             style="width: 300px"
             @finish="handleTotpValidSubmit"
           />
+        </div>
+
+        <!-- WebAuthn 验证按钮 -->
+        <div v-if="supportedMfaMethods.includes('WEBAUTHN')" class="mfa-code">
+          <a-button
+            type="primary"
+            size="large"
+            :loading="webAuthnMfaLoading"
+            @click="handleWebAuthnMfa"
+          >
+            <template #icon>
+              <icon-safe />
+            </template>
+            使用 Passkey 验证
+          </a-button>
         </div>
       </a-spin>
     </div>
@@ -188,6 +229,37 @@ export default loginTs;
             ></a-qrcode>
           </template>
         </a-popover>
+      </div>
+    </div>
+    <!-- 添加 Passkey 凭证界面 -->
+    <div class="form-container" v-if="toMfa && toAddPasskey && !toFogotPwd">
+      <div>
+        <a-button type="text" size="mini" @click="backToLogin">
+          返回登录
+          <template #icon>
+            <icon-left />
+          </template>
+        </a-button>
+        <div class="title">添加 Passkey</div>
+        <div class="mfa-info">您还没有添加 Passkey 凭证，请先添加</div>
+        <div class="mfa-code">
+          <a-button
+            type="primary"
+            size="large"
+            :loading="webAuthnMfaLoading"
+            @click="handleAddPasskey"
+          >
+            <template #icon>
+              <icon-safe />
+            </template>
+            添加 Passkey
+          </a-button>
+        </div>
+        <div class="mfa-code">
+          <a-button @click="handleSkipAddPasskey">
+            暂不添加，使用其他方式验证
+          </a-button>
+        </div>
       </div>
     </div>
     <div class="form-container" v-if="toFogotPwd">

@@ -8,8 +8,8 @@ import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
-import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
-import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
+import cn.opensrcdevelop.auth.biz.mfa.MfaValidContext;
+import cn.opensrcdevelop.auth.biz.mfa.TotpAuthenticator;
 import cn.opensrcdevelop.auth.biz.service.auth.TotpService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -30,37 +30,34 @@ public class TotpServiceImpl implements TotpService {
 
     /**
      * 一次性密码校验
-     *
-     * @param requestDto
-     *            请求
-     * @return 检验结果
      */
     @Override
     public TotpCodeCheckResponseDto check(TotpCodeCheckRequestDto requestDto, HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        TotpValidContext totpValidContext = (TotpValidContext) session.getAttribute(AuthConstants.TOTP_VALID_CONTEXT);
+        MfaValidContext mfaValidContext = (MfaValidContext) session.getAttribute(AuthConstants.MFA_VALID_CONTEXT);
 
-        // 1. 获取用户 MFA 密钥及设备绑定状态
-        User user = userService.getOne(Wrappers.<User>lambdaQuery().select(User::getMfaSecret, User::getMfaDeviceBind)
-                .eq(User::getUserId, totpValidContext.getUserId()));
-        String secret = user.getMfaSecret();
+        // 1. 获取用户 TOTP 密钥及设备绑定状态
+        User user = userService.getOne(Wrappers.<User>lambdaQuery().select(User::getTotpSecret, User::getTotpDeviceBind)
+                .eq(User::getUserId, mfaValidContext.getUserId()));
+        String secret = user.getTotpSecret();
         if (StringUtils.isEmpty(secret)) {
             throw new BizException(MessageConstants.TOTP_MSG_1000);
         }
 
         // 2. 校验
-        boolean checkRes = MultiFactorAuthenticator.checkCode(secret, requestDto.getCode(), System.currentTimeMillis());
+        boolean checkRes = TotpAuthenticator.checkCode(secret, requestDto.getCode(), System.currentTimeMillis());
 
         // 3. 设置校验结果
         if (checkRes) {
-            totpValidContext.setValid(true);
-            session.setAttribute(AuthConstants.TOTP_VALID_CONTEXT, totpValidContext);
+            mfaValidContext.addValidatedMethod("TOTP");
+            mfaValidContext.setValid(true);
+            session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, mfaValidContext);
         }
 
         // 4. 初次绑定，执行校验操作后，更新设备绑定状态为已绑定
-        if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
-            userService.update(Wrappers.<User>lambdaUpdate().set(User::getMfaDeviceBind, true).eq(User::getUserId,
-                    totpValidContext.getUserId()));
+        if (BooleanUtils.isNotTrue(user.getTotpDeviceBind())) {
+            userService.update(Wrappers.<User>lambdaUpdate().set(User::getTotpDeviceBind, true).eq(User::getUserId,
+                    mfaValidContext.getUserId()));
 
             // 5. 审计
             AuditUtil.publishSuccessUserOperationAuditEvent(AuthUtil.getCurrentUserId(), ResourceType.USER,
