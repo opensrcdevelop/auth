@@ -1,10 +1,10 @@
 package cn.opensrcdevelop.auth.authentication.passkey;
 
 import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnAuthenticateCompleteRequestDto;
-import cn.opensrcdevelop.auth.biz.entity.auth.WebAuthnCredential;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
-import cn.opensrcdevelop.auth.biz.repository.auth.WebAuthnCredentialRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
+import cn.opensrcdevelop.common.exception.BizException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,61 +13,68 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * Passkey 登录认证提供者 根据 credentialId 查找用户并验证 Passkey 认证
+ * Passkey 认证提供者
  */
 @RequiredArgsConstructor
 @Slf4j
 public class PasskeyAuthenticationProvider implements AuthenticationProvider {
 
-    private final UserDetailsService userDetailsService;
     private final WebAuthnService webAuthnService;
-    private final WebAuthnCredentialRepository webAuthnCredentialRepository;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        log.info("PasskeyAuthenticationProvider.authenticate 开始");
+
         PasskeyAuthenticationToken authenticationToken = (PasskeyAuthenticationToken) authentication;
         String credentialId = authenticationToken.getCredentialId();
         String response = authenticationToken.getResponse();
         String clientDataJSON = authenticationToken.getClientDataJSON();
+        String signature = authenticationToken.getSignature();
+
+        log.info("Passkey 认证参数: credentialId={}, response={}, clientDataJSON={}, signature={}",
+                credentialId, response != null ? response.substring(0, Math.min(50, response.length())) + "..." : null,
+                clientDataJSON != null
+                        ? clientDataJSON.substring(0, Math.min(50, clientDataJSON.length())) + "..."
+                        : null,
+                signature != null ? signature.substring(0, Math.min(50, signature.length())) + "..." : null);
 
         if (credentialId == null || credentialId.isBlank()) {
             throw new AuthenticationServiceException("凭证ID不能为空");
         }
 
-        // 1. 根据 credentialId 查找凭证
-        WebAuthnCredential credential = webAuthnCredentialRepository.findByCredentialId(credentialId);
-        if (credential == null || credential.getDeleted()) {
-            throw new AuthenticationServiceException("凭证不存在或已失效");
+        if (response == null || response.isBlank()) {
+            throw new AuthenticationServiceException("认证响应不能为空");
         }
 
-        // 2. 根据凭证关联的用户ID获取用户信息
-        String userId = credential.getUserId();
-        User user = (User) userDetailsService.loadUserByUsername(userId);
-        if (user == null) {
-            throw new AuthenticationServiceException("用户不存在");
-        }
+        // 获取 HttpServletRequest
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
 
-        // 3. 构建认证请求 DTO
+        // 构建认证请求 DTO
         WebAuthnAuthenticateCompleteRequestDto requestDto = new WebAuthnAuthenticateCompleteRequestDto();
         requestDto.setId(credentialId);
         requestDto.setResponse(response);
         requestDto.setClientDataJSON(clientDataJSON);
+        requestDto.setSignature(signature);
 
-        // 4. 验证 Passkey 认证
-        boolean authenticated = webAuthnService.completeAuthentication(
-                user.getUserId(), requestDto, null);
+        log.info("Passkey 开始调用 completeAuthentication");
 
-        if (!authenticated) {
-            throw new AuthenticationServiceException("Passkey 认证失败");
+        // 调用认证方法（未登录场景）
+        User user;
+        try {
+            user = webAuthnService.completeAuthentication(null, requestDto, request);
+        } catch (BizException e) {
+            log.warn("Passkey 认证失败: {}", e.getMessage());
+            throw new AuthenticationServiceException(e.getMessage());
         }
 
-        // 5. 设置 Passkey 登录验证通过状态（避免 LoginSuccessHandler 重复设置 valid=false）
-        webAuthnService.setValidForPasskeyLogin(user.getUserId(), null);
+        log.info("Passkey 认证成功: userId={}, username={}", user.getUserId(), user.getUsername());
 
-        // 6. 返回认证成功的 Token
+        // 返回认证成功的 Token
         return new UsernamePasswordAuthenticationToken(user, "", Collections.emptyList());
     }
 

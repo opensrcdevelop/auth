@@ -25,5 +25,5 @@ dependencies {
     implementation "com.alibaba:easyexcel:$rootProject.easyexcelVer"
     implementation "org.apache.poi:poi:$rootProject.poiVer"
     implementation "org.apache.poi:poi-ooxml:$rootProject.poiVer"
-    implementation "com.webauthn4j:webauthn4j-core:0.21.0.RELEASE"
+    implementation "com.webauthn4j:webauthn4j-core:0.31.0.RELEASE"
 }

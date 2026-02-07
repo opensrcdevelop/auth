@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * WebAuthn 控制器
  */
+@Slf4j
 @Tag(name = "API-WebAuthn", description = "接口-WebAuthn")
 @RestController
 @RestResponse
@@ -47,14 +49,15 @@ public class WebAuthnController {
             @RequestBody @Valid WebAuthnRegisterCompleteRequestDto requestDto,
             HttpServletRequest request) {
         String userId = AuthUtil.getCurrentUserId();
+        log.info("completeRegistration called - userId: {}, credentialId: {}", userId, requestDto.getId());
         return webAuthnService.completeRegistration(userId, requestDto, request);
     }
 
-    @Operation(summary = "获取认证选项", description = "获取 WebAuthn 认证所需的选项")
+    @Operation(summary = "获取认证选项", description = "获取 WebAuthn/Passkey 认证所需的选项（支持已登录和未登录场景）")
     @PostMapping("/authenticate/options")
-    public WebAuthnAuthenticateOptionsResponseDto getAuthenticationOptions() {
+    public WebAuthnAuthenticateOptionsResponseDto getAuthenticationOptions(HttpServletRequest request) {
         String userId = AuthUtil.getCurrentUserId();
-        return webAuthnService.getAuthenticationOptions(userId);
+        return webAuthnService.getAuthenticationOptions(userId, request);
     }
 
     @Operation(summary = "完成认证", description = "完成 WebAuthn 凭证认证")
@@ -63,7 +66,7 @@ public class WebAuthnController {
             @RequestBody @Valid WebAuthnAuthenticateCompleteRequestDto requestDto,
             HttpServletRequest request) {
         String userId = AuthUtil.getCurrentUserId();
-        return webAuthnService.completeAuthentication(userId, requestDto, request);
+        return webAuthnService.completeAuthentication(userId, requestDto, request) != null;
     }
 
     @Operation(summary = "列出凭证", description = "列出当前用户的所有 WebAuthn 凭证")

@@ -1,5 +1,116 @@
 processResources {
     dependsOn(':ui:assembleFrontend')
+    dependsOn 'createSslCertificate'
+}
+
+// SSL 证书路径（用户目录下）
+def sslDir = "${System.getProperty('user.home')}/.ssl/auth"
+def keystoreFile = "${sslDir}/keystore.p12"
+def keyPem = "${sslDir}/key.pem"
+def certPem = "${sslDir}/cert.pem"
+
+tasks.register('createSslCertificate') {
+    description = 'Create self-signed SSL certificate for dev environment (stored in user home directory)'
+    group = 'build'
+
+    // 仅在 dev 环境下执行
+    onlyIf {
+        !project.hasProperty('prod') && !project.hasProperty('production')
+    }
+
+    doLast {
+        // 创建 SSL 目录
+        def sslDirFile = new File(sslDir)
+        if (!sslDirFile.exists()) {
+            sslDirFile.mkdirs()
+        }
+
+        def keystore = new File(keystoreFile)
+        def keyPemFile = new File(keyPem)
+        def certPemFile = new File(certPem)
+
+        // 检查证书是否需要生成
+        boolean needGenKeystore = !keystore.exists()
+        boolean needGenPem = !keyPemFile.exists() || !certPemFile.exists()
+
+        if (needGenKeystore || needGenPem) {
+            println "Creating SSL certificates in ${sslDir}..."
+
+            // 生成 keystore（如果不存在）
+            if (needGenKeystore) {
+                def keytool = org.gradle.internal.os.OperatingSystem.current().isWindows()
+                        ? "${System.getenv('JAVA_HOME')}\\bin\\keytool.exe"
+                        : "keytool"
+
+                def command = [
+                    keytool,
+                    "-genkeypair",
+                    "-alias", "auth-server",
+                    "-keyalg", "RSA",
+                    "-keysize", "2048",
+                    "-validity", "3650",  // 10年有效期
+                    "-keystore", keystoreFile,
+                    "-storepass", "changeit",
+                    "-keypass", "changeit",
+                    "-dname", "CN=auth.local.opensrcdevelop.cn,OU=Development,O=OpenSrcDevelop,L=Beijing,C=CN",
+                    "-ext", "SAN=DNS:auth.local.opensrcdevelop.cn,IP:127.0.0.1"
+                ]
+
+                println "Generating PKCS12 keystore..."
+                def process = command.execute()
+                def output = new StringBuilder()
+                def error = new StringBuilder()
+                process.waitForProcessOutput(output, error)
+
+                if (process.exitValue() == 0) {
+                    println "PKCS12 keystore created: ${keystoreFile}"
+                } else {
+                    println "Failed to create keystore: ${error.toString()}"
+                }
+            }
+
+            // 转换为 PEM 格式（如果不存在）
+            if (needGenPem) {
+                println "Converting to PEM format..."
+                def process = ["openssl", "pkcs12", "-in", keystoreFile, "-passin", "pass:changeit", "-nokeys", "-out", certPem].execute()
+                process.waitFor()
+                if (process.exitValue() != 0) {
+                    println "Failed to export cert.pem"
+                }
+
+                process = ["openssl", "pkcs12", "-in", keystoreFile, "-passin", "pass:changeit", "-nocerts", "-nodes", "-out", keyPem].execute()
+                process.waitFor()
+                if (process.exitValue() != 0) {
+                    println "Failed to export key.pem"
+                }
+
+                println "PEM certificates created: ${certPem}, ${keyPem}"
+            }
+
+            // 输出信任命令提示
+            println ""
+            println "========================================"
+            println "请运行以下命令信任证书（一次性操作）："
+            println ""
+            println "  sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ${certPem}"
+            println ""
+            println "========================================"
+        } else {
+            println "SSL certificates already exist in ${sslDir}, skipping generation"
+        }
+    }
+}
+
+tasks.register('cleanSslCertificate') {
+    description = 'Clean SSL certificate files'
+    group = 'build'
+    doLast {
+        def keystore = new File(keystoreFile)
+        if (keystore.exists()) {
+            keystore.delete()
+            println "SSL certificate deleted: ${keystoreFile}"
+        }
+    }
 }
 
 jar {

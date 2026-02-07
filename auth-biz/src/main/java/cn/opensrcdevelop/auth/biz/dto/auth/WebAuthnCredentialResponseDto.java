@@ -1,5 +1,7 @@
 package cn.opensrcdevelop.auth.biz.dto.auth;
 
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -34,11 +36,13 @@ public class WebAuthnCredentialResponseDto {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime createdAt;
 
     /**
      * 最后使用时间
      */
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime lastUsedAt;
 
     /**

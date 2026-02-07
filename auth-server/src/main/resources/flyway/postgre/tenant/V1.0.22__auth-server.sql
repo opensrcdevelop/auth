@@ -18,7 +18,12 @@ CREATE TABLE IF NOT EXISTS t_webauthn_credential (
     device_type VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP,
-    deleted BOOLEAN DEFAULT FALSE
+    deleted BOOLEAN DEFAULT FALSE,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    create_by VARCHAR(50),
+    update_time TIMESTAMP,
+    update_by VARCHAR(50),
+    version INTEGER DEFAULT 1
 );
 
 -- 创建用户ID索引
@@ -28,10 +33,19 @@ CREATE INDEX IF NOT EXISTS idx_webauthn_credential_user_id ON t_webauthn_credent
 CREATE INDEX IF NOT EXISTS idx_webauthn_credential_credential_id ON t_webauthn_credential(credential_id) WHERE deleted = FALSE;
 
 -- ----------------------------
--- 2. 重命名字段
+-- 2. 重命名字段（tenant 库已在之前版本中执行）
 -- ----------------------------
-ALTER TABLE IF EXISTS t_user RENAME COLUMN mfa_secret TO totp_secret;
-ALTER TABLE IF EXISTS t_user RENAME COLUMN mfa_device_bind TO totp_device_bind;
+-- ALTER TABLE IF EXISTS t_user RENAME COLUMN mfa_secret TO totp_secret;
+-- ALTER TABLE IF EXISTS t_user RENAME COLUMN mfa_device_bind TO totp_device_bind;
+
+-- ----------------------------
+-- 3. 添加缺失的 BaseEntity 字段
+-- ----------------------------
+ALTER TABLE t_webauthn_credential ADD COLUMN IF NOT EXISTS create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE t_webauthn_credential ADD COLUMN IF NOT EXISTS create_by VARCHAR(50);
+ALTER TABLE t_webauthn_credential ADD COLUMN IF NOT EXISTS update_time TIMESTAMP;
+ALTER TABLE t_webauthn_credential ADD COLUMN IF NOT EXISTS update_by VARCHAR(50);
+ALTER TABLE t_webauthn_credential ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
 
 -- ----------------------------
 -- COMMENT
@@ -46,3 +60,8 @@ COMMENT ON COLUMN t_webauthn_credential.last_used_at IS '最后使用时间';
 COMMENT ON COLUMN t_webauthn_credential.deleted IS '软删除标记';
 COMMENT ON COLUMN t_user.totp_secret IS 'TOTP 密钥';
 COMMENT ON COLUMN t_user.totp_device_bind IS 'TOTP 设备绑定状态';
+COMMENT ON COLUMN t_webauthn_credential.create_time IS '创建时间';
+COMMENT ON COLUMN t_webauthn_credential.create_by IS '创建人';
+COMMENT ON COLUMN t_webauthn_credential.update_time IS '更新时间';
+COMMENT ON COLUMN t_webauthn_credential.update_by IS '更新人';
+COMMENT ON COLUMN t_webauthn_credential.version IS '版本号';

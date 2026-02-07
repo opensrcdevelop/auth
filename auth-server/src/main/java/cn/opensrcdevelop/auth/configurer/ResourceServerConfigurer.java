@@ -5,7 +5,6 @@ import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvid
 import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationFilter;
 import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationProvider;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
-import cn.opensrcdevelop.auth.biz.repository.auth.WebAuthnCredentialRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
 import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
@@ -112,8 +111,6 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         http.addFilterBefore(passkeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.authenticationProvider(
                 new PasskeyAuthenticationProvider(
-                        (UserDetailsService) SpringContextUtil.getBean(UserService.class),
-                        SpringContextUtil.getBean(WebAuthnService.class),
-                        SpringContextUtil.getBean(WebAuthnCredentialRepository.class)));
+                        SpringContextUtil.getBean(WebAuthnService.class)));
     }
 }

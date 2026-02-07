@@ -14,6 +14,7 @@ public class AuthConstants {
     public static final String COOKIE_SESSION = "SESSION";
     public static final String MFA_VALID_CONTEXT = "MFA_VALID_CONTEXT";
     public static final String WEB_AUTHN_REGISTER_CHALLENGE = "WEB_AUTHN_REGISTER_CHALLENGE";
+    public static final String WEB_AUTHN_AUTHENTICATE_CHALLENGE = "WEB_AUTHN_AUTHENTICATE_CHALLENGE";
     public static final String VERIFICATION_CODE = "VERIFICATION_CODE";
     public static final String SESSION_CHANGED_PWD = "SESSION_CHANGED_PWD";
     public static final String OIDC_SCOPE_ROLES = "roles";

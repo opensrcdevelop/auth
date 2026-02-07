@@ -16,6 +16,7 @@ public class MessageConstants {
     public static final String WEB_AUTHN_MSG_1004 = "webauthn.msg.1004";
     public static final String WEB_AUTHN_MSG_1005 = "webauthn.msg.1005";
     public static final String WEB_AUTHN_MSG_1006 = "webauthn.msg.1006";
+    public static final String WEB_AUTHN_MSG_1007 = "webauthn.msg.1007";
     public static final String EMAIL_CODE_MSG_1000 = "email.code.msg.1000";
     public static final String LOGIN_MSG_1000 = "login.msg.1000";
     public static final String LOGIN_MSG_1001 = "login.msg.1001";

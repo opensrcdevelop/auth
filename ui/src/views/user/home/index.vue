@@ -247,7 +247,7 @@ export default homeTs;
                 </a-card>
               </div>
               <!-- WebAuthn/Passkey 凭证管理 -->
-              <div class="card" v-if="isWebAuthnSupported">
+              <div class="card">
                 <a-card title="Passkey 凭证">
                   <div class="binding-card">
                     <div class="icon-container">
@@ -274,7 +274,6 @@ export default homeTs;
                     :bordered="false"
                     :pagination="false"
                     style="margin-top: 16px"
-                    v-if="webAuthnCredentials.length > 0"
                   >
                     <template #columns>
                       <a-table-column title="凭证ID">
@@ -332,7 +331,6 @@ export default homeTs;
                       </a-table-column>
                     </template>
                   </a-table>
-                  <a-empty v-else description="暂无凭证" style="margin-top: 16px" />
                 </a-card>
               </div>
             </a-spin>

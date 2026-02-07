@@ -19,18 +19,34 @@ public class PasskeyAuthenticationToken extends AbstractAuthenticationToken {
     /** 凭证 ID（Base64URL 编码） */
     private final String credentialId;
 
-    /** 原始凭证响应（Base64URL 编码） */
+    /** 认证器数据（Base64URL 编码） */
     private final String response;
 
     /** 客户端数据 JSON（Base64URL 编码） */
     private final String clientDataJSON;
 
+    /** 签名数据（Base64URL 编码） */
+    private final String signature;
+
+    public PasskeyAuthenticationToken(String credentialId, String response, String clientDataJSON, String signature) {
+        super(Collections.emptyList());
+        this.credentialId = credentialId;
+        this.response = response;
+        this.clientDataJSON = clientDataJSON;
+        this.signature = signature;
+        super.setAuthenticated(false);
+    }
+
+    /**
+     * 构造函数用于已认证的 Token
+     */
     public PasskeyAuthenticationToken(String credentialId, String response, String clientDataJSON) {
         super(Collections.emptyList());
         this.credentialId = credentialId;
         this.response = response;
         this.clientDataJSON = clientDataJSON;
-        super.setAuthenticated(false);
+        this.signature = null;
+        super.setAuthenticated(true);
     }
 
     @Override

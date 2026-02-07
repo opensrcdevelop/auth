@@ -13,6 +13,7 @@ import {
   completeWebAuthnRegistration,
   getWebAuthnAuthenticateOptions,
   getWebAuthnRegisterOptions,
+  passkeyLoginSubmit,
 } from "@/api/webauthn";
 import FederationLogin from "./components/FederationLogin.vue";
 
@@ -209,9 +210,9 @@ const handleAddPasskey = () => {
           const credential = await webauthn.startRegistration(data);
           const responseResult = await completeWebAuthnRegistration({
             id: credential.id,
-            response: JSON.stringify(credential.response),
             transports: credential.response.transports?.join(",") || "",
             attestationObject: credential.response.attestationObject,
+            clientDataJSON: credential.response.clientDataJSON,
           });
           handleApiSuccess(responseResult, () => {
             Notification.success("Passkey 添加成功，请继续验证");
@@ -347,55 +348,30 @@ const handleEmailLoginFormSubmit = (formData) => {
 
 /**
  * 提交 Passkey 登录表单
- * Passkey 登录无需输入用户名，直接调用 Passkey 认证
+ * Passkey 登录流程（使用 Resident Keys，无需输入用户名）：
+ * 1. 调用后端获取认证选项（包含 challenge）
+ * 2. 调用浏览器 WebAuthn API 完成认证
+ * 3. 后端从 credentialId 查找对应的用户并验证签名
  */
 const handlePasskeyLoginFormSubmit = () => {
   passkeyLoginLoading.value = true;
 
-  // Passkey 登录：直接调用 /login/passkey 获取认证选项
-  authRequest.post({
-    url: "/login/passkey",
-    data: {
-      credentialId: "",  // 空 credentialId 会触发浏览器自动选择凭证
-      response: "",
-      clientDataJSON: "",
-    },
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  })
-    .then(async () => {
-      Notification.success("Passkey 登录成功");
-      toTarget();
-    })
-    .catch(async (err: any) => {
-      // 如果是 400 错误，说明需要获取认证选项（第一次调用）
-      if (err.response?.status === 400) {
+  // Passkey 认证：先获取后端的认证选项
+  getWebAuthnAuthenticateOptions()
+    .then(async (result: any) => {
+      handleApiSuccess(result, async (data: any) => {
+        // 使用后端返回的 challenge 调用浏览器 API
         try {
-          // 从错误响应中获取 challenge（如果后端返回）
-          // 或者直接调用 getWebAuthnLoginOptions 获取选项
-          // 由于后端不再需要用户名，直接发起认证请求
-          const credential = await webauthn.startAuthentication({
-            challenge: err.response?.data?.challenge || "",
-            rpId: window.location.hostname,
-            allowCredentials: [],
-            userVerification: "preferred",
-          });
+          const credential = await webauthn.startAuthentication(data);
 
-          // 提交认证结果到 /login/passkey
-          const formData = {
-            credentialId: credential.id,
-            response: credential.response.authenticatorData,
-            clientDataJSON: credential.response.clientDataJSON,
-          };
+          // 提交认证结果
+          const formData = new URLSearchParams();
+          formData.append("credentialId", credential.id);
+          formData.append("response", credential.response.authenticatorData);
+          formData.append("clientDataJSON", credential.response.clientDataJSON);
+          formData.append("signature", credential.response.signature);
 
-          await authRequest.post({
-            url: "/login/passkey",
-            data: formData,
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-          });
+          await passkeyLoginSubmit(formData);
 
           Notification.success("Passkey 登录成功");
           toTarget();
@@ -406,9 +382,10 @@ const handlePasskeyLoginFormSubmit = () => {
             Notification.error("Passkey 登录失败: " + (error.message || "未知错误"));
           }
         }
-      } else {
-        handleApiError(err, "Passkey 登录");
-      }
+      });
+    })
+    .catch(async (err: any) => {
+      handleApiError(err, "Passkey 登录");
     })
     .finally(() => {
       passkeyLoginLoading.value = false;

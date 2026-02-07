@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnAuthenticateOptionsResponseDt
 import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnCredentialResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnRegisterCompleteRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnRegisterOptionsResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
@@ -42,25 +43,40 @@ public interface WebAuthnService {
      * 获取认证选项
      *
      * @param userId
-     *            用户ID
+     *            用户ID（未登录时为 null）
+     * @param request
+     *            HTTP请求
      * @return 认证选项
      */
-    WebAuthnAuthenticateOptionsResponseDto getAuthenticationOptions(String userId);
+    WebAuthnAuthenticateOptionsResponseDto getAuthenticationOptions(String userId, HttpServletRequest request);
 
     /**
      * 完成认证
      *
      * @param userId
-     *            用户ID
+     *            用户ID（未登录时为 null）
      * @param requestDto
      *            认证完成请求
      * @param request
      *            HTTP请求
-     * @return 是否认证成功
+     * @return 认证成功的用户信息（认证失败返回 null）
      */
-    boolean completeAuthentication(String userId, WebAuthnAuthenticateCompleteRequestDto requestDto,
+    User completeAuthentication(String userId, WebAuthnAuthenticateCompleteRequestDto requestDto,
             HttpServletRequest request);
 
+    /**
+     * Passkey 登录认证（不验证 challenge，直接验证签名） 用于 Passkey 独立登录场景
+     *
+     * @param credentialId
+     *            凭证ID
+     * @param response
+     *            认证响应（authenticatorData）
+     * @param clientDataJSON
+     *            客户端数据JSON
+     * @param request
+     *            HTTP请求
+     * @return 认证成功的用户信息
+     */
     /**
      * 列出用户的所有凭证
      *

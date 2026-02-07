@@ -54,3 +54,8 @@ ai-chatbi/src/main/resources/application-prompt_template.yml
 .claude/settings.local.json
 .claude/tmp/
 worktrees/
+
+# SSL certificates
+**/ssl/
+**/*.p12
+**/*.keystore

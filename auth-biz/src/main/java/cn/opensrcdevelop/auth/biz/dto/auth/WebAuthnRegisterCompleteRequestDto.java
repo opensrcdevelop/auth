@@ -16,15 +16,14 @@ public class WebAuthnRegisterCompleteRequestDto {
     private String id;
 
     /**
-     * 原始凭证响应（Base64URL 编码）
+     * 原始凭证 ID（Base64URL 编码）
      */
-    @NotBlank(message = "原始凭证响应不能为空")
-    private String response;
+    private String rawId;
 
     /**
-     * 客户端数据JSON（Base64URL 编码）
+     * 响应对象
      */
-    private String clientDataJSON;
+    private Response response;
 
     /**
      * 传输类型
@@ -32,7 +31,19 @@ public class WebAuthnRegisterCompleteRequestDto {
     private String transports;
 
     /**
-     * 证明对象（Base64URL 编码，包含公钥信息）
+     * 响应内部类
      */
-    private String attestationObject;
+    @Data
+    public static class Response {
+
+        /**
+         * 客户端数据JSON（Base64URL 编码）
+         */
+        private String clientDataJSON;
+
+        /**
+         * 证明对象（Base64URL 编码，包含公钥信息）
+         */
+        private String attestationObject;
+    }
 }

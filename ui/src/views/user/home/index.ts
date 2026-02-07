@@ -495,6 +495,12 @@ const handleGetWebAuthnCredentials = () => {
  * 添加 WebAuthn 凭证
  */
 const handleAddWebAuthnCredential = () => {
+  // 检查浏览器是否支持 WebAuthn
+  if (!webauthn.isSupported()) {
+    Notification.warning("当前浏览器不支持 Passkey");
+    return;
+  }
+
   addingWebAuthnCredential.value = true;
   getWebAuthnRegisterOptions()
     .then((result: any) => {
@@ -503,17 +509,22 @@ const handleAddWebAuthnCredential = () => {
           const credential = await webauthn.startRegistration(data);
           const responseResult = await completeWebAuthnRegistration({
             id: credential.id,
-            response: credential.response.attestationObject,
-            clientDataJSON: credential.response.clientDataJSON,
-            transports: (credential as any).transports?.join(","),
+            rawId: credential.rawId,
+            response: {
+              clientDataJSON: credential.response.clientDataJSON,
+              attestationObject: credential.response.attestationObject,
+            },
+            transports: credential.response.transports?.join(",") || "",
           });
           handleApiSuccess(responseResult, () => {
             Notification.success("添加 Passkey 凭证成功");
             handleGetWebAuthnCredentials();
           });
         } catch (error: any) {
-          if (error.message && error.message.includes("NotAllowedError")) {
-            Notification.warning("已取消添加凭证");
+          if (error.message && (error.message.includes("not allowed"))) {
+            Notification.warning("已取消添加 Passkey 凭证");
+          } else if (error.message.includes("previously registered")) {
+            Notification.warning("该设备已注册过 Passkey，无法重复注册");
           } else {
             Notification.error("添加凭证失败: " + (error.message || "未知错误"));
           }

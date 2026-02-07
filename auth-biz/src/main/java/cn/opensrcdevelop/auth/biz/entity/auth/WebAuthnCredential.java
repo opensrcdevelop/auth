@@ -39,9 +39,9 @@ public class WebAuthnCredential extends BaseEntity implements Serializable {
     private String userId;
 
     /**
-     * 公钥材料（COSE格式）
+     * 公钥材料（JSON格式）
      */
-    private byte[] publicKey;
+    private String publicKey;
 
     /**
      * 签名计数器，用于防止重放攻击
