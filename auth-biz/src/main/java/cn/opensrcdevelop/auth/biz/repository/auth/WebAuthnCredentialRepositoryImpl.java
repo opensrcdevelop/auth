@@ -2,11 +2,12 @@ package cn.opensrcdevelop.auth.biz.repository.auth;
 
 import cn.opensrcdevelop.auth.biz.entity.auth.WebAuthnCredential;
 import cn.opensrcdevelop.auth.biz.mapper.auth.WebAuthnCredentialMapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import java.util.List;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * WebAuthn 凭证 Repository 实现
@@ -26,11 +27,8 @@ public class WebAuthnCredentialRepositoryImpl implements WebAuthnCredentialRepos
      */
     @Override
     public WebAuthnCredential findByCredentialId(String credentialId) {
-        QueryWrapper<WebAuthnCredential> wrapper = new QueryWrapper<>();
-        wrapper.eq("credential_id", credentialId)
-                .eq("deleted", false)
-                .last("LIMIT 1");
-        return webAuthnCredentialMapper.selectOne(wrapper);
+        return webAuthnCredentialMapper.selectOne(Wrappers.<WebAuthnCredential>lambdaQuery()
+                .eq(WebAuthnCredential::getCredentialId, credentialId));
     }
 
     /**
@@ -42,11 +40,9 @@ public class WebAuthnCredentialRepositoryImpl implements WebAuthnCredentialRepos
      */
     @Override
     public List<WebAuthnCredential> findAllByUserId(String userId) {
-        QueryWrapper<WebAuthnCredential> wrapper = new QueryWrapper<>();
-        wrapper.eq("user_id", userId)
-                .eq("deleted", false)
-                .orderByDesc("created_at");
-        return webAuthnCredentialMapper.selectList(wrapper);
+        return webAuthnCredentialMapper.selectList(Wrappers.<WebAuthnCredential>lambdaQuery()
+                .eq(WebAuthnCredential::getUserId, userId)
+                .orderByDesc(WebAuthnCredential::getCreateTime));
     }
 
     /**
@@ -97,9 +93,7 @@ public class WebAuthnCredentialRepositoryImpl implements WebAuthnCredentialRepos
      */
     @Override
     public long countByUserId(String userId) {
-        QueryWrapper<WebAuthnCredential> wrapper = new QueryWrapper<>();
-        wrapper.eq("user_id", userId)
-                .eq("deleted", false);
-        return webAuthnCredentialMapper.selectCount(wrapper);
+        return webAuthnCredentialMapper.selectCount(Wrappers
+                .<WebAuthnCredential>lambdaQuery().eq(WebAuthnCredential::getUserId, userId));
     }
 }

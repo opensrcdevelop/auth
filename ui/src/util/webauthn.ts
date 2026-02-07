@@ -1,4 +1,4 @@
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import {startAuthentication} from "@simplewebauthn/browser";
 
 /**
  * Uint8Array 转换为 Base64URL 字符串
@@ -9,7 +9,7 @@ function uint8ArrayToBase64Url(uint8Array: Uint8Array): string {
 }
 
 /**
- * Uint8Array 转换为标准 Base64 字符串（用于后端 webAuthn4j）
+ * Uint8Array 转换为标准 Base64 字符串
  */
 function uint8ArrayToBase64(uint8Array: Uint8Array): string {
   return btoa(String.fromCharCode.apply(null, uint8Array as any));
@@ -18,7 +18,9 @@ function uint8ArrayToBase64(uint8Array: Uint8Array): string {
 /**
  * ArrayBuffer 转换为 Base64URL 字符串
  */
-function arrayBufferToBase64Url(buffer: ArrayBuffer | string | undefined): string {
+function arrayBufferToBase64Url(
+  buffer: ArrayBuffer | string | undefined,
+): string {
   if (!buffer) {
     return "";
   }
@@ -53,10 +55,11 @@ function convertToWebAuthnOptions(options: any): any {
   }
 
   // 处理 excludeCredentials：后端返回的是字符串数组，需要转换为对象数组
-  const excludeCredentials = options.excludeCredentials?.map((credId: string) => ({
-    id: credId, // 保持字符串格式，由 @simplewebauthn 自动转换
-    type: "public-key" as const,
-  })) || [];
+  const excludeCredentials =
+    options.excludeCredentials?.map((credId: string) => ({
+      id: credId, // 保持字符串格式，由 @simplewebauthn 自动转换
+      type: "public-key" as const,
+    })) || [];
 
   // challenge 和 user.id 保持字符串格式，由 @simplewebauthn 自动转换
   return {
@@ -70,10 +73,11 @@ function convertToWebAuthnOptions(options: any): any {
       name: options.user?.name,
       displayName: options.user?.displayName,
     },
-    pubKeyCredParams: options.pubKeyCredParams?.map((param: any) => ({
-      type: param.type,
-      alg: param.alg,
-    })) || [],
+    pubKeyCredParams:
+      options.pubKeyCredParams?.map((param: any) => ({
+        type: param.type,
+        alg: param.alg,
+      })) || [],
     timeout: options.timeout,
     authenticatorSelection: options.authenticatorSelection,
     excludeCredentials,
@@ -90,7 +94,8 @@ const webauthn = {
   isSupported(): boolean {
     return !!(
       window.PublicKeyCredential &&
-      typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
+      typeof window.PublicKeyCredential
+        .isUserVerifyingPlatformAuthenticatorAvailable === "function"
     );
   },
 
@@ -128,7 +133,8 @@ const webauthn = {
       const webAuthnOptions = convertToWebAuthnOptions(options);
 
       // 调用浏览器 API
-      const { startRegistration: browserStartRegistration } = await import("@simplewebauthn/browser");
+      const { startRegistration: browserStartRegistration } =
+        await import("@simplewebauthn/browser");
       const credential = await browserStartRegistration({
         optionsJSON: webAuthnOptions,
       });
@@ -136,9 +142,12 @@ const webauthn = {
         id: credential.id,
         rawId: arrayBufferToBase64Url(credential.rawId),
         response: {
-          clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
-          // 后端 webAuthn4j 使用 Jackson 解析，需要标准 Base64
-          attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+          clientDataJSON: arrayBufferToBase64Url(
+            credential.response.clientDataJSON,
+          ),
+          attestationObject: arrayBufferToBase64(
+            credential.response.attestationObject,
+          ),
           transports: (credential.response as any).transports,
         },
       };
@@ -165,16 +174,19 @@ const webauthn = {
     };
   }> {
     try {
-      // @simplewebauthn/browser 需要 optionsJSON 包装
       const credential = await startAuthentication({ optionsJSON: options });
       return {
         id: credential.id,
         rawId: arrayBufferToBase64Url(credential.rawId),
         response: {
-          clientDataJSON: arrayBufferToBase64Url(credential.response.clientDataJSON),
-          authenticatorData: arrayBufferToBase64Url(credential.response.authenticatorData),
+          clientDataJSON: arrayBufferToBase64Url(
+            credential.response.clientDataJSON,
+          ),
+          authenticatorData: arrayBufferToBase64Url(
+            credential.response.authenticatorData,
+          ),
           signature: arrayBufferToBase64Url(credential.response.signature),
-          userHandle: arrayBufferToBase64Url((credential.response as any).userHandle),
+          userHandle: arrayBufferToBase64Url(credential.response.userHandle),
         },
       };
     } catch (error) {

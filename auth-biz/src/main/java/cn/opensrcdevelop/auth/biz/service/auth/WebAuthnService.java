@@ -1,12 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.auth;
 
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnAuthenticateCompleteRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnAuthenticateOptionsResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnCredentialResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnRegisterCompleteRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnRegisterOptionsResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.*;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 
 /**
@@ -65,19 +62,6 @@ public interface WebAuthnService {
             HttpServletRequest request);
 
     /**
-     * Passkey 登录认证（不验证 challenge，直接验证签名） 用于 Passkey 独立登录场景
-     *
-     * @param credentialId
-     *            凭证ID
-     * @param response
-     *            认证响应（authenticatorData）
-     * @param clientDataJSON
-     *            客户端数据JSON
-     * @param request
-     *            HTTP请求
-     * @return 认证成功的用户信息
-     */
-    /**
      * 列出用户的所有凭证
      *
      * @param userId
@@ -97,37 +81,7 @@ public interface WebAuthnService {
     void deleteCredential(String credentialId, String userId);
 
     /**
-     * 设置 WebAuthn 验证通过状态
-     *
-     * @param userId
-     *            用户ID
-     * @param request
-     *            HTTP请求
-     */
-    void setValid(String userId, HttpServletRequest request);
-
-    /**
-     * 检查 WebAuthn 是否已验证
-     *
-     * @param request
-     *            HTTP请求
-     * @return 是否已验证
-     */
-    boolean isValidated(HttpServletRequest request);
-
-    /**
-     * Passkey 登录认证成功后设置验证通过状态 与 setValid 不同，这个方法在 MFA 场景下直接设置 valid=true， 避免
-     * LoginSuccessHandler 重复设置 valid=false
-     *
-     * @param userId
-     *            用户ID
-     * @param request
-     *            HTTP请求
-     */
-    void setValidForPasskeyLogin(String userId, HttpServletRequest request);
-
-    /**
-     * 获取用户凭证数量
+     * 统计用户的凭证数量
      *
      * @param userId
      *            用户ID

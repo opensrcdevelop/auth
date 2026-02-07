@@ -6,11 +6,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 /**
  * WebAuthn 凭证实体
@@ -39,7 +40,7 @@ public class WebAuthnCredential extends BaseEntity implements Serializable {
     private String userId;
 
     /**
-     * 公钥材料（JSON格式）
+     * 公钥（JSON格式）
      */
     private String publicKey;
 

@@ -15,13 +15,15 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
+import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.MDC;
-import org.springframework.http.HttpStatus;
 
 @Slf4j
 public class TenantContextFilter extends RestFilter {
@@ -38,7 +40,7 @@ public class TenantContextFilter extends RestFilter {
                 // 2. 根据域名获取租户标识
                 URL baseUrl = URI.create(SpringContextUtil.getProperty(CommonConstants.PROP_DEFAULT_ISSUER)).toURL();
                 URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
-                if (StringUtils.equals(baseUrl.getHost(), requestUrl.getHost())) {
+                if (Strings.CS.equals(baseUrl.getHost(), requestUrl.getHost())) {
                     tenantCode = multiTenantProperties.getDefaultTenant();
                 } else {
                     tenantCode = requestUrl.getHost().split("\\.")[0];

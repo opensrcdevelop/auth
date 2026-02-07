@@ -35,7 +35,7 @@ export function completeWebAuthnRegistration(data: {
 }
 
 /**
- * 获取 WebAuthn 认证选项（已登录用户 MFA 验证用）
+ * 获取 WebAuthn 认证选项
  */
 export function getWebAuthnAuthenticateOptions() {
   return apiRequest.post({ url: "/webauthn/authenticate/options" });
@@ -56,7 +56,9 @@ export function completeWebAuthnAuthentication(data: {
 /**
  * 列出用户凭证
  */
-export function listWebAuthnCredentials(): Promise<WebAuthnCredentialResponse[]> {
+export function listWebAuthnCredentials(): Promise<
+  WebAuthnCredentialResponse[]
+> {
   return apiRequest.get({ url: "/webauthn/credentials" });
 }
 

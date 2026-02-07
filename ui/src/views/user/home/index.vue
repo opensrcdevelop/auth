@@ -249,78 +249,62 @@ export default homeTs;
               <!-- WebAuthn/Passkey 凭证管理 -->
               <div class="card">
                 <a-card title="Passkey 凭证">
-                  <div class="binding-card">
-                    <div class="icon-container">
-                      <div class="icon">
-                        <icon-safe />
-                      </div>
-                      <span>Passkey</span>
-                    </div>
-                    <div class="status-container">
-                      <a-button
-                        type="text"
-                        @click="handleAddWebAuthnCredential"
-                        :loading="addingWebAuthnCredential"
-                      >
-                        <template #icon>
-                          <icon-plus />
-                        </template>
-                        添加凭证
-                      </a-button>
-                    </div>
-                  </div>
+                  <template #extra>
+                    <a-button
+                      type="text"
+                      @click="handleAddWebAuthnCredential"
+                      :loading="addingWebAuthnCredential"
+                    >
+                      <template #icon>
+                        <icon-plus />
+                      </template>
+                      添加凭证
+                    </a-button>
+                  </template>
                   <a-table
                     :data="webAuthnCredentials"
                     :bordered="false"
                     :pagination="false"
-                    style="margin-top: 16px"
                   >
                     <template #columns>
-                      <a-table-column title="凭证ID">
+                      <a-table-column title="凭证 ID" ellipsis tooltip>
                         <template #cell="{ record }">
-                          <a-tooltip :content="record.id">
-                            <span>{{ record.idPrefix }}</span>
-                          </a-tooltip>
+                          {{ record.id }}
                         </template>
                       </a-table-column>
                       <a-table-column title="设备类型">
                         <template #cell="{ record }">
-                          <a-tag v-if="record.deviceType === 'platform'" color="arcoblue">
+                          <a-tag
+                            v-if="record.deviceType === 'platform'"
+                            color="arcoblue"
+                          >
                             平台设备
                           </a-tag>
-                          <a-tag v-else-if="record.deviceType === 'cross-platform'" color="green">
+                          <a-tag
+                            v-else-if="record.deviceType === 'cross-platform'"
+                            color="green"
+                          >
                             跨平台设备
                           </a-tag>
                           <a-tag v-else>{{ record.deviceType }}</a-tag>
                         </template>
                       </a-table-column>
-                      <a-table-column title="传输方式">
-                        <template #cell="{ record }">
-                          <a-space>
-                            <a-tag
-                              v-for="transport in record.transports || []"
-                              :key="transport"
-                              size="small"
-                            >
-                              {{ transport }}
-                            </a-tag>
-                          </a-space>
-                        </template>
-                      </a-table-column>
                       <a-table-column title="创建时间">
                         <template #cell="{ record }">
-                          {{ record.createdAt ? record.createdAt : '-' }}
+                          {{ record.createdAt ? record.createdAt : "-" }}
                         </template>
                       </a-table-column>
                       <a-table-column title="最后使用">
                         <template #cell="{ record }">
-                          {{ record.lastUsedAt ? record.lastUsedAt : '-' }}
+                          {{ record.lastUsedAt ? record.lastUsedAt : "-" }}
                         </template>
                       </a-table-column>
                       <a-table-column title="操作" :width="80">
                         <template #cell="{ record }">
                           <a-popconfirm
+                            type="warning"
                             content="确定删除此凭证吗？删除后无法使用该设备登录。"
+                            :ok-button-props="{ status: 'danger' }"
                             @ok="handleDeleteWebAuthnCredential(record)"
                           >
                             <a-button type="text" status="danger" size="small">

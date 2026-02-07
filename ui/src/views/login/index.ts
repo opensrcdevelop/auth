@@ -2,7 +2,6 @@ import {Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {checkCode, emailLoginSubmit, loginSubmit, resetPwd, sendEmailCodeSubmit, totpValidSubmit,} from "@/api/login";
-import authRequest from "@/util/authRequest";
 import {logoutSubmit} from "@/api/logout";
 import router from "@/router";
 import {TENANT_NAME} from "@/util/constants";
@@ -26,7 +25,7 @@ const rememberMe = ref(false);
 const passwordLoginForm = reactive({
   username: undefined,
   password: undefined,
-  captchaVerification: undefined
+  captchaVerification: undefined,
 });
 
 const passwordLoginRules = {
@@ -44,9 +43,14 @@ const passwordLoginRules = {
   ],
 };
 
+// MFA
 const toMfa = ref(false);
+// TOTP 设备绑定
 const toBind = ref(false);
-const toAddPasskey = ref(false);  // 是否显示添加 Passkey 凭证界面
+// 添加 Passkey
+const toAddPasskey = ref(false);
+// MFA 验证
+const toMfaValidate = ref(false);
 const qrCodeData = ref("");
 
 const totpValidForm = reactive({
@@ -62,7 +66,7 @@ const webAuthnMfaLoading = ref(false);
 const isWebAuthnSupported = ref(false);
 
 /** MFA 类型 */
-const supportedMfaMethods = ref<string[]>([]);
+const supportedMfaMethods = ref([]);
 
 const captchaVerifyRef = ref();
 
@@ -143,15 +147,6 @@ const handleTotpValidSubmit = (code) => {
 };
 
 /**
- * WebAuthn/Passkey 登录
- * 注意：该方法已废弃，Passkey 登录现在使用 handlePasskeyLoginFormSubmit
- */
-const handleWebAuthnLogin = () => {
-  // 保留该方法用于向后兼容，实际逻辑已移至 handlePasskeyLoginFormSubmit
-  handlePasskeyLoginFormSubmit();
-};
-
-/**
  * WebAuthn/Passkey MFA 验证
  */
 const handleWebAuthnMfa = () => {
@@ -186,7 +181,10 @@ const handleWebAuthnMfa = () => {
     })
     .catch((err: any) => {
       // 如果是 404 错误，说明没有找到凭证，引导用户添加凭证
-      if (err.response?.status === 404 || err.response?.data?.code === "webauthn.msg.1003") {
+      if (
+        err.response?.status === 404 ||
+        err.response?.data?.code === "webauthn.msg.1003"
+      ) {
         Notification.warning("您还没有添加 Passkey 凭证，请先添加");
         toAddPasskey.value = true;
       } else {
@@ -210,23 +208,26 @@ const handleAddPasskey = () => {
           const credential = await webauthn.startRegistration(data);
           const responseResult = await completeWebAuthnRegistration({
             id: credential.id,
+            rawId: credential.rawId,
+            response: {
+              clientDataJSON: credential.response.clientDataJSON,
+              attestationObject: credential.response.attestationObject,
+            },
             transports: credential.response.transports?.join(",") || "",
-            attestationObject: credential.response.attestationObject,
-            clientDataJSON: credential.response.clientDataJSON,
           });
           handleApiSuccess(responseResult, () => {
-            Notification.success("Passkey 添加成功，请继续验证");
-            toAddPasskey.value = false;
-            // 添加成功后重新尝试 MFA 验证
-            handleWebAuthnMfa();
+            Notification.success("添加 Passkey 凭证成功");
+            supportedMfaMethods.value.push("WEBAUTHN");
+            toMfaValidate.value = true;
           });
         } catch (error: any) {
-          if (error.message && error.message.includes("NotAllowedError")) {
-            Notification.warning("已取消添加 Passkey");
-          } else if (error.message && error.message.includes("InvalidStateError")) {
-            Notification.warning("该设备已添加过 Passkey");
+          if (error.message && error.message.includes("not allowed")) {
+            Notification.warning("已取消添加 Passkey 凭证");
           } else {
-            Notification.error("添加 Passkey 失败: " + (error.message || "未知错误"));
+            console.error(error);
+            Notification.error(
+              "添加凭证失败: " + (error.message || "未知错误"),
+            );
           }
         }
       });
@@ -239,11 +240,13 @@ const handleAddPasskey = () => {
     });
 };
 
+
 /**
- * 跳过添加 Passkey（使用 TOTP 验证）
+ * 跳转至 TOTP 验证页面
  */
-const handleSkipAddPasskey = () => {
-  toAddPasskey.value = false;
+const handleToValidateTotp = () => {
+  toMfaValidate.value = true;
+  supportedMfaMethods.value.push("TOTP");
 };
 
 /**
@@ -264,7 +267,7 @@ const emailLoginFormRef = ref();
 const emailLoginForm = reactive({
   email: undefined,
   code: undefined,
-  rememberMe: false
+  rememberMe: false,
 });
 const emailLoginFormRules = reactive({
   email: [
@@ -347,20 +350,14 @@ const handleEmailLoginFormSubmit = (formData) => {
 };
 
 /**
- * 提交 Passkey 登录表单
- * Passkey 登录流程（使用 Resident Keys，无需输入用户名）：
- * 1. 调用后端获取认证选项（包含 challenge）
- * 2. 调用浏览器 WebAuthn API 完成认证
- * 3. 后端从 credentialId 查找对应的用户并验证签名
+ * Passkey 登录
  */
-const handlePasskeyLoginFormSubmit = () => {
+const handlePasskeyLoginSubmit = () => {
   passkeyLoginLoading.value = true;
 
-  // Passkey 认证：先获取后端的认证选项
   getWebAuthnAuthenticateOptions()
     .then(async (result: any) => {
       handleApiSuccess(result, async (data: any) => {
-        // 使用后端返回的 challenge 调用浏览器 API
         try {
           const credential = await webauthn.startAuthentication(data);
 
@@ -376,10 +373,12 @@ const handlePasskeyLoginFormSubmit = () => {
           Notification.success("Passkey 登录成功");
           toTarget();
         } catch (error: any) {
-          if (error.message && error.message.includes("NotAllowedError")) {
-            Notification.warning("验证已取消或失败，请重试");
+          if (error.message && error.message.includes("not allowed")) {
+            Notification.warning("已取消使用 Passkey 登录");
           } else {
-            Notification.error("Passkey 登录失败: " + (error.message || "未知错误"));
+            Notification.error(
+              "Passkey 登录失败: " + (error.message || "未知错误"),
+            );
           }
         }
       });
@@ -409,29 +408,46 @@ const handleLoginResult = (result: any, loginType: string) => {
     return;
   }
 
+  const mfaMethods = result.supportedMfaMethods || [];
   if (result.enableMfa) {
     // 进入多因素认证
     toMfa.value = true;
-    toBind.value = !result.bound;
-    if (result.qrCode) {
-      qrCodeData.value = result.qrCode;
+
+    // Passkey
+    if (mfaMethods.includes("WEBAUTHN") && isWebAuthnSupported.value) {
+      if (result.hasPasskey) {
+        supportedMfaMethods.value.push("WEBAUTHN");
+      } else {
+        toAddPasskey.value = true;
+        return;
+      }
     }
-    // 设置支持的 MFA 方式
-    supportedMfaMethods.value = result.supportedMfaMethods || [];
+
+    // TOTP
+    if (mfaMethods.includes("TOTP")) {
+      if (result.bound) {
+        supportedMfaMethods.value.push("TOTP");
+      } else {
+        toBind.value = true;
+        if (result.qrCode) {
+          qrCodeData.value = result.qrCode;
+        }
+      }
+    } 
   } else {
     toTarget();
   }
 };
 
 /** 忘记密码 */
-const toFogotPwd = ref(false);
+const toForgotPwd = ref(false);
 const toCheckForgotPwdCode = ref(false);
 
 /**
  * 跳转到忘记密码
  */
 const handleToForgotPwd = () => {
-  toFogotPwd.value = true;
+  toForgotPwd.value = true;
   toCheckForgotPwdCode.value = true;
   toResetPwd.value = false;
 };
@@ -524,7 +540,7 @@ const handleBackupToLogin = () => {
 
   toCheckForgotPwdCode.value = false;
   toResetPwd.value = false;
-  toFogotPwd.value = false;
+  toForgotPwd.value = false;
 };
 
 /** 重置密码 */
@@ -572,7 +588,7 @@ const handleResetPwdFormSubmit = (formData: any) => {
         resetPwdFormRef.value.resetFields();
 
         // 返回登录页
-        toFogotPwd.value = false;
+        toForgotPwd.value = false;
         toCheckForgotPwdCode.value = false;
         toResetPwd.value = false;
       });
@@ -627,7 +643,7 @@ const handleCheckPassword = (password: string) => {
 
 export default defineComponent({
   components: {
-    FederationLogin
+    FederationLogin,
   },
   setup() {
     onMounted(() => {
@@ -641,7 +657,9 @@ export default defineComponent({
       passwordLoginForm,
       passwordLoginRules,
       toMfa,
+      toMfaValidate,
       toBind,
+      toAddPasskey,
       qrCodeData,
       totpValidForm,
       backToLogin,
@@ -649,7 +667,6 @@ export default defineComponent({
       openCaptchaVerify,
       handlePasswordLoginFromSubmit,
       handleTotpValidSubmit,
-      handleWebAuthnLogin,
       handleWebAuthnMfa,
       emailLoginFormRef,
       emailLoginForm,
@@ -659,7 +676,7 @@ export default defineComponent({
       sendEmailCodeDisable,
       sendEmailCodeBtnText,
       loginLoading,
-      toFogotPwd,
+      toForgotPwd,
       toCheckForgotPwdCode,
       handleToForgotPwd,
       checkForgotPwdCodeFormRef,
@@ -681,15 +698,14 @@ export default defineComponent({
       webAuthnMfaLoading,
       isWebAuthnSupported,
       supportedMfaMethods,
-      toAddPasskey,
       handleAddPasskey,
-      handleSkipAddPasskey,
       checkLoading,
       checkRes,
       handleCheckPassword,
       rememberMe,
       passkeyLoginLoading,
-      handlePasskeyLoginFormSubmit
+      handlePasskeyLoginSubmit,
+      handleToValidateTotp
     };
   },
 });

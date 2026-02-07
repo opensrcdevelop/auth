@@ -1,10 +1,11 @@
 package cn.opensrcdevelop.auth.authentication.passkey;
 
-import java.io.Serial;
-import java.util.Collections;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+
+import java.io.Serial;
+import java.util.Collections;
 
 /**
  * Passkey 登录认证 Token 不需要用户名，credentialId 中已包含用户标识信息
@@ -35,18 +36,6 @@ public class PasskeyAuthenticationToken extends AbstractAuthenticationToken {
         this.clientDataJSON = clientDataJSON;
         this.signature = signature;
         super.setAuthenticated(false);
-    }
-
-    /**
-     * 构造函数用于已认证的 Token
-     */
-    public PasskeyAuthenticationToken(String credentialId, String response, String clientDataJSON) {
-        super(Collections.emptyList());
-        this.credentialId = credentialId;
-        this.response = response;
-        this.clientDataJSON = clientDataJSON;
-        this.signature = null;
-        super.setAuthenticated(true);
     }
 
     @Override

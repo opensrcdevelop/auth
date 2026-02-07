@@ -45,13 +45,21 @@
       width: 100%;
     }
 
-    .mfa-info {
+    .mfa-info-title {
       text-align: center;
       color: var(--color-neutral-8);
       margin-bottom: 16px;
     }
 
-    .mfa-code {
+    .mfa-info {
+      text-align: center;
+      color: var(--color-neutral-8);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .mfa-code,
+    .mfa-passkey {
       width: 100%;
       display: flex;
       flex-direction: column;

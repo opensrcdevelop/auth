@@ -1,8 +1,9 @@
 package cn.opensrcdevelop.auth.biz.dto.auth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
 import lombok.Data;
+
+import java.util.List;
 
 @Schema(description = "登录结果响应")
 @Data
@@ -20,7 +21,7 @@ public class LoginResponseDto {
     @Schema(description = "支持的MFA方式列表：TOTP（时间一次性密码）、WEBAUTHN（WebAuthn/Passkey）")
     private List<String> supportedMfaMethods;
 
-    @Schema(description = "设备绑定状态")
+    @Schema(description = "TOTP 设备绑定状态")
     private Boolean bound;
 
     @Schema(description = "二维码数据")
@@ -28,4 +29,7 @@ public class LoginResponseDto {
 
     @Schema(description = "控制台访问")
     private Boolean consoleAccess;
+
+    @Schema(description = "是否有 Passkey")
+    private Boolean hasPasskey;
 }

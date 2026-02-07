@@ -31,4 +31,6 @@ public class AuthConstants {
     public static final String SESSION_BIND_REQ_USER_ID = "SESSION_BIND_REQ_USER_ID";
     public static final String THIRD_ACCOUNT_ALREADY_EXISTS_ERROR_CODE = "thirdAccount_already_exists";
     public static final String USER_LOCKED_ERROR_CODE = "user_locked";
+    public static final String MFA_METHOD_TOTP = "TOTP";
+    public static final String MFA_METHOD_WEBAUTHN = "WEBAUTHN";
 }

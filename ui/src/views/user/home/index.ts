@@ -4,25 +4,25 @@ import {changePwd, sendEmailCodeSubmit} from "@/api/login";
 import {logoutSubmit} from "@/api/logout";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
 import {
-    bindEmail,
-    getCurrentUser,
-    getVisibleUserAttrs,
-    sendBindEmailCode,
-    unbindEmail,
-    updateMyUserInfo,
+  bindEmail,
+  getCurrentUser,
+  getVisibleUserAttrs,
+  sendBindEmailCode,
+  unbindEmail,
+  updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
-import {AUTH_FAILURE, AUTH_SUCCESS, BINDING_EXISTS} from "@/util/constants";
+import {AUTH_FAILURE, AUTH_SUCCESS, AUTH_TOKENS, BINDING_EXISTS} from "@/util/constants";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Message, Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import {useRoute} from "vue-router";
 import webauthn from "@/util/webauthn";
 import {
-    completeWebAuthnRegistration,
-    deleteWebAuthnCredential,
-    getWebAuthnRegisterOptions,
-    listWebAuthnCredentials,
+  completeWebAuthnRegistration,
+  deleteWebAuthnCredential,
+  getWebAuthnRegisterOptions,
+  listWebAuthnCredentials,
 } from "@/api/webauthn";
 
 const activeTab = ref("user_info");
@@ -97,7 +97,7 @@ const handleLogout = () => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("退出成功");
-            localStorage.removeItem("accessToken");
+            localStorage.removeItem(AUTH_TOKENS);
 
             // 跳转到登录页
             router.push({
@@ -467,7 +467,7 @@ const handleSendEmailCode = () => {
 const boundIdentitySource = reactive([]);
 
 /** WebAuthn 凭证列表 */
-const webAuthnCredentials = reactive<any[]>([]);
+const webAuthnCredentials = reactive([]);
 
 /** 是否支持 WebAuthn */
 const isWebAuthnSupported = ref(false);

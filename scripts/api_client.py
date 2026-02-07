@@ -28,6 +28,10 @@ import re
 import time
 from pathlib import Path
 from typing import Any, Optional, Union
+import urllib3
+
+# 禁用 HTTPS 证书警告（仅用于本地开发）
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 import requests
 
@@ -37,12 +41,13 @@ class AuthAPIClient:
 
     def __init__(
         self,
-        host: str = "http://auth.local.opensrcdevelop.cn:6543",
+        host: str = "https://auth.local.opensrcdevelop.cn:6543",
         client_id: str = "52cb8d26-a352-4e5c-99a7-d52b8afff3b1",
         client_secret: str = "RF5NNRUOH7PHRC2L6ENR4E354EWLEUQZRHU6K26WDWFZJ5BZKJ5PDJPTCIO6SUAI",
         username: str = "claude",
         password: str = "123456",
         api_prefix: str = "/api/v1",
+        verify: bool = False,
     ):
         self.host = host.rstrip("/")
         self.client_id = client_id
@@ -53,6 +58,7 @@ class AuthAPIClient:
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
         self._token_expires_at: float = 0
+        self.verify = verify
 
     @property
     def token_endpoint(self) -> str:
@@ -70,7 +76,7 @@ class AuthAPIClient:
             "scope": "openid",
         }
 
-        response = requests.post(self.token_endpoint, data=data, timeout=30)
+        response = requests.post(self.token_endpoint, data=data, timeout=30, verify=self.verify)
         response.raise_for_status()
 
         result = response.json()
@@ -106,7 +112,7 @@ class AuthAPIClient:
         """发送 GET 请求"""
         url = self._build_url(path)
         headers = self._get_headers()
-        response = requests.get(url, headers=headers, params=params, timeout=timeout)
+        response = requests.get(url, headers=headers, params=params, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 
@@ -120,7 +126,7 @@ class AuthAPIClient:
         """发送 POST 请求"""
         url = self._build_url(path)
         headers = self._get_headers()
-        response = requests.post(url, headers=headers, json=data, params=params, timeout=timeout)
+        response = requests.post(url, headers=headers, json=data, params=params, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 
@@ -134,7 +140,7 @@ class AuthAPIClient:
         """发送 PUT 请求"""
         url = self._build_url(path)
         headers = self._get_headers()
-        response = requests.put(url, headers=headers, json=data, params=params, timeout=timeout)
+        response = requests.put(url, headers=headers, json=data, params=params, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 
@@ -147,7 +153,7 @@ class AuthAPIClient:
         """发送 DELETE 请求"""
         url = self._build_url(path)
         headers = self._get_headers()
-        response = requests.delete(url, headers=headers, params=params, timeout=timeout)
+        response = requests.delete(url, headers=headers, params=params, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 
@@ -161,7 +167,7 @@ class AuthAPIClient:
         """发送 PATCH 请求"""
         url = self._build_url(path)
         headers = self._get_headers()
-        response = requests.patch(url, headers=headers, json=data, params=params, timeout=timeout)
+        response = requests.patch(url, headers=headers, json=data, params=params, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 
@@ -188,7 +194,7 @@ class AuthAPIClient:
         # 下载文件时不需要 Content-Type
         headers.pop("Content-Type", None)
 
-        response = requests.get(url, headers=headers, params=params, timeout=timeout, stream=True)
+        response = requests.get(url, headers=headers, params=params, timeout=timeout, stream=True, verify=self.verify)
         response.raise_for_status()
 
         save_path = Path(save_path)
@@ -255,7 +261,7 @@ class AuthAPIClient:
             file_field_name: (file_path.name, open(file_path, "rb"), self._get_content_type(file_path))
         }
 
-        response = requests.post(url, headers=headers, files=files, data=data, timeout=timeout)
+        response = requests.post(url, headers=headers, files=files, data=data, timeout=timeout, verify=self.verify)
         response.raise_for_status()
         return response.json()
 

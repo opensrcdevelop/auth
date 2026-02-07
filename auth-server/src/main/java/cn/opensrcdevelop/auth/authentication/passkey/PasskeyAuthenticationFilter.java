@@ -5,11 +5,10 @@ import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -20,7 +19,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 /**
- * Passkey 登录过滤器 用户只需点击 Passkey 登录按钮，无需输入用户名
+ * Passkey 登录过滤器
  */
 @Slf4j
 public class PasskeyAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
@@ -44,9 +43,7 @@ public class PasskeyAuthenticationFilter extends AbstractAuthenticationProcessin
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-            throws AuthenticationException, IOException, ServletException {
-        log.info("Passkey 登录请求: {}", request.getRequestURI());
-
+            throws AuthenticationException {
         if (!request.getMethod().equals("POST")) {
             throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
         }
@@ -56,20 +53,12 @@ public class PasskeyAuthenticationFilter extends AbstractAuthenticationProcessin
         String clientDataJSON = request.getParameter(PARAMETER_CLIENT_DATA_JSON);
         String signature = request.getParameter(PARAMETER_SIGNATURE);
 
-        log.info("Passkey 登录参数: credentialId={}, response={}, clientDataJSON={}, signature={}",
-                credentialId,
-                responseData != null ? responseData.substring(0, Math.min(50, responseData.length())) + "..." : null,
-                clientDataJSON != null
-                        ? clientDataJSON.substring(0, Math.min(50, clientDataJSON.length())) + "..."
-                        : null,
-                signature != null ? signature.substring(0, Math.min(50, signature.length())) + "..." : null);
-
         // 验证必要参数
-        if (credentialId == null || credentialId.isBlank()) {
-            throw new AuthenticationServiceException("凭证ID不能为空");
+        if (StringUtils.isBlank(credentialId)) {
+            throw new AuthenticationServiceException("credentialId can't be blank");
         }
-        if (responseData == null || responseData.isBlank()) {
-            throw new AuthenticationServiceException("认证响应不能为空");
+        if (StringUtils.isBlank(responseData)) {
+            throw new AuthenticationServiceException("response can't be blank");
         }
 
         PasskeyAuthenticationToken authenticationToken = new PasskeyAuthenticationToken(

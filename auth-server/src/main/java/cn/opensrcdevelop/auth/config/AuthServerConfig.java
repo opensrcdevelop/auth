@@ -27,9 +27,6 @@ import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -59,6 +56,10 @@ import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableConfigurationProperties(AuthorizationServerProperties.class)
@@ -150,7 +151,9 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat("/captcha/get"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/check"));
         excludePathPatterns.add(apiPrefix.concat("/setting/passwordPolicy/checkWithoutPolicy"));
-        excludePathPatterns.add(apiPrefix.concat("/webauthn/**"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/register/*"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/authenticate/*"));
+        excludePathPatterns.add(apiPrefix.concat("/identitySource/enabled"));
 
         mfaValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return mfaValidFilter;
