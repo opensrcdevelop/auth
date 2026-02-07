@@ -57,7 +57,7 @@ export default detailTs;
                 @click="handleRebindMfaDevice"
               >
                 <icon-refresh />
-                <span style="margin-left: 8px">重新绑定 MFA 设备</span>
+                <span style="margin-left: 8px">重新绑定 TOTP 设备</span>
               </a-doption>
               <a-doption style="color: #545968" v-if="!enableMfa">
                 <icon-check-circle />
@@ -189,6 +189,7 @@ export default detailTs;
                 </a-space>
               </a-form-item>
             </a-form>
+
             <div class="info-title">扩展信息</div>
             <a-form
               :model="allUserExtAttrs"

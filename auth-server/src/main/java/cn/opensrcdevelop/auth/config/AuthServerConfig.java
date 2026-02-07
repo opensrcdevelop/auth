@@ -15,7 +15,7 @@ import cn.opensrcdevelop.auth.configurer.OAuth2LoginConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
-import cn.opensrcdevelop.auth.filter.TotpValidFilter;
+import cn.opensrcdevelop.auth.filter.MfaValidFilter;
 import cn.opensrcdevelop.auth.support.CustomOAuth2RefreshTokenGenerator;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
@@ -78,7 +78,7 @@ public class AuthServerConfig {
             OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
         AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(
                 corsFilter(),
-                totpValidFilter(),
+                mfaValidFilter(),
                 changePwdCheckFilter(),
                 captchaVerificationCheckFilter(),
                 authorizationServerProperties,
@@ -98,7 +98,8 @@ public class AuthServerConfig {
             AuthorizationServerProperties authorizationServerProperties,
             RememberMeServices rememberMeServices,
             OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
-        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(),
+        http.with(new ResourceServerConfigurer(corsFilter(), mfaValidFilter(),
+                changePwdCheckFilter(),
                 authorizationServerProperties, tokenIntrospector), x -> {
                 });
         http.with(auth2LoginConfigurer, x -> {
@@ -129,8 +130,8 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public TotpValidFilter totpValidFilter() {
-        TotpValidFilter totpValidFilter = new TotpValidFilter();
+    public MfaValidFilter mfaValidFilter() {
+        MfaValidFilter mfaValidFilter = new MfaValidFilter();
         String apiPrefix = authorizationServerProperties.getApiPrefix();
         List<String> excludePathPatterns = new ArrayList<>();
         excludePathPatterns.add("/swagger-ui/**");
@@ -138,6 +139,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGOUT_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.EMAIL_LOGIN_URL));
+        excludePathPatterns.add(apiPrefix.concat(AuthConstants.PASSKEY_LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat("/docs/**"));
         excludePathPatterns.add(apiPrefix.concat("/totp/check"));
         excludePathPatterns.add(apiPrefix.concat("/code/email/*"));
@@ -148,9 +150,10 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat("/captcha/get"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/check"));
         excludePathPatterns.add(apiPrefix.concat("/setting/passwordPolicy/checkWithoutPolicy"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/**"));
 
-        totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
-        return totpValidFilter;
+        mfaValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
+        return mfaValidFilter;
     }
 
     @Bean
@@ -163,6 +166,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGOUT_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.EMAIL_LOGIN_URL));
+        excludePathPatterns.add(apiPrefix.concat(AuthConstants.PASSKEY_LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat("/docs/**"));
         excludePathPatterns.add(apiPrefix.concat("/user/me/password/change"));
         excludePathPatterns.add(apiPrefix.concat("/code/email/*"));

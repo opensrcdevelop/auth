@@ -3,8 +3,9 @@ package cn.opensrcdevelop.auth.handler;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
-import cn.opensrcdevelop.auth.biz.mfa.MultiFactorAuthenticator;
-import cn.opensrcdevelop.auth.biz.mfa.TotpValidContext;
+import cn.opensrcdevelop.auth.biz.mfa.MfaValidContext;
+import cn.opensrcdevelop.auth.biz.mfa.TotpAuthenticator;
+import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
 import cn.opensrcdevelop.auth.biz.service.system.password.PasswordPolicyService;
 import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
@@ -17,7 +18,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -35,10 +41,14 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     // 1: 密码强度不满足要求
     private static final Integer CHANGE_PWD_TYPE_1 = 1;
 
+    private static final String MFA_METHOD_TOTP = "TOTP";
+    private static final String MFA_METHOD_WEBAUTHN = "WEBAUTHN";
+
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
     private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
     private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
+    private final WebAuthnService webAuthnService = SpringContextUtil.getBean(WebAuthnService.class);
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -49,35 +59,71 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         // 1. 启用多因素认证
         if (Boolean.TRUE.equals(user.getEnableMfa())) {
-            // 1.1 未绑定设备
-            if (BooleanUtils.isNotTrue(user.getMfaDeviceBind())) {
-                // 1.1.1 生成 TOTP 密钥（不存在的场合下）
-                String secret = MultiFactorAuthenticator.generateSecretKey();
-                // 1.1.2 更新用户数据
-                User updateUser = new User();
-                updateUser.setUserId(user.getUserId());
-                updateUser.setMfaSecret(secret);
-                userService.updateById(updateUser);
+            responseDto.setEnableMfa(true);
 
-                // 1.1.3 生成二维码数据
-                String qrCodeData = MultiFactorAuthenticator.getQrCodeString(user.getUsername(), secret);
+            // 收集支持的 MFA 方式
+            List<String> supportedMethods = new ArrayList<>();
+            Set<String> requiredMethods = new HashSet<>();
 
-                responseDto.setEnableMfa(true);
-                responseDto.setBound(false);
-                responseDto.setQrCode(CommonUtil.getBase64PngQrCode(150, 150, qrCodeData));
-            } else {
-                // 1.2 已绑定设备
-                responseDto.setEnableMfa(true);
-                responseDto.setBound(true);
+            // 1.1 检查 WebAuthn
+            boolean hasWebAuthn = webAuthnService.countCredentials(user.getUserId()) > 0;
+            if (hasWebAuthn) {
+                supportedMethods.add(MFA_METHOD_WEBAUTHN);
+                // 如果是 Passkey 登录，WebAuthn 已经验证
+                if (webAuthnService.isValidated(request)) {
+                    requiredMethods.add(MFA_METHOD_WEBAUTHN);
+                }
             }
 
-            // 1.3 设置动态密码校验结果
-            HttpSession session = request.getSession(true);
-            if (session != null) {
-                TotpValidContext totpValidContext = new TotpValidContext();
-                totpValidContext.setValid(false);
-                totpValidContext.setUserId(user.getUserId());
-                session.setAttribute(AuthConstants.TOTP_VALID_CONTEXT, totpValidContext);
+            // 1.2 检查 TOTP
+            boolean hasTotp = StringUtils.isNotBlank(user.getTotpSecret())
+                    && BooleanUtils.isTrue(user.getTotpDeviceBind());
+            if (hasTotp) {
+                supportedMethods.add(MFA_METHOD_TOTP);
+                // TOTP 总是需要验证
+                requiredMethods.add(MFA_METHOD_TOTP);
+            }
+
+            // 设置支持的 MFA 方式
+            responseDto.setSupportedMfaMethods(supportedMethods);
+
+            // 如果没有任何支持的 MFA 方式，禁用 MFA
+            if (supportedMethods.isEmpty()) {
+                responseDto.setEnableMfa(false);
+            } else {
+                // 1.3 设置 MFA 验证上下文
+                HttpSession session = request.getSession(true);
+                if (session != null) {
+                    MfaValidContext mfaValidContext = new MfaValidContext();
+                    mfaValidContext.setUserId(user.getUserId());
+
+                    // 如果 WebAuthn 已验证，添加到已验证列表
+                    if (webAuthnService.isValidated(request)) {
+                        mfaValidContext.addValidatedMethod(MFA_METHOD_WEBAUTHN);
+                        mfaValidContext.setValid(true);
+                    } else {
+                        mfaValidContext.setValid(false);
+                    }
+
+                    session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, mfaValidContext);
+                }
+
+                // 1.4 TOTP 未绑定的处理
+                if (hasTotp && BooleanUtils.isNotTrue(user.getTotpDeviceBind())) {
+                    // 生成 TOTP 密钥
+                    String secret = TotpAuthenticator.generateSecretKey();
+                    User updateUser = new User();
+                    updateUser.setUserId(user.getUserId());
+                    updateUser.setTotpSecret(secret);
+                    userService.updateById(updateUser);
+
+                    // 生成二维码
+                    String qrCodeData = TotpAuthenticator.getQrCodeString(user.getUsername(), secret);
+                    responseDto.setBound(false);
+                    responseDto.setQrCode(CommonUtil.getBase64PngQrCode(150, 150, qrCodeData));
+                } else {
+                    responseDto.setBound(true);
+                }
             }
         } else {
             // 2. 未启用多因素认证

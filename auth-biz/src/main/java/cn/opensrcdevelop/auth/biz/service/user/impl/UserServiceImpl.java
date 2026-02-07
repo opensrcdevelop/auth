@@ -484,9 +484,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         updateUser.setUserId(userId);
         updateUser.setVersion(rawUser.getVersion());
 
-        // 2. 重置 MFA 密钥 & 设备绑定状态
-        updateUser.setMfaSecret(StringUtils.EMPTY);
-        updateUser.setMfaDeviceBind(false);
+        // 2. 重置 TOTP 密钥 & 设备绑定状态
+        updateUser.setTotpSecret(StringUtils.EMPTY);
+        updateUser.setTotpDeviceBind(false);
 
         // 3. 数据库操作
         super.updateById(updateUser);
