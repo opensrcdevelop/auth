@@ -312,11 +312,6 @@ public class WebAuthnServiceImpl implements WebAuthnService {
                 throw new UsernameNotFoundException("account(" + credentialUserId + ") does not exist");
             }
 
-            // 判断用户是否被禁用
-            if (Boolean.TRUE.equals(user.getLocked())) {
-                throw new BizException(MessageConstants.LOGIN_MSG_1003);
-            }
-
             // 解码认证数据
             byte[] authenticatorDataBytes = Base64.getUrlDecoder().decode(requestDto.getResponse());
             byte[] clientDataJSONBytes = Base64.getUrlDecoder().decode(requestDto.getClientDataJSON());

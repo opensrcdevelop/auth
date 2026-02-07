@@ -8,11 +8,11 @@ import {TENANT_NAME} from "@/util/constants";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
 import webauthn from "@/util/webauthn";
 import {
-  completeWebAuthnAuthentication,
-  completeWebAuthnRegistration,
-  getWebAuthnAuthenticateOptions,
-  getWebAuthnRegisterOptions,
-  passkeyLoginSubmit,
+    completeWebAuthnAuthentication,
+    completeWebAuthnRegistration,
+    getWebAuthnAuthenticateOptions,
+    getWebAuthnRegisterOptions,
+    passkeyLoginSubmit,
 } from "@/api/webauthn";
 import FederationLogin from "./components/FederationLogin.vue";
 
@@ -240,7 +240,6 @@ const handleAddPasskey = () => {
     });
 };
 
-
 /**
  * 跳转至 TOTP 验证页面
  */
@@ -342,7 +341,7 @@ const handleEmailLoginFormSubmit = (formData) => {
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "登录");
+      handleApiError(err, "邮箱登录");
     })
     .finally(() => {
       loginLoading.value = false;
@@ -368,14 +367,21 @@ const handlePasskeyLoginSubmit = () => {
           formData.append("clientDataJSON", credential.response.clientDataJSON);
           formData.append("signature", credential.response.signature);
 
-          await passkeyLoginSubmit(formData);
-
-          Notification.success("Passkey 登录成功");
-          toTarget();
+          passkeyLoginSubmit(formData)
+            .then((result: any) => {
+              handleApiSuccess(result, () => {
+                Notification.success("Passkey 登录成功");
+                toTarget();
+              });
+            })
+            .catch((err: any) => {
+              handleApiError(err, "Passkey 登录");
+            });
         } catch (error: any) {
           if (error.message && error.message.includes("not allowed")) {
             Notification.warning("已取消使用 Passkey 登录");
           } else {
+            console.error(error);
             Notification.error(
               "Passkey 登录失败: " + (error.message || "未知错误"),
             );
@@ -433,7 +439,7 @@ const handleLoginResult = (result: any, loginType: string) => {
           qrCodeData.value = result.qrCode;
         }
       }
-    } 
+    }
   } else {
     toTarget();
   }
@@ -705,7 +711,7 @@ export default defineComponent({
       rememberMe,
       passkeyLoginLoading,
       handlePasskeyLoginSubmit,
-      handleToValidateTotp
+      handleToValidateTotp,
     };
   },
 });

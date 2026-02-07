@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -36,6 +37,10 @@ public class PasskeyAuthenticationProvider implements AuthenticationProvider {
         } catch (Exception e) {
             log.warn("Passkey 认证失败: {}", e.getMessage());
             throw new AuthenticationServiceException(e.getMessage());
+        }
+
+        if (Boolean.TRUE.equals(user.getLocked())) {
+            throw new DisabledException("account is locked");
         }
 
         log.info("Passkey 认证成功: userId={}, username={}", user.getUserId(), user.getUsername());
