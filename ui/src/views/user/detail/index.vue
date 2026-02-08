@@ -54,7 +54,7 @@ export default detailTs;
               <a-doption
                 style="color: #545968"
                 v-if="enableMfa"
-                @click="handleRebindMfaDevice"
+                @click="handleRebindTotpDevice"
               >
                 <icon-refresh />
                 <span style="margin-left: 8px">重新绑定 TOTP 设备</span>

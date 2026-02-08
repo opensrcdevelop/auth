@@ -7,6 +7,7 @@ import cn.opensrcdevelop.common.annoation.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +27,7 @@ public class TotpController {
     @Operation(summary = "检验一次性密码", description = "校验一次性密码")
     @PostMapping("/check")
     public TotpCodeCheckResponseDto checkCode(@RequestBody @Valid TotpCodeCheckRequestDto requestDto,
-            HttpServletRequest request) {
-        return totpService.check(requestDto, request);
+            HttpServletRequest request, HttpServletResponse response) {
+        return totpService.check(requestDto, request, response);
     }
 }

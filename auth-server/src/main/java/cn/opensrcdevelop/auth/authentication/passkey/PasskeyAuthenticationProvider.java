@@ -12,6 +12,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Collections;
 
@@ -26,17 +27,20 @@ public class PasskeyAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        log.info("PasskeyAuthenticationProvider.authenticate 开始");
-
-        WebAuthnAuthenticateCompleteRequestDto requestDto = getWebAuthnAuthenticateCompleteRequestDto((PasskeyAuthenticationToken) authentication);
+        WebAuthnAuthenticateCompleteRequestDto requestDto = getWebAuthnAuthenticateCompleteRequestDto(
+                (PasskeyAuthenticationToken) authentication);
 
         // 调用认证方法
         User user;
         try {
-            user = webAuthnService.completeAuthentication(null, requestDto, WebUtil.getRequest().orElse(null));
+            user = webAuthnService.completeAuthentication(null, requestDto, WebUtil.getRequest().orElse(null), null);
         } catch (Exception e) {
             log.warn("Passkey 认证失败: {}", e.getMessage());
             throw new AuthenticationServiceException(e.getMessage());
+        }
+
+        if (user == null) {
+            throw new UsernameNotFoundException("user not found");
         }
 
         if (Boolean.TRUE.equals(user.getLocked())) {
@@ -53,7 +57,8 @@ public class PasskeyAuthenticationProvider implements AuthenticationProvider {
         return PasskeyAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
-    private WebAuthnAuthenticateCompleteRequestDto getWebAuthnAuthenticateCompleteRequestDto(PasskeyAuthenticationToken authentication) {
+    private WebAuthnAuthenticateCompleteRequestDto getWebAuthnAuthenticateCompleteRequestDto(
+            PasskeyAuthenticationToken authentication) {
         String credentialId = authentication.getCredentialId();
         String response = authentication.getResponse();
         String clientDataJSON = authentication.getClientDataJSON();

@@ -365,17 +365,17 @@ const handleSetMfaStatus = (enableMfa: boolean) => {
 };
 
 /**
- * 重新绑定 MFA 设备
+ * 重新绑定 TOTP 设备
  */
-const handleRebindMfaDevice = () => {
+const handleRebindTotpDevice = () => {
   rebindMfaDevice(userId.value)
     .then((result: any) => {
       handleApiSuccess(result, () => {
-        Notification.success("重新绑定 MFA 设备成功");
+        Notification.success("重新绑定 TOTP 设备成功");
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "重新绑定 MFA 设备");
+      handleApiError(err, "重新绑定 TOTP 设备");
     });
 };
 
@@ -1145,7 +1145,7 @@ export default defineComponent({
       enableMfa,
       handleSetAccountStatus,
       handleSetMfaStatus,
-      handleRebindMfaDevice,
+      handleRebindTotpDevice,
       handleClearAuthorizedTokens,
       consoleAccess,
       handleSetConsoleAccessStatus,

@@ -7,6 +7,7 @@ import cn.opensrcdevelop.common.annoation.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +37,10 @@ public class WebAuthnController {
 
     @Operation(summary = "完成注册", description = "完成 WebAuthn 凭证注册")
     @PostMapping("/register/complete")
-    public WebAuthnCredentialResponseDto completeRegistration(
+    public void completeRegistration(
             @RequestBody @Valid WebAuthnRegisterCompleteRequestDto requestDto,
             HttpServletRequest request) {
-        String userId = AuthUtil.getCurrentUserId();
-        log.info("completeRegistration called - userId: {}, credentialId: {}", userId, requestDto.getId());
-        return webAuthnService.completeRegistration(userId, requestDto, request);
+        webAuthnService.completeRegistration(AuthUtil.getCurrentUserId(), requestDto, request);
     }
 
     @Operation(summary = "获取认证选项", description = "获取 WebAuthn/Passkey 认证所需的选项（支持已登录和未登录场景）")
@@ -55,9 +54,9 @@ public class WebAuthnController {
     @PostMapping("/authenticate/complete")
     public boolean completeAuthentication(
             @RequestBody @Valid WebAuthnAuthenticateCompleteRequestDto requestDto,
-            HttpServletRequest request) {
+            HttpServletRequest request, HttpServletResponse response) {
         String userId = AuthUtil.getCurrentUserId();
-        return webAuthnService.completeAuthentication(userId, requestDto, request) != null;
+        return webAuthnService.completeAuthentication(userId, requestDto, request, response) != null;
     }
 
     @Operation(summary = "列出凭证", description = "列出当前用户的所有 WebAuthn 凭证")

@@ -1,7 +1,9 @@
 package cn.opensrcdevelop.auth.handler;
 
+import cn.opensrcdevelop.auth.biz.component.authserver.UserTokenBasedRememberMeServices;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnCredentialResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.mfa.MfaValidContext;
 import cn.opensrcdevelop.auth.biz.mfa.TotpAuthenticator;
@@ -20,7 +22,6 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.ArrayList;
@@ -40,7 +41,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserService userService = SpringContextUtil.getBean(UserService.class);
     private final LoginLogService loginLogService = SpringContextUtil.getBean(LoginLogService.class);
     private final PasswordPolicyService passwordPolicyService = SpringContextUtil.getBean(PasswordPolicyService.class);
-    private final RememberMeServices rememberMeServices = SpringContextUtil.getBean(RememberMeServices.class);
+    private final UserTokenBasedRememberMeServices rememberMeServices = SpringContextUtil
+            .getBean(UserTokenBasedRememberMeServices.class);
     private final WebAuthnService webAuthnService = SpringContextUtil.getBean(WebAuthnService.class);
 
     @Override
@@ -49,6 +51,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         User user = (User) authentication.getPrincipal();
         setUserLoginInfo(user.getUserId());
         LoginResponseDto responseDto = new LoginResponseDto();
+        boolean mfaValid = isValidated(request);
 
         // 1. 启用多因素认证
         if (Boolean.TRUE.equals(user.getEnableMfa())) {
@@ -66,12 +69,15 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             if (session != null) {
                 MfaValidContext mfaValidContext = new MfaValidContext();
                 mfaValidContext.setUserId(user.getUserId());
-                mfaValidContext.setValid(isValidated(request));
+                mfaValidContext.setValid(mfaValid);
+                mfaValidContext.setRememberMeRequested(
+                        rememberMeServices.rememberMeRequested(request, AuthConstants.REMEMBER_ME));
                 session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, mfaValidContext);
             }
 
-            // 1.3 检查是否有 Passkey 凭证
-            responseDto.setHasPasskey(webAuthnService.countCredentials(user.getUserId()) > 0);
+            // 1.3 设置 Passkey 凭证
+            responseDto.setCredentialIds(CommonUtil.stream(webAuthnService.listCredentials(user.getUserId()))
+                    .map(WebAuthnCredentialResponseDto::getId).toList());
 
             // 1.4 TOTP 未绑定的处理
             if (BooleanUtils.isNotTrue(user.getTotpDeviceBind())) {
@@ -114,7 +120,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         // 6. 记住我
-        rememberMeServices.loginSuccess(request, response, authentication);
+        if (!Boolean.TRUE.equals(responseDto.getEnableMfa()) || mfaValid) {
+            rememberMeServices.loginSuccess(request, response, authentication);
+        }
 
         WebUtil.sendJsonResponse(R.ok(responseDto), HttpStatus.OK);
     }
@@ -152,7 +160,8 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     /**
      * 检查是否已通过 WebAuthn 验证
      *
-     * @param request HTTP 请求
+     * @param request
+     *            HTTP 请求
      * @return 是否已验证
      */
     private boolean isValidated(HttpServletRequest request) {

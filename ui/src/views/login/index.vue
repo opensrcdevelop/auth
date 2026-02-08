@@ -124,6 +124,7 @@ export default loginTs;
           <a-button
             type="primary"
             class="login-btn"
+            style="margin-bottom: 20px; height: 36px;"
             :loading="passkeyLoginLoading"
             @click="handlePasskeyLoginSubmit"
           >
@@ -132,6 +133,9 @@ export default loginTs;
             </template>
             使用 Passkey 登录
           </a-button>
+          <a-checkbox v-model="rememberMe" style="height: 24px">
+            <span style="color: var(--color-text-2)"> 记住我 </span>
+          </a-checkbox>
         </a-tab-pane>
       </a-tabs>
       <FederationLogin />

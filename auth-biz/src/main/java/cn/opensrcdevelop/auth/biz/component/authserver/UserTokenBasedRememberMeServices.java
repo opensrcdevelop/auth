@@ -10,10 +10,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -24,6 +20,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.stereotype.Component;
+
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -88,7 +89,10 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
             log.warn("UserId is empty, cannot generate remember-me token");
             return;
         }
+        setRememberMeTokenToCookie(request, response, userId);
+    }
 
+    public void setRememberMeTokenToCookie(HttpServletRequest request, HttpServletResponse response, String userId) {
         String rememberMeTokenSecret = getRememberMeTokenSecret(userId);
         if (StringUtils.isEmpty(rememberMeTokenSecret)) {
             rememberMeTokenSecret = CommonUtil.generateRandomString(32);
@@ -107,7 +111,7 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
         setCookie(rememberMeToken, authorizationServerProperties.getRememberMeSeconds(), request, response);
     }
 
-    private boolean rememberMeRequested(HttpServletRequest request, String parameter) {
+    public boolean rememberMeRequested(HttpServletRequest request, String parameter) {
         String paramValue = request.getParameter(parameter);
         return paramValue != null && (paramValue.equalsIgnoreCase("true") || paramValue.equalsIgnoreCase("on")
                 || paramValue.equalsIgnoreCase("yes") || paramValue.equals("1"));

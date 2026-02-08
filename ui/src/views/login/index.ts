@@ -171,25 +171,14 @@ const handleWebAuthnMfa = () => {
             }
           });
         } catch (error: any) {
-          if (error.message && error.message.includes("NotAllowedError")) {
-            Notification.warning("验证已取消或失败");
+          if (error.message && error.message.includes("not allowed")) {
+            Notification.warning("验证已取消");
           } else {
-            Notification.error("验证失败: " + (error.message || "未知错误"));
+            console.error(error);
+            Notification.error("验证失败");
           }
         }
       });
-    })
-    .catch((err: any) => {
-      // 如果是 404 错误，说明没有找到凭证，引导用户添加凭证
-      if (
-        err.response?.status === 404 ||
-        err.response?.data?.code === "webauthn.msg.1003"
-      ) {
-        Notification.warning("您还没有添加 Passkey 凭证，请先添加");
-        toAddPasskey.value = true;
-      } else {
-        handleApiError(err, "MFA认证");
-      }
     })
     .finally(() => {
       webAuthnMfaLoading.value = false;
@@ -366,6 +355,7 @@ const handlePasskeyLoginSubmit = () => {
           formData.append("response", credential.response.authenticatorData);
           formData.append("clientDataJSON", credential.response.clientDataJSON);
           formData.append("signature", credential.response.signature);
+          formData.append("rememberMe", String(rememberMe.value))
 
           passkeyLoginSubmit(formData)
             .then((result: any) => {
@@ -402,7 +392,7 @@ const handlePasskeyLoginSubmit = () => {
  *
  * @param result 登录结果
  */
-const handleLoginResult = (result: any, loginType: string) => {
+const handleLoginResult = async (result: any, loginType: string) => {
   // 需要修改密码
   if (result.needChangePwd) {
     router.push({
@@ -421,7 +411,8 @@ const handleLoginResult = (result: any, loginType: string) => {
 
     // Passkey
     if (mfaMethods.includes("WEBAUTHN") && isWebAuthnSupported.value) {
-      if (result.hasPasskey) {
+      const credentialIds = result.credentialIds || [];
+      if (await webauthn.hasCredentials(credentialIds)) {
         supportedMfaMethods.value.push("WEBAUTHN");
       } else {
         toAddPasskey.value = true;

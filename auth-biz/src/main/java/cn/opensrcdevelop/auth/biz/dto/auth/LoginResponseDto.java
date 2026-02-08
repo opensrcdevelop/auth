@@ -30,6 +30,6 @@ public class LoginResponseDto {
     @Schema(description = "控制台访问")
     private Boolean consoleAccess;
 
-    @Schema(description = "是否有 Passkey")
-    private Boolean hasPasskey;
+    @Schema(description = "已绑定的 Passkey 列表")
+    private List<String> credentialIds;
 }

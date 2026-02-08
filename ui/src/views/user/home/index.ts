@@ -250,7 +250,7 @@ const handleUpdateMyUserInfo = () => {
 };
 
 /** 修改密码对话框 */
-const changePwdModalVisivle = ref(false);
+const changePwdModalVisible = ref(false);
 const changePwdForm = reactive({
   rawPwd: "",
   newPwd: "",
@@ -279,14 +279,14 @@ const changePwdFormRules = {
  * 打开修改密码对话框
  */
 const handleOpenChangePwdModal = () => {
-  changePwdModalVisivle.value = true;
+  changePwdModalVisible.value = true;
 };
 
 /**
  * 关闭修改密码对话框
  */
 const handleCloseChangePwdModal = () => {
-  changePwdModalVisivle.value = false;
+  changePwdModalVisible.value = false;
   changePwdFormRef.value.resetFields();
   passwordCheckerRef.value.setPassword("");
 };
@@ -352,7 +352,7 @@ const handleCheckPassword = (password: string) => {
 };
 
 /** 绑定 / 解绑邮箱对话框 */
-const bindOrUnbindEmailModalVisivle = ref(false);
+const bindOrUnbindEmailModalVisible = ref(false);
 const isBinding = ref(true);
 const bindOrUnbindEmailFormSubmitLoading = ref(false);
 const bindOrUnbindEmailFormRef = ref();
@@ -380,7 +380,7 @@ const bindOrUnbindEmailFormRules = {
  */
 const handleOpenBindEmailModal = () => {
   isBinding.value = true;
-  bindOrUnbindEmailModalVisivle.value = true;
+  bindOrUnbindEmailModalVisible.value = true;
 };
 
 /**
@@ -389,14 +389,14 @@ const handleOpenBindEmailModal = () => {
 const handleOpenUnbindEmailModal = () => {
   isBinding.value = false;
   bindOrUnbindEmailForm.email = userInfo["emailAddress"];
-  bindOrUnbindEmailModalVisivle.value = true;
+  bindOrUnbindEmailModalVisible.value = true;
 };
 
 /**
  * 关闭绑定 / 解绑邮箱对话框
  */
 const handleCoseBindOrUnbindEmailModal = () => {
-  bindOrUnbindEmailModalVisivle.value = false;
+  bindOrUnbindEmailModalVisible.value = false;
   bindOrUnbindEmailFormRef.value.resetFields();
 };
 
@@ -667,7 +667,7 @@ export default defineComponent({
       userAttrs,
       handleUpdateMyUserInfo,
       loading,
-      changePwdModalVisivle,
+      changePwdModalVisible,
       handleOpenChangePwdModal,
       handleCloseChangePwdModal,
       changePwdForm,
@@ -675,7 +675,7 @@ export default defineComponent({
       changePwdFormRules,
       handleSubmitChangePwdForm,
       changePwdFormSubmitLoading,
-      bindOrUnbindEmailModalVisivle,
+      bindOrUnbindEmailModalVisible,
       isBinding,
       bindOrUnbindEmailFormSubmitLoading,
       bindOrUnbindEmailFormRef,

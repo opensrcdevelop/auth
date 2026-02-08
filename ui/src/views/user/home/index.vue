@@ -303,11 +303,11 @@ export default homeTs;
                         <template #cell="{ record }">
                           <a-popconfirm
                             type="warning"
-                            content="确定删除此凭证吗？删除后无法使用该设备登录。"
+                            content="确定删除此凭证吗？删除后无法使用该设备进行认证。"
                             :ok-button-props="{ status: 'danger' }"
                             @ok="handleDeleteWebAuthnCredential(record)"
                           >
-                            <a-button type="text" status="danger" size="small">
+                            <a-button status="danger" size="small">
                               删除
                             </a-button>
                           </a-popconfirm>
@@ -326,7 +326,7 @@ export default homeTs;
 
   <!-- 修改密码对话框 -->
   <a-modal
-    :visible="changePwdModalVisivle"
+    :visible="changePwdModalVisible"
     :footer="false"
     @cancel="handleCloseChangePwdModal"
   >
@@ -378,7 +378,7 @@ export default homeTs;
 
   <!-- 绑定 / 解绑邮箱对话框 -->
   <a-modal
-    :visible="bindOrUnbindEmailModalVisivle"
+    :visible="bindOrUnbindEmailModalVisible"
     @cancel="handleCoseBindOrUnbindEmailModal"
     @ok="handleBindOrUnbindEmailFormSubmit"
     :ok-loading="bindOrUnbindEmailFormSubmitLoading"

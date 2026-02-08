@@ -85,6 +85,26 @@ function convertToWebAuthnOptions(options: any): any {
 }
 
 /**
+ * Base64URL字符串转换为ArrayBuffer
+ * 
+ * @param base64Url Base64URL字符串
+ * @returns ArrayBuffer
+ */
+function base64UrlToArrayBuffer(base64Url: string): ArrayBuffer {
+  const base64 = base64Url
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+  const base64WithPadding = base64 + padding;
+  const binaryString = atob(base64WithPadding);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/**
  * WebAuthn/Passkey 工具类
  */
 const webauthn = {
@@ -192,6 +212,45 @@ const webauthn = {
     } catch (error) {
       console.error("WebAuthn 认证失败:", error);
       throw error;
+    }
+  },
+
+  /**
+   * 检查本地是否存在给定的凭证列表中的凭证ID
+   *
+   * @param credentialIds 凭证ID数组
+   * @returns 是否存在匹配的凭证
+   */
+  async hasCredentials(credentialIds: string[]): Promise<boolean> {
+    if (!credentialIds || credentialIds.length === 0) {
+      return false;
+    }
+
+    try {
+      // 将凭证ID转换为ArrayBuffer
+      const allowCredentials = credentialIds.map((id) => ({
+        id: base64UrlToArrayBuffer(id),
+        type: "public-key" as const,
+      }));
+
+      // 尝试获取凭证（不显示UI）
+      try {
+        const credential = await navigator.credentials.get({
+          mediation: "silent",
+          publicKey: {
+            challenge: new Uint8Array(32), // 任意challenge
+            allowCredentials,
+            userVerification: "discouraged",
+          },
+        });
+        return !!credential;
+      } catch (error) {
+        // 如果没有匹配的凭证，会抛出错误，这是预期行为
+        return false;
+      }
+    } catch (error) {
+      console.error("检查凭证失败:", error);
+      return false;
     }
   },
 };

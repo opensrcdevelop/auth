@@ -12,22 +12,24 @@ public class WebAuthnAuthenticateCompleteRequestDto {
     /**
      * 凭证 ID（Base64URL 编码）
      */
-    @NotBlank(message = "凭证ID不能为空")
+    @NotBlank
     private String id;
 
     /**
      * 原始凭证响应（Base64URL 编码）
      */
-    @NotBlank(message = "原始凭证响应不能为空")
+    @NotBlank
     private String response;
 
     /**
      * 客户端数据JSON（Base64URL 编码）
      */
+    @NotBlank
     private String clientDataJSON;
 
     /**
      * 签名（Base64URL 编码）
      */
+    @NotBlank
     private String signature;
 }

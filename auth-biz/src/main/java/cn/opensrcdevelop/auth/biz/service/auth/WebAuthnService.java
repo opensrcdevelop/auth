@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.biz.service.auth;
 import cn.opensrcdevelop.auth.biz.dto.auth.*;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 
@@ -31,9 +32,8 @@ public interface WebAuthnService {
      *            注册完成请求
      * @param request
      *            HTTP请求
-     * @return 凭证响应
      */
-    WebAuthnCredentialResponseDto completeRegistration(String userId,
+    void completeRegistration(String userId,
             WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request);
 
     /**
@@ -59,7 +59,7 @@ public interface WebAuthnService {
      * @return 认证成功的用户信息（认证失败返回 null）
      */
     User completeAuthentication(String userId, WebAuthnAuthenticateCompleteRequestDto requestDto,
-            HttpServletRequest request);
+            HttpServletRequest request, HttpServletResponse response);
 
     /**
      * 列出用户的所有凭证
@@ -79,13 +79,4 @@ public interface WebAuthnService {
      *            用户ID
      */
     void deleteCredential(String credentialId, String userId);
-
-    /**
-     * 统计用户的凭证数量
-     *
-     * @param userId
-     *            用户ID
-     * @return 凭证数量
-     */
-    long countCredentials(String userId);
 }

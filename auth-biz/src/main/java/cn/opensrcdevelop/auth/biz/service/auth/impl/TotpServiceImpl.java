@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.biz.service.auth.impl;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.audit.util.AuditUtil;
+import cn.opensrcdevelop.auth.biz.component.authserver.UserTokenBasedRememberMeServices;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.TotpCodeCheckRequestDto;
@@ -17,6 +18,7 @@ import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
@@ -27,12 +29,14 @@ import org.springframework.stereotype.Service;
 public class TotpServiceImpl implements TotpService {
 
     private final UserService userService;
+    private final UserTokenBasedRememberMeServices rememberMeServices;
 
     /**
      * 一次性密码校验
      */
     @Override
-    public TotpCodeCheckResponseDto check(TotpCodeCheckRequestDto requestDto, HttpServletRequest request) {
+    public TotpCodeCheckResponseDto check(TotpCodeCheckRequestDto requestDto, HttpServletRequest request,
+            HttpServletResponse response) {
         HttpSession session = request.getSession(false);
         MfaValidContext mfaValidContext = (MfaValidContext) session.getAttribute(AuthConstants.MFA_VALID_CONTEXT);
 
@@ -49,9 +53,14 @@ public class TotpServiceImpl implements TotpService {
 
         // 3. 设置校验结果
         if (checkRes) {
-            mfaValidContext.addValidatedMethod("TOTP");
+            mfaValidContext.addValidatedMethod(AuthConstants.MFA_METHOD_TOTP);
             mfaValidContext.setValid(true);
             session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, mfaValidContext);
+
+            // 3.1 设置 RememberToken
+            if (mfaValidContext.isRememberMeRequested()) {
+                rememberMeServices.setRememberMeTokenToCookie(request, response, user.getUserId());
+            }
         }
 
         // 4. 初次绑定，执行校验操作后，更新设备绑定状态为已绑定

@@ -56,9 +56,7 @@ export function completeWebAuthnAuthentication(data: {
 /**
  * 列出用户凭证
  */
-export function listWebAuthnCredentials(): Promise<
-  WebAuthnCredentialResponse[]
-> {
+export function listWebAuthnCredentials() {
   return apiRequest.get({ url: "/webauthn/credentials" });
 }
 

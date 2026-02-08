@@ -1,10 +1,11 @@
 package cn.opensrcdevelop.auth.biz.mfa;
 
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.Data;
 
 /**
  * MFA 验证会话上下文（统一处理 TOTP 和 WebAuthn）
@@ -31,6 +32,11 @@ public class MfaValidContext implements Serializable {
     private Set<String> validatedMethods = new HashSet<>();
 
     /**
+     * 是否请求记住我
+     */
+    private boolean rememberMeRequested;
+
+    /**
      * 添加已验证的方法
      *
      * @param method
@@ -49,20 +55,6 @@ public class MfaValidContext implements Serializable {
      */
     public boolean isMethodValidated(String method) {
         return validatedMethods.contains(method);
-    }
-
-    /**
-     * 检查是否所有必需的方式都已验证
-     *
-     * @param requiredMethods
-     *            必需的验证方式
-     * @return 是否全部验证通过
-     */
-    public boolean areAllMethodsValidated(Set<String> requiredMethods) {
-        if (requiredMethods == null || requiredMethods.isEmpty()) {
-            return true;
-        }
-        return validatedMethods.containsAll(requiredMethods);
     }
 
     /**
