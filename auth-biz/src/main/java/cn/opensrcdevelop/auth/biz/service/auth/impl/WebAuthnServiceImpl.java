@@ -47,6 +47,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -101,7 +103,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
 
         // 2.2 RP 信息
         Rp rpDto = new Rp();
-        rpDto.setId(getRpId(request));
+        rpDto.setId(getRpId());
         rpDto.setName(getRpName());
         dto.setRp(rpDto);
 
@@ -160,7 +162,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             }
 
             // 2. 解析并验证 attestationObject
-            AttestationValidationResult validationResult = validateAttestation(requestDto, sessionChallenge, request);
+            AttestationValidationResult validationResult = validateAttestation(requestDto, sessionChallenge);
             if (!validationResult.isValid()) {
                 throw new BizException(MessageConstants.WEB_AUTHN_MSG_1002);
             }
@@ -285,7 +287,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             // 3.2 构建认证请求
             ServerProperty serverProperty = ServerProperty.builder()
                     .origin(Origin.create(TenantHelper.getTenantConsoleUrl()))
-                    .rpId(getRpId(request))
+                    .rpId(getRpId())
                     .challenge(new DefaultChallenge(sessionChallenge))
                     .build();
 
@@ -341,12 +343,10 @@ public class WebAuthnServiceImpl implements WebAuthnService {
      *            注册请求 DTO
      * @param expectedChallenge
      *            期望的 challenge
-     * @param request
-     *            HTTP请求
      * @return 验证结果
      */
     private AttestationValidationResult validateAttestation(WebAuthnRegisterCompleteRequestDto requestDto,
-            String expectedChallenge, HttpServletRequest request) {
+            String expectedChallenge) {
         AttestationValidationResult result = new AttestationValidationResult();
         result.setValid(false);
 
@@ -354,7 +354,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             // 1. 构建 ServerProperty
             ServerProperty serverProperty = ServerProperty.builder()
                     .origin(Origin.create(TenantHelper.getTenantConsoleUrl()))
-                    .rpId(getRpId(request))
+                    .rpId(getRpId())
                     .challenge(new DefaultChallenge(expectedChallenge))
                     .build();
 
@@ -430,31 +430,21 @@ public class WebAuthnServiceImpl implements WebAuthnService {
     /**
      * 获取 RP ID（从请求的 Host 头提取域名作为 RP ID）
      *
-     * @param request
-     *            HTTP请求
      * @return RP ID（域名）
      */
-    private String getRpId(HttpServletRequest request) {
-        // 优先从请求头获取域名
+    private static String getRpId() {
         String host = WebUtil.getRootUrl();
         if (StringUtils.isNotBlank(host)) {
-            // 去除端口号
-            int portIndex = host.lastIndexOf(':');
-            if (portIndex > 0) {
-                host = host.substring(0, portIndex);
-            }
-
-            // 去除 schema
-            int schemeIndex = host.indexOf("//");
-            if (schemeIndex > 0) {
-                host = host.substring(schemeIndex + 2);
+            try {
+                URI uri = new URI(host);
+                String hostname = uri.getHost();
+                if (hostname != null) {
+                    return hostname;
+                }
+            } catch (URISyntaxException e) {
+                return "localhost";
             }
             return host;
-        }
-        // 备用方案：从请求属性获取
-        String serverName = request.getServerName();
-        if (StringUtils.isNotBlank(serverName)) {
-            return serverName;
         }
         return "localhost";
     }
