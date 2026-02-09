@@ -124,7 +124,7 @@ export default loginTs;
           <a-button
             type="primary"
             class="login-btn"
-            style="margin-bottom: 20px; height: 36px;"
+            style="margin-bottom: 20px; height: 36px"
             :loading="passkeyLoginLoading"
             @click="handlePasskeyLoginSubmit"
           >
@@ -148,46 +148,51 @@ export default loginTs;
             <icon-left />
           </template>
         </a-button>
-        <div class="title">MFA认证</div>
-        <div class="mfa-info-title">
-          <icon-info />
-          请选择一种方式进行认证
-        </div>
-
-        <!-- TOTP 验证码输入 -->
-        <div class="mfa-code" v-if="supportedMfaMethods.includes('TOTP')">
-          <div class="mfa-info">输入 6 位动态安全码，进行认证</div>
-          <a-verification-code
-            size="large"
-            v-model="totpValidForm.code"
-            style="width: 300px"
-            @finish="handleTotpValidSubmit"
-          />
-        </div>
-        <a-divider type="dashed" v-if="supportedMfaMethods.includes('TOTP')" />
-        <!-- WebAuthn 验证按钮 -->
-        <div
-          class="mfa-passkey"
-          v-if="supportedMfaMethods.includes('WEBAUTHN')"
-        >
-          <a-button
-            type="primary"
-            size="large"
-            :loading="webAuthnMfaLoading"
-            @click="handleWebAuthnMfa"
+        <div class="title">请选择一种方式进行 MFA 验证</div>
+        <a-tabs type="rounded" size="medium">
+          <a-tab-pane
+            style="height: 280px"
+            key="passkey"
+            title="Passkey"
+            v-if="mfaMethods.includes('WEBAUTHN')"
           >
-            <template #icon>
-              <icon-safe />
-            </template>
-            使用 Passkey 进行认证
-          </a-button>
-        </div>
+            <div class="mfa-info">请点击下方按钮，进行验证</div>
+            <a-button
+              type="primary"
+              style="width: 100%; margin-top: 20px;"
+              size="large"
+              :loading="webAuthnMfaLoading"
+              @click="handleWebAuthnMfa"
+            >
+              <template #icon>
+                <icon-safe />
+              </template>
+              使用 Passkey 验证
+            </a-button>
+          </a-tab-pane>
+          <a-tab-pane
+            style="height: 180px"
+            key="totp"
+            title="TOTP"
+            v-if="mfaMethods.includes('TOTP')"
+          >
+            <div class="mfa-info">
+              输入身份验证应用生成的 6 位验证码，进行验证
+            </div>
+            <a-verification-code
+              size="large"
+              v-model="totpValidForm.code"
+              style="width: 100%; margin-top: 20px"
+              :separator="
+                (index) => ((index + 1) % 3 || index > 3 ? null : '-')
+              "
+              @finish="handleTotpValidSubmit"
+            />
+          </a-tab-pane>
+        </a-tabs>
       </a-spin>
     </div>
-    <div
-      class="form-container"
-      v-if="toMfa && toBind && !toForgotPwd && !toMfaValidate"
-    >
+    <div class="form-container" v-if="toMfa && !toForgotPwd && !toMfaValidate">
       <div>
         <a-button type="text" size="mini" @click="backToLogin">
           返回登录
@@ -195,75 +200,53 @@ export default loginTs;
             <icon-left />
           </template>
         </a-button>
-        <div class="title">MFA认证</div>
-        <div class="mfa-info">请扫描二维码，添加安全码</div>
-        <div class="mfa-code">
-          <div>
-            <img :src="qrCodeData" />
-          </div>
-          <a-button
-            type="text"
-            style="width: 180px"
-            @click="handleToValidateTotp"
-            >我已添加</a-button
+        <div class="title">请选择第二种验证方式开始 MFA 验证</div>
+        <a-tabs type="rounded" size="medium">
+          <a-tab-pane
+            style="height: 280px"
+            key="passkey"
+            title="Passkey"
+            v-if="toAddPasskey"
           >
-        </div>
-      </div>
-      <a-divider orientation="center">
-        <span class="mfa-info">下载验证器</span>
-      </a-divider>
-      <div class="app-download-container">
-        <a-popover position="lb">
-          <a-button type="text" size="mini"
-            >Microsoft Authenticator - iOS</a-button
+            <div class="mfa-info">请点击下方按钮，添加 Passkey 凭证</div>
+            <div class="mfa-passkey">
+              <a-button
+                class="mfa-btn"
+                type="primary"
+                size="large"
+                :loading="webAuthnMfaLoading"
+                @click="handleAddPasskey"
+              >
+                <template #icon>
+                  <icon-plus />
+                </template>
+                添加 Passkey 凭证
+              </a-button>
+            </div>
+          </a-tab-pane>
+          <a-tab-pane
+            style="height: 280px"
+            key="totp"
+            title="TOTP"
+            v-if="toBind"
           >
-          <template #content>
-            <a-qrcode
-              value="https://apps.apple.com/cn/app/id983156458"
-              :bordered="false"
-            ></a-qrcode>
-          </template>
-        </a-popover>
-        <a-popover position="lb">
-          <a-button type="text" size="mini"
-            >Microsoft Authenticator - Android</a-button
-          >
-          <template #content>
-            <a-qrcode
-              value="https://www.lenovomm.com/appdetail/com.azure.authenticator/20197724"
-              :bordered="false"
-            ></a-qrcode>
-          </template>
-        </a-popover>
-      </div>
-    </div>
-    <!-- 添加 Passkey 凭证界面 -->
-    <div
-      class="form-container"
-      v-if="toMfa && toAddPasskey && !toForgotPwd && !toMfaValidate"
-    >
-      <div>
-        <a-button type="text" size="mini" @click="backToLogin">
-          返回登录
-          <template #icon>
-            <icon-left />
-          </template>
-        </a-button>
-        <div class="title">MFA认证</div>
-        <div class="mfa-info">请点击下方按钮，添加 Passkey 凭证</div>
-        <div class="mfa-passkey">
-          <a-button
-            type="primary"
-            size="large"
-            :loading="webAuthnMfaLoading"
-            @click="handleAddPasskey"
-          >
-            <template #icon>
-              <icon-plus />
-            </template>
-            添加 Passkey 凭证
-          </a-button>
-        </div>
+            <div class="mfa-info">
+              请身份验证应用程序（Microsoft Authenticator
+              等）扫描以下二维码，添加 TOTP 验证方式
+            </div>
+            <div class="mfa-code">
+              <div>
+                <img :src="qrCodeData" />
+              </div>
+              <a-button
+                type="primary"
+                class="mfa-btn"
+                @click="handleToValidateTotp"
+                >下一步</a-button
+              >
+            </div>
+          </a-tab-pane>
+        </a-tabs>
       </div>
     </div>
     <div class="form-container" v-if="toForgotPwd">

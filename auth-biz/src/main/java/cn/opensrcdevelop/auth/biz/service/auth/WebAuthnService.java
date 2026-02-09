@@ -30,11 +30,13 @@ public interface WebAuthnService {
      *            用户ID
      * @param requestDto
      *            注册完成请求
+     * @param response
+     *            HTTP响应
      * @param request
      *            HTTP请求
      */
     void completeRegistration(String userId,
-            WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request);
+            WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request, HttpServletResponse response);
 
     /**
      * 获取认证选项
@@ -79,4 +81,13 @@ public interface WebAuthnService {
      *            用户ID
      */
     void deleteCredential(String credentialId, String userId);
+
+    /**
+     * 统计用户 Passkey 数量
+     *
+     * @param userId
+     *            用户ID
+     * @return Passkey 数量
+     */
+    long countCredentials(String userId);
 }

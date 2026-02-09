@@ -144,12 +144,14 @@ public class WebAuthnServiceImpl implements WebAuthnService {
      *            注册完成请求
      * @param request
      *            HTTP请求
+     * @param response
+     *            HTTP响应
      */
     @Override
     @Transactional
     @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.BIND_MFA, success = "绑定了 Passkey 设备, ID: {{ #id}}")
     public void completeRegistration(String userId,
-            WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request) {
+            WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
         try {
             // 1. 验证 challenge
             HttpSession session = request.getSession(false);
@@ -179,6 +181,9 @@ public class WebAuthnServiceImpl implements WebAuthnService {
 
             // 4. 清除 session 中的 challenge
             session.removeAttribute(AuthConstants.WEB_AUTHN_REGISTER_CHALLENGE);
+
+            // 5. 设置 MFA 验证状态
+            setMfaValid(credential.getUserId(), request, response);
 
             AuditContext.setSpelVariable("id", requestDto.getId());
         } catch (BizException e) {
@@ -328,6 +333,53 @@ public class WebAuthnServiceImpl implements WebAuthnService {
     }
 
     /**
+     * 列出用户凭证
+     */
+    @Override
+    public List<WebAuthnCredentialResponseDto> listCredentials(String userId) {
+        List<WebAuthnCredential> credentials = webAuthnCredentialRepository.findAllByUserId(userId);
+        return credentials.stream()
+                .map(c -> {
+                    WebAuthnCredentialResponseDto dto = new WebAuthnCredentialResponseDto();
+
+                    dto.setId(c.getCredentialId());
+                    dto.setDeviceType(c.getDeviceType());
+                    dto.setCreatedAt(c.getCreateTime());
+                    dto.setLastUsedAt(c.getLastUsedAt());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 删除凭证
+     *
+     * @param credentialId
+     *            凭证ID
+     * @param userId
+     *            用户ID
+     */
+    @Override
+    @Transactional
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.UNBIND_MFA, success = "删除了 Passkey 设备, ID: {{ #credentialId}}")
+    public void deleteCredential(String credentialId, String userId) {
+        webAuthnCredentialRepository.deleteByCredentialId(credentialId);
+    }
+
+    /**
+     *
+     * 统计用户 Passkey 数量
+     *
+     * @param userId
+     *            用户ID
+     * @return Passkey 数量
+     */
+    @Override
+    public long countCredentials(String userId) {
+        return webAuthnCredentialRepository.countByUserId(userId);
+    }
+
+    /**
      * Attestation 验证结果
      */
     @Data
@@ -396,35 +448,6 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             log.error("验证 attestationObject 失败: {}", e.getMessage(), e);
             return result;
         }
-    }
-
-    /**
-     * 列出用户凭证
-     */
-    @Override
-    public List<WebAuthnCredentialResponseDto> listCredentials(String userId) {
-        List<WebAuthnCredential> credentials = webAuthnCredentialRepository.findAllByUserId(userId);
-        return credentials.stream()
-                .map(c -> {
-                    WebAuthnCredentialResponseDto dto = new WebAuthnCredentialResponseDto();
-
-                    dto.setId(c.getCredentialId());
-                    dto.setDeviceType(c.getDeviceType());
-                    dto.setCreatedAt(c.getCreateTime());
-                    dto.setLastUsedAt(c.getLastUsedAt());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 删除凭证
-     */
-    @Override
-    @Transactional
-    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.UNBIND_MFA, success = "删除了 Passkey 设备, ID: {{ #credentialId}}")
-    public void deleteCredential(String credentialId, String userId) {
-        webAuthnCredentialRepository.deleteByCredentialId(credentialId);
     }
 
     /**
@@ -510,6 +533,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             if (context.isRememberMeRequested() && Objects.nonNull(response)) {
                 rememberMeServices.setRememberMeTokenToCookie(request, response, userId);
             }
+            session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, context);
         } else {
             MfaValidContext newContext = new MfaValidContext();
             newContext.setValid(true);

@@ -12,7 +12,6 @@ import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,6 +30,8 @@ import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
 
 /**
  * 授权服务器配置
@@ -89,7 +90,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         // 添加变更密码检查过滤器
         http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
         // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
-        http.addFilterAfter(mfaValidFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(mfaValidFilter, SecurityContextHolderFilter.class);
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
         // 添加 OAuth2 Authorize 记住我过滤器

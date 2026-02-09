@@ -3,7 +3,6 @@ package cn.opensrcdevelop.auth.handler;
 import cn.opensrcdevelop.auth.biz.component.authserver.UserTokenBasedRememberMeServices;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.dto.auth.LoginResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.auth.WebAuthnCredentialResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.mfa.MfaValidContext;
 import cn.opensrcdevelop.auth.biz.mfa.TotpAuthenticator;
@@ -56,15 +55,9 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         // 1. 启用多因素认证
         if (Boolean.TRUE.equals(user.getEnableMfa())) {
             responseDto.setEnableMfa(true);
+            List<String> mfaMethods = new ArrayList<>();
 
-            List<String> supportedMethods = new ArrayList<>();
-            supportedMethods.add(AuthConstants.MFA_METHOD_TOTP);
-            supportedMethods.add(AuthConstants.MFA_METHOD_WEBAUTHN);
-
-            // 1.1 设置支持的 MFA 方式
-            responseDto.setSupportedMfaMethods(supportedMethods);
-
-            // 1.2 设置 MFA 验证上下文
+            // 1.1 设置 MFA 验证上下文
             HttpSession session = request.getSession(true);
             if (session != null) {
                 MfaValidContext mfaValidContext = new MfaValidContext();
@@ -75,26 +68,34 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
                 session.setAttribute(AuthConstants.MFA_VALID_CONTEXT, mfaValidContext);
             }
 
-            // 1.3 设置 Passkey 凭证
-            responseDto.setCredentialIds(CommonUtil.stream(webAuthnService.listCredentials(user.getUserId()))
-                    .map(WebAuthnCredentialResponseDto::getId).toList());
+            // 1.2 检查是否有 Passkey
+            boolean hasPasskey = webAuthnService.countCredentials(user.getUserId()) > 0;
+            responseDto.setHasPasskey(hasPasskey);
+            if (hasPasskey) {
+                mfaMethods.add(AuthConstants.MFA_METHOD_WEBAUTHN);
+            } else {
+                responseDto
+                        .setWebAuthnRegisterOptions(webAuthnService.getRegistrationOptions(user.getUserId(), request));
+            }
 
-            // 1.4 TOTP 未绑定的处理
-            if (BooleanUtils.isNotTrue(user.getTotpDeviceBind())) {
-                // 1.4.1 生成 TOTP 密钥
+            // 1.3 检查 TOTP 设备是否绑定
+            boolean totpDeviceBind = BooleanUtils.isTrue(user.getTotpDeviceBind());
+            responseDto.setTotpDeviceBind(totpDeviceBind);
+            if (!totpDeviceBind) {
+                // 1.3.1 生成 TOTP 密钥
                 String secret = TotpAuthenticator.generateSecretKey();
                 User updateUser = new User();
                 updateUser.setUserId(user.getUserId());
                 updateUser.setTotpSecret(secret);
                 userService.updateById(updateUser);
 
-                // 1.4.2 生成二维码
+                // 1.3.2 生成二维码
                 String qrCodeData = TotpAuthenticator.getQrCodeString(user.getUsername(), secret);
-                responseDto.setBound(false);
-                responseDto.setQrCode(CommonUtil.getBase64PngQrCode(150, 150, qrCodeData));
-            } else {
-                responseDto.setBound(true);
+                responseDto.setBindTotpDeviceQrCode(CommonUtil.getBase64PngQrCode(150, 150, qrCodeData));
             }
+
+            // 1.4 设置 MFA 认证方式
+            responseDto.setMfaMethods(mfaMethods);
         } else {
             // 2. 未启用多因素认证
             responseDto.setEnableMfa(false);

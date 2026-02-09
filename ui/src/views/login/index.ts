@@ -11,7 +11,6 @@ import {
     completeWebAuthnAuthentication,
     completeWebAuthnRegistration,
     getWebAuthnAuthenticateOptions,
-    getWebAuthnRegisterOptions,
     passkeyLoginSubmit,
 } from "@/api/webauthn";
 import FederationLogin from "./components/FederationLogin.vue";
@@ -65,8 +64,11 @@ const webAuthnMfaLoading = ref(false);
 /** 是否支持 WebAuthn */
 const isWebAuthnSupported = ref(false);
 
-/** MFA 类型 */
-const supportedMfaMethods = ref([]);
+/** MFA 认证方式类型 */
+const mfaMethods = ref([]);
+
+/** Passkey 注册选项 */
+const webAuthnRegisterOptions = ref(null);
 
 const captchaVerifyRef = ref();
 
@@ -164,18 +166,18 @@ const handleWebAuthnMfa = () => {
           });
           handleApiSuccess(responseResult, (data: any) => {
             if (data) {
-              Notification.success("验证成功");
+              Notification.success("Passkey 验证成功");
               toTarget();
             } else {
-              Notification.warning("验证失败");
+              Notification.warning("Passkey 验证失败");
             }
           });
         } catch (error: any) {
           if (error.message && error.message.includes("not allowed")) {
-            Notification.warning("验证已取消");
+            Notification.warning("Passkey 验证已取消");
           } else {
             console.error(error);
-            Notification.error("验证失败");
+            Notification.error("Passkey 验证失败");
           }
         }
       });
@@ -188,45 +190,35 @@ const handleWebAuthnMfa = () => {
 /**
  * 开始添加 Passkey 凭证
  */
-const handleAddPasskey = () => {
+const handleAddPasskey = async () => {
   webAuthnMfaLoading.value = true;
-  getWebAuthnRegisterOptions()
-    .then((result: any) => {
-      handleApiSuccess(result, async (data: any) => {
-        try {
-          const credential = await webauthn.startRegistration(data);
-          const responseResult = await completeWebAuthnRegistration({
-            id: credential.id,
-            rawId: credential.rawId,
-            response: {
-              clientDataJSON: credential.response.clientDataJSON,
-              attestationObject: credential.response.attestationObject,
-            },
-            transports: credential.response.transports?.join(",") || "",
-          });
-          handleApiSuccess(responseResult, () => {
-            Notification.success("添加 Passkey 凭证成功");
-            supportedMfaMethods.value.push("WEBAUTHN");
-            toMfaValidate.value = true;
-          });
-        } catch (error: any) {
-          if (error.message && error.message.includes("not allowed")) {
-            Notification.warning("已取消添加 Passkey 凭证");
-          } else {
-            console.error(error);
-            Notification.error(
-              "添加凭证失败: " + (error.message || "未知错误"),
-            );
-          }
-        }
-      });
-    })
-    .catch((err: any) => {
-      handleApiError(err, "添加 Passkey");
-    })
-    .finally(() => {
-      webAuthnMfaLoading.value = false;
+  try {
+    const credential = await webauthn.startRegistration(
+      webAuthnRegisterOptions.value,
+    );
+    await completeWebAuthnRegistration({
+      id: credential.id,
+      rawId: credential.rawId,
+      response: {
+        clientDataJSON: credential.response.clientDataJSON,
+        attestationObject: credential.response.attestationObject,
+      },
+      transports: credential.response.transports?.join(",") || "",
     });
+    Notification.success("添加 Passkey 凭证成功");
+    toTarget();
+  } catch (error: any) {
+    if (error.message && error.message.includes("not allowed")) {
+      Notification.warning("已取消添加 Passkey 凭证");
+    } else {
+      console.error(error);
+      Notification.error(
+        "添加 Passkey 凭证失败: " + (error.message || "未知错误"),
+      );
+    }
+  } finally {
+    webAuthnMfaLoading.value = false;
+  }
 };
 
 /**
@@ -234,7 +226,7 @@ const handleAddPasskey = () => {
  */
 const handleToValidateTotp = () => {
   toMfaValidate.value = true;
-  supportedMfaMethods.value.push("TOTP");
+  mfaMethods.value.push("TOTP");
 };
 
 /**
@@ -355,7 +347,7 @@ const handlePasskeyLoginSubmit = () => {
           formData.append("response", credential.response.authenticatorData);
           formData.append("clientDataJSON", credential.response.clientDataJSON);
           formData.append("signature", credential.response.signature);
-          formData.append("rememberMe", String(rememberMe.value))
+          formData.append("rememberMe", String(rememberMe.value));
 
           passkeyLoginSubmit(formData)
             .then((result: any) => {
@@ -404,32 +396,40 @@ const handleLoginResult = async (result: any, loginType: string) => {
     return;
   }
 
-  const mfaMethods = result.supportedMfaMethods || [];
   if (result.enableMfa) {
     // 进入多因素认证
     toMfa.value = true;
+    const mfaMethodsResp = result.mfaMethods || [];
 
-    // Passkey
-    if (mfaMethods.includes("WEBAUTHN") && isWebAuthnSupported.value) {
-      const credentialIds = result.credentialIds || [];
-      if (await webauthn.hasCredentials(credentialIds)) {
-        supportedMfaMethods.value.push("WEBAUTHN");
-      } else {
-        toAddPasskey.value = true;
-        return;
-      }
+    // 检查是否添加 Passkey
+    if (!result.hasPasskey && result.webAuthnRegisterOptions) {
+      toAddPasskey.value = true;
+      webAuthnRegisterOptions.value = result.webAuthnRegisterOptions;
     }
 
-    // TOTP
-    if (mfaMethods.includes("TOTP")) {
-      if (result.bound) {
-        supportedMfaMethods.value.push("TOTP");
-      } else {
-        toBind.value = true;
-        if (result.qrCode) {
-          qrCodeData.value = result.qrCode;
-        }
-      }
+    // 检查是否绑定 TOTP 设备
+    if (!toAddPasskey.value && !result.hasPasskey && !result.totpDeviceBind && result.bindTotpDeviceQrCode) {
+      toBind.value = true;
+      qrCodeData.value = result.bindTotpDeviceQrCode;
+    }
+
+    // 检查是否进入验证
+    if (!toAddPasskey.value && !toBind.value) {
+      toMfaValidate.value = true;
+    }
+
+    // 添加 MFA 认证方式
+    if (
+      mfaMethodsResp.includes("WEBAUTHN") &&
+      isWebAuthnSupported.value &&
+      result.hasPasskey
+    ) {
+      console.log("1111");
+      mfaMethods.value.push("WEBAUTHN");
+    }
+
+    if (mfaMethodsResp.includes("TOTP") && result.totpDeviceBind) {
+      mfaMethods.value.push("TOTP");
     }
   } else {
     toTarget();
@@ -694,7 +694,7 @@ export default defineComponent({
       webAuthnLoginLoading,
       webAuthnMfaLoading,
       isWebAuthnSupported,
-      supportedMfaMethods,
+      mfaMethods,
       handleAddPasskey,
       checkLoading,
       checkRes,

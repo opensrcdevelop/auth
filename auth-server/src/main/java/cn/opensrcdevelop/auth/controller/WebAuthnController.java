@@ -39,8 +39,8 @@ public class WebAuthnController {
     @PostMapping("/register/complete")
     public void completeRegistration(
             @RequestBody @Valid WebAuthnRegisterCompleteRequestDto requestDto,
-            HttpServletRequest request) {
-        webAuthnService.completeRegistration(AuthUtil.getCurrentUserId(), requestDto, request);
+            HttpServletRequest request, HttpServletResponse response) {
+        webAuthnService.completeRegistration(AuthUtil.getCurrentUserId(), requestDto, request, response);
     }
 
     @Operation(summary = "获取认证选项", description = "获取 WebAuthn/Passkey 认证所需的选项（支持已登录和未登录场景）")
