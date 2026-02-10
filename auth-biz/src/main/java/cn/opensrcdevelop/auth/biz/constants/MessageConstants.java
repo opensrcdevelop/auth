@@ -8,15 +8,11 @@ public class MessageConstants {
     private MessageConstants() {
     }
 
-    public static final String TOTP_MSG_1000 = "totp.msg.1000";
-    public static final String TOTP_MSG_1001 = "totp.msg.1001";
+    public static final String MFA_MSG_1000 = "mfa.msg.1000";
+    public static final String MFA_MSG_1001 = "mfa.msg.1001";
     public static final String WEB_AUTHN_MSG_1001 = "webauthn.msg.1001";
     public static final String WEB_AUTHN_MSG_1002 = "webauthn.msg.1002";
     public static final String WEB_AUTHN_MSG_1003 = "webauthn.msg.1003";
-    public static final String WEB_AUTHN_MSG_1004 = "webauthn.msg.1004";
-    public static final String WEB_AUTHN_MSG_1005 = "webauthn.msg.1005";
-    public static final String WEB_AUTHN_MSG_1006 = "webauthn.msg.1006";
-    public static final String WEB_AUTHN_MSG_1007 = "webauthn.msg.1007";
     public static final String EMAIL_CODE_MSG_1000 = "email.code.msg.1000";
     public static final String LOGIN_MSG_1000 = "login.msg.1000";
     public static final String LOGIN_MSG_1001 = "login.msg.1001";

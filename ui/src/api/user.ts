@@ -176,14 +176,14 @@ export function getCurrentUser() {
 }
 
 /**
- * 重新绑定 MFA 设备
+ * 重新绑定 TOTP 设备
  *
  * @param id 用户 ID
  * @returns 调用结果
  */
-export function rebindMfaDevice(id: string) {
+export function rebindTotpDevice(id: string) {
   return apiRequest.put({
-    url: `/user/${id}/mfa/device`,
+    url: `/user/${id}/mfa/totp`,
   });
 }
 
@@ -352,3 +352,17 @@ export function importUsers(file: File) {
     data: formData,
   });
 }
+
+/**
+ * 重新绑定 TOTP 设备
+ *
+ * @param id 用户 ID
+ * @returns 调用结果
+ */
+export function clearPasskeyCredentials(id: string) {
+  return apiRequest.delete({
+    url: `/user/${id}/mfa/passkey`,
+  });
+}
+
+

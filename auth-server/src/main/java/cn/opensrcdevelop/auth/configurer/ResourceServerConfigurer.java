@@ -21,6 +21,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.web.filter.CorsFilter;
 
@@ -92,9 +93,9 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 添加 cors 过滤器
         http.addFilter(corsFilter);
         // 添加变更密码检查过滤器
-        http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
         // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
-        http.addFilterAfter(mfaValidFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(mfaValidFilter, SecurityContextHolderFilter.class);
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);

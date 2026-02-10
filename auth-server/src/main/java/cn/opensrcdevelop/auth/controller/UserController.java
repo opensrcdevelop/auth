@@ -13,6 +13,7 @@ import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,15 +27,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -165,14 +165,24 @@ public class UserController {
         return userService.getCurrentUserInfo();
     }
 
-    @Operation(summary = "重新绑定 MFA 设备", description = "重新绑定 MFA 设备")
+    @Operation(summary = "重新绑定 TOTP 设备", description = "重新绑定 TOTP 设备")
     @Parameters({
             @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
     })
-    @PutMapping("/{id}/mfa/device")
-    @Authorize({"allUserPermissions", "rebindMfaDevice"})
-    public void rebindMfaDevice(@PathVariable @NotBlank String id) {
-        userService.rebindMfaDevice(id);
+    @PutMapping("/{id}/mfa/totp")
+    @Authorize({"allUserPermissions", "rebindTotpDevice"})
+    public void rebindTotpDevice(@PathVariable @NotBlank String id) {
+        userService.rebindTotpDevice(id);
+    }
+
+    @Operation(summary = "清空 Passkey 凭证", description = "清空 Passkey 凭证")
+    @Parameters({
+            @Parameter(name = "id", description = "用户ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/{id}/mfa/passkey")
+    @Authorize({"allUserPermissions", "clearPasskeyCredentials"})
+    public void clearPasskeyCredentials(@PathVariable @NotBlank String id) {
+        userService.clearPasskeyCredentials(id);
     }
 
     @Operation(summary = "清空授权的 Token", description = "清空授权的 Token")
@@ -266,9 +276,8 @@ public class UserController {
     @NoRestResponse
     public void downloadImportTemplate(HttpServletResponse response) throws IOException {
         byte[] template = userExcelService.generateImportTemplate();
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-        String filename = "user-import-template-" + timestamp + ".xlsx";
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String filename = "user-import-template-" + System.currentTimeMillis() + ".xlsx";
+        response.setContentType(CommonConstants.EXCEL_CONTENT_TYPE);
         response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
         response.getOutputStream().write(template);
         response.getOutputStream().flush();
@@ -283,9 +292,8 @@ public class UserController {
             @RequestParam(required = false) List<String> userIds,
             HttpServletResponse response) throws IOException {
         byte[] data = userExcelService.exportUsers(filters, all, userIds);
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-        String filename = "users-export-" + timestamp + ".xlsx";
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String filename = "users-export-" + System.currentTimeMillis() + ".xlsx";
+        response.setContentType(CommonConstants.EXCEL_CONTENT_TYPE);
         response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
         response.getOutputStream().write(data);
         response.getOutputStream().flush();

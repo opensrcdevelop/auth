@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.repository.auth;
 
 import cn.opensrcdevelop.auth.biz.entity.auth.WebAuthnCredential;
+
 import java.util.List;
 
 /**
@@ -58,4 +59,12 @@ public interface WebAuthnCredentialRepository {
      * @return 凭证数量
      */
     long countByUserId(String userId);
+
+    /**
+     * 清除用户所有 Passkey 凭证
+     *
+     * @param userId
+     *            用户ID
+     */
+    void deleteByUserId(String userId);
 }

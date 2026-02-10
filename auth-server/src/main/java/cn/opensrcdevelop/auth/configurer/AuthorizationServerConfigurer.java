@@ -24,7 +24,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
 import org.springframework.security.web.authentication.RememberMeServices;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -88,7 +87,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
         // 添加跨域过滤器
         http.addFilter(corsFilter);
         // 添加变更密码检查过滤器
-        http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
         // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
         http.addFilterBefore(mfaValidFilter, SecurityContextHolderFilter.class);
         // 添加图像验证码二次校验过滤器

@@ -30,7 +30,7 @@ public class MfaValidFilter extends RestFilter {
                     .getAttribute(AuthConstants.MFA_VALID_CONTEXT);
             if (mfaValidContext != null && BooleanUtils.isFalse(mfaValidContext.getValid())) {
                 // MFA 未验证通过，返回错误
-                WebUtil.sendJsonResponse(R.optFail(MessageConstants.TOTP_MSG_1001, new Object()),
+                WebUtil.sendJsonResponse(R.optFail(MessageConstants.MFA_MSG_1001, new Object()),
                         HttpStatus.UNAUTHORIZED);
                 return;
             }

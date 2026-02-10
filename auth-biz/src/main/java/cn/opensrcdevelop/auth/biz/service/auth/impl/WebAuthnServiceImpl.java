@@ -37,6 +37,7 @@ import com.webauthn4j.data.client.Origin;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.server.ServerProperty;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -44,6 +45,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,9 +62,15 @@ import java.util.stream.Collectors;
 public class WebAuthnServiceImpl implements WebAuthnService {
 
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
-    private final UserService userService;
     private final ObjectMapper objectMapper;
-    private final UserTokenBasedRememberMeServices rememberMeServices;
+
+    @Resource
+    @Lazy
+    private UserTokenBasedRememberMeServices rememberMeServices;
+
+    @Resource
+    @Lazy
+    private UserService userService;
 
     private static final String PUB_KEY = "public-key";
     private static final Integer ALG_ES256 = -7;
@@ -149,7 +157,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
      */
     @Override
     @Transactional
-    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.BIND_MFA, success = "绑定了 Passkey 设备, ID: {{ #id}}")
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.BIND_MFA, success = "绑定了 Passkey 凭证, ID: {{ #id}}", fail = "绑定 Passkey 凭证失败, ID: {{ #id}}")
     public void completeRegistration(String userId,
             WebAuthnRegisterCompleteRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
         try {
@@ -361,7 +369,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
      */
     @Override
     @Transactional
-    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.UNBIND_MFA, success = "删除了 Passkey 设备, ID: {{ #credentialId}}")
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.UNBIND_MFA, success = "删除了 Passkey 凭证, ID: {{ #credentialId}}", fail = "删除 Passkey 凭证失败, ID: {{ #credentialId}}")
     public void deleteCredential(String credentialId, String userId) {
         webAuthnCredentialRepository.deleteByCredentialId(credentialId);
     }
@@ -377,6 +385,18 @@ public class WebAuthnServiceImpl implements WebAuthnService {
     @Override
     public long countCredentials(String userId) {
         return webAuthnCredentialRepository.countByUserId(userId);
+    }
+
+    /**
+     * 清除用户所有 Passkey 凭证
+     *
+     * @param userId
+     *            用户ID
+     */
+    @Override
+    @Transactional
+    public void clearCredentials(String userId) {
+        webAuthnCredentialRepository.deleteByUserId(userId);
     }
 
     /**

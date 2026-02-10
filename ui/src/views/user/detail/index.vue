@@ -97,6 +97,13 @@ export default detailTs;
                   >清除授权的 Token</span
                 >
               </a-doption>
+              <a-doption
+                style="color: #545968"
+                @click="handleClearPasskeyCredential"
+              >
+                <icon-eraser />
+                <span style="margin-left: 8px">清除注册的 Passkey 凭证</span>
+              </a-doption>
             </template>
           </a-dropdown>
           <a-button type="primary" @click="handleOpenResetPwdModal"

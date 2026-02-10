@@ -26,6 +26,7 @@ import cn.opensrcdevelop.auth.biz.repository.role.RoleRepository;
 import cn.opensrcdevelop.auth.biz.repository.user.UserRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
 import cn.opensrcdevelop.auth.biz.service.identity.ThirdAccountService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleService;
@@ -53,9 +54,6 @@ import io.vavr.Tuple2;
 import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -77,6 +75,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
 
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService, UserDetailsService {
@@ -97,6 +99,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final LoginLogService loginLogService;
     private final PasswordPolicyService passwordPolicyService;
     private final ThirdAccountService thirdAccountService;
+    private final WebAuthnService webAuthnService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -466,15 +469,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 重新绑定 MFA 设备
+     * 重新绑定 TOTP 设备
      *
      * @param userId
      *            用户 ID
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER, sysOperation = SysOperationType.UPDATE, success = "重置了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息", fail = "重置用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 MFA 设备绑定信息失败")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER, sysOperation = SysOperationType.UPDATE, success = "重置了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 TOTP 设备绑定信息", fail = "重置用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）的 TOTP 设备绑定信息失败")
     @Transactional
     @Override
-    public void rebindMfaDevice(String userId) {
+    public void rebindTotpDevice(String userId) {
         // 1. 获取版本号
         var rawUser = super.getById(userId);
         if (Objects.isNull(rawUser)) {
@@ -490,6 +493,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 3. 数据库操作
         super.updateById(updateUser);
+    }
+
+    /**
+     * 清空用户已注册的 Passkey 凭证
+     *
+     * @param userId
+     *            用户 ID
+     */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.USER, sysOperation = SysOperationType.DELETE, success = "删除了用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已注册的 Passkey 凭证", fail = "删除用户（{{ @linkGen.toLink(#userId, T(ResourceType).USER) }}）已注册的 Passkey 凭证失败")
+    @Override
+    public void clearPasskeyCredentials(String userId) {
+        webAuthnService.clearCredentials(userId);
     }
 
     /**

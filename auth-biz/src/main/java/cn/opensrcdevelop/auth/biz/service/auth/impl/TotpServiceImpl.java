@@ -45,7 +45,7 @@ public class TotpServiceImpl implements TotpService {
                 .eq(User::getUserId, mfaValidContext.getUserId()));
         String secret = user.getTotpSecret();
         if (StringUtils.isEmpty(secret)) {
-            throw new BizException(MessageConstants.TOTP_MSG_1000);
+            throw new BizException(MessageConstants.MFA_MSG_1000);
         }
 
         // 2. 校验

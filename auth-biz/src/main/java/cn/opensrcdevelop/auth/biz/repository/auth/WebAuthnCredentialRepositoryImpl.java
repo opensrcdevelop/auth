@@ -2,7 +2,6 @@ package cn.opensrcdevelop.auth.biz.repository.auth;
 
 import cn.opensrcdevelop.auth.biz.entity.auth.WebAuthnCredential;
 import cn.opensrcdevelop.auth.biz.mapper.auth.WebAuthnCredentialMapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -78,10 +77,8 @@ public class WebAuthnCredentialRepositoryImpl implements WebAuthnCredentialRepos
      */
     @Override
     public void deleteByCredentialId(String credentialId) {
-        UpdateWrapper<WebAuthnCredential> wrapper = new UpdateWrapper<>();
-        wrapper.eq("credential_id", credentialId)
-                .set("deleted", true);
-        webAuthnCredentialMapper.update(null, wrapper);
+        webAuthnCredentialMapper.delete(
+                Wrappers.<WebAuthnCredential>lambdaQuery().eq(WebAuthnCredential::getCredentialId, credentialId));
     }
 
     /**
@@ -95,5 +92,17 @@ public class WebAuthnCredentialRepositoryImpl implements WebAuthnCredentialRepos
     public long countByUserId(String userId) {
         return webAuthnCredentialMapper.selectCount(Wrappers
                 .<WebAuthnCredential>lambdaQuery().eq(WebAuthnCredential::getUserId, userId));
+    }
+
+    /**
+     * 清除用户所有 Passkey 凭证
+     *
+     * @param userId
+     *            用户ID
+     */
+    @Override
+    public void deleteByUserId(String userId) {
+        webAuthnCredentialMapper
+                .delete(Wrappers.<WebAuthnCredential>lambdaQuery().eq(WebAuthnCredential::getUserId, userId));
     }
 }
