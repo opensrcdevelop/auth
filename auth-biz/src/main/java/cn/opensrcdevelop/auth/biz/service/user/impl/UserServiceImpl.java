@@ -604,7 +604,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         updateUser.setUserId(userId);
         updateUser.setVersion(rawUser.getVersion());
         List<UserAttrMappingRequestDto> attributes = new ArrayList<>();
-        convertUserInfo(userInfo, editableUserAttrs, updateUser, attributes);
+        convertUserInfo(userInfo, editableUserAttrs, updateUser, rawUser, attributes);
 
         // 5. 更新扩展属性
         userAttrService.updateUserUserAttrMapping(userId, attributes);
@@ -852,14 +852,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private void convertUserInfo(Map<String, Object> userInfo, List<UserAttrResponseDto> editableUserAttrs,
-            User updateUser, List<UserAttrMappingRequestDto> attributes) {
+            User updateUser, User rawUser, List<UserAttrMappingRequestDto> attributes) {
         CommonUtil.stream(editableUserAttrs).filter(x -> userInfo.containsKey(x.getKey())).forEach(userAttr -> {
             Object userInfoValue = userInfo.get(userAttr.getKey());
 
             // 4.1 非扩展属性
             if (BooleanUtils.isFalse(userAttr.getExtFlg())) {
-                var userField = ReflectionUtils.findField(User.class, userAttr.getKey());
+                String key = userAttr.getKey();
+                var userField = ReflectionUtils.findField(User.class, key);
                 if (Objects.nonNull(userField)) {
+                    UserRequestDto requestDto = new UserRequestDto();
+                    if (CommonUtil.extractFieldNameFromGetter(User::getUsername).equals(key)) {
+                        requestDto.setUsername((String) userInfoValue);
+                        checkUsername(requestDto, rawUser);
+                    }
+
+                    if (CommonUtil.extractFieldNameFromGetter(User::getPhoneNumber).equals(key)) {
+                        requestDto.setPhoneNumber((String) userInfoValue);
+                        checkPhoneNumber(requestDto, rawUser);
+                    }
+
+                    if (CommonUtil.extractFieldNameFromGetter(User::getEmailAddress).equals(key)) {
+                        requestDto.setEmailAddress((String) userInfoValue);
+                        checkEmailAddress(requestDto, rawUser);
+                    }
+
                     ReflectionUtils.makeAccessible(userField);
                     ReflectionUtils.setField(userField, updateUser, userInfoValue);
                 }
