@@ -4,25 +4,25 @@ import {changePwd, sendEmailCodeSubmit} from "@/api/login";
 import {logoutSubmit} from "@/api/logout";
 import {checkPasswordWithoutPolicy} from "@/api/setting";
 import {
-  bindEmail,
-  getCurrentUser,
-  getVisibleUserAttrs,
-  sendBindEmailCode,
-  unbindEmail,
-  updateMyUserInfo,
+    bindEmail,
+    getCurrentUser,
+    getVisibleUserAttrs,
+    sendBindEmailCode,
+    unbindEmail,
+    updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
-import {AUTH_FAILURE, AUTH_SUCCESS, AUTH_TOKENS, BINDING_EXISTS} from "@/util/constants";
+import {AUTH_FAILURE, AUTH_SUCCESS, AUTH_TOKENS, BINDING_EXISTS,} from "@/util/constants";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Message, Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import {useRoute} from "vue-router";
 import webauthn from "@/util/webauthn";
 import {
-  completeWebAuthnRegistration,
-  deleteWebAuthnCredential,
-  getWebAuthnRegisterOptions,
-  listWebAuthnCredentials,
+    completeWebAuthnRegistration,
+    deleteWebAuthnCredential,
+    getWebAuthnRegisterOptions,
+    listWebAuthnCredentials,
 } from "@/api/webauthn";
 
 const activeTab = ref("user_info");
@@ -152,7 +152,7 @@ const handleGetUserAttrs = async () => {
 
         // 将用户 ID 置为第一个属性
         const userIdIndex = userAttrs.findIndex(
-          (item: any) => item.key === "userId"
+          (item: any) => item.key === "userId",
         );
         if (userIdIndex > -1) {
           userAttrs.splice(0, 0, userAttrs.splice(userIdIndex, 1)[0]);
@@ -160,7 +160,7 @@ const handleGetUserAttrs = async () => {
 
         // 将用户名置为第二个属性
         const userNameIndex = userAttrs.findIndex(
-          (item: any) => item.key === "username"
+          (item: any) => item.key === "username",
         );
         if (userNameIndex > -1) {
           userAttrs.splice(1, 0, userAttrs.splice(userNameIndex, 1)[0]);
@@ -168,7 +168,7 @@ const handleGetUserAttrs = async () => {
 
         // 将邮箱置为第三个属性
         const emailIndex = userAttrs.findIndex(
-          (item: any) => item.key === "emailAddress"
+          (item: any) => item.key === "emailAddress",
         );
         if (emailIndex > -1) {
           userAttrs.splice(2, 0, userAttrs.splice(emailIndex, 1)[0]);
@@ -176,7 +176,7 @@ const handleGetUserAttrs = async () => {
 
         // 将手机号置为第四个属性
         const phoneIndex = userAttrs.findIndex(
-          (item: any) => item.key === "phoneNumber"
+          (item: any) => item.key === "phoneNumber",
         );
         if (phoneIndex > -1) {
           userAttrs.splice(3, 0, userAttrs.splice(phoneIndex, 1)[0]);
@@ -199,7 +199,7 @@ const handleGetAllEnabledDictData = async () => {
     if (item.dataType === "DICT" && item.dictId) {
       allDictDatas[item.key] = [];
       getEnabledDictDataPromises.push(
-        handleGetEnabledDictData(item.key, item.dictId)
+        handleGetEnabledDictData(item.key, item.dictId),
       );
     }
   });
@@ -507,7 +507,7 @@ const handleAddWebAuthnCredential = () => {
       handleApiSuccess(result, async (data: any) => {
         try {
           const credential = await webauthn.startRegistration(data);
-          const responseResult = await completeWebAuthnRegistration({
+          await completeWebAuthnRegistration({
             id: credential.id,
             rawId: credential.rawId,
             response: {
@@ -516,17 +516,17 @@ const handleAddWebAuthnCredential = () => {
             },
             transports: credential.response.transports?.join(",") || "",
           });
-          handleApiSuccess(responseResult, () => {
-            Notification.success("添加 Passkey 凭证成功");
-            handleGetWebAuthnCredentials();
-          });
+          Notification.success("添加 Passkey 凭证成功");
+          handleGetWebAuthnCredentials();
         } catch (error: any) {
-          if (error.message && (error.message.includes("not allowed"))) {
+          if (error.message && error.message.includes("not allowed")) {
             Notification.warning("已取消添加 Passkey 凭证");
           } else if (error.message.includes("previously registered")) {
             Notification.warning("该设备已注册过 Passkey，无法重复注册");
           } else {
-            Notification.error("添加凭证失败: " + (error.message || "未知错误"));
+            Notification.error(
+              "添加凭证失败: " + (error.message || "未知错误"),
+            );
           }
         }
       });
@@ -584,7 +584,7 @@ const handleBindUser = (identitySource: any) => {
         authWindow = window.open(
           data.authReqUri,
           "_blank",
-          "width=600,height=600"
+          "width=600,height=600",
         );
       });
     })

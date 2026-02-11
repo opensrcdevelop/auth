@@ -149,7 +149,7 @@ export default loginTs;
           </template>
         </a-button>
         <div class="title">请选择一种方式进行 MFA 验证</div>
-        <a-tabs type="rounded" size="medium">
+        <a-tabs type="rounded" size="medium" @change="handleMfaMethodChange">
           <a-tab-pane
             style="height: 280px"
             key="passkey"
@@ -159,7 +159,7 @@ export default loginTs;
             <div class="mfa-info">请点击下方按钮，进行验证</div>
             <a-button
               type="primary"
-              style="width: 100%; margin-top: 20px;"
+              style="width: 100%; margin-top: 20px"
               size="large"
               :loading="webAuthnMfaLoading"
               @click="handleWebAuthnMfa"
@@ -180,9 +180,10 @@ export default loginTs;
               输入身份验证应用生成的 6 位验证码，进行验证
             </div>
             <a-verification-code
+              ref="totpVerificationCodeRef"
               size="large"
               v-model="totpValidForm.code"
-              style="width: 100%; margin-top: 20px"
+              style="width: 100%; margin-top: 20px; padding: 4px"
               :separator="
                 (index) => ((index + 1) % 3 || index > 3 ? null : '-')
               "

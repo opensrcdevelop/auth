@@ -144,7 +144,6 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat("/totp/check"));
         excludePathPatterns.add(apiPrefix.concat("/code/email/*"));
         excludePathPatterns.add(apiPrefix.concat("/code/check"));
-        excludePathPatterns.add(apiPrefix.concat("/user/me/password/change"));
         excludePathPatterns.add(apiPrefix.concat("/user/me/password/reset"));
         excludePathPatterns.add(apiPrefix.concat("/tenant/check/*"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/get"));
@@ -179,6 +178,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat("/captcha/check"));
         excludePathPatterns.add(apiPrefix.concat("/setting/passwordPolicy/checkWithoutPolicy"));
         excludePathPatterns.add(apiPrefix.concat("/identitySource/enabled"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/authenticate/*"));
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return changePwdCheckFilter;

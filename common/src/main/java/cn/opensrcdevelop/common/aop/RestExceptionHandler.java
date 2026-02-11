@@ -10,12 +10,11 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.text.MessageFormat;
-import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.validation.BindingResult;
@@ -27,6 +26,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.text.MessageFormat;
+import java.util.Collection;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -150,6 +152,16 @@ public class RestExceptionHandler {
             session.invalidate();
         }
         return R.optFail(CodeEnum.RCD40001);
+    }
+
+    /**
+     * JSON 反序列异常
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public R<Object> exception(HttpMessageNotReadableException e) {
+        log.debug(e.getMessage(), e);
+        return R.optFail(CodeEnum.RCD20001);
     }
 
     /**

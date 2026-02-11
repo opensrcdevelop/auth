@@ -92,10 +92,10 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
     public void configure(HttpSecurity http) throws Exception {
         // 添加 cors 过滤器
         http.addFilter(corsFilter);
+        // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
+        http.addFilterBefore(mfaValidFilter, SecurityContextHolderFilter.class);
         // 添加变更密码检查过滤器
         http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
-        // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
-        http.addFilterAfter(mfaValidFilter, SecurityContextHolderFilter.class);
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);

@@ -44,6 +44,7 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             .getBean(UserTokenBasedRememberMeServices.class);
     private final WebAuthnService webAuthnService = SpringContextUtil.getBean(WebAuthnService.class);
 
+    @SuppressWarnings("java:S3776")
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) {
@@ -73,9 +74,6 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
             responseDto.setHasPasskey(hasPasskey);
             if (hasPasskey) {
                 mfaMethods.add(AuthConstants.MFA_METHOD_WEBAUTHN);
-            } else {
-                responseDto
-                        .setWebAuthnRegisterOptions(webAuthnService.getRegistrationOptions(user.getUserId(), request));
             }
 
             // 1.3 检查 TOTP 设备是否绑定
@@ -92,9 +90,17 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
                 // 1.3.2 生成二维码
                 String qrCodeData = TotpAuthenticator.getQrCodeString(user.getUsername(), secret);
                 responseDto.setBindTotpDeviceQrCode(CommonUtil.getBase64PngQrCode(150, 150, qrCodeData));
+            } else {
+                mfaMethods.add(AuthConstants.MFA_METHOD_TOTP);
             }
 
-            // 1.4 设置 MFA 认证方式
+            // 1.4 仅一种 MFA 验证方式都没有设置时，允许添加 Passkey 凭证
+            if (!hasPasskey && !totpDeviceBind) {
+                responseDto
+                        .setWebAuthnRegisterOptions(webAuthnService.getRegistrationOptions(user.getUserId(), request));
+            }
+
+            // 1.5 设置 MFA 认证方式
             responseDto.setMfaMethods(mfaMethods);
         } else {
             // 2. 未启用多因素认证

@@ -86,10 +86,10 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
 
         // 添加跨域过滤器
         http.addFilter(corsFilter);
-        // 添加变更密码检查过滤器
-        http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
         // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
         http.addFilterBefore(mfaValidFilter, SecurityContextHolderFilter.class);
+        // 添加变更密码检查过滤器
+        http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
         // 添加图像验证码二次校验过滤器
         http.addFilterBefore(captchaVerificationCheckFilter, ChangePwdCheckFilter.class);
         // 添加 OAuth2 Authorize 记住我过滤器

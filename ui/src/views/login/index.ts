@@ -1,5 +1,5 @@
 import {Notification} from "@arco-design/web-vue";
-import {defineComponent, onMounted, reactive, ref} from "vue";
+import {defineComponent, nextTick, onMounted, reactive, ref} from "vue";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {checkCode, emailLoginSubmit, loginSubmit, resetPwd, sendEmailCodeSubmit, totpValidSubmit,} from "@/api/login";
 import {logoutSubmit} from "@/api/logout";
@@ -50,7 +50,12 @@ const toBind = ref(false);
 const toAddPasskey = ref(false);
 // MFA 验证
 const toMfaValidate = ref(false);
+// TOTP 设备绑定二维码
 const qrCodeData = ref("");
+// 是否需要变更密码
+const needChangePwd = ref(false);
+// 变更密码类型
+const changePwdType = ref("");
 
 const totpValidForm = reactive({
   code: "",
@@ -72,6 +77,19 @@ const webAuthnRegisterOptions = ref(null);
 
 const captchaVerifyRef = ref();
 
+const totpVerificationCodeRef = ref();
+const handleMfaMethodChange = (key) => {
+  if (key === "totp") {
+    nextTick(() => {
+      const inputs =
+        totpVerificationCodeRef.value?.$el?.querySelectorAll("input");
+      if (inputs && inputs.length > 0) {
+        inputs[0].focus();
+      }
+    });
+  }
+};
+
 /**
  * 返回登录页
  */
@@ -80,9 +98,16 @@ const backToLogin = () => {
     .then((result: any) => {
       handleApiSuccess(result, () => {
         toMfa.value = false;
+        toMfaValidate.value = false;
+        toBind.value = false;
+        toAddPasskey.value = false;
         passwordLoginForm.password = "";
         passwordLoginForm.username = "";
         totpValidForm.code = "";
+        webAuthnRegisterOptions.value = null;
+        mfaMethods.value = [];
+        needChangePwd.value = false;
+        changePwdType.value = null;
       });
     })
     .catch((err: any) => {
@@ -136,7 +161,7 @@ const handleTotpValidSubmit = (code) => {
         if (data.valid) {
           toTarget();
         } else {
-          Notification.warning("安全码错误，请重新输入");
+          Notification.warning("验证码错误，请重新输入");
         }
       });
     })
@@ -233,13 +258,22 @@ const handleToValidateTotp = () => {
  * 跳转至目标路径
  */
 async function toTarget() {
-  let target = getQueryString("target");
-  if (target) {
-    window.location.href = target;
-  } else {
+  if (needChangePwd.value) {
     router.push({
-      path: "/",
+      path: "/login/changePwd",
+      query: {
+        type: changePwdType.value || "0",
+      },
     });
+  } else {
+    let target = getQueryString("target");
+    if (target) {
+      window.location.href = target;
+    } else {
+      router.push({
+        path: "/",
+      });
+    }
   }
 }
 
@@ -387,13 +421,8 @@ const handlePasskeyLoginSubmit = () => {
 const handleLoginResult = async (result: any, loginType: string) => {
   // 需要修改密码
   if (result.needChangePwd) {
-    router.push({
-      path: "/login/changePwd",
-      query: {
-        type: result.changePwdType || "0",
-      },
-    });
-    return;
+    needChangePwd.value = true;
+    changePwdType.value = result.changePwdType || "0";
   }
 
   if (result.enableMfa) {
@@ -401,16 +430,22 @@ const handleLoginResult = async (result: any, loginType: string) => {
     toMfa.value = true;
     const mfaMethodsResp = result.mfaMethods || [];
 
-    // 检查是否添加 Passkey
-    if (!result.hasPasskey && result.webAuthnRegisterOptions) {
-      toAddPasskey.value = true;
-      webAuthnRegisterOptions.value = result.webAuthnRegisterOptions;
-    }
+    if (!result.totpDeviceBind && !result.hasPasskey) {
+      // 检查是否添加 Passkey
+      if (!result.hasPasskey && result.webAuthnRegisterOptions) {
+        toAddPasskey.value = true;
+        webAuthnRegisterOptions.value = result.webAuthnRegisterOptions;
+      }
 
-    // 检查是否绑定 TOTP 设备
-    if (!toAddPasskey.value && !result.hasPasskey && !result.totpDeviceBind && result.bindTotpDeviceQrCode) {
-      toBind.value = true;
-      qrCodeData.value = result.bindTotpDeviceQrCode;
+      // 检查是否绑定 TOTP 设备
+      if (
+        !result.hasPasskey &&
+        !result.totpDeviceBind &&
+        result.bindTotpDeviceQrCode
+      ) {
+        toBind.value = true;
+        qrCodeData.value = result.bindTotpDeviceQrCode;
+      }
     }
 
     // 检查是否进入验证
@@ -424,12 +459,15 @@ const handleLoginResult = async (result: any, loginType: string) => {
       isWebAuthnSupported.value &&
       result.hasPasskey
     ) {
-      console.log("1111");
       mfaMethods.value.push("WEBAUTHN");
     }
 
     if (mfaMethodsResp.includes("TOTP") && result.totpDeviceBind) {
       mfaMethods.value.push("TOTP");
+    }
+
+    if (mfaMethods.value.length > 0 && mfaMethods.value[0] === "TOTP") {
+      handleMfaMethodChange("totp");
     }
   } else {
     toTarget();
@@ -703,6 +741,8 @@ export default defineComponent({
       passkeyLoginLoading,
       handlePasskeyLoginSubmit,
       handleToValidateTotp,
+      totpVerificationCodeRef,
+      handleMfaMethodChange,
     };
   },
 });
