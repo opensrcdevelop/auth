@@ -21,16 +21,18 @@ import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +48,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      * @param requestDto
      *            创建 OIDC scope 请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.CREATE, success = "'创建了 OIDC Scope（' + #requestDto.name + '），包含的 Claim 为：' + #claims", fail = "'创建 OIDC Scope（' + #requestDto.name + '）失败，包含的 Claim 为：' + #claims")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.CREATE, success = "创建了 OIDC Scope（{{ #requestDto.name }}），包含的 Claim 为：{{ #claims }}", fail = "创建 OIDC Scope（{{ #requestDto.name }}）失败，包含的 Claim 为：{{ #claims }}")
     @Transactional
     @Override
     public void createOidcScope(OidcScopeRequestDto requestDto) {
@@ -141,9 +143,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      * @param requestDto
      *            更新 OIDC scope 请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.UPDATE, success = "'将 OIDC Scope 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name + "
-            +
-            "'，包含的 Claim 由 ' + #oldClaims + ' 修改为了 ' + #claims", fail = "'修改 OIDC Scope（' + #oldName + '）失败'")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.UPDATE, success = "将 OIDC Scope 的名称由 {{ #oldName }} 修改为了 {{ #requestDto.name }}，包含的 Claim 由 {{ #oldClaims }} 修改为了 {{ #claims }}", fail = "修改 OIDC Scope（{{ #oldName }}）失败")
     @Transactional
     @Override
     public void updateOidcScope(OidcScopeRequestDto requestDto) {
@@ -186,9 +186,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
      * @param scopeId
      *            scope ID
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.DELETE, success = "'删除了 OIDC Scope（' + #scopeName + '）'", fail = "'删除 OIDC Scope（' + #scopeName + '）失败'"
-
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_SCOPE, sysOperation = SysOperationType.DELETE, success = "删除了 OIDC Scope（{{ #scopeName }}）", fail = "删除 OIDC Scope（{{ #scopeName }}）失败")
     @Transactional
     @Override
     public void removeOidcScope(String scopeId) {
@@ -205,7 +203,7 @@ public class OidcScopeServiceImpl extends ServiceImpl<OidcScopeMapper, OidcScope
     }
 
     private void checkScopeName(OidcScopeRequestDto requestDto, OidcScope rawOidcScope) {
-        if (Objects.nonNull(rawOidcScope) && StringUtils.equals(requestDto.getName(), rawOidcScope.getScopeName())) {
+        if (Objects.nonNull(rawOidcScope) && Strings.CS.equals(requestDto.getName(), rawOidcScope.getScopeName())) {
             return;
         }
 

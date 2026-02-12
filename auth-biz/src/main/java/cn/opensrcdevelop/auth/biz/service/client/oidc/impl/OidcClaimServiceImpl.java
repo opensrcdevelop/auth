@@ -18,13 +18,14 @@ import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.Strings;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +40,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      * @param requestDto
      *            设置 OIDC claim 请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.CREATE, success = "'创建了 OIDC Claim（ ' + #requestDto.name + '），对应的用户属性为：' "
-            +
-            " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)", fail = "'创建 OIDC Claim（' + #requestDto.name + '）失败，对应的用户属性为：' "
-                    +
-                    " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.CREATE, success = "创建了 OIDC Claim（{{ #requestDto.name }}），对应的用户属性为：{{ @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR) }}", fail = "创建 OIDC Claim（{{ #requestDto.name }}）失败，对应的用户属性为：{{ @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR) }}")
     @Transactional
     @Override
     public void createOidcClaim(OidcClaimRequestDto requestDto) {
@@ -87,10 +84,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      * @param requestDto
      *            更新 OIDC claim 请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.UPDATE, success = "'将 OIDC Claim 的名称由 ' + #oldName + ' 修改为了 ' + #requestDto.name"
-            +
-            " + '，对应的用户属性由 '+ @linkGen.toLink(#oldUserAttrId, T(ResourceType).USER_ATTR) + ' 修改为了 '" +
-            " + @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR)", fail = "'修改 OIDC Claim（' + #oldName + '）失败'")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.UPDATE, success = "将 OIDC Claim 的名称由 {{ #oldName}} 修改为了 {{ #requestDto.name }}，对应的用户属性由 {{ @linkGen.toLink(#oldUserAttrId, T(ResourceType).USER_ATTR) }} 修改为了 {{ @linkGen.toLink(#requestDto.userAttrId, T(ResourceType).USER_ATTR) }}", fail = "修改 OIDC Claim（{{ #oldName }}）失败")
     @Transactional
     @Override
     public void updateOidcClaim(OidcClaimRequestDto requestDto) {
@@ -122,7 +116,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
      * @param claimId
      *            claim ID
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.DELETE, success = "'删除了 OIDC Claim（' + #claimName + '）'", fail = "'删除 OIDC Claim（' + #claimName + '）失败'")
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.OIDC_CLAIM, sysOperation = SysOperationType.DELETE, success = "删除了 OIDC Claim（{{ #claimName }}）", fail = "删除 OIDC Claim（{{ #claimName }}）失败")
     @Transactional
     @Override
     public void removeOidcClaim(String claimId) {
@@ -137,7 +131,7 @@ public class OidcClaimServiceImpl extends ServiceImpl<OidcClaimMapper, OidcClaim
     }
 
     private void checkClaimName(OidcClaimRequestDto requestDto, OidcClaim rawOidcClaim) {
-        if (Objects.nonNull(rawOidcClaim) && StringUtils.equals(requestDto.getName(), rawOidcClaim.getClaimName())) {
+        if (Objects.nonNull(rawOidcClaim) && Strings.CS.equals(requestDto.getName(), rawOidcClaim.getClaimName())) {
             return;
         }
 

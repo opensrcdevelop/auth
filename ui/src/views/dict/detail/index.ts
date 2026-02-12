@@ -1,15 +1,10 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import {
-  deleteDictData,
-  getDictDataList,
-  getDictDetail,
-  updateDict,
-} from "@/api/dict";
-import { getQueryString, handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { usePagination } from "@/hooks/usePagination";
+import {deleteDictData, getDictDataList, getDictDetail, updateDict,} from "@/api/dict";
+import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {usePagination} from "@/hooks/usePagination";
 
 /**
  * 返回上一级
@@ -219,7 +214,7 @@ export default defineComponent({
 
     onMounted(() => {
       activeTab.value = tab || "dict_info";
-      handleTabInit(tab, dictId);
+      handleTabInit(activeTab.value, dictId);
     });
 
     return {

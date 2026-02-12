@@ -851,6 +851,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userResponse.setLastLoginTime(lastLoginInfo._4);
     }
 
+    @SuppressWarnings("java:S3776")
     private void convertUserInfo(Map<String, Object> userInfo, List<UserAttrResponseDto> editableUserAttrs,
             User updateUser, User rawUser, List<UserAttrMappingRequestDto> attributes) {
         CommonUtil.stream(editableUserAttrs).filter(x -> userInfo.containsKey(x.getKey())).forEach(userAttr -> {
