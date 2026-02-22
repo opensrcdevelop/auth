@@ -12,6 +12,7 @@ import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,8 +30,6 @@ import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.CorsFilter;
-
-import java.util.List;
 
 /**
  * 授权服务器配置

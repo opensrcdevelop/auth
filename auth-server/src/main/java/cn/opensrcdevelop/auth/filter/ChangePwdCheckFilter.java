@@ -10,9 +10,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.http.HttpStatus;
-
 import java.io.IOException;
+import org.springframework.http.HttpStatus;
 
 public class ChangePwdCheckFilter extends RestFilter {
 

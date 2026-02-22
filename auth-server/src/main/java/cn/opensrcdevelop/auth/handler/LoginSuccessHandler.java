@@ -17,14 +17,13 @@ import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 认证成功处理

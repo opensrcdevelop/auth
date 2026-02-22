@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.biz.mfa;
 
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Data;
 
 /**
  * MFA 验证会话上下文（统一处理 TOTP 和 WebAuthn）

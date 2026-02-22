@@ -4,7 +4,6 @@ import cn.opensrcdevelop.auth.biz.dto.auth.*;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.util.List;
 
 public interface WebAuthnService {

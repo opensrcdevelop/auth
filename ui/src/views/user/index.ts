@@ -1,9 +1,11 @@
 import {
   downloadUserTemplate,
   exportUsers,
+  exportUsersAsync,
   getUserAttrs,
   getUserList,
   importUsers,
+  importUsersAsync,
   removeUser,
   searchUser,
   setUserAttrDisplaySeq,
@@ -568,22 +570,14 @@ const handleExport = async (exportAll: boolean) => {
     const userIds = exportAll
       ? undefined
       : userList.map((u: any) => u.userId).filter(Boolean);
-    const blob = (await exportUsers(
-      filters,
-      exportAll,
-      userIds,
-    )) as unknown as Blob;
-    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
-    const now = new Date();
-    const timestamp =
-      now.getFullYear() +
-      String(now.getMonth() + 1).padStart(2, "0") +
-      String(now.getDate()).padStart(2, "0") +
-      String(now.getHours()).padStart(2, "0") +
-      String(now.getMinutes()).padStart(2, "0") +
-      String(now.getSeconds()).padStart(2, "0");
-    downloadBlob(blob, `用户数据_${timestamp}.xlsx`);
-    Notification.success(exportAll ? "全部数据导出成功" : "当前页导出成功");
+    // 异步导出，返回 taskId
+    const res = await exportUsersAsync(filters, exportAll, userIds);
+    Notification.info({
+      content: "任务已提交，请在任务中心查看进度",
+      duration: 3000,
+    });
+    // 可选：跳转到任务中心
+    // router.push("/task/list");
   } catch (err) {
     handleApiError(err, "导出");
   }
@@ -601,30 +595,18 @@ const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
-    importUsers(file)
-      .then((result: any) => {
-        handleApiSuccess(result, (data: any) => {
-          importResult.value = {
-            createdCount: data.createdCount || 0,
-            updatedCount: data.updatedCount || 0,
-            deletedCount: data.deletedCount || 0,
-            failureCount: data.errors?.length || 0,
-            errors: data.errors || [],
-          };
-          importResultVisible.value = true;
-
-          if (
-            data.errors?.length === 0 &&
-            (data.createdCount || data.updatedCount || data.deletedCount)
-          ) {
-            // 刷新列表
-            handleGetUserList(1, 15);
-          }
-        });
-      })
-      .catch((err: any) => {
-        handleApiError(err, "导入用户数据");
+    try {
+      // 异步导入，返回 taskId
+      await importUsersAsync(file);
+      Notification.info({
+        content: "任务已提交，请在任务中心查看进度",
+        duration: 3000,
       });
+      // 可选：跳转到任务中心
+      // router.push("/task/list");
+    } catch (err) {
+      handleApiError(err, "导入用户数据");
+    }
   }
   // 清空 input，允许重复选择同一文件
   target.value = "";
