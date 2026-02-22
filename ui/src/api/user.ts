@@ -354,6 +354,54 @@ export function importUsers(file: File) {
 }
 
 /**
+ * 异步导出用户数据
+ *
+ * @param filters 筛选条件
+ * @param all 是否导出全部
+ * @param userIds 指定用户 ID 列表
+ * @param username 当前登录用户名
+ * @returns taskId
+ */
+export function exportUsersAsync(
+  filters: any[],
+  all = false,
+  userIds?: string[],
+  username?: string
+): Promise<{ taskId: string }> {
+  let url = `/user/excel/export?all=${all}`;
+  if (userIds && userIds.length > 0) {
+    url += `&userIds=${userIds.join(",")}`;
+  }
+  if (username) {
+    url += `&username=${encodeURIComponent(username)}`;
+  }
+  return apiRequest.post({
+    url,
+    data: filters,
+  });
+}
+
+/**
+ * 异步导入用户数据
+ *
+ * @param file Excel 文件
+ * @param username 当前登录用户名
+ * @returns taskId
+ */
+export function importUsersAsync(
+  file: File,
+  username?: string
+): Promise<{ taskId: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const url = username ? `/user/excel/import?username=${encodeURIComponent(username)}` : "/user/excel/import";
+  return apiRequest.post({
+    url,
+    data: formData,
+  });
+}
+
+/**
  * 重新绑定 TOTP 设备
  *
  * @param id 用户 ID

@@ -18,6 +18,8 @@ import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
+import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
 import cn.opensrcdevelop.auth.biz.service.system.mail.MailService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
@@ -26,6 +28,7 @@ import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupMappingService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.auth.biz.util.excel.ExcelTemplateGenerator;
 import cn.opensrcdevelop.auth.biz.util.excel.UserExcelExporter;
@@ -72,6 +75,8 @@ public class UserExcelServiceImpl implements UserExcelService {
     private final ExcelTemplateGenerator templateGenerator;
     private final UserExcelExporter userExcelExporter;
     private final MailService mailService;
+    private final AsyncTaskSchedulerService asyncTaskSchedulerService;
+    private final StorageService storageService;
 
     private static final String EMAIL_ADDRESS_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private static final String PHONE_NUMBER_REGEX = "^1[3-9]\\d{9}$";
@@ -885,5 +890,48 @@ public class UserExcelServiceImpl implements UserExcelService {
             return phoneNumber.matches(PHONE_NUMBER_REGEX);
         }
         return false;
+    }
+
+    @Override
+    public String exportUsersAsync(List<DataFilterDto> filters, boolean exportAll, List<String> userIds) {
+        // 获取当前登录用户ID
+        String userId = AuthUtil.getCurrentUserId();
+
+        // 构建任务参数
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("filters", filters);
+        taskParams.put("exportAll", exportAll);
+        taskParams.put("userIds", userIds);
+
+        // 提交异步任务
+        return asyncTaskSchedulerService.submitTask(
+                cn.opensrcdevelop.auth.biz.enums.AsyncTaskType.USER_EXPORT.getCode(),
+                "用户数据导出",
+                taskParams,
+                userId);
+    }
+
+    @Override
+    public String importUsersAsync(MultipartFile file) throws IOException {
+        // 获取当前登录用户ID
+        String userId = AuthUtil.getCurrentUserId();
+        // 先存储文件
+        String fileName = file.getOriginalFilename();
+        byte[] fileData = file.getBytes();
+
+        // 使用存储服务保存文件
+        String filePath = storageService.store(fileData, fileName);
+
+        // 构建任务参数
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("filePath", filePath);
+        taskParams.put("fileName", fileName);
+
+        // 提交异步任务
+        return asyncTaskSchedulerService.submitTask(
+                cn.opensrcdevelop.auth.biz.enums.AsyncTaskType.USER_IMPORT.getCode(),
+                "用户数据导入",
+                taskParams,
+                userId);
     }
 }

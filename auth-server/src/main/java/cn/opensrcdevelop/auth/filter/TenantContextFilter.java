@@ -15,15 +15,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
 
 @Slf4j
 public class TenantContextFilter extends RestFilter {

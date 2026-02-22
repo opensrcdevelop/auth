@@ -12,6 +12,7 @@ public class CommonConstants {
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSSSSS = "yyyy-MM-dd HH:mm:ss.SSSSSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS = "yyyy-MM-dd HH:mm:ss";
+    public static final String LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS_COMPACT = "yyyyMMddHHmmss";
     public static final String LOCAL_DATETIME_FORMAT_YYYYMMDD = "yyyy-MM-dd";
     public static final String UNKNOWN = "Unknown";
     public static final String SESSION_ID = "sessionId";

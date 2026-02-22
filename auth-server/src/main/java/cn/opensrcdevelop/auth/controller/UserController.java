@@ -5,7 +5,6 @@ import cn.opensrcdevelop.auth.biz.dto.user.*;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.SetUserAttrDisplaySeqRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportResultDto;
 import cn.opensrcdevelop.auth.biz.service.user.LoginLogService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
@@ -27,14 +26,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -283,26 +281,19 @@ public class UserController {
         response.getOutputStream().flush();
     }
 
-    @Operation(summary = "导出用户数据", description = "导出用户数据")
+    @Operation(summary = "导出用户数据", description = "导出用户数据，异步执行，任务完成后通过 WebSocket 通知")
     @PostMapping("/excel/export")
     @Authorize({"allUserPermissions", "exportUser"})
-    @NoRestResponse
-    public void exportUsers(@RequestBody List<DataFilterDto> filters,
+    public Map<String, String> exportUsers(@RequestBody List<DataFilterDto> filters,
             @RequestParam(defaultValue = "false") boolean all,
-            @RequestParam(required = false) List<String> userIds,
-            HttpServletResponse response) throws IOException {
-        byte[] data = userExcelService.exportUsers(filters, all, userIds);
-        String filename = "users-export-" + System.currentTimeMillis() + ".xlsx";
-        response.setContentType(CommonConstants.EXCEL_CONTENT_TYPE);
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-        response.getOutputStream().write(data);
-        response.getOutputStream().flush();
+            @RequestParam(required = false) List<String> userIds) {
+        return Map.of("taskId", userExcelService.exportUsersAsync(filters, all, userIds));
     }
 
-    @Operation(summary = "导入用户数据", description = "导入用户数据")
+    @Operation(summary = "导入用户数据", description = "导入用户数据，异步执行，任务完成后通过 WebSocket 通知")
     @PostMapping("/excel/import")
     @Authorize({"allUserPermissions", "importUser"})
-    public ExcelImportResultDto importUsers(@RequestParam("file") MultipartFile file) {
-        return userExcelService.importUsers(file);
+    public Map<String, String> importUsers(@RequestParam("file") MultipartFile file) throws IOException {
+        return Map.of("taskId", userExcelService.importUsersAsync(file));
     }
 }

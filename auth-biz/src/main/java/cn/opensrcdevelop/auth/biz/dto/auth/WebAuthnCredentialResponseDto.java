@@ -3,9 +3,8 @@ package cn.opensrcdevelop.auth.biz.dto.auth;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * WebAuthn 凭证响应 DTO

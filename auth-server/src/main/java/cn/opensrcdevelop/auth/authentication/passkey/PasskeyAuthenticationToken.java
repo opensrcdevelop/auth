@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.authentication.passkey;
 
+import java.io.Serial;
+import java.util.Collections;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-
-import java.io.Serial;
-import java.util.Collections;
 
 /**
  * Passkey 登录认证 Token 不需要用户名，credentialId 中已包含用户标识信息
