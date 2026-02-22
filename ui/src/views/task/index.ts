@@ -1,10 +1,10 @@
 import {
-    type AsyncTask,
-    downloadTaskResult,
-    getTask,
-    getTaskList,
-    type TaskStatus,
-    type TaskType,
+  type AsyncTask,
+  downloadTaskResult,
+  getTask,
+  getTaskList,
+  type TaskStatus,
+  type TaskType,
 } from "@/api/asyncTask";
 import {Message} from "@arco-design/web-vue";
 import {defineComponent, onMounted, onUnmounted, ref} from "vue";
@@ -12,9 +12,6 @@ import {usePagination} from "@/hooks/usePagination";
 import {type TaskNotificationMessage} from "@/hooks/useTaskNotification";
 import {taskEmitter} from "@/hooks/taskEmitter";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
-
-/** 加载状态 */
-const loading = ref(false);
 
 /** 任务列表 */
 const taskList = ref<AsyncTask[]>([]);
@@ -77,7 +74,6 @@ const removeTaskNotification = () => {
  * 获取任务列表
  */
 const fetchTaskList = async (pageData?: { page: number; size: number }) => {
-  loading.value = true;
   try {
     const page = pageData?.page || 1;
     const pageSize = pageData?.size || 15;
@@ -98,8 +94,6 @@ const fetchTaskList = async (pageData?: { page: number; size: number }) => {
     });
   } catch (error) {
     handleApiError(error, "获取任务列表");
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -273,7 +267,6 @@ export default defineComponent({
     });
 
     return {
-      loading,
       taskList,
       taskTypeFilter,
       statusFilter,

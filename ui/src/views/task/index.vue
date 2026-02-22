@@ -29,7 +29,6 @@ export default taskTs;
       <a-table
         :bordered="false"
         :data="taskList"
-        :loading="loading"
         :pagination="taskListPagination.pagination"
         :scroll="{ x: 800 }"
         row-key="taskId"
