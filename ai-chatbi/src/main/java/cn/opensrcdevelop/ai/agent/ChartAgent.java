@@ -3,13 +3,12 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -17,22 +16,26 @@ public class ChartAgent {
 
     private final PromptTemplate promptTemplate;
 
-
     /**
      * 根据用户提问及数据库查询结果生成图表
      *
-     * @param chatClient  ChatClient
-     * @param sql 执行的 SQL
-     * @param question 用户提问
-     * @param queryResult 查询结果
-     * @param instruction 图表生成指令
+     * @param chatClient
+     *            ChatClient
+     * @param sql
+     *            执行的 SQL
+     * @param question
+     *            用户提问
+     * @param queryResult
+     *            查询结果
+     * @param instruction
+     *            图表生成指令
      * @return 图表配置
      */
     public Map<String, Object> generateChart(ChatClient chatClient,
-                                String sql,
-                                String question,
-                                List<Map<String, Object>> queryResult,
-                                String instruction) {
+            String sql,
+            String question,
+            List<Map<String, Object>> queryResult,
+            String instruction) {
         // 1. 生成图表配置
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_CHART)
                 .param("question", question)
@@ -45,6 +48,7 @@ public class ChartAgent {
                 .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_CHART))
                 .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_CHART))
                 .call()
-                .entity(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }

@@ -12,10 +12,9 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.vavr.control.Try;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 public class DelegatingJWKSource implements JWKSource<SecurityContext> {
@@ -24,7 +23,8 @@ public class DelegatingJWKSource implements JWKSource<SecurityContext> {
 
     @Override
     public List<JWK> get(JWKSelector jwkSelector, SecurityContext context) throws KeySourceException {
-        RLock lock = RedisUtil.getLock(SystemSettingService.LOCK_KEY_JWK + TenantContextHolder.getTenantContext().getTenantCode());
+        RLock lock = RedisUtil
+                .getLock(SystemSettingService.LOCK_KEY_JWK + TenantContextHolder.getTenantContext().getTenantCode());
         try {
             lock.lock();
             // 1. 从缓存中获取

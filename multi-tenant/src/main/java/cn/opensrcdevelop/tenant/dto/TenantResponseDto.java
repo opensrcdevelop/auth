@@ -3,9 +3,8 @@ package cn.opensrcdevelop.tenant.dto;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 @Schema(description = "租户响应")
 @Data

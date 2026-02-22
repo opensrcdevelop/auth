@@ -1,5 +1,17 @@
 package cn.opensrcdevelop.auth.client.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -10,7 +22,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.SocketConfig;
@@ -30,13 +42,7 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-
+@Slf4j
 public class HttpUtil {
 
     private HttpUtil() {
@@ -91,42 +97,85 @@ public class HttpUtil {
         }
     }
 
-    private static CloseableHttpClient getHttpClient() {
-        Registry<ConnectionSocketFactory> registry =
-                RegistryBuilder.<ConnectionSocketFactory>create()
-                        .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                        .register("https", SSLConnectionSocketFactory.getSocketFactory())
-                        .build();
-        PoolingHttpClientConnectionManager poolingConnectionManager = new PoolingHttpClientConnectionManager(registry);
+    private static SSLContext createSslContext() {
+        String certPath = System.getProperty("user.home") + "/.ssl/auth/cert.pem";
+        try {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            try (FileInputStream fis = new FileInputStream(certPath)) {
+                X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(fis);
 
-        poolingConnectionManager.setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(10)).build());
-        poolingConnectionManager.setDefaultConnectionConfig(ConnectionConfig.custom().setConnectTimeout(Timeout.ofSeconds(10)).build());
+                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                keyStore.load(null, null);
+                keyStore.setCertificateEntry("auth-server", certificate);
 
-        // set total amount of connections across all HTTP routes
-        poolingConnectionManager.setMaxTotal(200);
-        // set maximum amount of connections for each http route in pool
-        poolingConnectionManager.setDefaultMaxPerRoute(200);
+                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                        TrustManagerFactory.getDefaultAlgorithm());
+                trustManagerFactory.init(keyStore);
 
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectionKeepAlive(TimeValue.ofSeconds(10))
-                .setConnectionRequestTimeout(Timeout.ofSeconds(10))
-                .setResponseTimeout(Timeout.ofSeconds(10))
-                .build();
-        return HttpClients.custom()
-                .setDefaultRequestConfig(requestConfig)
-                .setConnectionManager(poolingConnectionManager)
-                .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
-                .setDefaultCookieStore(new BasicCookieStore())
-                .build();
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+                return sslContext;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load custom SSL certificate from {}, using default SSL context: {}",
+                    certPath, e.getMessage());
+            try {
+                return SSLContext.getDefault();
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to create default SSL context", ex);
+            }
+        }
     }
 
-    @Slf4j
+    private static CloseableHttpClient getHttpClient() {
+        try {
+            SSLContext sslContext = createSslContext();
+
+            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                    .register("https", SSLConnectionSocketFactoryBuilder.create()
+                            .setSslContext(sslContext)
+                            .build())
+                    .build();
+            PoolingHttpClientConnectionManager poolingConnectionManager = new PoolingHttpClientConnectionManager(
+                    registry);
+
+            poolingConnectionManager
+                    .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(10)).build());
+            poolingConnectionManager
+                    .setDefaultConnectionConfig(
+                            ConnectionConfig.custom().setConnectTimeout(Timeout.ofSeconds(10)).build());
+
+            // set total amount of connections across all HTTP routes
+            poolingConnectionManager.setMaxTotal(200);
+            // set maximum amount of connections for each http route in pool
+            poolingConnectionManager.setDefaultMaxPerRoute(200);
+
+            RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectionKeepAlive(TimeValue.ofSeconds(10))
+                    .setConnectionRequestTimeout(Timeout.ofSeconds(10))
+                    .setResponseTimeout(Timeout.ofSeconds(10))
+                    .build();
+            return HttpClients.custom()
+                    .setDefaultRequestConfig(requestConfig)
+                    .setConnectionManager(poolingConnectionManager)
+                    .setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy())
+                    .setDefaultCookieStore(new BasicCookieStore())
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to create HttpClient with custom SSL context, using default: {}", e.getMessage());
+            return HttpClients.createDefault();
+        }
+    }
+
     static class CustomClientHttpRequestInterceptor implements ClientHttpRequestInterceptor {
 
         @Override
         @NonNull
-        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes, @NonNull ClientHttpRequestExecution execution) throws IOException {
-            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(), request.getHeaders());
+        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes,
+                @NonNull ClientHttpRequestExecution execution) throws IOException {
+            log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(),
+                    request.getHeaders());
             request.getMethod();
             if (request.getMethod().equals(HttpMethod.POST)) {
                 log.info("Request Body: {}", new String(bytes, StandardCharsets.UTF_8));

@@ -14,22 +14,22 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.Flyway;
-
-import javax.sql.DataSource;
 import java.net.URI;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.Map;
 import java.util.Objects;
+import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.flywaydb.core.Flyway;
 
 @Slf4j
 public class TenantHelper {
 
-    private TenantHelper() {}
+    private TenantHelper() {
+    }
 
     private static final String CHECK_DATABASE_EXISTS_SCRIPT = "SELECT 1 FROM pg_database WHERE datname = ?";
     private static final String CREATE_DATABASE_SCRIPT = "CREATE DATABASE ";
@@ -42,19 +42,20 @@ public class TenantHelper {
     /**
      * 创建租户数据库
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      */
     public static void createTenantDatabase(String tenantCode) {
         try {
-            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
+            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil
+                    .getBean(DynamicRoutingDataSource.class);
             MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
             String tenantDbName = multiTenantProperties.getDbPrefix() + tenantCode;
 
             try (Connection connection = dynamicRoutingDataSource.getConnection();
-                 var checkDbExists = connection.prepareStatement(CHECK_DATABASE_EXISTS_SCRIPT);
-                 @SuppressWarnings("all")
-                 var createDb = connection.prepareStatement(CREATE_DATABASE_SCRIPT + tenantDbName);
-                ) {
+                    var checkDbExists = connection.prepareStatement(CHECK_DATABASE_EXISTS_SCRIPT);
+                    @SuppressWarnings("all")
+                    var createDb = connection.prepareStatement(CREATE_DATABASE_SCRIPT + tenantDbName);) {
                 // 1. 创建租户数据库
                 // 1.1 检查数据库是否存在
                 checkDbExists.setString(1, tenantDbName);
@@ -71,7 +72,8 @@ public class TenantHelper {
 
                     // 3. 执行数据库迁移脚本
                     executeTenantDbMigrations(ds, Map.of(FLYWAY_PLACEHOLDER_CONSOLE_REDIRECT_URL,
-                            getTenantConsoleUrl(tenantCode) + SpringContextUtil.getProperty(PROP_CONSOLE_REDIRECT_PATH)));
+                            getTenantConsoleUrl(tenantCode)
+                                    + SpringContextUtil.getProperty(PROP_CONSOLE_REDIRECT_PATH)));
                 }
             }
         } catch (Exception e) {
@@ -83,7 +85,8 @@ public class TenantHelper {
     /**
      * 创建租户数据源
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 租户数据源
      */
     public static DataSource createTenantDataSource(String tenantCode) {
@@ -92,7 +95,8 @@ public class TenantHelper {
 
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setDriverClassName(multiTenantProperties.getDb().getDriverClassName());
-        hikariConfig.setJdbcUrl(multiTenantProperties.getDb().getBaseUrl() + multiTenantProperties.getDbPrefix() + tenantCode);
+        hikariConfig.setJdbcUrl(
+                multiTenantProperties.getDb().getBaseUrl() + multiTenantProperties.getDbPrefix() + tenantCode);
         hikariConfig.setUsername(multiTenantProperties.getDb().getUsername());
         hikariConfig.setPassword(multiTenantProperties.getDb().getPassword());
         hikariConfig.setPoolName(tenantCode);
@@ -114,13 +118,15 @@ public class TenantHelper {
     /**
      * 切换租户数据源
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      */
     public static void switchTenantDs(String tenantCode) {
         String currentTenantDs = DynamicDataSourceContextHolder.peek();
         if (!StringUtils.equals(currentTenantDs, tenantCode)) {
             log.debug("切换至租户数据源：{}", tenantCode);
-            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
+            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil
+                    .getBean(DynamicRoutingDataSource.class);
             if (!dynamicRoutingDataSource.getDataSources().containsKey(tenantCode)) {
                 createTenantDataSource(tenantCode);
             }
@@ -132,7 +138,8 @@ public class TenantHelper {
     /**
      * 移除租户数据源
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      */
     public static void removeTenantDs(String tenantCode) {
         DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
@@ -156,7 +163,8 @@ public class TenantHelper {
     /**
      * 判断租户是否存在
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 是否存在
      */
     public static Tuple2<Boolean, Tenant> tenantExists(String tenantCode) {
@@ -173,7 +181,8 @@ public class TenantHelper {
     /**
      * 删除租户数据库
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      */
     public static void removeTenantDatabase(String tenantCode) {
         DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
@@ -181,10 +190,9 @@ public class TenantHelper {
         String tenantDbName = multiTenantProperties.getDbPrefix() + tenantCode;
 
         try (Connection connection = dynamicRoutingDataSource.getConnection();
-             var checkDbExists = connection.prepareStatement(CHECK_DATABASE_EXISTS_SCRIPT);
-             @SuppressWarnings("all")
-             var deleteDb = connection.prepareStatement(DROP_DATABASE_SCRIPT + tenantDbName);
-        ) {
+                var checkDbExists = connection.prepareStatement(CHECK_DATABASE_EXISTS_SCRIPT);
+                @SuppressWarnings("all")
+                var deleteDb = connection.prepareStatement(DROP_DATABASE_SCRIPT + tenantDbName);) {
             // 1. 移除租户数据源
             dynamicRoutingDataSource.removeDataSource(tenantCode);
 
@@ -203,8 +211,10 @@ public class TenantHelper {
     /**
      * 执行租户数据库迁移脚本
      *
-     * @param dataSource 数据源
-     * @param placeHolders 参数
+     * @param dataSource
+     *            数据源
+     * @param placeHolders
+     *            参数
      */
     public static void executeTenantDbMigrations(DataSource dataSource, Map<String, String> placeHolders) {
         MultiTenantProperties multiTenantProperties = SpringContextUtil.getBean(MultiTenantProperties.class);
@@ -223,28 +233,32 @@ public class TenantHelper {
     /**
      * 获取租户发行者
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 租户发行者
      */
     public static String getTenantIssuer(String tenantCode) {
         return Try.of(() -> {
             // 添加租户子域名
             URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_ISSUER)).toURL();
-            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
+            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(),
+                    tenantCode + "." + tmpurl.getAuthority());
         }).getOrElseThrow(ServerException::new);
     }
 
     /**
      * 获取租户控制台 URL
      *
-     * @param tenantCode 租户标识
+     * @param tenantCode
+     *            租户标识
      * @return 租户控制台 URL
      */
     public static String getTenantConsoleUrl(String tenantCode) {
         return Try.of(() -> {
             // 添加租户子域名
             URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL)).toURL();
-            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantCode + "." + tmpurl.getAuthority());
+            return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(),
+                    tenantCode + "." + tmpurl.getAuthority());
         }).getOrElseThrow(ServerException::new);
     }
 
@@ -254,14 +268,15 @@ public class TenantHelper {
      * @return 租户控制台 URL
      */
     public static String getTenantConsoleUrl() {
-        TenantContext tenantContext =  TenantContextHolder.getTenantContext();
+        TenantContext tenantContext = TenantContextHolder.getTenantContext();
         if (tenantContext.isDefaultTenant()) {
             return SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL);
         } else {
             return Try.of(() -> {
                 // 添加租户子域名
                 URL tmpurl = URI.create(SpringContextUtil.getProperty(PROP_DEFAULT_CONSOLE_URL)).toURL();
-                return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(), tenantContext.getTenantCode() + "." + tmpurl.getAuthority());
+                return String.format(CommonConstants.URL_FORMAT, tmpurl.getProtocol(),
+                        tenantContext.getTenantCode() + "." + tmpurl.getAuthority());
             }).getOrElseThrow(ServerException::new);
         }
     }

@@ -15,17 +15,17 @@ import lombok.Data;
 public class UserGroupRequestDto {
 
     @Schema(description = "用户组ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "用户组名")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String name;
 
     @Schema(description = "用户组标识")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     @AlphaNum
     private String code;
 
@@ -33,14 +33,16 @@ public class UserGroupRequestDto {
     private String desc;
 
     @Schema(description = "用户组类型")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private UserGroupType type;
 
     @Schema(description = "动态用户组条件")
-    @NotNull(groups = { DynamicUserGroup.class })
+    @NotNull(groups = {DynamicUserGroup.class})
     private @Valid DynamicUserGroupConditionsDto conditions;
 
-    public static interface DynamicUserGroup {}
+    public static interface DynamicUserGroup {
+    }
 
-    public static interface StaticUserGroup {}
+    public static interface StaticUserGroup {
+    }
 }

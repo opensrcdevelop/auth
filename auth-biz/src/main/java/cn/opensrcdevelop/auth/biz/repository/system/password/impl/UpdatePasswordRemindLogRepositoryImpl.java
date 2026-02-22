@@ -13,13 +13,14 @@ public class UpdatePasswordRemindLogRepositoryImpl implements UpdatePasswordRemi
 
     private final UpdatePasswordRemindLogMapper updatePasswordRemindLogMapper;
 
-
     /**
      * 检索修改密码提醒日志
      *
      *
-     * @param page 分页对象
-     * @param keyword 搜索关键字
+     * @param page
+     *            分页对象
+     * @param keyword
+     *            搜索关键字
      */
     @Override
     public void searchRemindLogs(IPage<UpdatePasswordRemindLog> page, String keyword) {

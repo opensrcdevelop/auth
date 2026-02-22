@@ -36,17 +36,16 @@ import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,15 +63,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 创建角色
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.ROLE,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）",
-            fail = "创建角色（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.ROLE, sysOperation = SysOperationType.CREATE, success = "创建了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）", fail = "创建角色（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createRole(RoleRequestDto requestDto) {
@@ -96,19 +90,16 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 创建角色映射
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.ROLE,
-            sysOperation = SysOperationType.CREATE,
-            success = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
-                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）添加了角色（" +
-                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）",
-            fail = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.ROLE, sysOperation = SysOperationType.CREATE, success = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、"
+            +
+            "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）添加了角色（" +
+            "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）", fail = "为用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、"
+                    +
                     "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）添加角色（" +
-                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败"
-    )
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败")
     @Transactional
     @Override
     public void createUserRoleMapping(RoleMappingRequestDto requestDto) {
@@ -118,13 +109,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
         if (CollectionUtils.isNotEmpty(mappings)) {
             // 2. 删除待创建的映射关系，避免重复创建
-            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, mappings, mappings.size(), (sqlSession, roleMapping) -> {
-                RoleMappingMapper mapper = sqlSession.getMapper(RoleMappingMapper.class);
-                String principalId = roleMapping.getUserId() == null ? roleMapping.getUserGroupId() : roleMapping.getUserId();
-                mapper.delete(Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getRoleId, roleMapping.getRoleId())
-                        .and(o -> o.eq(RoleMapping::getUserId, principalId).or(i -> i.eq(RoleMapping::getUserGroupId, principalId)))
-                );
-            });
+            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, mappings, mappings.size(),
+                    (sqlSession, roleMapping) -> {
+                        RoleMappingMapper mapper = sqlSession.getMapper(RoleMappingMapper.class);
+                        String principalId = roleMapping.getUserId() == null
+                                ? roleMapping.getUserGroupId()
+                                : roleMapping.getUserId();
+                        mapper.delete(
+                                Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getRoleId, roleMapping.getRoleId())
+                                        .and(o -> o.eq(RoleMapping::getUserId, principalId)
+                                                .or(i -> i.eq(RoleMapping::getUserGroupId, principalId))));
+                    });
 
             // 3. 数据库操作
             roleMappingService.saveBatch(mappings);
@@ -134,30 +129,30 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 获取用户角色
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      */
     @Override
     public List<Role> getUserRoles(String userId) {
-        List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId)).map(UserGroup::getUserGroupId).collect(Collectors.toList());
-        return CommonUtil.stream(roleRepository.searchUserRoles(userId, dynamicUserGroupIds)).map(RoleMapping::getRole).toList();
+        List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId))
+                .map(UserGroup::getUserGroupId).collect(Collectors.toList());
+        return CommonUtil.stream(roleRepository.searchUserRoles(userId, dynamicUserGroupIds)).map(RoleMapping::getRole)
+                .toList();
     }
 
     /**
      * 移除角色映射
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.ROLE,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.ROLE, sysOperation = SysOperationType.DELETE, success = "删除了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、"
+            +
+            "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）的角色（" +
+            "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）", fail = "删除用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、"
+                    +
                     "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）的角色（" +
-                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）",
-            fail = "删除用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、" +
-                    "用户组（{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）的角色（" +
-                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败"
-    )
+                    "{{ @linkGen.toLink(#requestDto.roleIds, T(ResourceType).ROLE) }}）失败")
     @Transactional
     @Override
     public void removeUserRoleMapping(RoleMappingRequestDto requestDto) {
@@ -167,22 +162,29 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
         if (CollectionUtils.isNotEmpty(deleteTargetMappings)) {
             // 2. 数据库操作
-            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, deleteTargetMappings, deleteTargetMappings.size(), (sqlSession, roleMapping) -> {
-                RoleMappingMapper mapper = sqlSession.getMapper(RoleMappingMapper.class);
-                String principalId = roleMapping.getUserId() == null ? roleMapping.getUserGroupId() : roleMapping.getUserId();
-                mapper.delete(Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getRoleId, roleMapping.getRoleId())
-                        .and(o -> o.eq(RoleMapping::getUserId, principalId).or(i -> i.eq(RoleMapping::getUserGroupId, principalId)))
-                );
-            });
+            SqlHelper.executeBatch(getSqlSessionFactory(), this.log, deleteTargetMappings, deleteTargetMappings.size(),
+                    (sqlSession, roleMapping) -> {
+                        RoleMappingMapper mapper = sqlSession.getMapper(RoleMappingMapper.class);
+                        String principalId = roleMapping.getUserId() == null
+                                ? roleMapping.getUserGroupId()
+                                : roleMapping.getUserId();
+                        mapper.delete(
+                                Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getRoleId, roleMapping.getRoleId())
+                                        .and(o -> o.eq(RoleMapping::getUserId, principalId)
+                                                .or(i -> i.eq(RoleMapping::getUserGroupId, principalId))));
+                    });
         }
     }
 
     /**
      * 获取角色列表
      *
-     * @param page    页数
-     * @param size    条数
-     * @param keyword 角色名称 / 标识检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            角色名称 / 标识检索关键字
      * @return 所有角色
      */
     @Override
@@ -191,7 +193,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         Page<Role> pageRequest = new Page<>(page, size);
         List<Role> roles;
         if (StringUtils.isNotEmpty(keyword)) {
-            roles = super.list(pageRequest, Wrappers.<Role>lambdaQuery().like(Role::getRoleName, keyword).or(o -> o.like(Role::getRoleCode, keyword)).orderByAsc(Role::getRoleCode));
+            roles = super.list(pageRequest, Wrappers.<Role>lambdaQuery().like(Role::getRoleName, keyword)
+                    .or(o -> o.like(Role::getRoleCode, keyword)).orderByAsc(Role::getRoleCode));
         } else {
             roles = super.list(pageRequest, Wrappers.<Role>lambdaQuery().orderByAsc(Role::getRoleCode));
         }
@@ -217,21 +220,27 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 删除指定用户 / 用户组的全部角色映射关系
      *
-     * @param principalId 用户 / 用户组ID
+     * @param principalId
+     *            用户 / 用户组ID
      */
     @Transactional
     @Override
     public void removeUserRoleMapping(String principalId) {
-        roleMappingService.remove(Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getUserId, principalId).or(o -> o.eq(RoleMapping::getUserGroupId, principalId)));
+        roleMappingService.remove(Wrappers.<RoleMapping>lambdaQuery().eq(RoleMapping::getUserId, principalId)
+                .or(o -> o.eq(RoleMapping::getUserGroupId, principalId)));
     }
 
     /**
      * 获取角色主体
      *
-     * @param page    页数
-     * @param size    条数
-     * @param roleId  角色ID
-     * @param keyword 用户名 / 用户组名称关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param roleId
+     *            角色ID
+     * @param keyword
+     *            用户名 / 用户组名称关键字
      * @return 角色主体
      */
     @Override
@@ -266,7 +275,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 获取角色详情
      *
-     * @param roleId 角色ID
+     * @param roleId
+     *            角色ID
      * @return 角色详情
      */
     @Override
@@ -289,15 +299,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 更新角色
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.ROLE,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）",
-            fail = "修改角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.ROLE, sysOperation = SysOperationType.UPDATE, success = "修改了角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）", fail = "修改角色（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).ROLE) }}）失败")
     @Transactional
     @Override
     public void updateRole(RoleRequestDto requestDto) {
@@ -334,15 +339,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 删除角色
      *
-     * @param roleId 角色ID
+     * @param roleId
+     *            角色ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.ROLE,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）",
-            fail = "删除角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.ROLE, sysOperation = SysOperationType.DELETE, success = "删除了角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）", fail = "删除角色（{{ @linkGen.toLink(#roleId, T(ResourceType).ROLE) }}）失败")
     @Transactional
     @Override
     public void removeRole(String roleId) {
@@ -359,20 +359,30 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     /**
      * 获取权限
      *
-     * @param page                           页数
-     * @param size                           条数
-     * @param roleId                         角色ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param roleId
+     *            角色ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      * @return 权限信息
      */
     @Override
-    public PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword) {
+    public PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId,
+            String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
         // 1. 查询数据库
         Page<AuthorizeRecord> pageRequest = new Page<>(page, size);
-        permissionService.getRolePermissions(pageRequest, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+        permissionService.getRolePermissions(pageRequest, roleId, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
 
         // 2. 属性编辑
         PageData<PermissionResponseDto> pageData = new PageData<>();
@@ -380,43 +390,49 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         pageData.setSize(pageRequest.getSize());
         pageData.setPages(pageRequest.getPages());
         pageData.setCurrent(pageRequest.getCurrent());
-        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords()).map(authorizeRecord -> {
-            PermissionResponseDto permissionResponse = new PermissionResponseDto();
+        List<PermissionResponseDto> permissionResponseList = CommonUtil.stream(pageRequest.getRecords())
+                .map(authorizeRecord -> {
+                    PermissionResponseDto permissionResponse = new PermissionResponseDto();
 
-            // 2.1 权限响应属性
-            var permission = authorizeRecord.getPermission();
-            permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
-            permissionResponse.setPriority(authorizeRecord.getPriority());
-            permissionResponse.setPermissionId(permission.getPermissionId());
-            permissionResponse.setPermissionName(permission.getPermissionName());
-            permissionResponse.setPermissionCode(permission.getPermissionCode());
-            permissionResponse.setResourceId(permission.getResource().getResourceId());
-            permissionResponse.setResourceCode(permission.getResource().getResourceCode());
-            permissionResponse.setResourceName(permission.getResource().getResourceName());
-            permissionResponse.setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
-            permissionResponse.setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
-            permissionResponse.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+                    // 2.1 权限响应属性
+                    var permission = authorizeRecord.getPermission();
+                    permissionResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+                    permissionResponse.setPriority(authorizeRecord.getPriority());
+                    permissionResponse.setPermissionId(permission.getPermissionId());
+                    permissionResponse.setPermissionName(permission.getPermissionName());
+                    permissionResponse.setPermissionCode(permission.getPermissionCode());
+                    permissionResponse.setResourceId(permission.getResource().getResourceId());
+                    permissionResponse.setResourceCode(permission.getResource().getResourceCode());
+                    permissionResponse.setResourceName(permission.getResource().getResourceName());
+                    permissionResponse
+                            .setResourceGroupId(permission.getResource().getResourceGroup().getResourceGroupId());
+                    permissionResponse
+                            .setResourceGroupCode(permission.getResource().getResourceGroup().getResourceGroupCode());
+                    permissionResponse
+                            .setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
 
-            // 2.2 限定条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setDesc(exp.getDescription());
-                return condition;
-            }).toList();
-            permissionResponse.setConditions(conditions);
+                    // 2.2 限定条件
+                    var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                        PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                        condition.setId(exp.getExpressionId());
+                        condition.setName(exp.getExpressionName());
+                        condition.setDesc(exp.getDescription());
+                        return condition;
+                    }).toList();
+                    permissionResponse.setConditions(conditions);
 
-            return permissionResponse;
-        }).toList();
+                    return permissionResponse;
+                }).toList();
         pageData.setList(permissionResponseList);
         return pageData;
     }
 
     private List<RoleMapping> getMappings(RoleMappingRequestDto requestDto) {
-        var userIds = CommonUtil.stream(requestDto.getUserIds()).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+        var userIds = CommonUtil.stream(requestDto.getUserIds()).filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
         var userGroupIds = CommonUtil.stream(requestDto.getUserGroupIds()).filter(StringUtils::isNotBlank).toList();
-        var roleIds = CommonUtil.stream(requestDto.getRoleIds()).filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+        var roleIds = CommonUtil.stream(requestDto.getRoleIds()).filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
 
         List<RoleMapping> mappings = new ArrayList<>();
 
@@ -447,11 +463,13 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         UserGroup userGroup = roleMapping.getUserGroup();
 
         if (user != null) {
-            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(), PrincipalTypeEnum.USER.getDisplayName());
+            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(),
+                    PrincipalTypeEnum.USER.getDisplayName());
         }
 
         if (userGroup != null) {
-            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(), PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
+            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(),
+                    PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
         }
 
         return Tuple.of(null, null, null, null);

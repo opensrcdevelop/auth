@@ -176,14 +176,14 @@ export function getCurrentUser() {
 }
 
 /**
- * 重新绑定 MFA 设备
+ * 重新绑定 TOTP 设备
  *
  * @param id 用户 ID
  * @returns 调用结果
  */
-export function rebindMfaDevice(id: string) {
+export function rebindTotpDevice(id: string) {
   return apiRequest.put({
-    url: `/user/${id}/mfa/device`,
+    url: `/user/${id}/mfa/totp`,
   });
 }
 
@@ -300,3 +300,117 @@ export function clearAuthorizedTokensByLoginId(id: string) {
     url: `/user/login/${id}/token`,
   });
 }
+
+/**
+ * 下载用户导入模版
+ *
+ * @returns 模版文件 Blob
+ */
+export function downloadUserTemplate(): Promise<Blob> {
+  return apiRequest
+    .get({
+      url: "/user/excel/template",
+      responseType: "blob",
+    })
+    .then((res: any) => res.data);
+}
+
+/**
+ * 导出用户数据
+ *
+ * @param filters 筛选条件
+ * @param all 是否导出全部
+ * @param userIds 用户ID列表（用于导出当前页）
+ * @returns 导出文件 Blob
+ */
+export function exportUsers(filters: any[], all = false, userIds?: string[]): Promise<Blob> {
+  let url = `/user/excel/export?all=${all}`;
+  if (userIds && userIds.length > 0) {
+    url += `&userIds=${userIds.join(",")}`;
+  }
+  return apiRequest
+    .post({
+      url,
+      data: filters,
+      responseType: "blob",
+    })
+    .then((res: any) => res.data);
+}
+
+/**
+ * 导入用户数据
+ *
+ * @param file Excel 文件
+ * @returns 导入结果
+ */
+export function importUsers(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  // http.ts 拦截器会自动处理 FormData 的 Content-Type
+  return apiRequest.post({
+    url: "/user/excel/import",
+    data: formData,
+  });
+}
+
+/**
+ * 异步导出用户数据
+ *
+ * @param filters 筛选条件
+ * @param all 是否导出全部
+ * @param userIds 指定用户 ID 列表
+ * @param username 当前登录用户名
+ * @returns taskId
+ */
+export function exportUsersAsync(
+  filters: any[],
+  all = false,
+  userIds?: string[],
+  username?: string
+): Promise<{ taskId: string }> {
+  let url = `/user/excel/export?all=${all}`;
+  if (userIds && userIds.length > 0) {
+    url += `&userIds=${userIds.join(",")}`;
+  }
+  if (username) {
+    url += `&username=${encodeURIComponent(username)}`;
+  }
+  return apiRequest.post({
+    url,
+    data: filters,
+  });
+}
+
+/**
+ * 异步导入用户数据
+ *
+ * @param file Excel 文件
+ * @param username 当前登录用户名
+ * @returns taskId
+ */
+export function importUsersAsync(
+  file: File,
+  username?: string
+): Promise<{ taskId: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const url = username ? `/user/excel/import?username=${encodeURIComponent(username)}` : "/user/excel/import";
+  return apiRequest.post({
+    url,
+    data: formData,
+  });
+}
+
+/**
+ * 重新绑定 TOTP 设备
+ *
+ * @param id 用户 ID
+ * @returns 调用结果
+ */
+export function clearPasskeyCredentials(id: string) {
+  return apiRequest.delete({
+    url: `/user/${id}/mfa/passkey`,
+  });
+}
+
+

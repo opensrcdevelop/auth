@@ -15,7 +15,9 @@ export default userTs;
         <div class="title">用户列表</div>
         <div class="info">对用户进行统一管理。</div>
       </div>
-      <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      <a-space>
+        <a-button type="primary" @click="handleToCreateUser">创建用户</a-button>
+      </a-space>
     </div>
     <div class="user-list">
       <div class="user-operation">
@@ -29,10 +31,18 @@ export default userTs;
             @keyup.enter.native="handleGetUserList(1, 15)"
             @clear="handleSearchUserClear"
           />
-          <a-trigger trigger="click" :popup-offset="8" @hide="handleUserListFilterHide">
+          <a-trigger
+            trigger="click"
+            :popup-offset="8"
+            @hide="handleUserListFilterHide"
+          >
             <a-button>
               <template #icon>
-                <icon-font type="icon-filter-fill" style="font-size: 16px;" v-if="userListFilterd" />
+                <icon-font
+                  type="icon-filter-fill"
+                  style="font-size: 16px"
+                  v-if="userListFilterd"
+                />
                 <icon-filter v-else />
               </template>
             </a-button>
@@ -67,7 +77,7 @@ export default userTs;
                             :value="column.key"
                             :disabled="
                               userListFilters.filters.some(
-                                (item) => item.key === column.key
+                                (item) => item.key === column.key,
                               )
                             "
                           >
@@ -128,7 +138,7 @@ export default userTs;
                             value="GT"
                             v-if="
                               ['NUMBER', 'DATETIME', 'DATE'].includes(
-                                filter.dataType
+                                filter.dataType,
                               )
                             "
                             >大于</a-option
@@ -137,80 +147,97 @@ export default userTs;
                             value="LT"
                             v-if="
                               ['NUMBER', 'DATETIME', 'DATE'].includes(
-                                filter.dataType
+                                filter.dataType,
                               )
                             "
                             >小于</a-option
+                          >
+                          <a-option
+                            value="IS_NULL"
+                            >为空</a-option
+                          >
+                          <a-option
+                            value="IS_NOT_NULL"
+                            >不为空</a-option
                           >
                         </a-select>
                       </a-form-item>
                     </a-col>
                     <a-col :span="10">
-                      <a-form-item
-                        :field="`filters[${index}].value`"
-                        hide-label
-                        :rules="[{ required: true, message: '未输入 / 选择' }]"
-                      >
-                        <a-input-number
-                          v-if="filter.dataType === 'NUMBER'"
-                          hide-button
-                          v-model="filter.value"
-                          placeholder="请输入"
-                        />
-                        <a-input
-                          v-if="filter.dataType === 'STRING'"
-                          v-model="filter.value"
-                          placeholder="请输入"
-                        />
-                        <a-select
-                          v-if="filter.dataType === 'BOOLEAN'"
-                          v-model="filter.value"
-                          placeholder="请选择"
-                        >
-                          <a-option value="true">是</a-option>
-                          <a-option value="false">否</a-option>
-                        </a-select>
-                        <a-date-picker
-                          v-if="filter.dataType === 'DATETIME'"
-                          show-time
-                          value-format="timestamp"
-                          v-model="filter.value"
-                        />
-                        <a-date-picker
-                          v-if="filter.dataType === 'DATE'"
-                          value-format="timestamp"
-                          v-model="filter.value"
-                        />
-                        <a-select
-                          v-if="
-                            filter.dataType === 'DICT' && !filter.cascadeDict
-                          "
-                          v-model="filter.value"
-                          placeholder="请选择"
-                        >
-                          <a-option
-                            :value="dictData.id"
-                            v-for="dictData in allDictDatas[filter.key]"
-                            :key="dictData.id"
-                            >{{ dictData.label }}</a-option
-                          >
-                        </a-select>
-                        <a-cascader
-                          v-if="
-                            filter.dataType === 'DICT' && filter.cascadeDict
-                          "
-                          v-model="filter.value"
-                          placeholder="请选择"
-                          expand-trigger="hover"
-                          :options="allDictDatas[filter.key]"
-                          :field-names="{ value: 'id', label: 'label' }"
-                        />
+                      <div class="filter-row">
+                        <div class="filter-content">
+                          <template v-if="filter.filterType !== 'IS_NULL' && filter.filterType !== 'IS_NOT_NULL'">
+                            <a-form-item
+                              :field="`filters[${index}].value`"
+                              hide-label
+                              :rules="[{ required: true, message: '未输入 / 选择' }]"
+                            >
+                              <a-input-number
+                                v-if="filter.dataType === 'NUMBER'"
+                                hide-button
+                                v-model="filter.value"
+                                placeholder="请输入"
+                              />
+                              <a-input
+                                v-if="filter.dataType === 'STRING'"
+                                v-model="filter.value"
+                                placeholder="请输入"
+                              />
+                              <a-select
+                                v-if="filter.dataType === 'BOOLEAN'"
+                                v-model="filter.value"
+                                placeholder="请选择"
+                              >
+                                <a-option value="true">是</a-option>
+                                <a-option value="false">否</a-option>
+                              </a-select>
+                              <a-date-picker
+                                v-if="filter.dataType === 'DATETIME'"
+                                show-time
+                                value-format="timestamp"
+                                v-model="filter.value"
+                              />
+                              <a-date-picker
+                                v-if="filter.dataType === 'DATE'"
+                                value-format="timestamp"
+                                v-model="filter.value"
+                              />
+                              <a-select
+                                v-if="
+                                  filter.dataType === 'DICT' && !filter.cascadeDict
+                                "
+                                v-model="filter.value"
+                                placeholder="请选择"
+                              >
+                                <a-option
+                                  :value="dictData.id"
+                                  v-for="dictData in allDictDatas[filter.key]"
+                                  :key="dictData.id"
+                                  >{{ dictData.label }}</a-option
+                                >
+                              </a-select>
+                              <a-cascader
+                                v-if="
+                                  filter.dataType === 'DICT' && filter.cascadeDict
+                                "
+                                v-model="filter.value"
+                                placeholder="请选择"
+                                expand-trigger="hover"
+                                :options="allDictDatas[filter.key]"
+                                :field-names="{ value: 'id', label: 'label' }"
+                              />
+                            </a-form-item>
+                          </template>
+                          <div v-else class="no-value-hint-wrapper">
+                            <span class="no-value-hint">无需输入</span>
+                          </div>
+                        </div>
                         <icon-minus-circle
                           class="remove-filter"
                           v-if="userListFilters.filters.length > 1"
                           @click="handleRemoveUserListFilter(index)"
                         />
-                      </a-form-item>
+                      </div>
                     </a-col>
                   </a-row>
                   <a-form-item hide-label>
@@ -332,6 +359,39 @@ export default userTs;
             </template>
           </a-trigger>
         </a-space>
+        <a-space>
+          <a-dropdown>
+            <a-button>
+              <template #icon>
+                <icon-import />
+              </template>
+              导入
+            </a-button>
+            <template #content>
+              <a-doption @click="handleDownloadTemplate"> 下载模版 </a-doption>
+              <a-doption @click="handleImportClick">导入数据 </a-doption>
+            </template>
+          </a-dropdown>
+          <a-dropdown>
+            <a-button>
+              <template #icon>
+                <icon-export />
+              </template>
+              导出</a-button
+            >
+            <template #content>
+              <a-doption @click="handleExport(false)"> 导出当前页 </a-doption>
+              <a-doption @click="handleExport(true)">导出全部 </a-doption>
+            </template>
+          </a-dropdown>
+          <input
+            type="file"
+            ref="fileInputRef"
+            style="display: none"
+            accept=".xlsx,.xls"
+            @change="handleFileChange"
+          />
+        </a-space>
       </div>
       <a-table
         :bordered="false"
@@ -416,5 +476,53 @@ export default userTs;
         </template>
       </a-table>
     </div>
+
+    <!-- 导入结果对话框 -->
+    <a-modal
+      v-model:visible="importResultVisible"
+      title="导入结果"
+      @ok="importResultVisible = false"
+      :footer="null"
+      :width="importResult.errors.length > 0 ? 1000 : 400"
+    >
+      <a-result
+        :status="importResult.errors.length > 0 ? 'warning' : 'success'"
+        :title="
+          importResult.errors.length > 0 ? `数据校验失败，无法导入` : '导入成功'
+        "
+      >
+        <template #extra>
+          <a-table
+            v-if="importResult.errors.length > 0"
+            :data="importResult.errors"
+            :pagination="false"
+            size="small"
+            :scroll="{ x: 800, y: 400 }"
+            :bordered="true"
+          >
+            <template #columns>
+              <a-table-column title="行号" data-index="row" :width="80" />
+              <a-table-column title="列名" data-index="column" :width="120" />
+              <a-table-column
+                title="错误信息"
+                data-index="message"
+                :width="400"
+              />
+            </template>
+          </a-table>
+          <a-descriptions v-else bordered :column="1">
+            <a-descriptions-item label="创建用户数量">{{
+              importResult.createdCount
+            }}</a-descriptions-item>
+            <a-descriptions-item label="更新用户数量">{{
+              importResult.updatedCount
+            }}</a-descriptions-item>
+            <a-descriptions-item label="删除用户数量">{{
+              importResult.deletedCount
+            }}</a-descriptions-item>
+          </a-descriptions>
+        </template>
+      </a-result>
+    </a-modal>
   </div>
 </template>

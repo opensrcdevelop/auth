@@ -2,6 +2,8 @@ package cn.opensrcdevelop.auth.audit.compare;
 
 import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
+import java.lang.reflect.Field;
+import java.util.*;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
@@ -13,9 +15,6 @@ import org.javers.core.diff.Diff;
 import org.javers.core.diff.ListCompareAlgorithm;
 import org.javers.core.diff.changetype.ValueChange;
 import org.javers.core.diff.changetype.map.*;
-
-import java.lang.reflect.Field;
-import java.util.*;
 
 @Builder
 @Getter
@@ -50,7 +49,8 @@ public class CompareObj<T> {
                 .withInitialChanges(true)
                 .build();
         Diff diff = javers.compare(before, after);
-        var changes = editChanges(diff.getChanges(change -> change instanceof ValueChange || change instanceof MapChange));
+        var changes = editChanges(
+                diff.getChanges(change -> change instanceof ValueChange || change instanceof MapChange));
 
         // 2. 获取实体名称
         String eName;
@@ -80,7 +80,8 @@ public class CompareObj<T> {
             for (PropertyValueChange change : changes) {
                 String propertyName = names.get(change.getPropertyName());
                 if (StringUtils.isNotEmpty(propertyName) && !excludeProperty.contains(propertyName)) {
-                    changeText.append(String.format("\t%s: %s -> %s %n", propertyName, change.getLeft(), change.getRight()));
+                    changeText.append(
+                            String.format("\t%s: %s -> %s %n", propertyName, change.getLeft(), change.getRight()));
                 }
             }
 
@@ -148,8 +149,7 @@ public class CompareObj<T> {
                                         .propertyName((String) entryValueChange.getKey())
                                         .left(entryValueChange.getLeftValue())
                                         .right(entryValueChange.getRightValue())
-                                        .build()
-                        );
+                                        .build());
                     }
 
                     if (entryChange instanceof EntryAdded entryAdded) {
@@ -158,18 +158,16 @@ public class CompareObj<T> {
                                         .propertyName((String) entryAdded.getKey())
                                         .left(null)
                                         .right(entryAdded.getValue())
-                                        .build()
-                        );
+                                        .build());
                     }
 
                     if (entryChange instanceof EntryRemoved entryRemoved) {
                         newChanges.add(
                                 PropertyValueChange.builder()
-                                       .propertyName((String) entryRemoved.getKey())
-                                       .left(entryRemoved.getValue())
-                                       .right(null)
-                                       .build()
-                        );
+                                        .propertyName((String) entryRemoved.getKey())
+                                        .left(entryRemoved.getValue())
+                                        .right(null)
+                                        .build());
                     }
                 }
             }

@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.common.exression.function;
 
 import cn.opensrcdevelop.common.exression.ICustomFunction;
-import org.springframework.stereotype.Component;
-
 import java.net.InetAddress;
+import org.springframework.stereotype.Component;
 
 @Component
 public class IpFunction implements ICustomFunction {

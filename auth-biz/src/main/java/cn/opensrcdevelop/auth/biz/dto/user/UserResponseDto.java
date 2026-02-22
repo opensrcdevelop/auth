@@ -6,10 +6,9 @@ import cn.opensrcdevelop.auth.biz.dto.user.group.UserGroupResponseDto;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "用户响应")
 @Data

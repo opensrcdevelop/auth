@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.auth.authentication.email;
 
+import java.io.Serial;
+import java.util.Collections;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-
-import java.io.Serial;
-import java.util.Collections;
 
 /**
  * 邮箱验证码登录认证 Token

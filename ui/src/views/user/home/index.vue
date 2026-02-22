@@ -246,6 +246,77 @@ export default homeTs;
                   </div>
                 </a-card>
               </div>
+              <!-- WebAuthn/Passkey 凭证管理 -->
+              <div class="card">
+                <a-card title="Passkey 凭证">
+                  <template #extra>
+                    <a-button
+                      type="text"
+                      @click="handleAddWebAuthnCredential"
+                      :loading="addingWebAuthnCredential"
+                    >
+                      <template #icon>
+                        <icon-plus />
+                      </template>
+                      添加凭证
+                    </a-button>
+                  </template>
+                  <a-table
+                    :data="webAuthnCredentials"
+                    :bordered="false"
+                    :pagination="false"
+                  >
+                    <template #columns>
+                      <a-table-column title="凭证 ID" ellipsis tooltip>
+                        <template #cell="{ record }">
+                          {{ record.id }}
+                        </template>
+                      </a-table-column>
+                      <a-table-column title="设备类型">
+                        <template #cell="{ record }">
+                          <a-tag
+                            v-if="record.deviceType === 'platform'"
+                            color="arcoblue"
+                          >
+                            平台设备
+                          </a-tag>
+                          <a-tag
+                            v-else-if="record.deviceType === 'cross-platform'"
+                            color="green"
+                          >
+                            跨平台设备
+                          </a-tag>
+                          <a-tag v-else>{{ record.deviceType }}</a-tag>
+                        </template>
+                      </a-table-column>
+                      <a-table-column title="创建时间">
+                        <template #cell="{ record }">
+                          {{ record.createdAt ? record.createdAt : "-" }}
+                        </template>
+                      </a-table-column>
+                      <a-table-column title="最后使用">
+                        <template #cell="{ record }">
+                          {{ record.lastUsedAt ? record.lastUsedAt : "-" }}
+                        </template>
+                      </a-table-column>
+                      <a-table-column title="操作" :width="80">
+                        <template #cell="{ record }">
+                          <a-popconfirm
+                            type="warning"
+                            content="确定删除此凭证吗？删除后无法使用该设备进行认证。"
+                            :ok-button-props="{ status: 'danger' }"
+                            @ok="handleDeleteWebAuthnCredential(record)"
+                          >
+                            <a-button status="danger" size="small">
+                              删除
+                            </a-button>
+                          </a-popconfirm>
+                        </template>
+                      </a-table-column>
+                    </template>
+                  </a-table>
+                </a-card>
+              </div>
             </a-spin>
           </a-tab-pane>
         </a-tabs>
@@ -255,7 +326,7 @@ export default homeTs;
 
   <!-- 修改密码对话框 -->
   <a-modal
-    :visible="changePwdModalVisivle"
+    :visible="changePwdModalVisible"
     :footer="false"
     @cancel="handleCloseChangePwdModal"
   >
@@ -307,7 +378,7 @@ export default homeTs;
 
   <!-- 绑定 / 解绑邮箱对话框 -->
   <a-modal
-    :visible="bindOrUnbindEmailModalVisivle"
+    :visible="bindOrUnbindEmailModalVisible"
     @cancel="handleCoseBindOrUnbindEmailModal"
     @ok="handleBindOrUnbindEmailFormSubmit"
     :ok-loading="bindOrUnbindEmailFormSubmitLoading"

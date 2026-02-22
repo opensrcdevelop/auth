@@ -14,13 +14,20 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -29,15 +36,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @RequiredArgsConstructor
@@ -48,20 +46,35 @@ public class ThinkAnswerAgent {
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
 
+    /** JSON 模式检测正则：检测 { "key": value } 或类似的 JSON 对象模式 */
+    private static final Pattern JSON_OBJECT_PATTERN = Pattern.compile(
+            "\\{[\\s]*\"[^\"]+\"[\\s]*:[^}]*\\}", Pattern.CASE_INSENSITIVE);
+
     /**
      * 思考并回答用户提问
      *
-     * @param emitter       SSE
-     * @param interruptFlag 中断标志
-     * @param chatClient    ChatClient
-     * @param userQuestion  用户提问
-     * @param maxSteps      最大执行步数
+     * @param emitter
+     *            SSE
+     * @param interruptFlag
+     *            中断标志
+     * @param chatClient
+     *            ChatClient
+     * @param userQuestion
+     *            用户提问
+     * @param sampleSqls
+     *            示例 SQL（问题-SQL 对）
+     * @param maxSteps
+     *            最大执行步数
      */
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
-                                           AtomicBoolean interruptFlag,
-                                           ChatClient chatClient,
-                                           String userQuestion,
-                                           int maxSteps) {
+            AtomicBoolean interruptFlag,
+            ChatClient chatClient,
+            String userQuestion,
+            List<Map<String, String>> sampleSqls,
+            int maxSteps) {
+        // 将示例 SQL 存储到上下文
+        ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
+
         SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
@@ -70,13 +83,18 @@ public class ThinkAnswerAgent {
                 break;
             }
 
-            String stepThinkingMsg = step > 0 ? "\n<strong>Step " + (step + 1) + "</strong>\n" : "<strong>Step " + (step + 1) + "</strong>\n";
+            String stepThinkingMsg = step > 0
+                    ? "\n<strong>Step " + (step + 1) + "</strong>\n"
+                    : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
+            String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
-            chatMessageHistoryService.createChatMessageHistory(parseResult._1(), ChatContentType.THINKING);
+            chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
+            // 保存思考内容到上下文，供下一轮使用
+            saveThinkingContent(thinkingContent);
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
@@ -98,25 +116,24 @@ public class ThinkAnswerAgent {
         chatClient.prompt(prompt)
                 .advisors(a -> a.params(
                         Map.of(
-                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER
-                        )
-                ))
+                                PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.THINK_ANSWER)))
                 .stream()
                 .chatResponse()
                 .subscribe(chatResponse -> {
                     ChatContextHolder.setChatContext(chatContext);
                     SecurityContextHolder.setContext(securityContext);
                     String outputText = chatResponse.getResult().getOutput().getText();
-                    fullOutput.append(outputText);
-                    if (outputText != null && outputText.contains("```")) {
+                    if (outputText != null) {
+                        fullOutput.append(outputText);
+                    }
+                    // 检测是否包含 JSON 内容（代码块或 JSON 模式）
+                    if (outputText != null && (outputText.contains("```") || containsJsonPattern(outputText))) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
                     if (!hasJsonOutput.get()) {
                         SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
-
-                    setTokenUsage(chatResponse.getMetadata());
                 }, error -> {
                     log.error("Error in chat response stream", error);
                     latch.countDown();
@@ -135,67 +152,87 @@ public class ThinkAnswerAgent {
 
     private List<ToolDefinition> getToolDefinitions() {
         return CommonUtil.stream(methodTools)
-                .flatMap(methodTool -> Arrays.stream(methodTool.getToolCallbacks()).map(ToolCallback::getToolDefinition)).toList();
+                .flatMap(
+                        methodTool -> Arrays.stream(methodTool.getToolCallbacks()).map(ToolCallback::getToolDefinition))
+                .toList();
     }
 
     private Prompt getPrompt(String question) {
+        // 获取会话历史用户消息
+        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
+                ChatContextHolder.getChatContext().getChatId());
+
+        // 获取上一轮的思考内容
+        String previousThinking = ChatContextHolder.getChatContext().getPreviousThinking();
+
+        // 获取示例 SQL
+        List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
+                .param("historical_questions", CollectionUtils.isEmpty(historicalQuestions)
+                        ? new ArrayList<>()
+                        : new ArrayList<>(historicalQuestions))
                 .param("tool_definitions", getToolDefinitions())
-                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults());
+                .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
+                .param("previous_thinking", previousThinking != null ? previousThinking : "")
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
-                ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build()
-        );
+                ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
         builder.messages(
                 new SystemMessage(thinkAnswerPrompt.buildSystemPrompt(PromptTemplate.THINK_ANSWER)),
-                new UserMessage(thinkAnswerPrompt.buildUserPrompt(PromptTemplate.THINK_ANSWER))
-        );
+                new UserMessage(thinkAnswerPrompt.buildUserPrompt(PromptTemplate.THINK_ANSWER)));
         return builder.build();
     }
 
     @SuppressWarnings("all")
     private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
-        String toolName =  toolCall.get("name").toString();
-        String parameters = toolCall.get("parameters").toString();
+        Object toolNameObj = toolCall.get("name");
+        Object parametersObj = toolCall.get("parameters");
 
-        if (Objects.isNull(toolName)) {
+        if (Objects.isNull(toolNameObj)) {
             toolCallResult = Map.of(
-                    "error", "Tool name cannot be null, please check the tool name in the tool call and try again."
-            );
+                    "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
 
-        if (Objects.isNull(parameters)) {
+        if (Objects.isNull(parametersObj)) {
             toolCallResult = Map.of(
-                    "error", "Tool parameters cannot be null, please check the tool parameters in the tool call and try again."
-            );
+                    "error",
+                    "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
             return;
         }
 
-        String executeTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
+        String toolName = toolNameObj.toString();
+        String parameters = parametersObj.toString();
+
+        String executeTime = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
             SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
-                    method -> "execute".equals(method.getName())
-            ).findFirst().orElse(null);
+                    method -> "execute".equals(method.getName())).findFirst().orElse(null);
             Class<?>[] executeMethodParamTypes = executeMethod.getParameterTypes();
             Object executeMethodResult;
             if (executeMethodParamTypes != null && executeMethodParamTypes.length > 0) {
-                Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters, new TypeReference<Map<String, Object>>() {
-                });
-                Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"), executeMethodParamTypes[0]);
+                Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters,
+                        new TypeReference<Map<String, Object>>() {
+                        });
+                Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"),
+                        executeMethodParamTypes[0]);
                 executeMethodResult = executeMethod.invoke(tool, request);
             } else {
                 executeMethodResult = executeMethod.invoke(tool);
@@ -207,13 +244,12 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,
-                    "result", result
-            );
+                    "result", result);
 
             String endThinkingMsg = "%s - 工具【%s】执行成功\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName
-            );
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    toolName);
             SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
@@ -228,13 +264,12 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,
-                    "result", errorMsg
-            );
+                    "result", errorMsg);
 
             String errorThinkingMsg = "%s - 工具【%s】执行失败\n".formatted(
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName
-            );
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    toolName);
             SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         setToolCallResult(toolCallResult);
@@ -246,6 +281,16 @@ public class ThinkAnswerAgent {
             chatContext.setToolCallResults(new ArrayList<>());
         }
         chatContext.getToolCallResults().addFirst(toolCallResult);
+    }
+
+    /**
+     * 保存思考内容到上下文，供下一轮推理使用 只保留上一轮的思考内容
+     *
+     * @param thinkingContent
+     *            思考内容
+     */
+    private void saveThinkingContent(String thinkingContent) {
+        ChatContextHolder.getChatContext().setPreviousThinking(thinkingContent);
     }
 
     private Tuple2<String, Map<String, Object>> parseLlmResult(String llmResult) {
@@ -262,28 +307,65 @@ public class ThinkAnswerAgent {
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json, new TypeReference<Map<String, Object>>() {
-        });
+        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json,
+                new TypeReference<Map<String, Object>>() {
+                });
+
+        // 处理 final_answer 字段值可能是 JSON 字符串的情况
+        if (jsonMap.containsKey("final_answer")) {
+            Object finalAnswerValue = jsonMap.get("final_answer");
+            if (finalAnswerValue instanceof String answerStr &&
+                    answerStr.trim().startsWith("{") && answerStr.trim().endsWith("}")) {
+                try {
+                    Map<String, Object> nestedJson = CommonUtil.nonJdkDeserializeObject(answerStr,
+                            new TypeReference<Map<String, Object>>() {
+                            });
+                    // 将解析后的 JSON 扁平化，把嵌套的内容放到外层
+                    jsonMap.putAll(nestedJson);
+                    jsonMap.remove("final_answer");
+                } catch (Exception e) {
+                    // 解析失败，保持原样
+                    log.debug("Failed to parse nested JSON in final_answer: {}", e.getMessage());
+                }
+            }
+
+        }
+
         return Tuple.of(reason, jsonMap);
     }
 
-    private void setTokenUsage(ChatResponseMetadata chatResponseMetadata) {
-        ChatContext chatContext = ChatContextHolder.getChatContext();
-        if (Objects.nonNull(chatContext) && Objects.nonNull(chatResponseMetadata)) {
-            int reqTokens = chatResponseMetadata.getUsage().getPromptTokens();
-            int repTokens = chatResponseMetadata.getUsage().getCompletionTokens();
-
-            if (Objects.isNull(chatContext.getReqTokens())) {
-                chatContext.setReqTokens(new AtomicInteger(reqTokens));
-            } else {
-                chatContext.getRepTokens().getAndAdd(reqTokens);
+    /** 检测文本中是否包含 JSON 对象模式（不在代码块中） */
+    private boolean containsJsonPattern(String text) {
+        if (text == null) {
+            return false;
+        }
+        // 排除代码块中的内容
+        String[] lines = text.split("\n");
+        boolean inCodeBlock = false;
+        for (String line : lines) {
+            // 检查代码块标记
+            if (line.trim().startsWith("```")) {
+                inCodeBlock = !inCodeBlock;
+                continue;
             }
-
-            if (Objects.isNull(chatContext.getRepTokens())) {
-                chatContext.setRepTokens(new AtomicInteger(repTokens));
-            } else {
-                chatContext.getRepTokens().getAndAdd(repTokens);
+            if (inCodeBlock) {
+                continue;
+            }
+            // 检测 JSON 模式
+            if (JSON_OBJECT_PATTERN.matcher(line.trim()).find()) {
+                // 排除明显不是 JSON 的情况，如 "{思考内容}"
+                String trimmed = line.trim();
+                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    // 可能是 final_answer 或 tool call，视为 JSON
+                    return true;
+                }
+                // 检测 name:, parameters:, final_answer: 等模式
+                if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
+                        || trimmed.contains("\"final_answer\"")) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 }

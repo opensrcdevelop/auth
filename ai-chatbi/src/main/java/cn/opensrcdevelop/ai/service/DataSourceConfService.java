@@ -7,7 +7,6 @@ import cn.opensrcdevelop.ai.dto.TestDataSourceConnResponseDto;
 import cn.opensrcdevelop.ai.entity.DataSourceConf;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface DataSourceConfService extends IService<DataSourceConf> {

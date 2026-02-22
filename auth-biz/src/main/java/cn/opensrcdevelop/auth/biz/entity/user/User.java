@@ -12,13 +12,6 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.BooleanUtils;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.core.user.OAuth2User;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -26,6 +19,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 /**
  * 用户实体
@@ -54,11 +53,17 @@ public class User extends BaseEntity implements UserDetails, OAuth2User, Seriali
 
     private Boolean enableMfa;
 
-    private String mfaSecret;
+    /**
+     * TOTP 密钥
+     */
+    private String totpSecret;
 
     private Boolean needChangePwd;
 
-    private Boolean mfaDeviceBind;
+    /**
+     * TOTP 设备绑定状态
+     */
+    private Boolean totpDeviceBind;
 
     private Boolean locked;
 

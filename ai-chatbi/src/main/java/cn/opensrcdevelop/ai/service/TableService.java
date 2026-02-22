@@ -5,7 +5,6 @@ import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 import java.util.Map;
 
@@ -22,4 +21,6 @@ public interface TableService extends IService<Table> {
     List<Map<String, Object>> getTables(String dataSourceId);
 
     List<String> getTableForbiddenFields(String tableId);
+
+    List<Map<String, Object>> getTableFields(String tableId);
 }

@@ -40,6 +40,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,9 +52,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -76,17 +75,14 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 创建权限
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION,
-            sysOperation = SysOperationType.CREATE,
-            success = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建了权限（ " +
-                    "{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）",
-            fail = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建权限（ " +
-                    "{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.CREATE, success = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建了权限（ "
+            +
+            "{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）", fail = "在资源（{{ @linkGen.toLink(#requestDto.resourceId, T(ResourceType).RESOURCE) }}）中创建权限（ "
+                    +
+                    "{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createPermission(PermissionRequestDto requestDto) {
@@ -113,10 +109,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *
      * @return 当前用户权限
      */
-    @Cacheable(
-            cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS,
-            key = "#root.target.generateCurrentUserPermissionsCacheKey()",
-            condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
+    @Cacheable(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, key = "#root.target.generateCurrentUserPermissionsCacheKey()", condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
     @CacheExpire("5 * 3600")
     @Override
     public List<PermissionResponseDto> getCurrentUserPermissions() {
@@ -127,7 +120,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
             // 2. 数据库操作
             Page<AuthorizeRecord> pageRequest = new Page<>(1, -1);
-            List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId)).map(UserGroup::getUserGroupId).toList();
+            List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId))
+                    .map(UserGroup::getUserGroupId).toList();
             getUserPermissions(pageRequest, userId, dynamicUserGroupIds, aud.getFirst(), null, null, null, null);
             List<AuthorizeRecord> authorizeRecords = pageRequest.getRecords();
             // 2.1 过滤重复的权限（先按优先级再按授权时间排序）
@@ -161,79 +155,109 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 获取用户权限
      *
-     * @param page                           分页对象
-     * @param userId                         用户ID
-     * @param resourceGroupCode              资源组标识
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param userId
+     *            用户ID
+     * @param resourceGroupCode
+     *            资源组标识
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void getUserPermissions(IPage<AuthorizeRecord> page,
-                                   String userId,
-                                   List<String> dynamicUserGroupIds,
-                                   String resourceGroupCode,
-                                   String resourceGroupNameSearchKeyword,
-                                   String resourceNameSearchKeyword,
-                                   String permissionNameSearchKeyword,
-                                   String permissionCodeSearchKeyword) {
-        permissionRepository.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String userId,
+            List<String> dynamicUserGroupIds,
+            String resourceGroupCode,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionRepository.searchUserPermissions(page, userId, dynamicUserGroupIds, resourceGroupCode,
+                resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword,
+                permissionCodeSearchKeyword);
     }
 
     /**
      * 获取用户组权限
      *
-     * @param page                           分页对象
-     * @param userGroupId                    用户组ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param userGroupId
+     *            用户组ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void getUserGroupPermissions(IPage<AuthorizeRecord> page,
-                                        String userGroupId,
-                                        String resourceGroupNameSearchKeyword,
-                                        String resourceNameSearchKeyword,
-                                        String permissionNameSearchKeyword,
-                                        String permissionCodeSearchKeyword) {
-        permissionRepository.searchUserGroupPermissions(page, userGroupId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String userGroupId,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionRepository.searchUserGroupPermissions(page, userGroupId, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 获取角色权限
      *
-     * @param page                           分页对象
-     * @param roleId                         角色ID
-     * @param resourceGroupNameSearchKeyword 资源组名称搜索关键字
-     * @param resourceNameSearchKeyword      资源名称搜索关键字
-     * @param permissionNameSearchKeyword    权限名称搜索关键字
-     * @param permissionCodeSearchKeyword    权限标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param roleId
+     *            角色ID
+     * @param resourceGroupNameSearchKeyword
+     *            资源组名称搜索关键字
+     * @param resourceNameSearchKeyword
+     *            资源名称搜索关键字
+     * @param permissionNameSearchKeyword
+     *            权限名称搜索关键字
+     * @param permissionCodeSearchKeyword
+     *            权限标识搜索关键字
      */
     @Override
     public void getRolePermissions(IPage<AuthorizeRecord> page,
-                                   String roleId,
-                                   String resourceGroupNameSearchKeyword,
-                                   String resourceNameSearchKeyword,
-                                   String permissionNameSearchKeyword,
-                                   String permissionCodeSearchKeyword) {
-        permissionRepository.searchRolePermissions(page, roleId, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+            String roleId,
+            String resourceGroupNameSearchKeyword,
+            String resourceNameSearchKeyword,
+            String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword) {
+        permissionRepository.searchRolePermissions(page, roleId, resourceGroupNameSearchKeyword,
+                resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 
     /**
      * 获取资源内权限
      *
-     * @param page       分页对象
-     * @param resourceId 资源ID
-     * @param keyword    资源名称 / 标识搜索关键字
+     * @param page
+     *            分页对象
+     * @param resourceId
+     *            资源ID
+     * @param keyword
+     *            资源名称 / 标识搜索关键字
      */
     @Override
     public void getResourcePermissions(IPage<Permission> page, String resourceId, String keyword) {
         // 1. 查询数据库
-        var query = Wrappers.<Permission>lambdaQuery().eq(Permission::getResourceId, resourceId).orderByAsc(Permission::getPermissionCode);
+        var query = Wrappers.<Permission>lambdaQuery().eq(Permission::getResourceId, resourceId)
+                .orderByAsc(Permission::getPermissionCode);
         if (StringUtils.isNotEmpty(keyword)) {
-            query = query.and(o -> o.like(Permission::getPermissionName, keyword).or(i -> i.like(Permission::getPermissionCode, keyword))).orderByAsc(Permission::getPermissionCode);
+            query = query
+                    .and(o -> o.like(Permission::getPermissionName, keyword)
+                            .or(i -> i.like(Permission::getPermissionCode, keyword)))
+                    .orderByAsc(Permission::getPermissionCode);
         }
         var permissions = super.list(page, query);
 
@@ -244,8 +268,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 获取权限详情
      *
-     * @param permissionId 权限ID
-     * @param keyword      被授权主体关键字
+     * @param permissionId
+     *            权限ID
+     * @param keyword
+     *            被授权主体关键字
      * @return 权限详情
      */
     @Override
@@ -267,31 +293,32 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionLocator(generatePermissionLocator(permission));
 
         // 3. 设置授权记录
-        var records = CommonUtil.stream(permissionRepository.searchPermissionAuthorizeRecords(permissionId, keyword)).map(authorizeRecord -> {
-            AuthorizeRecordResponseDto authorizeRecordResponse = new AuthorizeRecordResponseDto();
-            authorizeRecordResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
-            authorizeRecordResponse.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
-            authorizeRecordResponse.setPriority(authorizeRecord.getPriority());
+        var records = CommonUtil.stream(permissionRepository.searchPermissionAuthorizeRecords(permissionId, keyword))
+                .map(authorizeRecord -> {
+                    AuthorizeRecordResponseDto authorizeRecordResponse = new AuthorizeRecordResponseDto();
+                    authorizeRecordResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+                    authorizeRecordResponse.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
+                    authorizeRecordResponse.setPriority(authorizeRecord.getPriority());
 
-            // 3.1 授权条件
-            var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                PermissionExpResponseDto condition = new PermissionExpResponseDto();
-                condition.setId(exp.getExpressionId());
-                condition.setName(exp.getExpressionName());
-                condition.setExpression(exp.getExpression());
-                return condition;
-            }).toList();
-            authorizeRecordResponse.setConditions(conditions);
+                    // 3.1 授权条件
+                    var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
+                        PermissionExpResponseDto condition = new PermissionExpResponseDto();
+                        condition.setId(exp.getExpressionId());
+                        condition.setName(exp.getExpressionName());
+                        condition.setExpression(exp.getExpression());
+                        return condition;
+                    }).toList();
+                    authorizeRecordResponse.setConditions(conditions);
 
-            // 3.2 授权主体和类型
-            var principal = getPrincipal(authorizeRecord);
-            authorizeRecordResponse.setPrincipalId(principal._1);
-            authorizeRecordResponse.setPrincipal(principal._2);
-            authorizeRecordResponse.setPrincipalType(principal._3);
-            authorizeRecordResponse.setPrincipalTypeDisplayName(principal._4);
+                    // 3.2 授权主体和类型
+                    var principal = getPrincipal(authorizeRecord);
+                    authorizeRecordResponse.setPrincipalId(principal._1);
+                    authorizeRecordResponse.setPrincipal(principal._2);
+                    authorizeRecordResponse.setPrincipalType(principal._3);
+                    authorizeRecordResponse.setPrincipalTypeDisplayName(principal._4);
 
-            return authorizeRecordResponse;
-        }).toList();
+                    return authorizeRecordResponse;
+                }).toList();
         permissionResponse.setAuthorizeRecords(records);
 
         return permissionResponse;
@@ -300,7 +327,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 删除资源下的权限
      *
-     * @param resourceIds 资源ID集合
+     * @param resourceIds
+     *            资源ID集合
      */
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
@@ -323,15 +351,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 删除权限
      *
-     * @param permissionId 权限ID
+     * @param permissionId
+     *            权限ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）",
-            fail = "删除权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.DELETE, success = "删除了权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）", fail = "删除权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）失败")
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -346,15 +369,10 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 更新权限
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PERMISSION,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）",
-            fail = "修改权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.UPDATE, success = "修改了权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）", fail = "修改权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）失败")
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
@@ -392,7 +410,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 获取权限表达式关联的权限
      *
-     * @param expressionId 表达式ID
+     * @param expressionId
+     *            表达式ID
      * @return 权限表达式关联的授权
      */
     @Override
@@ -403,7 +422,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 校验权限
      *
-     * @param requestDto 校验权限请求
+     * @param requestDto
+     *            校验权限请求
      * @return 校验权限响应
      */
     @Override
@@ -431,7 +451,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                         // 2.2.1 执行表达式
                         responseBuilder.allow(true);
                         for (PermissionExpResponseDto condition : conditions) {
-                            if (!Boolean.TRUE.equals(permissionExpService.executePermissionExp(condition.getId(), requestDto.getContext()))) {
+                            if (!Boolean.TRUE.equals(permissionExpService.executePermissionExp(condition.getId(),
+                                    requestDto.getContext()))) {
                                 responseBuilder.allow(false);
                                 break;
                             }
@@ -449,15 +470,18 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         Role role = authorizeRecord.getRole();
 
         if (user != null) {
-            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(), PrincipalTypeEnum.USER.getDisplayName());
+            return Tuple.of(user.getUserId(), user.getUsername(), PrincipalTypeEnum.USER.getType(),
+                    PrincipalTypeEnum.USER.getDisplayName());
         }
 
         if (userGroup != null) {
-            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(), PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
+            return Tuple.of(userGroup.getUserGroupId(), userGroup.getUserGroupName(),
+                    PrincipalTypeEnum.USER_GROUP.getType(), PrincipalTypeEnum.USER_GROUP.getDisplayName());
         }
 
         if (role != null) {
-            return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(), PrincipalTypeEnum.ROLE.getDisplayName());
+            return Tuple.of(role.getRoleId(), role.getRoleName(), PrincipalTypeEnum.ROLE.getType(),
+                    PrincipalTypeEnum.ROLE.getDisplayName());
         }
         return Tuple.of(null, null, null, null);
     }
@@ -485,7 +509,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     }
 
     private void checkPermissionCode(PermissionRequestDto requestDto, Permission rawPermission) {
-        if (Objects.nonNull(rawPermission) && StringUtils.equals(requestDto.getCode(), rawPermission.getPermissionCode())) {
+        if (Objects.nonNull(rawPermission)
+                && StringUtils.equals(requestDto.getCode(), rawPermission.getPermissionCode())) {
             return;
         }
 
@@ -493,7 +518,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             throw new BizException(MessageConstants.PERMISSION_MSG_1001);
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<Permission>lambdaQuery().eq(Permission::getPermissionCode, requestDto.getCode()).and(q -> q.eq(Permission::getResourceId, requestDto.getResourceId()))))) {
+        if (Objects.nonNull(
+                super.getOne(Wrappers.<Permission>lambdaQuery().eq(Permission::getPermissionCode, requestDto.getCode())
+                        .and(q -> q.eq(Permission::getResourceId, requestDto.getResourceId()))))) {
             throw new BizException(MessageConstants.PERMISSION_MSG_1000, requestDto.getCode());
         }
     }

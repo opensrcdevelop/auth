@@ -4,7 +4,6 @@ import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.client.oidc.OidcClaimResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.client.oidc.OidcClaim;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface OidcClaimService extends IService<OidcClaim> {

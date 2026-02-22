@@ -6,7 +6,6 @@ import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +27,9 @@ public interface UserService extends IService<User> {
 
     Map<String, Object> getCurrentUserInfo();
 
-    void rebindMfaDevice(String userId);
+    void rebindTotpDevice(String userId);
+
+    void clearPasskeyCredentials(String userId);
 
     void clearAuthorizedTokens(String userId);
 
@@ -40,7 +41,9 @@ public interface UserService extends IService<User> {
 
     void unbindEmail(BindOrUnbindEmailRequestDto requestDto);
 
-    PageData<PermissionResponseDto> getPermissions(int page, int size, String userId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String userId,
+            String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword);
 
     void clearAuthorizedTokensByLoginId(String loginId);
 }

@@ -3,6 +3,11 @@ package cn.opensrcdevelop.auth.authentication.password;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -27,12 +32,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.util.Assert;
 
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * 密码授权模式认证提供者
  */
@@ -46,8 +45,8 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
     private final OAuth2AuthorizationService authorizationService;
 
     public ResourceOwnerPasswordAuthenticationProvider(OAuth2AuthorizationService authorizationService,
-                                                         AuthenticationManager authenticationManager,
-                                                         OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator) {
+            AuthenticationManager authenticationManager,
+            OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator) {
         Assert.notNull(authorizationService, "authorizationService cannot be null");
         Assert.notNull(tokenGenerator, "tokenGenerator cannot be null");
         Assert.notNull(authenticationManager, "authenticationManager cannot be null");
@@ -58,14 +57,14 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        ResourceOwnerPasswordAuthenticationToken authenticationToken =
-                (ResourceOwnerPasswordAuthenticationToken) authentication;
+        ResourceOwnerPasswordAuthenticationToken authenticationToken = (ResourceOwnerPasswordAuthenticationToken) authentication;
 
         // 客户端验证
-        OAuth2ClientAuthenticationToken clientPrincipal =
-                AuthUtil.getAuthenticatedClientElseThrowInvalidClient(authenticationToken);
+        OAuth2ClientAuthenticationToken clientPrincipal = AuthUtil
+                .getAuthenticatedClientElseThrowInvalidClient(authenticationToken);
         RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
-        if (registeredClient == null ||  !registeredClient.getAuthorizationGrantTypes().contains(authenticationToken.getAuthorizationGrantType())) {
+        if (registeredClient == null || !registeredClient.getAuthorizationGrantTypes()
+                .contains(authenticationToken.getAuthorizationGrantType())) {
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
         }
 
@@ -110,10 +109,11 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
     }
 
     private Authentication getAuthenticatedUser(ResourceOwnerPasswordAuthenticationToken authenticationToken) {
-        Map<String, Object> additionalParameters =  authenticationToken.getAdditionalParameters();
+        Map<String, Object> additionalParameters = authenticationToken.getAdditionalParameters();
         String username = (String) additionalParameters.get(OAuth2ParameterNames.USERNAME);
         String password = (String) additionalParameters.get(OAuth2ParameterNames.PASSWORD);
-        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
+        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken
+                .unauthenticated(username, password);
         Authentication authenticated = null;
 
         try {
@@ -129,7 +129,9 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
      * 生成 token
      * {@link org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationProvider}
      */
-    private Tuple3<OAuth2AccessToken, OAuth2RefreshToken, OidcIdToken> generateTokens(DefaultOAuth2TokenContext.Builder tokenContextBuilder, OAuth2Authorization.Builder authorizationBuilder, RegisteredClient registeredClient, Set<String> authorizedScopes) {
+    private Tuple3<OAuth2AccessToken, OAuth2RefreshToken, OidcIdToken> generateTokens(
+            DefaultOAuth2TokenContext.Builder tokenContextBuilder, OAuth2Authorization.Builder authorizationBuilder,
+            RegisteredClient registeredClient, Set<String> authorizedScopes) {
         // ----- Access token -----
         OAuth2TokenContext tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.ACCESS_TOKEN).build();
         OAuth2Token generatedAccessToken = this.tokenGenerator.generate(tokenContext);
@@ -143,8 +145,8 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
                 generatedAccessToken.getTokenValue(), generatedAccessToken.getIssuedAt(),
                 generatedAccessToken.getExpiresAt(), tokenContext.getAuthorizedScopes());
         if (generatedAccessToken instanceof ClaimAccessor claimAccessor) {
-            authorizationBuilder.token(accessToken, metadata ->
-                    metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, claimAccessor.getClaims()));
+            authorizationBuilder.token(accessToken, metadata -> metadata
+                    .put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, claimAccessor.getClaims()));
         } else {
             authorizationBuilder.accessToken(accessToken);
         }
@@ -185,8 +187,8 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
 
             idToken = new OidcIdToken(generatedIdToken.getTokenValue(), generatedIdToken.getIssuedAt(),
                     generatedIdToken.getExpiresAt(), ((Jwt) generatedIdToken).getClaims());
-            authorizationBuilder.token(idToken, (metadata) ->
-                    metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, idToken.getClaims()));
+            authorizationBuilder.token(idToken,
+                    (metadata) -> metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, idToken.getClaims()));
         } else {
             idToken = null;
         }

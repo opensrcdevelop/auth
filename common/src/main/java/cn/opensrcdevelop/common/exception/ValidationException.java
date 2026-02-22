@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.common.exception;
 
 import jakarta.validation.ConstraintViolation;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Set;
 
 @RequiredArgsConstructor
 @Getter

@@ -16,17 +16,17 @@ public class DictDataRequestDto {
     private String dictId;
 
     @Schema(description = "字典数据ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "字典数据标签")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String label;
 
     @Schema(description = "字典数据值")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String value;
 
     @Schema(description = "状态：true - 启用、false - 禁用")

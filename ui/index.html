@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
@@ -210,6 +210,10 @@
       opacity: 0.5;
     }
   </style>
+  <script>
+    // sockjs-client 需要 global polyfill
+    window.global = window;
+  </script>
   <body>
     <div id="app">
       <div id="loader-wrapper">

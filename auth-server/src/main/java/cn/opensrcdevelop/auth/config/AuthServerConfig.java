@@ -15,7 +15,7 @@ import cn.opensrcdevelop.auth.configurer.OAuth2LoginConfigurer;
 import cn.opensrcdevelop.auth.configurer.ResourceServerConfigurer;
 import cn.opensrcdevelop.auth.filter.CaptchaVerificationCheckFilter;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
-import cn.opensrcdevelop.auth.filter.TotpValidFilter;
+import cn.opensrcdevelop.auth.filter.MfaValidFilter;
 import cn.opensrcdevelop.auth.support.CustomOAuth2RefreshTokenGenerator;
 import cn.opensrcdevelop.auth.support.DelegatingJWKSource;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -73,40 +74,47 @@ public class AuthServerConfig {
 
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-                                                                      AuthorizationServerProperties authorizationServerProperties,
-                                                                      RememberMeServices rememberMeServices,
-                                                                      OidcUserInfoService oidcUserInfoService,
-                                                                      OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
+            AuthorizationServerProperties authorizationServerProperties,
+            RememberMeServices rememberMeServices,
+            OidcUserInfoService oidcUserInfoService,
+            OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
         AuthorizationServerConfigurer authorizationServerConfigurer = new AuthorizationServerConfigurer(
                 corsFilter(),
-                totpValidFilter(),
+                mfaValidFilter(),
                 changePwdCheckFilter(),
                 captchaVerificationCheckFilter(),
                 authorizationServerProperties,
                 oidcUserInfoService,
                 rememberMeServices);
-        http.with(authorizationServerConfigurer, x-> {});
-        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(), x -> x.tokenGenerator(tokenGenerator()));
-        http.with(auth2LoginConfigurer, x -> {});
+        http.with(authorizationServerConfigurer, x -> {
+        });
+        http.with(authorizationServerConfigurer.getCustomAuthorizationServerConfigurer(),
+                x -> x.tokenGenerator(tokenGenerator()));
+        http.with(auth2LoginConfigurer, x -> {
+        });
         return http.build();
     }
 
     @Bean
     public SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http,
-                                                                 AuthorizationServerProperties authorizationServerProperties,
-                                                                 RememberMeServices rememberMeServices,
-                                                                 OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
-        http.with(new ResourceServerConfigurer(corsFilter(), totpValidFilter(), changePwdCheckFilter(), authorizationServerProperties, tokenIntrospector), x -> {});
-        http.with(auth2LoginConfigurer, x -> {});
+            AuthorizationServerProperties authorizationServerProperties,
+            OAuth2LoginConfigurer auth2LoginConfigurer) throws Exception {
+        http.with(new ResourceServerConfigurer(corsFilter(), mfaValidFilter(),
+                changePwdCheckFilter(),
+                authorizationServerProperties, tokenIntrospector), x -> {
+                });
+        http.with(auth2LoginConfigurer, x -> {
+        });
         return http.build();
     }
 
     @Bean
     public OAuth2LoginConfigurer auth2LoginConfigurer(ClientRegistrationRepository clientRegistrationRepository,
-                                                      CustomOAuth2UserService customOAuth2UserService,
-                                                      IdentitySourceRegistrationService identitySourceRegistrationService,
-                                                      AuthorizationServerProperties authorizationServerProperties) {
-        return new OAuth2LoginConfigurer(clientRegistrationRepository, customOAuth2UserService, identitySourceRegistrationService, authorizationServerProperties);
+            CustomOAuth2UserService customOAuth2UserService,
+            IdentitySourceRegistrationService identitySourceRegistrationService,
+            AuthorizationServerProperties authorizationServerProperties) {
+        return new OAuth2LoginConfigurer(clientRegistrationRepository, customOAuth2UserService,
+                identitySourceRegistrationService, authorizationServerProperties);
     }
 
     @Bean
@@ -123,8 +131,8 @@ public class AuthServerConfig {
     }
 
     @Bean
-    public TotpValidFilter totpValidFilter() {
-        TotpValidFilter totpValidFilter = new TotpValidFilter();
+    public MfaValidFilter mfaValidFilter() {
+        MfaValidFilter mfaValidFilter = new MfaValidFilter();
         String apiPrefix = authorizationServerProperties.getApiPrefix();
         List<String> excludePathPatterns = new ArrayList<>();
         excludePathPatterns.add("/swagger-ui/**");
@@ -132,19 +140,22 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGOUT_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.EMAIL_LOGIN_URL));
+        excludePathPatterns.add(apiPrefix.concat(AuthConstants.PASSKEY_LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat("/docs/**"));
         excludePathPatterns.add(apiPrefix.concat("/totp/check"));
         excludePathPatterns.add(apiPrefix.concat("/code/email/*"));
         excludePathPatterns.add(apiPrefix.concat("/code/check"));
-        excludePathPatterns.add(apiPrefix.concat("/user/me/password/change"));
         excludePathPatterns.add(apiPrefix.concat("/user/me/password/reset"));
         excludePathPatterns.add(apiPrefix.concat("/tenant/check/*"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/get"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/check"));
         excludePathPatterns.add(apiPrefix.concat("/setting/passwordPolicy/checkWithoutPolicy"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/register/complete"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/authenticate/*"));
+        excludePathPatterns.add(apiPrefix.concat("/identitySource/enabled"));
 
-        totpValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
-        return totpValidFilter;
+        mfaValidFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
+        return mfaValidFilter;
     }
 
     @Bean
@@ -157,6 +168,7 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGOUT_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat(AuthConstants.EMAIL_LOGIN_URL));
+        excludePathPatterns.add(apiPrefix.concat(AuthConstants.PASSKEY_LOGIN_URL));
         excludePathPatterns.add(apiPrefix.concat("/docs/**"));
         excludePathPatterns.add(apiPrefix.concat("/user/me/password/change"));
         excludePathPatterns.add(apiPrefix.concat("/code/email/*"));
@@ -166,6 +178,8 @@ public class AuthServerConfig {
         excludePathPatterns.add(apiPrefix.concat("/captcha/get"));
         excludePathPatterns.add(apiPrefix.concat("/captcha/check"));
         excludePathPatterns.add(apiPrefix.concat("/setting/passwordPolicy/checkWithoutPolicy"));
+        excludePathPatterns.add(apiPrefix.concat("/identitySource/enabled"));
+        excludePathPatterns.add(apiPrefix.concat("/webauthn/authenticate/*"));
 
         changePwdCheckFilter.excludePathPatterns(excludePathPatterns.toArray(new String[0]));
         return changePwdCheckFilter;
@@ -173,11 +187,13 @@ public class AuthServerConfig {
 
     @Bean
     public CaptchaVerificationCheckFilter captchaVerificationCheckFilter() {
-        return new CaptchaVerificationCheckFilter(List.of(authorizationServerProperties.getApiPrefix().concat("/login")));
+        return new CaptchaVerificationCheckFilter(
+                List.of(authorizationServerProperties.getApiPrefix().concat("/login")));
     }
 
     /**
-     * An instance of com.nimbusds.jose.jwk.source.JWKSource for signing access tokens.
+     * An instance of com.nimbusds.jose.jwk.source.JWKSource for signing access
+     * tokens.
      */
     @Bean
     public JWKSource<SecurityContext> jwkSource(SystemSettingService systemSettingService) {
@@ -193,7 +209,8 @@ public class AuthServerConfig {
     }
 
     /**
-     * An instance of AuthorizationServerSettings to configure Spring Authorization Server.
+     * An instance of AuthorizationServerSettings to configure Spring Authorization
+     * Server.
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
@@ -243,7 +260,8 @@ public class AuthServerConfig {
 
     @Bean
     public PermissionVerifyRequestCustomizer systemSettingService() {
-        return httpRequest -> httpRequest.getHeaders().add(CommonConstants.REQ_HEADER_X_TENANT_CODE, TenantContextHolder.getTenantContext().getTenantCode());
+        return httpRequest -> httpRequest.getHeaders().add(CommonConstants.REQ_HEADER_X_TENANT_CODE,
+                TenantContextHolder.getTenantContext().getTenantCode());
     }
 
     /**
@@ -257,8 +275,7 @@ public class AuthServerConfig {
         return new DelegatingOAuth2TokenGenerator(
                 jwtGenerator,
                 new OAuth2AccessTokenGenerator(),
-                new CustomOAuth2RefreshTokenGenerator()
-        );
+                new CustomOAuth2RefreshTokenGenerator());
     }
 
     /**
@@ -271,7 +288,7 @@ public class AuthServerConfig {
             Set<String> scopes = context.getAuthorizedScopes();
 
             if (context.getPrincipal().getPrincipal() instanceof User user) {
-                JwtClaimsSet.Builder claims =  context.getClaims();
+                JwtClaimsSet.Builder claims = context.getClaims();
 
                 // access_token
                 if (OAuth2TokenType.ACCESS_TOKEN.equals(tokenType)) {
@@ -292,5 +309,6 @@ public class AuthServerConfig {
     public void init() {
         RedisUtil.setRedisTemplate(stringRedisTemplate);
         RedisUtil.setRedissonClient(redissonClient);
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 }

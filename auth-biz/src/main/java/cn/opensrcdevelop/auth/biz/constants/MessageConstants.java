@@ -5,10 +5,14 @@ package cn.opensrcdevelop.auth.biz.constants;
  */
 public class MessageConstants {
 
-    private MessageConstants() {}
+    private MessageConstants() {
+    }
 
-    public static final String TOTP_MSG_1000 = "totp.msg.1000";
-    public static final String TOTP_MSG_1001 = "totp.msg.1001";
+    public static final String MFA_MSG_1000 = "mfa.msg.1000";
+    public static final String MFA_MSG_1001 = "mfa.msg.1001";
+    public static final String WEB_AUTHN_MSG_1001 = "webauthn.msg.1001";
+    public static final String WEB_AUTHN_MSG_1002 = "webauthn.msg.1002";
+    public static final String WEB_AUTHN_MSG_1003 = "webauthn.msg.1003";
     public static final String EMAIL_CODE_MSG_1000 = "email.code.msg.1000";
     public static final String LOGIN_MSG_1000 = "login.msg.1000";
     public static final String LOGIN_MSG_1001 = "login.msg.1001";
@@ -35,6 +39,7 @@ public class MessageConstants {
     public static final String USER_MSG_1000 = "user.msg.1000";
     public static final String USER_MSG_1001 = "user.msg.1001";
     public static final String USER_MSG_1002 = "user.msg.1002";
+    public static final String USER_MSG_1003 = "user.msg.1003";
     public static final String USER_GROUP_MSG_1000 = "user.group.msg.1000";
     public static final String USER_GROUP_MSG_1001 = "user.group.msg.1001";
     public static final String USER_ATTR_MSG_1000 = "user.attr.msg.1000";
@@ -64,4 +69,5 @@ public class MessageConstants {
     public static final String AUDIT_LOG_MSG_1001 = "audit.log.msg.1001";
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1000 = "permission.exp.template.msg.1000";
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1001 = "permission.exp.template.msg.1001";
+    public static final String ASYNC_TASK_MSG_1000 = "async.task.msg.1000";
 }

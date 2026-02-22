@@ -8,6 +8,9 @@ import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.lang.NonNull;
@@ -15,17 +18,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import java.lang.reflect.Method;
-import java.util.Objects;
-import java.util.Optional;
-
 @RequiredArgsConstructor
 public class OpenApiInterceptor implements HandlerInterceptor {
 
     private final SystemSettingService systemSettingService;
 
     @Override
-    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull Object handler) throws Exception {
         if (handler instanceof HandlerMethod handlerMethod && !isOpenApi(handlerMethod)) {
             // 1. 检查租户上下文是否存在
             if (Objects.isNull(TenantContextHolder.getTenantContext())) {
@@ -36,7 +36,8 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             // 2. 检查客户端是否为控制台客户端
             Optional<String> clientIdOp = AuthUtil.getCurrentClientId();
             if (clientIdOp.isPresent()) {
-                String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, String.class);
+                String consoleClientId = systemSettingService.getSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID,
+                        String.class);
                 if (!StringUtils.equals(consoleClientId, clientIdOp.get())) {
                     throw new AccessDeniedException("Not console client");
                 }

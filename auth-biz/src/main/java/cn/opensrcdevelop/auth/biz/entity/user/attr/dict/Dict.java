@@ -4,11 +4,10 @@ import cn.opensrcdevelop.auth.audit.annotation.EntityName;
 import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.io.Serial;
 import java.io.Serializable;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 字典实体
@@ -17,7 +16,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @TableName("t_dict")
 @EntityName("字典")
-public class  Dict extends BaseEntity implements Serializable {
+public class Dict extends BaseEntity implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -800131729781890772L;

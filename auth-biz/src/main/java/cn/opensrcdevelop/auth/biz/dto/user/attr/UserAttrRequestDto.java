@@ -13,40 +13,41 @@ import lombok.Data;
 public class UserAttrRequestDto {
 
     @Schema(description = "属性 ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "属性键")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
     private String key;
 
     @Schema(description = "属性名")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String name;
 
     @Schema(description = "属性数据类型")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
-    @EnumValue(value = { "STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE", "DICT" }, groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
+    @EnumValue(value = {"STRING", "BOOLEAN", "NUMBER", "DATETIME", "DATE", "DICT"}, groups = {
+            ValidationGroups.Operation.INSERT.class})
     private String dataType;
 
     @Schema(description = "扩展属性标记")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private Boolean extFlg;
 
     @Schema(description = "是否在用户列表显示")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private Boolean userLstDisplay;
 
     @Schema(description = "显示宽度")
     private Integer displayWidth;
 
     @Schema(description = "用户可见")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private Boolean userVisible;
 
     @Schema(description = "用户可编辑")
-    @NotNull(groups = { ValidationGroups.Operation.INSERT.class })
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
     private Boolean userEditable;
 
     @Schema(description = "字典ID")

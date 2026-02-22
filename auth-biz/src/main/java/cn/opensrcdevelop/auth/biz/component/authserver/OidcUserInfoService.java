@@ -7,6 +7,7 @@ import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
@@ -18,8 +19,6 @@ import org.springframework.security.oauth2.server.authorization.oidc.authenticat
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-
 @Component
 @RequiredArgsConstructor
 public class OidcUserInfoService implements Converter<OidcUserInfoAuthenticationContext, OidcUserInfo> {
@@ -29,7 +28,7 @@ public class OidcUserInfoService implements Converter<OidcUserInfoAuthentication
 
     @Override
     public OidcUserInfo convert(OidcUserInfoAuthenticationContext context) {
-        OidcUserInfoAuthenticationToken authentication =  context.getAuthentication();
+        OidcUserInfoAuthenticationToken authentication = context.getAuthentication();
         Jwt jwt = ((JwtAuthenticationToken) authentication.getPrincipal()).getToken();
         String userId = jwt.getClaimAsString(JwtClaimNames.SUB);
         List<String> aud = jwt.getClaim(JwtClaimNames.AUD);
@@ -42,9 +41,12 @@ public class OidcUserInfoService implements Converter<OidcUserInfoAuthentication
     /**
      * 获取 OIDC Claim
      *
-     * @param userId 用户ID
-     * @param clientId 客户端ID
-     * @param scopes scope
+     * @param userId
+     *            用户ID
+     * @param clientId
+     *            客户端ID
+     * @param scopes
+     *            scope
      * @return OIDC Claim
      */
     public Map<String, Object> getClaims(String userId, String clientId, Collection<String> scopes) {
@@ -57,14 +59,13 @@ public class OidcUserInfoService implements Converter<OidcUserInfoAuthentication
         Map<String, Object> userMap = AuthUtil.convertUserMap(userService.getUserInfo(userId));
 
         // 3. 设置 id_token 的 claim
-        CommonUtil.stream(oidcScopes).forEach(oidcScope ->
-                CommonUtil.stream(oidcScope.getClaims())
-                        .forEach(oidcClaim -> {
-                            Object claimValue = userMap.get(oidcClaim.getUserAttr().getAttrKey());
-                            if (claimValue != null) {
-                                claims.put(oidcClaim.getClaimName(), claimValue);
-                            }
-                        }));
+        CommonUtil.stream(oidcScopes).forEach(oidcScope -> CommonUtil.stream(oidcScope.getClaims())
+                .forEach(oidcClaim -> {
+                    Object claimValue = userMap.get(oidcClaim.getUserAttr().getAttrKey());
+                    if (claimValue != null) {
+                        claims.put(oidcClaim.getClaimName(), claimValue);
+                    }
+                }));
 
         // 4. 需要追加用户角色信息
         if (scopes.contains(AuthConstants.OIDC_SCOPE_ROLES)) {

@@ -2,10 +2,9 @@ package cn.opensrcdevelop.ai.converter;
 
 import cn.opensrcdevelop.ai.enums.DataSourceType;
 import cn.opensrcdevelop.ai.enums.TableFieldType;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
 @Component
 public class TableFieldTypeConverter {
@@ -90,8 +89,10 @@ public class TableFieldTypeConverter {
     /**
      * 将数据库数据类型转换为 TableFieldType
      *
-     * @param dataSourceType 数据源信息
-     * @param dataType 数据类型
+     * @param dataSourceType
+     *            数据源信息
+     * @param dataType
+     *            数据类型
      * @return TableFieldType
      */
     public TableFieldType convert(DataSourceType dataSourceType, String dataType) {

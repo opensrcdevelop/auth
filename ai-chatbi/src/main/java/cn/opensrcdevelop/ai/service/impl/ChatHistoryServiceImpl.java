@@ -14,14 +14,13 @@ import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +32,8 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     /**
      * 获取用户历史对话记录列表
      *
-     * @param keyword 对话标题检索关键词
+     * @param keyword
+     *            对话标题检索关键词
      * @return 用户历史对话记录列表
      */
     @Override
@@ -58,16 +58,18 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
                 .dataSourceId(chatHistory.getDataSourceId())
                 .desc(chatHistory.getDescription())
                 .start(chatHistory.getStartTime())
-                .end(chatHistory.getEndTime()).build()
-        ).toList();
+                .end(chatHistory.getEndTime()).build()).toList();
     }
 
     /**
      * 创建用户对话历史记录
      *
-     * @param chatId       对话ID
-     * @param title        标题
-     * @param dataSourceId 数据源ID
+     * @param chatId
+     *            对话ID
+     * @param title
+     *            标题
+     * @param dataSourceId
+     *            数据源ID
      */
     @Override
     public void createChatHistory(String chatId, String title, String dataSourceId) {
@@ -83,8 +85,10 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     /**
      * 更新用户对话历史记录结束时间
      *
-     * @param chatId 对话ID
-     * @param title  标题
+     * @param chatId
+     *            对话ID
+     * @param title
+     *            标题
      */
     @Override
     public void updateChatHistory(String chatId, String title) {
@@ -97,23 +101,17 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     /**
      * 删除用户对话历史记录
      *
-     * @param chatId 对话ID
+     * @param chatId
+     *            对话ID
      */
-    @Audit(
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.CHAT_BI,
-            userOperation = UserOperationType.CHAT_BI_DELETE_HISTORY,
-            success = "删除了对话（{{ #chatId }}）",
-            fail = "删除对话（{{ #chatId }}）失败"
-    )
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.CHAT_BI, userOperation = UserOperationType.CHAT_BI_DELETE_HISTORY, success = "删除了对话（{{ #chatId }}）", fail = "删除对话（{{ #chatId }}）失败")
     @Transactional
     @Override
     public void removeUserChatHistory(String chatId) {
         // 1. 判断对话是否为当前用户持有
         boolean result = super.exists(Wrappers.<ChatHistory>lambdaQuery()
                 .eq(ChatHistory::getChatId, chatId)
-                .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
-        );
+                .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName()));
 
         if (!result) {
             return;
@@ -133,15 +131,10 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     /**
      * 更新用户对话历史记录
      *
-     * @param requestDto 对话历史请求
+     * @param requestDto
+     *            对话历史请求
      */
-    @Audit(
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.CHAT_BI,
-            userOperation = UserOperationType.CHAT_BI_UPDATE_HISTORY,
-            success = "将对话（{{ #requestDto.id }}）标题更新为 {{ #requestDto.title }}",
-            fail = "更新对话（{{ #requestDto.id }}）标题失败"
-    )
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.CHAT_BI, userOperation = UserOperationType.CHAT_BI_UPDATE_HISTORY, success = "将对话（{{ #requestDto.id }}）标题更新为 {{ #requestDto.title }}", fail = "更新对话（{{ #requestDto.id }}）标题失败")
     @Override
     public void updateUserChatHistory(ChatHistoryRequestDto requestDto) {
         super.update(Wrappers.<ChatHistory>lambdaUpdate()

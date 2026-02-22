@@ -18,5 +18,5 @@ public class JwtSecretRotationConfigDto {
 
     @Schema(description = "密钥轮换周期单位")
     @NotNull
-    private String  rotationPeriodUnit;
+    private String rotationPeriodUnit;
 }

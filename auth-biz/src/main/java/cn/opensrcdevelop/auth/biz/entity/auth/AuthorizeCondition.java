@@ -1,10 +1,9 @@
 package cn.opensrcdevelop.auth.biz.entity.auth;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
+import lombok.Data;
 
 /**
  * 授权条件

@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.common.aop;
 
+import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
@@ -27,15 +28,23 @@ public class RestResponseHandler implements ResponseBodyAdvice<Object> {
     @Override
     @SuppressWarnings("all")
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         HttpServletRequest request = requestAttributes.getRequest();
         RestResponse ann = (RestResponse) request.getAttribute(CommonConstants.REST_RESPONSE_ATTR);
-        return ann != null;
+        if (ann == null) {
+            return false;
+        }
+        // 检查方法是否有 @NoRestResponse 注解
+        NoRestResponse noRestResponse = returnType.getMethodAnnotation(NoRestResponse.class);
+        return noRestResponse == null;
     }
 
     @Override
     @SuppressWarnings("NullableProblems")
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+            Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
+            ServerHttpResponse response) {
         if (body instanceof R<?> r) {
             return r;
         } else if (body instanceof String r) {

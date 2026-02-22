@@ -7,5 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 @Service
-public class OidcClaimScopeMappingServiceImpl extends ServiceImpl<OidcClaimScopeMappingMapper, OidcClaimScopeMapping> implements OidcClaimScopeMappingService {
+public class OidcClaimScopeMappingServiceImpl extends ServiceImpl<OidcClaimScopeMappingMapper, OidcClaimScopeMapping>
+        implements
+            OidcClaimScopeMappingService {
 }

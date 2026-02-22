@@ -14,11 +14,10 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "API-Resource", description = "接口-资源管理")
 @RestController
@@ -31,8 +30,9 @@ public class ResourceController {
 
     @Operation(summary = "创建资源", description = "创建资源")
     @PostMapping
-    @Authorize({ "allResourcePermissions", "createResource" })
-    public void createResource(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ResourceRequestDto requestDto) {
+    @Authorize({"allResourcePermissions", "createResource"})
+    public void createResource(
+            @RequestBody @Validated(ValidationGroups.Operation.INSERT.class) ResourceRequestDto requestDto) {
         resourceService.createResource(requestDto);
     }
 
@@ -43,8 +43,9 @@ public class ResourceController {
             @Parameter(name = "keyword", description = "资源名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @Authorize({ "allResourcePermissions", "listResource" })
-    public PageData<ResourceResponseDto> list(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allResourcePermissions", "listResource"})
+    public PageData<ResourceResponseDto> list(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return resourceService.list(page, size, keyword);
     }
 
@@ -53,7 +54,7 @@ public class ResourceController {
             @Parameter(name = "id", description = "资源ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/{id}")
-    @Authorize({ "allResourcePermissions", "getResourceDetail" })
+    @Authorize({"allResourcePermissions", "getResourceDetail"})
     public ResourceResponseDto detail(@PathVariable @NotBlank String id) {
         return resourceService.detail(id);
     }
@@ -66,15 +67,18 @@ public class ResourceController {
             @Parameter(name = "keyword", description = "权限名称 / 标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/{id}/permissions")
-    @Authorize({ "allResourcePermissions", "getResourcePermissions" })
-    public PageData<PermissionResponseDto> getResourcePermissions(@PathVariable String id, @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allResourcePermissions", "getResourcePermissions"})
+    public PageData<PermissionResponseDto> getResourcePermissions(@PathVariable String id,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword) {
         return resourceService.getResourcePermissions(page, size, id, keyword);
     }
 
     @Operation(summary = "更新资源", description = "更新资源")
     @PutMapping
-    @Authorize({ "allResourcePermissions", "updateResource" })
-    public void updateResource(@RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ResourceRequestDto requestDto) {
+    @Authorize({"allResourcePermissions", "updateResource"})
+    public void updateResource(
+            @RequestBody @Validated(ValidationGroups.Operation.UPDATE.class) ResourceRequestDto requestDto) {
         resourceService.updateResource(requestDto);
     }
 
@@ -83,7 +87,7 @@ public class ResourceController {
             @Parameter(name = "id", description = "资源ID", in = ParameterIn.PATH, required = true),
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allResourcePermissions", "deleteResource" })
+    @Authorize({"allResourcePermissions", "deleteResource"})
     public void removeResource(@PathVariable @NotBlank String id) {
         resourceService.removeResource(List.of(id));
     }

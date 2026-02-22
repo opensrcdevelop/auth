@@ -5,6 +5,10 @@ import cn.opensrcdevelop.ai.chat.memory.ChatMemoryContextHolder;
 import cn.opensrcdevelop.ai.chat.memory.MultiChatMemoryRepository;
 import cn.opensrcdevelop.ai.chat.memory.MultiMessageWindowChatMemory;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -22,11 +26,6 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -48,7 +47,6 @@ public class MultiMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
             chatMemoryContext.setPromptTemplate((String) requestContext.get(PromptTemplate.PROMPT_TEMPLATE));
             ChatMemoryContextHolder.setChatMemoryContext(chatMemoryContext);
             ChatMemory chatMemory = getChatMemory((Integer) requestContext.get(CHAT_MESSAGE_WINDOW_SIZE));
-
 
             String conversationId = requestContext.get(ChatMemory.CONVERSATION_ID).toString();
             // 1. Retrieve the chat memory for the current conversation.
@@ -102,7 +100,8 @@ public class MultiMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
     @NonNull
     @Override
-    public Flux<ChatClientResponse> adviseStream(@NonNull ChatClientRequest chatClientRequest, @NonNull StreamAdvisorChain streamAdvisorChain) {
+    public Flux<ChatClientResponse> adviseStream(@NonNull ChatClientRequest chatClientRequest,
+            @NonNull StreamAdvisorChain streamAdvisorChain) {
         // Get the scheduler from BaseAdvisor
         Scheduler scheduler = this.getScheduler();
 
@@ -130,6 +129,6 @@ public class MultiMessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
         if (Objects.isNull(messageWindowSize)) {
             messageWindowSize = defaultMessageWindowSize;
         }
-       return new MultiMessageWindowChatMemory(messageWindowSize, multiChatMemoryRepository);
+        return new MultiMessageWindowChatMemory(messageWindowSize, multiChatMemoryRepository);
     }
 }

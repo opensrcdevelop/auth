@@ -2,12 +2,11 @@ package cn.opensrcdevelop.auth.audit.component;
 
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import org.springframework.stereotype.Component;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.stereotype.Component;
 
 @Component("linkGen")
 public class LinkGenerator {
@@ -20,20 +19,25 @@ public class LinkGenerator {
         LINK_TEMPLATES.put(ResourceType.USER_GROUP, LINK_TEMPLATE.formatted("/user/group/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.ROLE, LINK_TEMPLATE.formatted("/role/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.PERMISSION, LINK_TEMPLATE.formatted("/permission/detail", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP, LINK_TEMPLATE.formatted("/permission/expression/detail", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP_TEMPLATE, LINK_TEMPLATE.formatted("/permission/expression/template/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP,
+                LINK_TEMPLATE.formatted("/permission/expression/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.PERMISSION_EXP_TEMPLATE,
+                LINK_TEMPLATE.formatted("/permission/expression/template/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.CLIENT, LINK_TEMPLATE.formatted("/client/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.USER_ATTR, LINK_TEMPLATE.formatted("/user/attr/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.RESOURCE, LINK_TEMPLATE.formatted("/permission/resource/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.RESOURCE_GROUP, LINK_TEMPLATE.formatted("/resource/group/detail", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.IDENTITY_SOURCE_PROVIDER, LINK_TEMPLATE.formatted("/identitySource/provider/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.IDENTITY_SOURCE_PROVIDER,
+                LINK_TEMPLATE.formatted("/identitySource/provider/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.IDENTITY_SOURCE, LINK_TEMPLATE.formatted("/identitySource/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.TENANT, LINK_TEMPLATE.formatted("/tenant/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.DICT, LINK_TEMPLATE.formatted("/dict/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.DICT_DATA, LINK_TEMPLATE.formatted("/dict/data/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.PWD_POLICY, LINK_TEMPLATE.formatted("/system_setting/password/", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.CHAT_BI_DATA_SOURCE, LINK_TEMPLATE.formatted("/chatbi/datasource/detail", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.CHAT_BI_MODEL_PROVIDER, LINK_TEMPLATE.formatted("/chatbi/llm/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.CHAT_BI_DATA_SOURCE,
+                LINK_TEMPLATE.formatted("/chatbi/datasource/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.CHAT_BI_MODEL_PROVIDER,
+                LINK_TEMPLATE.formatted("/chatbi/llm/detail", "%s", "%s"));
     }
 
     public String toLink(String id, ResourceType resourceType) {

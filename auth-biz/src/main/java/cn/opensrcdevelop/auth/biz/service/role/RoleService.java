@@ -7,7 +7,6 @@ import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface RoleService extends IService<Role> {
@@ -32,5 +31,7 @@ public interface RoleService extends IService<Role> {
 
     void removeRole(String roleId);
 
-    PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
+    PageData<PermissionResponseDto> getPermissions(int page, int size, String roleId,
+            String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword, String permissionNameSearchKeyword,
+            String permissionCodeSearchKeyword);
 }

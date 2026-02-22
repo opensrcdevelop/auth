@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.dto.client.oidc;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "OIDC scope 响应")
 @Data

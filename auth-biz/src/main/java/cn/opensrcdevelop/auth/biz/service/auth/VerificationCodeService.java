@@ -2,7 +2,6 @@ package cn.opensrcdevelop.auth.biz.service.auth;
 
 import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.user.CheckCodeResponseDto;
-
 import java.time.temporal.ChronoUnit;
 
 public interface VerificationCodeService {

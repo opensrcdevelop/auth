@@ -12,17 +12,17 @@ import lombok.Data;
 public class ResourceRequestDto {
 
     @Schema(description = "资源ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String id;
 
     @Schema(description = "资源名")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String name;
 
     @Schema(description = "资源码")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     @AlphaNum
     private String code;
 

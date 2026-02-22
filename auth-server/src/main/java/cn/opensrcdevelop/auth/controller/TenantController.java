@@ -31,8 +31,9 @@ public class TenantController {
     @Operation(summary = "创建租户", description = "创建租户")
     @PostMapping
     @TenantLimit("master")
-    @Authorize({ "allTenantPermissions", "createTenant" })
-    public void createTenant(@RequestBody @Validated(ValidationGroups.Operation.INSERT.class) TenantRequestDto requestDto) {
+    @Authorize({"allTenantPermissions", "createTenant"})
+    public void createTenant(
+            @RequestBody @Validated(ValidationGroups.Operation.INSERT.class) TenantRequestDto requestDto) {
         tenantService.createTenant(requestDto);
     }
 
@@ -44,16 +45,18 @@ public class TenantController {
     })
     @GetMapping("/list")
     @TenantLimit("master")
-    @Authorize({ "allTenantPermissions", "listTenant" })
-    public PageData<TenantResponseDto> listTenants(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
-        return tenantService.listTenants(page, size,keyword);
+    @Authorize({"allTenantPermissions", "listTenant"})
+    public PageData<TenantResponseDto> listTenants(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+        return tenantService.listTenants(page, size, keyword);
     }
 
     @Operation(summary = "更新租户", description = "更新租户")
     @PutMapping
     @TenantLimit("master")
-    @Authorize({ "allTenantPermissions", "updateTenant" })
-    public void updateTenant(@RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) TenantRequestDto requestDto) {
+    @Authorize({"allTenantPermissions", "updateTenant"})
+    public void updateTenant(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) TenantRequestDto requestDto) {
         tenantService.updateTenant(requestDto);
     }
 
@@ -63,7 +66,7 @@ public class TenantController {
     })
     @GetMapping("/{id}")
     @TenantLimit("master")
-    @Authorize({ "allTenantPermissions", "getTenantDetail" })
+    @Authorize({"allTenantPermissions", "getTenantDetail"})
     public TenantResponseDto detail(@PathVariable @NotBlank String id) {
         return tenantService.detail(id);
     }
@@ -74,7 +77,7 @@ public class TenantController {
     })
     @DeleteMapping("/{id}")
     @TenantLimit("master")
-    @Authorize({ "allTenantPermissions", "deleteTenant" })
+    @Authorize({"allTenantPermissions", "deleteTenant"})
     public void removeTenant(@PathVariable @NotBlank String id) {
         tenantService.removeTenant(id);
     }

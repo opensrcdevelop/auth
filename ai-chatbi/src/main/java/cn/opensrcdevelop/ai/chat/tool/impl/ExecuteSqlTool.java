@@ -7,6 +7,9 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +21,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
 @Slf4j
@@ -32,10 +31,7 @@ public class ExecuteSqlTool implements MethodTool {
     private final SqlAgent sqlAgent;
     private final DataSourceManager dataSourceManager;
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Used to execute the SQL"
-    )
+    @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
     public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
@@ -81,7 +77,8 @@ public class ExecuteSqlTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is has syntax error. " +
+        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is has syntax error. "
+                +
                 "If the SQL is legal but execution failed, do not pass the fix instruction.", required = false)
         private String fixSqlInstruction;
     }
@@ -101,11 +98,11 @@ public class ExecuteSqlTool implements MethodTool {
 
     @SuppressWarnings("all")
     private Tuple4<Boolean, List<Map<String, Object>>, String, String> executeSqlWithFix(ChatClient chatClient,
-                                                                                         String sql,
-                                                                                         String dataSourceId,
-                                                                                         List<Map<String, Object>> relevantTables,
-                                                                                         int maxAttempts,
-                                                                                         String instruction) {
+            String sql,
+            String dataSourceId,
+            List<Map<String, Object>> relevantTables,
+            int maxAttempts,
+            String instruction) {
         JdbcTemplate jdbcTemplate = dataSourceManager.getJdbcTemplate(dataSourceId);
         int attempt = 0;
         List<Map<String, Object>> queryResult = new ArrayList<>();
@@ -123,8 +120,7 @@ public class ExecuteSqlTool implements MethodTool {
                             sql,
                             relevantTables,
                             ChatContextHolder.getChatContext().getQueryColumns(),
-                            queryResult
-                    );
+                            queryResult);
                     Boolean checkSuccess = (Boolean) checkResult.get("success");
                     if (!Boolean.TRUE.equals(checkSuccess)) {
                         return Tuple.of(false, queryResult, sql, (String) checkResult.get("error"));
@@ -144,7 +140,8 @@ public class ExecuteSqlTool implements MethodTool {
                 if (attempt > maxAttempts) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId, instruction);
+                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId,
+                        instruction);
                 if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }

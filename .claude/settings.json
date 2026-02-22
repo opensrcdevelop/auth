@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(git config:*)",
+      "Bash(brew install:*)",
+      "Bash(rm -rf /*)",
+      "Bash(gh repo delete:*)",
+      "Bash(git push :*main:*)",
+      "Bash(git merge :*main:*)",
+      "Bash(git push :*develop:*)",
+      "Bash(git merge :*develop:*)",
+      "Read(./env)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/check-git-commit.py"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/check-rm-rf.py"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {}
+}

@@ -1,11 +1,10 @@
 package cn.opensrcdevelop.ai.chat;
 
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {
@@ -47,6 +46,12 @@ public class ChatContext {
     private AtomicInteger repTokens = new AtomicInteger(0);
 
     private List<Map<String, Object>> toolCallResults;
+
+    /** 上一轮的思考内容，用于连贯推理 */
+    private String previousThinking;
+
+    /** 示例 SQL（问题-SQL 对列表） */
+    private List<Map<String, String>> sampleSqls;
 
     private Boolean terminated = false;
 }

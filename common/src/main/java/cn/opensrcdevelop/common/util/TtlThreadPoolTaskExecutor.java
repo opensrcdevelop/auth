@@ -2,13 +2,12 @@ package cn.opensrcdevelop.common.util;
 
 import com.alibaba.ttl.TtlCallable;
 import com.alibaba.ttl.TtlRunnable;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Slf4j
 public class TtlThreadPoolTaskExecutor extends ThreadPoolTaskExecutor {
@@ -51,7 +50,9 @@ public class TtlThreadPoolTaskExecutor extends ThreadPoolTaskExecutor {
     protected void afterExecute(Runnable task, Throwable ex) {
         Long startTime = startTimes.remove(String.valueOf(task.hashCode()));
         long diff = System.currentTimeMillis() - startTime;
-        log.info("{}-monitor: Duration: {} ms, PoolSize: {}, CorePoolSize: {}, Active: {}, Queue: {}, MaximumPoolSize: {},  KeepAliveTime: {}",
-                executorName, diff, this.getPoolSize(), this.getCorePoolSize(), this.getActiveCount(), this.getQueueSize(), this.getMaxPoolSize(), this.getKeepAliveSeconds());
+        log.info(
+                "{}-monitor: Duration: {} ms, PoolSize: {}, CorePoolSize: {}, Active: {}, Queue: {}, MaximumPoolSize: {},  KeepAliveTime: {}",
+                executorName, diff, this.getPoolSize(), this.getCorePoolSize(), this.getActiveCount(),
+                this.getQueueSize(), this.getMaxPoolSize(), this.getKeepAliveSeconds());
     }
 }

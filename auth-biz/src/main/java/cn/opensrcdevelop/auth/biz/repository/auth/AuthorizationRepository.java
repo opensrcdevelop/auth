@@ -1,12 +1,12 @@
 package cn.opensrcdevelop.auth.biz.repository.auth;
 
 import cn.opensrcdevelop.auth.biz.entity.auth.Authorization;
-
 import java.util.List;
 
 public interface AuthorizationRepository {
 
-    Authorization findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(String token);
+    Authorization findByStateOrAuthorizationCodeValueOrAccessTokenValueOrRefreshTokenValueOrOidcIdTokenValueOrUserCodeValueOrDeviceCodeValue(
+            String token);
 
     Authorization findByState(String token);
 

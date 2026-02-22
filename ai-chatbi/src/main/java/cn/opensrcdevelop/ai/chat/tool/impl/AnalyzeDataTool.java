@@ -8,14 +8,6 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Component;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,6 +15,13 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component(AnalyzeDataTool.TOOL_NAME)
@@ -37,10 +36,7 @@ public class AnalyzeDataTool implements MethodTool {
     private final AnalyzeAgent analyzeAgent;
     private final ExecutePythonTool executePythonTool;
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Used to analyze data and return the analysis results"
-    )
+    @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
     @SuppressWarnings({"all"})
     public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -52,15 +48,16 @@ public class AnalyzeDataTool implements MethodTool {
         File tempDataFile = null;
         try {
             // 1. 创建临时数据文件
-            tempDataFile = File.createTempFile(ANALYZE_DATA_FILE_NAME.formatted(System.currentTimeMillis()), ANALYZE_DATA_FILE_EXT);
+            tempDataFile = File.createTempFile(ANALYZE_DATA_FILE_NAME.formatted(System.currentTimeMillis()),
+                    ANALYZE_DATA_FILE_EXT);
             try (FileWriter writer = new FileWriter(tempDataFile)) {
                 writer.write(CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()));
             }
 
-
             // 2. 生成 Python 数据分析代码
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
-                    ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(), request.generatePythonCodeInstruction);
+                    ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(),
+                    request.generatePythonCodeInstruction);
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
                 response.setSuccess(false);
                 response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
@@ -74,8 +71,7 @@ public class AnalyzeDataTool implements MethodTool {
                     (String) pythonCodeResult.get("python_code"),
                     (List<String>) pythonCodeResult.get("packages"),
                     3,
-                    request.fixGeneratePythonCodeInstruction
-            );
+                    request.fixGeneratePythonCodeInstruction);
             if (!Boolean.TRUE.equals(executeResult._1)) {
                 response.setSuccess(false);
                 response.setError("无法执行 Python 代码，原因：%s".formatted(executeResult._2));
@@ -86,8 +82,7 @@ public class AnalyzeDataTool implements MethodTool {
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(
                     ChatContextHolder.getChatContext().getChatClient(),
                     executeResult._2,
-                    request.analyzeDataInstruction
-            );
+                    request.analyzeDataInstruction);
             if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
                 response.setSuccess(false);
                 response.setError("无法分析数据，原因：%s".formatted(analyzeResult.get("error")));
@@ -124,11 +119,11 @@ public class AnalyzeDataTool implements MethodTool {
 
     @SuppressWarnings("all")
     private Tuple3<Boolean, String, String> executePythonCodeWithFix(ChatClient chatClient,
-                                                                     String dataFilePath,
-                                                                     String pythonCode,
-                                                                     List<String> packages,
-                                                                     int maxAttempts,
-                                                                     String instruction) {
+            String dataFilePath,
+            String pythonCode,
+            List<String> packages,
+            int maxAttempts,
+            String instruction) {
         int attempt = 0;
         String executeOutput = "";
         while (attempt <= maxAttempts) {
@@ -145,8 +140,7 @@ public class AnalyzeDataTool implements MethodTool {
                         dataFilePath,
                         pythonCode,
                         response.getResult(),
-                        instruction
-                );
+                        instruction);
                 if (!Boolean.TRUE.equals(fixResult.get("success"))) {
                     return Tuple.of(false, response.getResult(), pythonCode);
                 }

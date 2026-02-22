@@ -24,20 +24,21 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, ModelProvider> implements ModelProviderService {
+public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, ModelProvider>
+        implements
+            ModelProviderService {
 
     private final ChatAnswerService chatAnswerService;
 
@@ -50,24 +51,27 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     public List<ModelProviderResponseDto> enabledList() {
         // 1.查询数据库
         List<ModelProvider> modelProviderList = super.list(Wrappers.<ModelProvider>lambdaQuery()
-                .select(ModelProvider::getProviderId, ModelProvider::getProviderName, ModelProvider::getOptionalModels, ModelProvider::getDefaultModel)
+                .select(ModelProvider::getProviderId, ModelProvider::getProviderName, ModelProvider::getOptionalModels,
+                        ModelProvider::getDefaultModel)
                 .eq(ModelProvider::getEnabled, true)
                 .orderByAsc(ModelProvider::getProviderName));
 
         // 2. 属性设置
         return CommonUtil.stream(modelProviderList)
                 .map(modelProvider -> {
-                    ModelProviderResponseDto.ModelProviderResponseDtoBuilder builder = ModelProviderResponseDto.builder()
+                    ModelProviderResponseDto.ModelProviderResponseDtoBuilder builder = ModelProviderResponseDto
+                            .builder()
                             .id(modelProvider.getProviderId())
                             .name(modelProvider.getProviderName())
                             .defaultModel(modelProvider.getDefaultModel());
 
                     if (StringUtils.isNotEmpty(modelProvider.getOptionalModels())) {
                         builder.optionalModels(
-                                CommonUtil.stream(Arrays.asList(modelProvider.getOptionalModels().split(CommonConstants.COMMA)))
+                                CommonUtil
+                                        .stream(Arrays
+                                                .asList(modelProvider.getOptionalModels().split(CommonConstants.COMMA)))
                                         .map(model -> ModelResponseDto.builder().name(model).build())
-                                        .toList()
-                        );
+                                        .toList());
                     }
                     return builder.build();
                 })
@@ -77,9 +81,12 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 获取模型提供商列表
      *
-     * @param keyword 模型提供商名称检索关键字
-     * @param page    页数
-     * @param size    条数
+     * @param keyword
+     *            模型提供商名称检索关键字
+     * @param page
+     *            页数
+     * @param size
+     *            条数
      * @return 模型提供商列表
      */
     @Override
@@ -94,16 +101,14 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
                             ModelProvider::getProviderType,
                             ModelProvider::getEnabled)
                     .like(ModelProvider::getProviderName, keyword)
-                    .orderByAsc(ModelProvider::getProviderName)
-            );
+                    .orderByAsc(ModelProvider::getProviderName));
         } else {
             modelProviderList = super.list(pageRequest, Wrappers.<ModelProvider>lambdaQuery()
                     .select(ModelProvider::getProviderId,
                             ModelProvider::getProviderName,
                             ModelProvider::getProviderType,
                             ModelProvider::getEnabled)
-                    .orderByAsc(ModelProvider::getProviderName)
-            );
+                    .orderByAsc(ModelProvider::getProviderName));
         }
 
         // 2. 属性编辑
@@ -113,13 +118,14 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
         pageData.setTotal(pageRequest.getTotal());
         pageData.setSize(pageRequest.getSize());
 
-        List<ModelProviderResponseDto> data = CommonUtil.stream(modelProviderList).map(modelProvider -> ModelProviderResponseDto.builder()
-                .id(modelProvider.getProviderId())
-                .name(modelProvider.getProviderName())
-                .type(ModelProviderType.valueOf(modelProvider.getProviderType()).getDisplayName())
-                .enabled(modelProvider.getEnabled())
-                .build()
-        ).toList();
+        List<ModelProviderResponseDto> data = CommonUtil.stream(modelProviderList)
+                .map(modelProvider -> ModelProviderResponseDto.builder()
+                        .id(modelProvider.getProviderId())
+                        .name(modelProvider.getProviderName())
+                        .type(ModelProviderType.valueOf(modelProvider.getProviderType()).getDisplayName())
+                        .enabled(modelProvider.getEnabled())
+                        .build())
+                .toList();
         pageData.setList(data);
         return pageData;
     }
@@ -127,7 +133,8 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 获取模型提供商详情
      *
-     * @param providerId 模型提供商ID
+     * @param providerId
+     *            模型提供商ID
      * @return 模型提供商详情
      */
     @Override
@@ -165,10 +172,8 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
                                         .build();
 
                             })
-                            .toList()
-            );
+                            .toList());
         }
-
 
         return builder.build();
     }
@@ -176,15 +181,10 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 创建模型提供商
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了模型提供商（{{ @linkGen.toLink(#modelProviderId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）",
-            fail = "创建模型提供商（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_MODEL_PROVIDER, sysOperation = SysOperationType.CREATE, success = "创建了模型提供商（{{ @linkGen.toLink(#modelProviderId, T(ResourceType).CHAT_BI_DATA_SOURCE) }}）", fail = "创建模型提供商（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createModelProvider(ModelProviderRequestDto requestDto) {
@@ -213,15 +213,10 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 更新模型提供商
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
-            sysOperation = SysOperationType.UPDATE,
-            success = "更新了模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）",
-            fail = "更新模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_MODEL_PROVIDER, sysOperation = SysOperationType.UPDATE, success = "更新了模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）", fail = "更新模型提供商（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败")
     @Transactional
     @Override
     public void updateModelProvider(ModelProviderRequestDto requestDto) {
@@ -276,15 +271,10 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
     /**
      * 删除模型提供商
      *
-     * @param providerId 模型提供商ID
+     * @param providerId
+     *            模型提供商ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.CHAT_BI_MODEL_PROVIDER,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）",
-            fail = "删除模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_MODEL_PROVIDER, sysOperation = SysOperationType.DELETE, success = "删除了模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）", fail = "删除模型提供商（{{ @linkGen.toLink(#providerId, T(ResourceType).CHAT_BI_MODEL_PROVIDER) }}）失败")
     @Transactional
     @Override
     public void removeModelProvider(String providerId) {

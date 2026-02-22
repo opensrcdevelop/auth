@@ -11,6 +11,9 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -31,10 +34,6 @@ import org.springframework.expression.spel.support.StandardTypeLocator;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -49,7 +48,8 @@ public class AuditAspect {
     private final MessageUtil messageUtil;
 
     @Pointcut("@annotation(cn.opensrcdevelop.auth.audit.annotation.Audit)")
-    public void pointCut() {}
+    public void pointCut() {
+    }
 
     @Around("pointCut()")
     public Object doAudit(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -91,7 +91,8 @@ public class AuditAspect {
         }
     }
 
-    private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, String exMsg, ProceedingJoinPoint proceedingJoinPoint) {
+    private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, String exMsg,
+            ProceedingJoinPoint proceedingJoinPoint) {
         // SpEL 表达式解析上下文
         StandardEvaluationContext evaluationContext = getEvaluationContext(proceedingJoinPoint);
 
@@ -136,7 +137,9 @@ public class AuditAspect {
         // 操作结果
         auditLog.setOperationResult(isSuccess);
         // 操作详情
-        auditLog.setOperationDetail(isSuccess ? replaceExpressions(auditAnnotation.success(), evaluationContext) : replaceExpressions(auditAnnotation.fail(), evaluationContext));
+        auditLog.setOperationDetail(isSuccess
+                ? replaceExpressions(auditAnnotation.success(), evaluationContext)
+                : replaceExpressions(auditAnnotation.fail(), evaluationContext));
         // 额外信息
         String extraInfo = auditAnnotation.extra();
         if (StringUtils.isNotEmpty(exMsg)) {
@@ -169,7 +172,8 @@ public class AuditAspect {
 
         while ((startIndex = template.indexOf(SPEL_PREFIX, lastIndex)) != -1) {
             endIndex = template.indexOf(SPEL_SUFFIX, startIndex);
-            if (endIndex == -1) break;
+            if (endIndex == -1)
+                break;
 
             // 添加非表达式部分
             result.append(template, lastIndex, startIndex);

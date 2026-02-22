@@ -2,11 +2,14 @@ package cn.opensrcdevelop.auth.configurer;
 
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationFilter;
 import cn.opensrcdevelop.auth.authentication.email.EmailCodeAuthenticationProvider;
+import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationFilter;
+import cn.opensrcdevelop.auth.authentication.passkey.PasskeyAuthenticationProvider;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.auth.biz.service.auth.VerificationCodeService;
+import cn.opensrcdevelop.auth.biz.service.auth.WebAuthnService;
 import cn.opensrcdevelop.auth.biz.service.user.UserService;
 import cn.opensrcdevelop.auth.filter.ChangePwdCheckFilter;
-import cn.opensrcdevelop.auth.filter.TotpValidFilter;
+import cn.opensrcdevelop.auth.filter.MfaValidFilter;
 import cn.opensrcdevelop.auth.handler.*;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -18,6 +21,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.web.filter.CorsFilter;
 
@@ -28,7 +32,7 @@ import org.springframework.web.filter.CorsFilter;
 public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceServerConfigurer, HttpSecurity> {
 
     private final CorsFilter corsFilter;
-    private final TotpValidFilter totpValidFilter;
+    private final MfaValidFilter mfaValidFilter;
     private final ChangePwdCheckFilter changePwdCheckFilter;
     private final AuthorizationServerProperties authorizationServerProperties;
     private final OpaqueTokenIntrospector tokenIntrospector;
@@ -38,7 +42,9 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 表单 login 配置
         http
                 .authorizeHttpRequests(x -> {
-                    x.requestMatchers(authorizationServerProperties.getIgnoreAuthenticationUriList().toArray(new String[0])).permitAll();
+                    x.requestMatchers(
+                            authorizationServerProperties.getIgnoreAuthenticationUriList().toArray(new String[0]))
+                            .permitAll();
                     x.anyRequest().authenticated();
                 })
                 .formLogin(x -> {
@@ -50,16 +56,18 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
                 });
 
         // 登出处理
-        http.logout(logout -> logout.logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
+        http.logout(logout -> logout
+                .logoutUrl(authorizationServerProperties.getApiPrefix().concat(AuthConstants.LOGOUT_URL)));
 
         // 资源服务器配置
         if (Boolean.TRUE.equals(authorizationServerProperties.getIntrospectToken())) {
             http.oauth2ResourceServer(x ->
-                // 向服务器验证 Token
-                x.opaqueToken(t -> t.introspector(tokenIntrospector)).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
-            );
+            // 向服务器验证 Token
+            x.opaqueToken(t -> t.introspector(tokenIntrospector))
+                    .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
         } else {
-            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults()).authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
+            http.oauth2ResourceServer(x -> x.jwt(Customizer.withDefaults())
+                    .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
         }
 
         // 登出处理
@@ -77,23 +85,33 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
         // 未认证及未授权异常处理
         http.exceptionHandling(exceptionHandler -> exceptionHandler
                 .accessDeniedHandler(new ResourceAccessDeniedHandler())
-                .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler())
-        );
+                .authenticationEntryPoint(new ResourceAuthenticationExceptionHandler()));
     }
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
         // 添加 cors 过滤器
         http.addFilter(corsFilter);
+        // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）
+        http.addFilterBefore(mfaValidFilter, SecurityContextHolderFilter.class);
         // 添加变更密码检查过滤器
-        http.addFilterBefore(changePwdCheckFilter, UsernamePasswordAuthenticationFilter.class);
-        // 添加 Totp 校验过滤器
-        http.addFilterAfter(totpValidFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(changePwdCheckFilter, SecurityContextHolderFilter.class);
 
         // 添加邮箱验证码登录
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
-        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(authenticationManager);
+        EmailCodeAuthenticationFilter emailCodeAuthenticationFilter = new EmailCodeAuthenticationFilter(
+                authenticationManager);
         http.addFilterBefore(emailCodeAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        http.authenticationProvider(new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class), SpringContextUtil.getBean(VerificationCodeService.class)));
+        http.authenticationProvider(
+                new EmailCodeAuthenticationProvider((UserDetailsService) SpringContextUtil.getBean(UserService.class),
+                        SpringContextUtil.getBean(VerificationCodeService.class)));
+
+        // 添加 Passkey 登录
+        PasskeyAuthenticationFilter passkeyAuthenticationFilter = new PasskeyAuthenticationFilter(
+                authenticationManager);
+        http.addFilterBefore(passkeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.authenticationProvider(
+                new PasskeyAuthenticationProvider(
+                        SpringContextUtil.getBean(WebAuthnService.class)));
     }
 }

@@ -1,15 +1,16 @@
 package cn.opensrcdevelop.auth.biz.component.oauth2login;
 
+import java.util.*;
 import lombok.Setter;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 
-import java.util.*;
-
 @Setter
-public class CustomMapOAuth2AccessTokenResponseConverter implements Converter<Map<String, Object>, OAuth2AccessTokenResponse> {
+public class CustomMapOAuth2AccessTokenResponseConverter
+        implements
+            Converter<Map<String, Object>, OAuth2AccessTokenResponse> {
 
     private String accessTokenAttrName = OAuth2ParameterNames.ACCESS_TOKEN;
     private String refreshTokenAttrName = OAuth2ParameterNames.REFRESH_TOKEN;
@@ -58,7 +59,8 @@ public class CustomMapOAuth2AccessTokenResponseConverter implements Converter<Ma
     }
 
     @SuppressWarnings("all")
-    private static long getParameterValue(Map<String, Object> tokenResponseParameters, String parameterName, long defaultValue) {
+    private static long getParameterValue(Map<String, Object> tokenResponseParameters, String parameterName,
+            long defaultValue) {
         long parameterValue = defaultValue;
 
         Object obj = tokenResponseParameters.get(parameterName);
@@ -66,16 +68,13 @@ public class CustomMapOAuth2AccessTokenResponseConverter implements Converter<Ma
             // Final classes Long and Integer do not need to be coerced
             if (obj.getClass() == Long.class) {
                 parameterValue = (Long) obj;
-            }
-            else if (obj.getClass() == Integer.class) {
+            } else if (obj.getClass() == Integer.class) {
                 parameterValue = (Integer) obj;
-            }
-            else {
+            } else {
                 // Attempt to coerce to a long (typically from a String)
                 try {
                     parameterValue = Long.parseLong(obj.toString());
-                }
-                catch (NumberFormatException ignored) {
+                } catch (NumberFormatException ignored) {
                 }
             }
         }

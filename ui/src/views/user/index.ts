@@ -1,4 +1,16 @@
-import {getUserAttrs, getUserList, removeUser, searchUser, setUserAttrDisplaySeq, updateUserAttr,} from "@/api/user";
+import {
+  downloadUserTemplate,
+  exportUsers,
+  exportUsersAsync,
+  getUserAttrs,
+  getUserList,
+  importUsers,
+  importUsersAsync,
+  removeUser,
+  searchUser,
+  setUserAttrDisplaySeq,
+  updateUserAttr,
+} from "@/api/user";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
@@ -205,7 +217,7 @@ const handleSetUserAttrDisplaySeq = () => {
         id: item.id,
         seq: tableColumns.indexOf(item),
       };
-    })
+    }),
   )
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -274,7 +286,7 @@ const handleUserColumnsSelectChange = (value: any) => {
   const column = allUserColumnsForFilter.find((item) => item.key === value);
   if (column) {
     const filter = userListFilters.filters.find(
-      (item) => item.key === column.key
+      (item) => item.key === column.key,
     );
     filter.dataType = column.dataType;
     filter.extFlg = column.extFlg;
@@ -360,16 +372,20 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
     return;
   }
 
-  const filters = userListFilters.filters.filter(
-    (item) => item.key && item.filterType && item.value
-  );
+  const filters = userListFilters.filters.filter((item) => {
+    // IS_NULL 和 IS_NOT_NULL 不需要值
+    if (item.filterType === "IS_NULL" || item.filterType === "IS_NOT_NULL") {
+      return item.key && item.filterType;
+    }
+    return item.key && item.filterType && item.value;
+  });
 
   getUserList(
     {
       page,
       size,
     },
-    filters
+    filters,
   )
     .then((result: any) => {
       handleApiSuccess(result, (data: any) => {
@@ -379,7 +395,7 @@ const handleGetUserList = (page: number = 1, size: number = 15) => {
         userListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
 
         if (filters.length > 0) {
@@ -405,7 +421,7 @@ const userSerachKeyword = ref(null);
 const handleSearchUser = (
   username: string,
   page: number = 1,
-  size: number = 15
+  size: number = 15,
 ) => {
   searchUser(username, {
     page,
@@ -419,7 +435,7 @@ const handleSearchUser = (
         userListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -509,6 +525,103 @@ const handleUserColumnResize = (dataIndex: string, width: number) => {
   }, 800);
 };
 
+// 导入导出相关
+const importResultVisible = ref(false);
+const importResult = ref({
+  createdCount: 0,
+  updatedCount: 0,
+  deletedCount: 0,
+  failureCount: 0,
+  errors: [],
+});
+
+// 下载模版
+const handleDownloadTemplate = async () => {
+  try {
+    const blob = (await downloadUserTemplate()) as unknown as Blob;
+    // 格式化时间为 yyyyMMddHHmmss（到秒，不带连接符）
+    const now = new Date();
+    const timestamp =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
+    downloadBlob(blob, `用户导入模版_${timestamp}.xlsx`);
+    Notification.success("模版下载成功");
+  } catch (err) {
+    handleApiError(err, "模版下载");
+  }
+};
+
+// 导出数据
+const handleExport = async (exportAll: boolean) => {
+  try {
+    // 只传递有效的筛选条件（key、filterType 都不为空，IS_NULL/IS_NOT_NULL 不需要 value）
+    const filters = (userListFilters.filters || []).filter((item: any) => {
+      // IS_NULL 和 IS_NOT_NULL 不需要值
+      if (item.filterType === "IS_NULL" || item.filterType === "IS_NOT_NULL") {
+        return item.key && item.filterType;
+      }
+      return item.key && item.filterType && item.value;
+    });
+    // 如果导出当前页，提取当前页的用户 ID 列表
+    const userIds = exportAll
+      ? undefined
+      : userList.map((u: any) => u.userId).filter(Boolean);
+    // 异步导出，返回 taskId
+    const res = await exportUsersAsync(filters, exportAll, userIds);
+    Notification.info({
+      content: "任务已提交，请在任务中心查看进度",
+      duration: 3000,
+    });
+    // 可选：跳转到任务中心
+    // router.push("/task/list");
+  } catch (err) {
+    handleApiError(err, "导出");
+  }
+};
+
+// 导入数据
+const fileInputRef = ref();
+
+const handleImportClick = () => {
+  // 触发隐藏的 file input
+  fileInputRef.value?.click();
+};
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    try {
+      // 异步导入，返回 taskId
+      await importUsersAsync(file);
+      Notification.info({
+        content: "任务已提交，请在任务中心查看进度",
+        duration: 3000,
+      });
+      // 可选：跳转到任务中心
+      // router.push("/task/list");
+    } catch (err) {
+      handleApiError(err, "导入用户数据");
+    }
+  }
+  // 清空 input，允许重复选择同一文件
+  target.value = "";
+};
+
+// 下载 Blob 工具函数
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export default defineComponent({
   setup() {
     userListPagination = usePagination("userList", ({ page, size }) => {
@@ -557,6 +670,13 @@ export default defineComponent({
       handleUserColumnResize,
       userListFilterd,
       handleUserListFilterHide,
+      importResultVisible,
+      importResult,
+      handleDownloadTemplate,
+      handleExport,
+      handleImportClick,
+      handleFileChange,
+      fileInputRef,
     };
   },
 });

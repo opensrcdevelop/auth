@@ -33,25 +33,39 @@
       width: 100%;
       text-align: center;
       color: #282d3c;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      margin-bottom: 32px;
+      margin-top: 16px;
+      margin-bottom: 16px;
     }
 
     .login-btn {
       width: 100%;
     }
 
-    .mfa-info {
+    .mfa-info-title {
       text-align: center;
       color: var(--color-neutral-8);
       margin-bottom: 16px;
     }
 
-    .mfa-code {
+    .mfa-info {
+      color: var(--color-neutral-8);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .mfa-btn {
+      width: 100%;
+      height: 36px;
+      margin-top: 20px;;
+    }
+
+    .mfa-code,
+    .mfa-passkey {
       width: 100%;
       display: flex;
       flex-direction: column;

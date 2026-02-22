@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.dto.user.attr.dict;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "字典响应")
 @Data

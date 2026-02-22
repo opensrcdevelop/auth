@@ -6,7 +6,6 @@ import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.dict.Dict;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface DictService extends IService<Dict> {

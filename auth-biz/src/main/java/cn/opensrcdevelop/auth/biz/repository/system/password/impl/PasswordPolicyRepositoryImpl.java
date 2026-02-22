@@ -15,7 +15,8 @@ public class PasswordPolicyRepositoryImpl implements PasswordPolicyRepository {
     /**
      * 获取用户匹配的密码策略
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      * @return 用户匹配的密码策略
      */
     @Override

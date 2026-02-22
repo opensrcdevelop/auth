@@ -3,11 +3,10 @@ package cn.opensrcdevelop.auth.biz.dto.permission;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "权限响应")
 @Data

@@ -7,7 +7,6 @@ import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface UserAttrService extends IService<UserAttr> {
@@ -33,4 +32,11 @@ public interface UserAttrService extends IService<UserAttr> {
     void removeUserAttr(String userAttrId);
 
     List<UserAttrResponseDto> getVisibleUserAttrs();
+
+    /**
+     * 获取所有用户字段（包括基础字段和扩展字段） 基础字段从代码定义读取，扩展字段从数据库读取 用于 Excel 导入导出功能
+     *
+     * @return 所有用户字段列表
+     */
+    List<UserAttrResponseDto> getAllUserAttrsForExcel();
 }

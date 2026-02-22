@@ -47,6 +47,12 @@ export class Request {
             config.headers!.Authorization = `${token.token_type} ${token.access_token}`;
           }
         }
+
+        // 对于 FormData，不设置 Content-Type，让浏览器自动设置（包含 boundary）
+        if (config.data instanceof FormData) {
+          delete config.headers?.["Content-Type"];
+        }
+
         return config;
       },
       (err: any) => {
@@ -58,6 +64,11 @@ export class Request {
       (res: AxiosResponse) => {
         if (this.showGlobalLoading) {
           globalVariables.apiLoading = false;
+        }
+
+        // 文件下载时直接返回原始响应
+        if (res.config.responseType === "blob") {
+          return res;
         }
 
         if (res.data) {

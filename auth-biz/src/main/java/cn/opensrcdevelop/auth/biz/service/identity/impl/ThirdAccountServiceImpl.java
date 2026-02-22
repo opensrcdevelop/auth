@@ -24,6 +24,9 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -34,14 +37,12 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, ThirdAccount> implements ThirdAccountService {
+public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, ThirdAccount>
+        implements
+            ThirdAccountService {
 
     private static final String INVALID_USER_INFO_RESPONSE_ERROR_CODE = "invalid_user_info_response";
     private static final String USERNAME_PREFIX = "user_";
@@ -60,8 +61,10 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     /**
      * 绑定第三方账号
      *
-     * @param attributesList 第三方用户信息
-     * @param identitySourceRegistration 身份源
+     * @param attributesList
+     *            第三方用户信息
+     * @param identitySourceRegistration
+     *            身份源
      * @return 用户
      */
     @Transactional
@@ -78,7 +81,7 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
                 .eq(ThirdAccount::getRegistrationId, identitySourceRegistration.getRegistrationId()));
         if (Objects.nonNull(boundThirdAccount)) {
             // 2. 已绑定
-            User user =userService.getById(boundThirdAccount.getUserId());
+            User user = userService.getById(boundThirdAccount.getUserId());
             // 2.1 检查绑定的用户的状态
             checkAccountStatus(user);
 
@@ -96,13 +99,15 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
             String userMatchAttribute = identitySourceRegistration.getIdentitySourceProvider().getUserMatchAttribute();
             String userMatchAttributeValue = getAttribute(attributesList, userMatchAttribute);
             if (StringUtils.isEmpty(userMatchAttributeValue)) {
-                log.warn("用户信息中未找到有效的用户匹配属性 {}，无法绑定身份源 {}", userMatchAttribute, identitySourceRegistration.getRegistrationId());
+                log.warn("用户信息中未找到有效的用户匹配属性 {}，无法绑定身份源 {}", userMatchAttribute,
+                        identitySourceRegistration.getRegistrationId());
                 OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
                 throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
             }
 
             // 3.2 获取用户
-            User user = Try.of(() -> (User) userService.loadUserByUsername(userMatchAttributeValue)).getOrElse(() -> null);
+            User user = Try.of(() -> (User) userService.loadUserByUsername(userMatchAttributeValue))
+                    .getOrElse(() -> null);
             if (Objects.isNull(user)) {
                 // 3.2.1 未找到用户，自动注册
                 String randomUsername = CommonUtil.generateRandomString(USERNAME_LENGTH);
@@ -142,22 +147,19 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     /**
      * 用户自主绑定第三方账号
      *
-     * @param userId 用户ID
-     * @param attributesList 第三方用户信息
-     * @param identitySourceRegistration 身份源
+     * @param userId
+     *            用户ID
+     * @param attributesList
+     *            第三方用户信息
+     * @param identitySourceRegistration
+     *            身份源
      * @return 用户
      */
-    @Audit(
-            userId = "#userId",
-            type = AuditType.USER_OPERATION,
-            resource = ResourceType.IDENTITY_SOURCE,
-            userOperation = UserOperationType.BIND_THIRD_ACCOUNT,
-            success = "绑定了身份源（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）",
-            fail = "绑定身份源失败（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）"
-    )
+    @Audit(userId = "#userId", type = AuditType.USER_OPERATION, resource = ResourceType.IDENTITY_SOURCE, userOperation = UserOperationType.BIND_THIRD_ACCOUNT, success = "绑定了身份源（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）", fail = "绑定身份源失败（{{ @linkGen.toLink(#identitySourceRegistration.registrationId, T(ResourceType).IDENTITY_SOURCE) }}）")
     @Transactional
     @Override
-    public User bind(String userId, List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {
+    public User bind(String userId, List<Map<String, Object>> attributesList,
+            IdentitySourceRegistration identitySourceRegistration) {
         var checkRes = doCheck(attributesList, identitySourceRegistration);
         String usernameAttributeValue = checkRes._1;
         String uniqueIdAttributeValue = checkRes._2;
@@ -188,14 +190,19 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     /**
      * 获取用户绑定列表
      *
-     * @param registrationId 注册身份源ID
-     * @param page 页数
-     * @param size 条数
-     * @param keyword 用户名检索关键字
+     * @param registrationId
+     *            注册身份源ID
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            用户名检索关键字
      * @return 用户绑定列表
      */
     @Override
-    public PageData<UserBindingResponseDto> getUserBindingList(String registrationId, int page, int size, String keyword) {
+    public PageData<UserBindingResponseDto> getUserBindingList(String registrationId, int page, int size,
+            String keyword) {
         // 1. 创建分页对象
         Page<ThirdAccount> pageRequest = new Page<>(page, size);
         PageData<UserBindingResponseDto> pageData = new PageData<>();
@@ -208,14 +215,14 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
         pageData.setCurrent(pageRequest.getCurrent());
 
         // 3. 转换为响应对象
-        var responseDtoList = CommonUtil.stream(pageRequest.getRecords()).map(thirdAccount ->
-                UserBindingResponseDto.builder()
+        var responseDtoList = CommonUtil.stream(pageRequest.getRecords())
+                .map(thirdAccount -> UserBindingResponseDto.builder()
                         .userId(thirdAccount.getUser().getUserId())
                         .username(thirdAccount.getUser().getUsername())
                         .uniqueId(thirdAccount.getUniqueId())
                         .bindingTime(thirdAccount.getCreateTime())
-                        .build()
-        ).toList();
+                        .build())
+                .toList();
         pageData.setList(responseDtoList);
         return pageData;
     }
@@ -223,7 +230,8 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
     /**
      * 删除用户绑定的第三方账号
      *
-     * @param userId 用户ID
+     * @param userId
+     *            用户ID
      */
     @Transactional
     @Override
@@ -257,7 +265,8 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
         return null;
     }
 
-    private Tuple2<String, String> doCheck(List<Map<String, Object>> attributesList, IdentitySourceRegistration identitySourceRegistration) {
+    private Tuple2<String, String> doCheck(List<Map<String, Object>> attributesList,
+            IdentitySourceRegistration identitySourceRegistration) {
         IdentitySourceProvider identitySourceProvider = identitySourceRegistration.getIdentitySourceProvider();
         String usernameAttribute = identitySourceProvider.getUsernameAttribute();
         String uniqueIdAttribute = identitySourceProvider.getUniqueIdAttribute();
@@ -265,13 +274,15 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
         String uniqueIdAttributeValue = getAttribute(attributesList, uniqueIdAttribute);
 
         if (StringUtils.isEmpty(usernameAttributeValue)) {
-            log.warn("第三方用户信息中未找到有效的用户名属性 {}，无法绑定身份源 {}", usernameAttribute, identitySourceRegistration.getRegistrationId());
+            log.warn("第三方用户信息中未找到有效的用户名属性 {}，无法绑定身份源 {}", usernameAttribute,
+                    identitySourceRegistration.getRegistrationId());
             OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
             throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
         }
 
         if (StringUtils.isEmpty(uniqueIdAttributeValue)) {
-            log.warn("第三方用户信息中未找到有效的唯一标识属性 {}，无法绑定身份源 {}", uniqueIdAttribute, identitySourceRegistration.getRegistrationId());
+            log.warn("第三方用户信息中未找到有效的唯一标识属性 {}，无法绑定身份源 {}", uniqueIdAttribute,
+                    identitySourceRegistration.getRegistrationId());
             OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
             throw new OAuth2AuthenticationException(oauth2Error, INVALID_USER_INFO_RESPONSE_ERROR_CODE);
         }
@@ -281,7 +292,8 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
 
     private void checkAccountStatus(User user) {
         if (Boolean.TRUE.equals(user.getLocked())) {
-            throw new OAuth2AuthenticationException(new OAuth2Error(AuthConstants.USER_LOCKED_ERROR_CODE), AuthConstants.USER_LOCKED_ERROR_CODE);
+            throw new OAuth2AuthenticationException(new OAuth2Error(AuthConstants.USER_LOCKED_ERROR_CODE),
+                    AuthConstants.USER_LOCKED_ERROR_CODE);
         }
     }
 }

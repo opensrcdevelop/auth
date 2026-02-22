@@ -54,10 +54,10 @@ export default detailTs;
               <a-doption
                 style="color: #545968"
                 v-if="enableMfa"
-                @click="handleRebindMfaDevice"
+                @click="handleRebindTotpDevice"
               >
                 <icon-refresh />
-                <span style="margin-left: 8px">重新绑定 MFA 设备</span>
+                <span style="margin-left: 8px">重新绑定 TOTP 设备</span>
               </a-doption>
               <a-doption style="color: #545968" v-if="!enableMfa">
                 <icon-check-circle />
@@ -96,6 +96,13 @@ export default detailTs;
                   @click="handleClearAuthorizedTokens"
                   >清除授权的 Token</span
                 >
+              </a-doption>
+              <a-doption
+                style="color: #545968"
+                @click="handleClearPasskeyCredential"
+              >
+                <icon-eraser />
+                <span style="margin-left: 8px">清除注册的 Passkey 凭证</span>
               </a-doption>
             </template>
           </a-dropdown>
@@ -189,6 +196,7 @@ export default detailTs;
                 </a-space>
               </a-form-item>
             </a-form>
+
             <div class="info-title">扩展信息</div>
             <a-form
               :model="allUserExtAttrs"

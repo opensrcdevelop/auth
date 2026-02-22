@@ -29,6 +29,8 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,9 +39,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,21 +55,15 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 创建字典数据
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT_DATA,
-            sysOperation = SysOperationType.CREATE,
-            success = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
-                    "中添加了数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）",
-            fail = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
-                    "中添加数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）失败"
-    )
-    @CacheEvict(
-            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
-            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT_DATA, sysOperation = SysOperationType.CREATE, success = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）"
+            +
+            "中添加了数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）", fail = "向字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）"
+                    +
+                    "中添加数据（{{ @linkGen.toLink(#dictDataId, T(ResourceType).DICT_DATA) }}）失败")
+    @CacheEvict(cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA, key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0].dictId)")
     @Transactional
     @Override
     public void createDictData(DictDataRequestDto requestDto) {
@@ -96,17 +89,14 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 更新字典数据
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT_DATA,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
-                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）",
-            fail = "修改字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）" +
-                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT_DATA, sysOperation = SysOperationType.UPDATE, success = "修改了字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）"
+            +
+            "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）", fail = "修改字典（{{ @linkGen.toLink(#requestDto.dictId, T(ResourceType).DICT) }}）"
+                    +
+                    "中的数据（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).DICT_DATA) }}）失败")
     @Transactional
     @Override
     public void updateDictData(DictDataRequestDto requestDto) {
@@ -122,7 +112,6 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         compareObjBuilder.id(dictDataId);
         compareObjBuilder.before(rawDictData);
 
-
         // 2. 检查字典数据值是否存在
         checkDictDataValue(requestDto, rawDictData);
 
@@ -135,7 +124,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         setDictDataDisplaySeq(updateDictData, requestDto.getDisplaySeq(), requestDto.getDictId());
         // 3.1 禁用字典数据的场合下删除关联的用户属性值
         if (Boolean.FALSE.equals(requestDto.getEnable())) {
-            userAttrMappingService.remove(Wrappers.<UserAttrMapping>lambdaQuery().eq(UserAttrMapping::getAttrValue, requestDto.getId()));
+            userAttrMappingService.remove(
+                    Wrappers.<UserAttrMapping>lambdaQuery().eq(UserAttrMapping::getAttrValue, requestDto.getId()));
         }
 
         // 4. 数据库操作
@@ -151,7 +141,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 获取字典数据详情
      *
-     * @param dictDataId 字典数据ID
+     * @param dictDataId
+     *            字典数据ID
      * @return 字典数据详情
      */
     @Override
@@ -176,10 +167,14 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 获取字典数据列表
      *
-     * @param dictId  字典ID
-     * @param page    页数
-     * @param size    条数
-     * @param keyword 字典数据标签 / 值检索关键字
+     * @param dictId
+     *            字典ID
+     * @param page
+     *            页数
+     * @param size
+     *            条数
+     * @param keyword
+     *            字典数据标签 / 值检索关键字
      * @return 字典数据列表
      */
     @Override
@@ -193,7 +188,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
                     .and(o -> o.like(DictData::getDataLabel, keyword).or().like(DictData::getDataValue, keyword))
                     .orderByAsc(DictData::getDisplaySeq));
         } else {
-            dictDatas = super.list(pageRequest, Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId).orderByAsc(DictData::getDisplaySeq));
+            dictDatas = super.list(pageRequest, Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, dictId)
+                    .orderByAsc(DictData::getDisplaySeq));
         }
 
         // 2. 属性设置
@@ -212,21 +208,11 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 删除字典数据
      *
-     * @param dictDataIds 字典数据ID集合
+     * @param dictDataIds
+     *            字典数据ID集合
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.DICT_DATA,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）",
-            fail = "删除字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）失败"
-    )
-    @CacheEvict(
-            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
-            key = "#root.target.generateEnabledDictDataCacheKeyById(#root.args[0])",
-            condition = "#root.args[0]?.size() > 0",
-            beforeInvocation = true
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.DICT_DATA, sysOperation = SysOperationType.DELETE, success = "删除了字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）", fail = "删除字典数据（{{ @linkGen.toLinks(#dictDataIds, T(ResourceType).DICT_DATA) }}）失败")
+    @CacheEvict(cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA, key = "#root.target.generateEnabledDictDataCacheKeyById(#root.args[0])", condition = "#root.args[0]?.size() > 0", beforeInvocation = true)
     @Transactional
     @Override
     public void removeDictData(List<String> dictDataIds) {
@@ -234,22 +220,22 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         super.removeBatchByIds(dictDataIds);
 
         // 2. 删除关联的用户属性映射
-        userAttrMappingService.remove(Wrappers.<UserAttrMapping>lambdaQuery().in(UserAttrMapping::getAttrValue, dictDataIds));
+        userAttrMappingService
+                .remove(Wrappers.<UserAttrMapping>lambdaQuery().in(UserAttrMapping::getAttrValue, dictDataIds));
 
         // 3. 删除与子字典的关联关系
-        dictService.lambdaUpdate().set(Dict::getRelatedDictDataId, null).set(Dict::getParentDictId, null).in(Dict::getRelatedDictDataId, dictDataIds);
+        dictService.lambdaUpdate().set(Dict::getRelatedDictDataId, null).set(Dict::getParentDictId, null)
+                .in(Dict::getRelatedDictDataId, dictDataIds);
     }
 
     /**
      * 获取启用的字典数据
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 启用的字典数据
      */
-    @Cacheable(
-            cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA,
-            key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0])"
-    )
+    @Cacheable(cacheNames = CacheConstants.CACHE_ENABLED_DICT_DATA, key = "#root.target.generateEnabledDictDataCacheKey(#root.args[0])")
     @CacheExpire("7 * 24 * 3600")
     @Override
     public List<DictDataResponseDto> getEnabledDictData(String dictId) {
@@ -257,23 +243,20 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
         List<Dict> allDicts = new ArrayList<>(dictRepository.selectByParentId(dictId));
         allDicts.add(dictService.getById(dictId));
 
-
         // 2. 获取所有启用的字典数据
         List<DictData> allDictData = super.list(Wrappers.<DictData>lambdaQuery().in(DictData::getDictId,
-                CommonUtil.stream(allDicts).map(Dict::getDictId).toList()
-        ).eq(DictData::getEnable, true).orderByAsc(DictData::getDisplaySeq));
+                CommonUtil.stream(allDicts).map(Dict::getDictId).toList()).eq(DictData::getEnable, true)
+                .orderByAsc(DictData::getDisplaySeq));
 
         // 3. 移除关联的父字典数据没有启用的字典数据
         Map<String, Dict> dictMap = allDicts.stream().collect(Collectors.toMap(Dict::getDictId, d -> d));
         Map<String, DictData> dictDataMap = allDictData.stream().collect(Collectors.toMap(DictData::getDataId, d -> d));
         List<DictData> filteredDictData = CommonUtil.stream(allDictData).filter(x -> {
-                    // 3.1 获取对应的字典
-                    Dict dict = dictMap.get(x.getDictId());
-                    // 3.2 检查是否有关联的父字典数据
-                    return dict.getParentDictId() == null || dictDataMap.containsKey(dict.getRelatedDictDataId());
-                }
-        ).toList();
-
+            // 3.1 获取对应的字典
+            Dict dict = dictMap.get(x.getDictId());
+            // 3.2 检查是否有关联的父字典数据
+            return dict.getParentDictId() == null || dictDataMap.containsKey(dict.getRelatedDictDataId());
+        }).toList();
 
         // 4. 属性编辑
         List<DictDataResponseDto> allDictDataResponseDto = CommonUtil.stream(filteredDictData).map(dictData -> {
@@ -282,11 +265,11 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             responseDto.setValue(dictData.getDataValue());
             responseDto.setLabel(dictData.getDataLabel());
             responseDto.setDisplaySeq(dictData.getDisplaySeq());
-            responseDto.setParentId(CommonUtil.stream(allDicts).filter(x -> x.getDictId().equals(dictData.getDictId())).findFirst().orElse(new Dict()).getRelatedDictDataId());
+            responseDto.setParentId(CommonUtil.stream(allDicts).filter(x -> x.getDictId().equals(dictData.getDictId()))
+                    .findFirst().orElse(new Dict()).getRelatedDictDataId());
 
             return responseDto;
         }).toList();
-
 
         return CommonUtil.makeTree(
                 allDictDataResponseDto,
@@ -295,14 +278,14 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
                 x -> Objects.isNull(x.getParentId()),
                 DictDataResponseDto::setChildren,
                 null,
-                null
-        );
+                null);
     }
 
     /**
      * 获取可关联的字典数据
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 可关联的字典数据
      */
     @Override
@@ -320,7 +303,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
                 .eq(Dict::getParentDictId, dictId))).map(Dict::getRelatedDictDataId).toList();
 
         // 3. 过滤已关联的字典数据
-        List<DictData> relatableDictData = CommonUtil.stream(allDictData).filter(x -> !relatedDictIds.contains(x.getDataId())).toList();
+        List<DictData> relatableDictData = CommonUtil.stream(allDictData)
+                .filter(x -> !relatedDictIds.contains(x.getDataId())).toList();
 
         return CommonUtil.stream(relatableDictData).map(this::convertDictData2RepDto).toList();
     }
@@ -328,9 +312,12 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
     /**
      * 设置字典数据显示顺序
      *
-     * @param dictData           字典数据
-     * @param expectedDisplaySeq 期待的显示书顺序
-     * @param dictId             字典ID
+     * @param dictData
+     *            字典数据
+     * @param expectedDisplaySeq
+     *            期待的显示书顺序
+     * @param dictId
+     *            字典ID
      */
     private void setDictDataDisplaySeq(DictData dictData, Integer expectedDisplaySeq, String dictId) {
         if (Objects.isNull(expectedDisplaySeq)) {
@@ -361,12 +348,15 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
 
     public String generateEnabledDictDataCacheKeyById(List<String> dictDataIds) {
         DictData dictData = super.getById(dictDataIds.getFirst());
-        return Objects.nonNull(dictData) ? TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictData.getDictId() : "";
+        return Objects.nonNull(dictData)
+                ? TenantContextHolder.getTenantContext().getTenantCode() + ":" + dictData.getDictId()
+                : "";
     }
 
     private void removeEnabledDictDataCacheWithParents(String dictId) {
         // 1. 获取所有字典ID
-        List<String> dictIds = new ArrayList<>(CommonUtil.stream(dictRepository.getAllParentDicts(dictId)).map(Dict::getDictId).toList());
+        List<String> dictIds = new ArrayList<>(
+                CommonUtil.stream(dictRepository.getAllParentDicts(dictId)).map(Dict::getDictId).toList());
         dictIds.add(dictId);
 
         // 2. 拼接缓存键
@@ -388,7 +378,8 @@ public class DictDataServiceImpl extends ServiceImpl<DictDataMapper, DictData> i
             throw new BizException(MessageConstants.DICT_DATA_MSG_1001);
         }
 
-        if (Objects.nonNull(super.getOne(Wrappers.<DictData>lambdaQuery().eq(DictData::getDictId, requestDto.getDictId()).eq(DictData::getDataValue, requestDto.getValue())))) {
+        if (Objects.nonNull(super.getOne(Wrappers.<DictData>lambdaQuery()
+                .eq(DictData::getDictId, requestDto.getDictId()).eq(DictData::getDataValue, requestDto.getValue())))) {
             throw new BizException(MessageConstants.DICT_DATA_MSG_1000, requestDto.getValue());
         }
     }

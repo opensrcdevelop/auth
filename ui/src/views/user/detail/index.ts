@@ -3,11 +3,12 @@ import router from "@/router";
 import {
     clearAuthorizedTokens,
     clearAuthorizedTokensByLoginId,
+    clearPasskeyCredentials,
     getUserAttrs,
     getUserDetail,
     getUserLoginLogs,
     getUserPermissions,
-    rebindMfaDevice,
+    rebindTotpDevice,
     updateUser,
 } from "@/api/user";
 import {generateRandomString, getQueryString, handleApiError, handleApiSuccess,} from "@/util/tool";
@@ -365,17 +366,32 @@ const handleSetMfaStatus = (enableMfa: boolean) => {
 };
 
 /**
- * 重新绑定 MFA 设备
+ * 重新绑定 TOTP 设备
  */
-const handleRebindMfaDevice = () => {
-  rebindMfaDevice(userId.value)
+const handleRebindTotpDevice = () => {
+  rebindTotpDevice(userId.value)
     .then((result: any) => {
       handleApiSuccess(result, () => {
-        Notification.success("重新绑定 MFA 设备成功");
+        Notification.success("重新绑定 TOTP 设备成功");
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "重新绑定 MFA 设备");
+      handleApiError(err, "重新绑定 TOTP 设备");
+    });
+};
+
+/**
+ * 清除注册的 Passkey 凭证
+ */
+const handleClearPasskeyCredential = () => {
+  clearPasskeyCredentials(userId.value)
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("清除注册的 Passkey 凭证成功");
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "清除注册的 Passkey 凭证");
     });
 };
 
@@ -1145,7 +1161,8 @@ export default defineComponent({
       enableMfa,
       handleSetAccountStatus,
       handleSetMfaStatus,
-      handleRebindMfaDevice,
+      handleRebindTotpDevice,
+      handleClearPasskeyCredential,
       handleClearAuthorizedTokens,
       consoleAccess,
       handleSetConsoleAccessStatus,

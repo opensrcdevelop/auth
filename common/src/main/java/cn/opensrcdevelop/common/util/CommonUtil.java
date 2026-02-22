@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 public class CommonUtil {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER_ALLOW_NULL = createObjectMapperAllowNull();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base32 BASE32 = new Base32();
     private static final Base64 BASE64 = new Base64();
@@ -58,13 +59,22 @@ public class CommonUtil {
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
+    private static ObjectMapper createObjectMapperAllowNull() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.registerModule(new JavaTimeModule());
+        mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        return mapper;
+    }
+
     private CommonUtil() {
     }
 
     /**
      * JDK序列化对象
      *
-     * @param object 对象
+     * @param object
+     *            对象
      * @return Base64编码字符串
      */
     public static String javaSerialize(Object object) {
@@ -80,7 +90,8 @@ public class CommonUtil {
     /**
      * JDK反序列化对象
      *
-     * @param base64Str Base64编码字符串
+     * @param base64Str
+     *            Base64编码字符串
      * @return 对象
      */
     @SuppressWarnings("unchecked")
@@ -96,7 +107,8 @@ public class CommonUtil {
     /**
      * 获取随机Base32编码的字符串
      *
-     * @param bytes 字节数
+     * @param bytes
+     *            字节数
      * @return 随机Base32编码的字符串
      */
     public static String getBase32StringKey(int bytes) {
@@ -111,7 +123,8 @@ public class CommonUtil {
     /**
      * 获取随机Base64编码的字符串
      *
-     * @param bytes 字节数
+     * @param bytes
+     *            字节数
      * @return 随机Base64编码的字符串
      */
     public static String getBase64StringKey(int bytes) {
@@ -126,7 +139,8 @@ public class CommonUtil {
     /**
      * 序列化对象
      *
-     * @param obj 对象
+     * @param obj
+     *            对象
      * @return 序列化字符串
      */
     public static String serializeObject(Object obj) {
@@ -144,7 +158,8 @@ public class CommonUtil {
     /**
      * 不使用JDK序列化对象
      *
-     * @param obj 对象
+     * @param obj
+     *            对象
      * @return 序列化字符串
      */
     public static String nonJdkSerializeObject(Object obj) {
@@ -154,15 +169,15 @@ public class CommonUtil {
     /**
      * 序列化对象
      *
-     * @param obj 对象
+     * @param obj
+     *            对象
      * @return 序列化字符串
      */
     public static String serializeObjectAllowNull(Object obj) {
         String val = null;
         try {
-            // json 序列化
-            OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-            val = OBJECT_MAPPER.writeValueAsString(obj);
+            // json 序列化，使用独立的 ObjectMapper 避免全局配置污染
+            val = OBJECT_MAPPER_ALLOW_NULL.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             // jdk 序列化
             val = javaSerialize(obj);
@@ -173,7 +188,8 @@ public class CommonUtil {
     /**
      * 反序列化对象
      *
-     * @param value 反序列化字符串
+     * @param value
+     *            反序列化字符串
      * @return 对象
      */
     public static <T> T deserializeObject(String value, Class<T> clazz) {
@@ -189,9 +205,12 @@ public class CommonUtil {
     /**
      * 反序列化对象（不使用JDK序列化）
      *
-     * @param value 反序列化字符串
-     * @param clazz 目标类
-     * @param <T>   目标类
+     * @param value
+     *            反序列化字符串
+     * @param clazz
+     *            目标类
+     * @param <T>
+     *            目标类
      * @return 对象
      */
     @SuppressWarnings("all")
@@ -207,7 +226,8 @@ public class CommonUtil {
     /**
      * 反序列化对象
      *
-     * @param value 反序列化字符串
+     * @param value
+     *            反序列化字符串
      * @return 对象
      */
     public static <T> T deserializeObject(String value, TypeReference<T> valueTypeRef) {
@@ -223,9 +243,12 @@ public class CommonUtil {
     /**
      * 反序列化对象（不使用JDK序列化）
      *
-     * @param value        反序列化字符串
-     * @param valueTypeRef 目标类
-     * @param <T>          目标类
+     * @param value
+     *            反序列化字符串
+     * @param valueTypeRef
+     *            目标类
+     * @param <T>
+     *            目标类
      * @return 对象
      */
     @SuppressWarnings("all")
@@ -241,13 +264,31 @@ public class CommonUtil {
     /**
      * 将Map转换为对象
      *
-     * @param map   map
-     * @param clazz 目标类
-     * @param <T>   目标类
+     * @param map
+     *            map
+     * @param clazz
+     *            目标类
+     * @param <T>
+     *            目标类
      * @return 目标对象
      */
     public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
         return OBJECT_MAPPER.convertValue(map, clazz);
+    }
+
+    /**
+     * 将 Object 转换为对象
+     *
+     * @param obj
+     *            obj
+     * @param typeReference
+     *            目标类
+     * @param <T>
+     *            目标类
+     * @return 目标对象
+     */
+    public static <T> T convertObj(Object obj, TypeReference<T> typeReference) {
+        return OBJECT_MAPPER.convertValue(obj, typeReference);
     }
 
     /**
@@ -262,8 +303,10 @@ public class CommonUtil {
     /**
      * 流判空处理
      *
-     * @param collection 集合
-     * @param <T>        T
+     * @param collection
+     *            集合
+     * @param <T>
+     *            T
      * @return 流
      */
     public static <T> Stream<T> stream(Collection<T> collection) {
@@ -276,9 +319,12 @@ public class CommonUtil {
     /**
      * 生成二维码（PNG）
      *
-     * @param width  宽
-     * @param height 高
-     * @param data   数据
+     * @param width
+     *            宽
+     * @param height
+     *            高
+     * @param data
+     *            数据
      * @return 二维码（PNG）
      */
     public static byte[] generatePngQrCode(int width, int height, String data) {
@@ -300,9 +346,12 @@ public class CommonUtil {
     /**
      * 生成二维码（PNG）
      *
-     * @param width  宽
-     * @param height 高
-     * @param data   数据
+     * @param width
+     *            宽
+     * @param height
+     *            高
+     * @param data
+     *            数据
      * @return 二维码（PNG）
      */
     public static String getBase64PngQrCode(int width, int height, String data) {
@@ -313,10 +362,14 @@ public class CommonUtil {
     /**
      * 调用 Set 方法前进行检查
      *
-     * @param predicate 检查方法
-     * @param setMethod set 方法
-     * @param supplier  目标对象
-     * @param <T>       T
+     * @param predicate
+     *            检查方法
+     * @param setMethod
+     *            set 方法
+     * @param supplier
+     *            目标对象
+     * @param <T>
+     *            T
      */
     public static <T> void callSetWithCheck(Predicate<T> predicate, Consumer<T> setMethod, Supplier<T> supplier) {
         if (predicate.test(supplier.get())) {
@@ -327,9 +380,12 @@ public class CommonUtil {
     /**
      * 从 Getter 方法引用提取字段名
      *
-     * @param getter Getter 方法
-     * @param <T>    T
-     * @param <R>    R
+     * @param getter
+     *            Getter 方法
+     * @param <T>
+     *            T
+     * @param <R>
+     *            R
      * @return 字段名
      */
     public static <T, R> String extractFieldNameFromGetter(Getter<T, R> getter) {
@@ -373,19 +429,24 @@ public class CommonUtil {
     /**
      * 将时间戳转换为指定格式的字符串
      *
-     * @param timestamp 时间戳
-     * @param format    格式
+     * @param timestamp
+     *            时间戳
+     * @param format
+     *            格式
      * @return 字符串
      */
     public static String convertTimestamp2String(long timestamp, String format) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern(format));
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern(format));
     }
 
     /**
      * 校验 Bean
      *
-     * @param bean   bean
-     * @param groups 分组
+     * @param bean
+     *            bean
+     * @param groups
+     *            分组
      */
     public static void validateBean(Object bean, Class<?>... groups) {
         Validator validator = SpringContextUtil.getBean(Validator.class);
@@ -398,7 +459,8 @@ public class CommonUtil {
     /**
      * 时间单位转换
      *
-     * @param unit 时间单位
+     * @param unit
+     *            时间单位
      * @return ChronoUnit
      */
     public static ChronoUnit convertDBTimeUnit2ChronoUnit(String unit) {
@@ -413,7 +475,8 @@ public class CommonUtil {
     /**
      * 生成随机字符串
      *
-     * @param length 字符串长度
+     * @param length
+     *            字符串长度
      * @return 随机字符串
      */
     public static String generateRandomString(int length) {
@@ -438,7 +501,8 @@ public class CommonUtil {
     /**
      * 获取格式化后的 JSON 字符串
      *
-     * @param obj 对象
+     * @param obj
+     *            对象
      * @return 格式化后的 JSON 字符串
      */
     public static String formatJson(Object obj) {
@@ -452,13 +516,15 @@ public class CommonUtil {
     /**
      * 填充模版
      *
-     * @param template 模版
-     * @param context  上下文
+     * @param template
+     *            模版
+     * @param context
+     *            上下文
      * @return 填充后的模版
      */
     public static String fillTemplate(String template, Map<String, Object> context) {
         try (StringReader reader = new StringReader(template);
-             StringWriter writer = new StringWriter()) {
+                StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
             Template processor = new Template(CommonUtil.getUUIDV7String(), reader, cfg, StandardCharsets.UTF_8.name());
@@ -472,29 +538,37 @@ public class CommonUtil {
     /**
      * 构建树结构
      *
-     * @param nodes 节点列表
-     * @param pIdFunc 父节点ID获取函数
-     * @param idFunc  节点ID获取函数
-     * @param rootCheckFunc 根节点检查函数
-     * @param setChildrenFunc 子节点设置函数
-     * @param initLevel 初始层级
-     * @param levelFunc 层级设置函数
+     * @param nodes
+     *            节点列表
+     * @param pIdFunc
+     *            父节点ID获取函数
+     * @param idFunc
+     *            节点ID获取函数
+     * @param rootCheckFunc
+     *            根节点检查函数
+     * @param setChildrenFunc
+     *            子节点设置函数
+     * @param initLevel
+     *            初始层级
+     * @param levelFunc
+     *            层级设置函数
      * @return 根节点列表
-     * @param <T> 节点ID类型
-     * @param <E> 节点类型
+     * @param <T>
+     *            节点ID类型
+     * @param <E>
+     *            节点类型
      */
-    public static <T, E>List<E> makeTree(List<E> nodes,
-                                         Function<E, T> pIdFunc,
-                                         Function<E, T> idFunc,
-                                         Predicate<E> rootCheckFunc,
-                                         BiConsumer<E, List<E>> setChildrenFunc,
-                                         Integer initLevel,
-                                         ObjIntConsumer<E> levelFunc) {
+    public static <T, E> List<E> makeTree(List<E> nodes,
+            Function<E, T> pIdFunc,
+            Function<E, T> idFunc,
+            Predicate<E> rootCheckFunc,
+            BiConsumer<E, List<E>> setChildrenFunc,
+            Integer initLevel,
+            ObjIntConsumer<E> levelFunc) {
         Map<Optional<T>, List<E>> parentMap = CommonUtil.stream(nodes).collect(Collectors.groupingBy(
                 node -> Optional.ofNullable(pIdFunc.apply(node)),
                 LinkedHashMap::new,
-                Collectors.toList()
-        ));
+                Collectors.toList()));
 
         List<E> rootNodes = new ArrayList<>();
         for (E node : nodes) {
@@ -536,7 +610,6 @@ public class CommonUtil {
 
         return rootNodes;
     }
-
 
     @FunctionalInterface
     public interface Getter<T, R> extends Serializable {

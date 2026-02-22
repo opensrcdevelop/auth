@@ -12,11 +12,18 @@ import {
     updateMyUserInfo,
 } from "@/api/user";
 import router from "@/router";
-import {AUTH_FAILURE, AUTH_SUCCESS, BINDING_EXISTS} from "@/util/constants";
+import {AUTH_FAILURE, AUTH_SUCCESS, AUTH_TOKENS, BINDING_EXISTS,} from "@/util/constants";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Message, Modal, Notification} from "@arco-design/web-vue";
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import {useRoute} from "vue-router";
+import webauthn from "@/util/webauthn";
+import {
+    completeWebAuthnRegistration,
+    deleteWebAuthnCredential,
+    getWebAuthnRegisterOptions,
+    listWebAuthnCredentials,
+} from "@/api/webauthn";
 
 const activeTab = ref("user_info");
 
@@ -49,6 +56,7 @@ const handleTabInit = (tabKey: string) => {
     case "account_binding":
       initPromises.push(handleGetUserInfo());
       initPromises.push(handleGetBoundIdentitySource());
+      initPromises.push(handleGetWebAuthnCredentials());
       break;
   }
 
@@ -89,7 +97,7 @@ const handleLogout = () => {
         .then((result: any) => {
           handleApiSuccess(result, () => {
             Notification.success("退出成功");
-            localStorage.removeItem("accessToken");
+            localStorage.removeItem(AUTH_TOKENS);
 
             // 跳转到登录页
             router.push({
@@ -144,7 +152,7 @@ const handleGetUserAttrs = async () => {
 
         // 将用户 ID 置为第一个属性
         const userIdIndex = userAttrs.findIndex(
-          (item: any) => item.key === "userId"
+          (item: any) => item.key === "userId",
         );
         if (userIdIndex > -1) {
           userAttrs.splice(0, 0, userAttrs.splice(userIdIndex, 1)[0]);
@@ -152,7 +160,7 @@ const handleGetUserAttrs = async () => {
 
         // 将用户名置为第二个属性
         const userNameIndex = userAttrs.findIndex(
-          (item: any) => item.key === "username"
+          (item: any) => item.key === "username",
         );
         if (userNameIndex > -1) {
           userAttrs.splice(1, 0, userAttrs.splice(userNameIndex, 1)[0]);
@@ -160,7 +168,7 @@ const handleGetUserAttrs = async () => {
 
         // 将邮箱置为第三个属性
         const emailIndex = userAttrs.findIndex(
-          (item: any) => item.key === "emailAddress"
+          (item: any) => item.key === "emailAddress",
         );
         if (emailIndex > -1) {
           userAttrs.splice(2, 0, userAttrs.splice(emailIndex, 1)[0]);
@@ -168,7 +176,7 @@ const handleGetUserAttrs = async () => {
 
         // 将手机号置为第四个属性
         const phoneIndex = userAttrs.findIndex(
-          (item: any) => item.key === "phoneNumber"
+          (item: any) => item.key === "phoneNumber",
         );
         if (phoneIndex > -1) {
           userAttrs.splice(3, 0, userAttrs.splice(phoneIndex, 1)[0]);
@@ -191,7 +199,7 @@ const handleGetAllEnabledDictData = async () => {
     if (item.dataType === "DICT" && item.dictId) {
       allDictDatas[item.key] = [];
       getEnabledDictDataPromises.push(
-        handleGetEnabledDictData(item.key, item.dictId)
+        handleGetEnabledDictData(item.key, item.dictId),
       );
     }
   });
@@ -242,7 +250,7 @@ const handleUpdateMyUserInfo = () => {
 };
 
 /** 修改密码对话框 */
-const changePwdModalVisivle = ref(false);
+const changePwdModalVisible = ref(false);
 const changePwdForm = reactive({
   rawPwd: "",
   newPwd: "",
@@ -271,14 +279,14 @@ const changePwdFormRules = {
  * 打开修改密码对话框
  */
 const handleOpenChangePwdModal = () => {
-  changePwdModalVisivle.value = true;
+  changePwdModalVisible.value = true;
 };
 
 /**
  * 关闭修改密码对话框
  */
 const handleCloseChangePwdModal = () => {
-  changePwdModalVisivle.value = false;
+  changePwdModalVisible.value = false;
   changePwdFormRef.value.resetFields();
   passwordCheckerRef.value.setPassword("");
 };
@@ -344,7 +352,7 @@ const handleCheckPassword = (password: string) => {
 };
 
 /** 绑定 / 解绑邮箱对话框 */
-const bindOrUnbindEmailModalVisivle = ref(false);
+const bindOrUnbindEmailModalVisible = ref(false);
 const isBinding = ref(true);
 const bindOrUnbindEmailFormSubmitLoading = ref(false);
 const bindOrUnbindEmailFormRef = ref();
@@ -372,7 +380,7 @@ const bindOrUnbindEmailFormRules = {
  */
 const handleOpenBindEmailModal = () => {
   isBinding.value = true;
-  bindOrUnbindEmailModalVisivle.value = true;
+  bindOrUnbindEmailModalVisible.value = true;
 };
 
 /**
@@ -381,14 +389,14 @@ const handleOpenBindEmailModal = () => {
 const handleOpenUnbindEmailModal = () => {
   isBinding.value = false;
   bindOrUnbindEmailForm.email = userInfo["emailAddress"];
-  bindOrUnbindEmailModalVisivle.value = true;
+  bindOrUnbindEmailModalVisible.value = true;
 };
 
 /**
  * 关闭绑定 / 解绑邮箱对话框
  */
 const handleCoseBindOrUnbindEmailModal = () => {
-  bindOrUnbindEmailModalVisivle.value = false;
+  bindOrUnbindEmailModalVisible.value = false;
   bindOrUnbindEmailFormRef.value.resetFields();
 };
 
@@ -458,6 +466,95 @@ const handleSendEmailCode = () => {
 /** 绑定的身份源 */
 const boundIdentitySource = reactive([]);
 
+/** WebAuthn 凭证列表 */
+const webAuthnCredentials = reactive([]);
+
+/** 是否支持 WebAuthn */
+const isWebAuthnSupported = ref(false);
+
+/** 是否正在添加凭证 */
+const addingWebAuthnCredential = ref(false);
+
+/**
+ * 获取 WebAuthn 凭证列表
+ */
+const handleGetWebAuthnCredentials = () => {
+  listWebAuthnCredentials()
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        webAuthnCredentials.length = 0;
+        webAuthnCredentials.push(...data);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取 WebAuthn 凭证");
+    });
+};
+
+/**
+ * 添加 WebAuthn 凭证
+ */
+const handleAddWebAuthnCredential = () => {
+  // 检查浏览器是否支持 WebAuthn
+  if (!webauthn.isSupported()) {
+    Notification.warning("当前浏览器不支持 Passkey");
+    return;
+  }
+
+  addingWebAuthnCredential.value = true;
+  getWebAuthnRegisterOptions()
+    .then((result: any) => {
+      handleApiSuccess(result, async (data: any) => {
+        try {
+          const credential = await webauthn.startRegistration(data);
+          await completeWebAuthnRegistration({
+            id: credential.id,
+            rawId: credential.rawId,
+            response: {
+              clientDataJSON: credential.response.clientDataJSON,
+              attestationObject: credential.response.attestationObject,
+            },
+            transports: credential.response.transports?.join(",") || "",
+          });
+          Notification.success("添加 Passkey 凭证成功");
+          handleGetWebAuthnCredentials();
+        } catch (error: any) {
+          if (error.message && error.message.includes("not allowed")) {
+            Notification.warning("已取消添加 Passkey 凭证");
+          } else if (error.message.includes("previously registered")) {
+            Notification.warning("该设备已注册过 Passkey，无法重复注册");
+          } else {
+            Notification.error(
+              "添加凭证失败: " + (error.message || "未知错误"),
+            );
+          }
+        }
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "获取注册选项");
+    })
+    .finally(() => {
+      addingWebAuthnCredential.value = false;
+    });
+};
+
+/**
+ * 删除 WebAuthn 凭证
+ */
+const handleDeleteWebAuthnCredential = (credential: any) => {
+  deleteWebAuthnCredential(credential.id)
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("删除凭证成功");
+        handleGetWebAuthnCredentials();
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "删除凭证");
+    });
+};
+
 /**
  * 获取绑定的身份源
  */
@@ -487,7 +584,7 @@ const handleBindUser = (identitySource: any) => {
         authWindow = window.open(
           data.authReqUri,
           "_blank",
-          "width=600,height=600"
+          "width=600,height=600",
         );
       });
     })
@@ -555,6 +652,9 @@ export default defineComponent({
       }
       handleTabInit(activeTab.value);
       window.addEventListener("message", handleAuthWindowResponse);
+
+      // 检测浏览器是否支持 WebAuthn
+      isWebAuthnSupported.value = webauthn.isSupported();
     });
 
     return {
@@ -567,7 +667,7 @@ export default defineComponent({
       userAttrs,
       handleUpdateMyUserInfo,
       loading,
-      changePwdModalVisivle,
+      changePwdModalVisible,
       handleOpenChangePwdModal,
       handleCloseChangePwdModal,
       changePwdForm,
@@ -575,7 +675,7 @@ export default defineComponent({
       changePwdFormRules,
       handleSubmitChangePwdForm,
       changePwdFormSubmitLoading,
-      bindOrUnbindEmailModalVisivle,
+      bindOrUnbindEmailModalVisible,
       isBinding,
       bindOrUnbindEmailFormSubmitLoading,
       bindOrUnbindEmailFormRef,
@@ -597,6 +697,11 @@ export default defineComponent({
       boundIdentitySource,
       handleBindUser,
       handleUnbindUser,
+      webAuthnCredentials,
+      isWebAuthnSupported,
+      addingWebAuthnCredential,
+      handleAddWebAuthnCredential,
+      handleDeleteWebAuthnCredential,
     };
   },
 });

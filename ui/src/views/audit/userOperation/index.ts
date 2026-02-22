@@ -23,6 +23,7 @@ const operationTypes = [
   { value: 12, label: "ChatBI 问答反馈"},
   { value: 13, label: "ChatBI 删除对话历史"},
   { value: 14, label: "ChatBI 更新对话历史"},
+  { value: 15, label: "解绑 MFA 设备" },
 ];
 
 /**

@@ -27,6 +27,8 @@ import cn.opensrcdevelop.common.validation.ValidationGroups;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -38,12 +40,11 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
-public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper, PasswordPolicy> implements PasswordPolicyService {
+public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper, PasswordPolicy>
+        implements
+            PasswordPolicyService {
 
     private static final String DEFAULT_POLICY_NAME = "默认策略";
 
@@ -56,7 +57,7 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     private UserService userService;
 
     /**
-     *  获取密码策略列表
+     * 获取密码策略列表
      *
      * @return 密码策略列表
      */
@@ -64,31 +65,26 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     public List<PasswordPolicyResponseDto> getList() {
         // 1. 数据库查询
         // 1.1 按照优先级排序获取密码策略列表
-        List<PasswordPolicy> records = super.list(Wrappers.<PasswordPolicy>lambdaQuery().orderByAsc(PasswordPolicy::getPriority));
+        List<PasswordPolicy> records = super.list(
+                Wrappers.<PasswordPolicy>lambdaQuery().orderByAsc(PasswordPolicy::getPriority));
 
         // 2. 响应编辑
-        return CommonUtil.stream(records).map(passwordPolicy ->
-                PasswordPolicyResponseDto.builder()
-                    .id(passwordPolicy.getPolicyId())
-                    .name(passwordPolicy.getPolicyName())
-                    .passwordStrength(passwordPolicy.getPasswordStrength())
-                    .enabled(passwordPolicy.getEnabled())
-                    .build())
+        return CommonUtil.stream(records).map(passwordPolicy -> PasswordPolicyResponseDto.builder()
+                .id(passwordPolicy.getPolicyId())
+                .name(passwordPolicy.getPolicyName())
+                .passwordStrength(passwordPolicy.getPasswordStrength())
+                .enabled(passwordPolicy.getEnabled())
+                .build())
                 .toList();
     }
 
     /**
      * 创建密码策略请求
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PWD_POLICY,
-            sysOperation = SysOperationType.CREATE,
-            success = "创建了密码策略（{{ @linkGen.toLink(#policyId, T(ResourceType).PWD_POLICY) }}）",
-            fail = "创建密码策略（{{ #requestDto.name }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PWD_POLICY, sysOperation = SysOperationType.CREATE, success = "创建了密码策略（{{ @linkGen.toLink(#policyId, T(ResourceType).PWD_POLICY) }}）", fail = "创建密码策略（{{ #requestDto.name }}）失败")
     @Transactional
     @Override
     public void createPasswordPolicy(PasswordPolicyRequestDto requestDto) {
@@ -130,9 +126,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     }
 
     /**
-     *  获取密码策略详情
+     * 获取密码策略详情
      *
-     * @param id 密码策略 ID
+     * @param id
+     *            密码策略 ID
      * @return 密码策略详情
      */
     @Override
@@ -146,14 +143,19 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         // 1.1 提取密码强度配置
         PasswordComplexityConfig complexityConfig = null;
         if (passwordPolicy.getPasswordStrength().equals(PasswordStrength.CUSTOM.ordinal())) {
-            complexityConfig = CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
+            complexityConfig = CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(),
+                    PasswordComplexityConfig.class);
         }
 
         // 2. 查询策略应用主体
-        List<PasswordPolicyMapping> mappings = passwordPolicyMappingService.list(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, passwordPolicy.getPolicyId()));
+        List<PasswordPolicyMapping> mappings = passwordPolicyMappingService
+                .list(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId,
+                        passwordPolicy.getPolicyId()));
         // 2.1 提取用户 ID 和用户组 ID
-        List<String> userIds = CommonUtil.stream(mappings).map(PasswordPolicyMapping::getUserId).filter(Objects::nonNull).toList();
-        List<String> userGroupIds = CommonUtil.stream(mappings).map(PasswordPolicyMapping::getUserGroupId).filter(Objects::nonNull).toList();
+        List<String> userIds = CommonUtil.stream(mappings).map(PasswordPolicyMapping::getUserId)
+                .filter(Objects::nonNull).toList();
+        List<String> userGroupIds = CommonUtil.stream(mappings).map(PasswordPolicyMapping::getUserGroupId)
+                .filter(Objects::nonNull).toList();
 
         // 3. 响应编辑
         PasswordPolicyResponseDto responseDto = PasswordPolicyResponseDto.builder()
@@ -203,15 +205,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 更新密码策略优先级请求
      *
-     * @param requestDtoList 请求
+     * @param requestDtoList
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PWD_POLICY,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了密码策略执行顺序，{{ #auditText }}",
-            fail = "修改密码策略执行顺序失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PWD_POLICY, sysOperation = SysOperationType.UPDATE, success = "修改了密码策略执行顺序，{{ #auditText }}", fail = "修改密码策略执行顺序失败")
     @Transactional
     @Override
     public void updatePasswordPolicyPriority(List<UpdatePasswordPolicyPriorityRequestDto> requestDtoList) {
@@ -221,9 +218,9 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         }
 
         AuditContext.setSpelVariable("auditText", getPasswordPriorityAuditText(
-                super.list(Wrappers.<PasswordPolicy>lambdaQuery().select(PasswordPolicy::getPolicyId, PasswordPolicy::getPriority)),
-                requestDtoList)
-        );
+                super.list(Wrappers.<PasswordPolicy>lambdaQuery().select(PasswordPolicy::getPolicyId,
+                        PasswordPolicy::getPriority)),
+                requestDtoList));
 
         // 2. 更新密码策略优先级
         List<PasswordPolicy> updateRecords = CommonUtil.stream(requestDtoList)
@@ -241,15 +238,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 更新密码策略
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PWD_POLICY,
-            sysOperation = SysOperationType.UPDATE,
-            success = "修改了密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}），应用主体变更：{{ #mappingChanges }}",
-            fail = "修改密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PWD_POLICY, sysOperation = SysOperationType.UPDATE, success = "修改了密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}），应用主体变更：{{ #mappingChanges }}", fail = "修改密码策略（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PWD_POLICY) }}）失败")
     @Transactional
     @Override
     public void updatePasswordPolicy(PasswordPolicyRequestDto requestDto) {
@@ -285,18 +277,21 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         // 2. 参数校验
         checkRequestDto(requestDto);
         // 2.1 禁止更新默认密码策略名称
-        if (requestDto.getId().equals(defaultPasswordPolicy.getPolicyId()) && !requestDto.getName().equals(getDefaultPasswordPolicy().getPolicyName())) {
+        if (requestDto.getId().equals(defaultPasswordPolicy.getPolicyId())
+                && !requestDto.getName().equals(getDefaultPasswordPolicy().getPolicyName())) {
             throw new BizException(MessageConstants.PWD_POLICY_MSG_1007);
         }
 
         // 3. 更新策略应用主体
-        List<PasswordPolicyMapping> beforeMappings = passwordPolicyMappingService.list(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, policyId));
+        List<PasswordPolicyMapping> beforeMappings = passwordPolicyMappingService
+                .list(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, policyId));
         List<PasswordPolicyMapping> mappings = getMappings(requestDto, requestDto.getId());
         // 审计
         AuditContext.setSpelVariable("mappingChanges", getPasswordPolicyMappingChanges(beforeMappings, mappings));
         if (CollectionUtils.isNotEmpty(mappings)) {
             // 3.1 删除原有的策略应用主体
-            passwordPolicyMappingService.remove(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, requestDto.getId()));
+            passwordPolicyMappingService.remove(Wrappers.<PasswordPolicyMapping>lambdaQuery()
+                    .eq(PasswordPolicyMapping::getPolicyId, requestDto.getId()));
             // 3.2 保存策略应用主体
             passwordPolicyMappingService.saveBatch(mappings);
         }
@@ -331,15 +326,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 删除密码策略
      *
-     * @param id 密码策略 ID
+     * @param id
+     *            密码策略 ID
      */
-    @Audit(
-            type = AuditType.SYS_OPERATION,
-            resource = ResourceType.PWD_POLICY,
-            sysOperation = SysOperationType.DELETE,
-            success = "删除了密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）",
-            fail = "删除密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）失败"
-    )
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PWD_POLICY, sysOperation = SysOperationType.DELETE, success = "删除了密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）", fail = "删除密码策略（{{ @linkGen.toLink(#id, T(ResourceType).PWD_POLICY) }}）失败")
     @Transactional
     @Override
     public void deletePasswordPolicy(String id) {
@@ -352,32 +342,39 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         super.remove(Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyId, id));
 
         // 3. 删除密码策略应用主体
-        passwordPolicyMappingService.remove(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, id));
+        passwordPolicyMappingService
+                .remove(Wrappers.<PasswordPolicyMapping>lambdaQuery().eq(PasswordPolicyMapping::getPolicyId, id));
     }
 
     /**
      * 检查密码强度（直接使用密码策略）
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return 检查结果
      */
     @Override
-    public CheckPasswordStrengthResponseDto checkPasswordStrength(CheckPasswordStrengthWithPolicyRequestDto requestDto) {
+    public CheckPasswordStrengthResponseDto checkPasswordStrength(
+            CheckPasswordStrengthWithPolicyRequestDto requestDto) {
         PasswordPolicyRequestDto passwordPolicyRequestDto = requestDto.getPasswordPolicy();
         String password = requestDto.getPassword();
         // 1. 参数校验
         CommonUtil.validateBean(passwordPolicyRequestDto, ValidationGroups.Operation.INSERT.class);
 
         // 2. 检查密码强度
-        PasswordStrength passwordStrength = PasswordStrength.fromOrdinal(passwordPolicyRequestDto.getPasswordStrength());
+        PasswordStrength passwordStrength = PasswordStrength
+                .fromOrdinal(passwordPolicyRequestDto.getPasswordStrength());
         // 2.1 自定义密码强度
         if (PasswordStrength.CUSTOM.equals(passwordStrength)) {
             PasswordComplexityConfig complexityConfig = buildComplexityConfig(passwordPolicyRequestDto);
-            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(passwordStrength, complexityConfig);
+            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(
+                    passwordStrength, complexityConfig);
             Boolean result = passwordStrengthChecker.validate(password);
-            var ruleResults = CommonUtil.stream(passwordStrengthChecker.getValidateResult(password)).map(x -> PasswordRuleValidationResultResponseDto.builder()
-                    .rule(x._1)
-                    .valid(x._2).build()).toList();
+            var ruleResults = CommonUtil.stream(passwordStrengthChecker.getValidateResult(password))
+                    .map(x -> PasswordRuleValidationResultResponseDto.builder()
+                            .rule(x._1)
+                            .valid(x._2).build())
+                    .toList();
             return CheckPasswordStrengthResponseDto.builder()
                     .valid(result)
                     .errorMessage(passwordStrengthChecker.errorMessage())
@@ -397,7 +394,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 检查密码强度
      *
-     * @param requestDto 请求
+     * @param requestDto
+     *            请求
      * @return 检查结果
      */
     @Override
@@ -437,20 +435,27 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         PasswordStrength passwordStrength = PasswordStrength.fromOrdinal(passwordPolicy.getPasswordStrength());
         // 2.1 自定义密码强度
         if (PasswordStrength.CUSTOM.equals(passwordStrength)) {
-            PasswordComplexityConfig complexityConfig = CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
-            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(passwordStrength, complexityConfig);
+            PasswordComplexityConfig complexityConfig = CommonUtil
+                    .deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
+            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(
+                    passwordStrength, complexityConfig);
             if (Boolean.TRUE.equals(complexityConfig.isProhibitUserInfo()) && Objects.nonNull(targetUser)) {
                 // 2.1.1 添加当前用户信息
-                Optional.ofNullable(targetUser.getUsername()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
-                Optional.ofNullable(targetUser.getEmailAddress()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
-                Optional.ofNullable(targetUser.getPhoneNumber()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getUsername()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getEmailAddress()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getPhoneNumber()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
             }
 
             // 2.1.2 检查密码强度
             Boolean result = passwordStrengthChecker.validate(password);
-            var ruleResults = CommonUtil.stream(passwordStrengthChecker.getValidateResult(password)).map(x -> PasswordRuleValidationResultResponseDto.builder()
-                    .rule(x._1)
-                    .valid(x._2).build()).toList();
+            var ruleResults = CommonUtil.stream(passwordStrengthChecker.getValidateResult(password))
+                    .map(x -> PasswordRuleValidationResultResponseDto.builder()
+                            .rule(x._1)
+                            .valid(x._2).build())
+                    .toList();
             return CheckPasswordStrengthResponseDto.builder()
                     .valid(result)
                     .errorMessage(passwordStrengthChecker.errorMessage())
@@ -470,8 +475,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 检查登录密码强度是否满足要求
      *
-     * @param userId 用户 ID
-     * @param password 密码
+     * @param userId
+     *            用户 ID
+     * @param password
+     *            密码
      * @return 是否满足要求
      */
     @Override
@@ -491,14 +498,19 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         PasswordStrength passwordStrength = PasswordStrength.fromOrdinal(passwordPolicy.getPasswordStrength());
         // 2.2 自定义密码强度
         if (PasswordStrength.CUSTOM.equals(passwordStrength)) {
-            PasswordComplexityConfig complexityConfig = CommonUtil.deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
-            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(passwordStrength, complexityConfig);
+            PasswordComplexityConfig complexityConfig = CommonUtil
+                    .deserializeObject(passwordPolicy.getCustomStrengthConfig(), PasswordComplexityConfig.class);
+            CustomPasswordStrengthChecker passwordStrengthChecker = (CustomPasswordStrengthChecker) getPasswordStrengthChecker(
+                    passwordStrength, complexityConfig);
             if (Boolean.TRUE.equals(complexityConfig.isProhibitUserInfo())) {
                 // 2.2.1 添加当前用户信息
                 User targetUser = userService.getById(userId);
-                Optional.ofNullable(targetUser.getUsername()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
-                Optional.ofNullable(targetUser.getEmailAddress()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
-                Optional.ofNullable(targetUser.getPhoneNumber()).filter(StringUtils::isNotEmpty).ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getUsername()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getEmailAddress()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
+                Optional.ofNullable(targetUser.getPhoneNumber()).filter(StringUtils::isNotEmpty)
+                        .ifPresent(passwordStrengthChecker::addUserInfo);
             }
 
             // 2.2.2 检查密码强度
@@ -512,8 +524,10 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     /**
      * 检查密码强度
      *
-     * @param userId 用户ID
-     * @param password 密码
+     * @param userId
+     *            用户ID
+     * @param password
+     *            密码
      */
     @Override
     public void checkPasswordStrength(String userId, String password) {
@@ -545,12 +559,14 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
             }
 
             // 检查禁止包含的连续字符的最小长度是否小于 2
-            if (Boolean.TRUE.equals(requestDto.getProhibitContainConsecutiveChar()) && requestDto.getMinConsecutiveCharLength() < 2) {
-                    throw new BizException(MessageConstants.PWD_POLICY_MSG_1002);
+            if (Boolean.TRUE.equals(requestDto.getProhibitContainConsecutiveChar())
+                    && requestDto.getMinConsecutiveCharLength() < 2) {
+                throw new BizException(MessageConstants.PWD_POLICY_MSG_1002);
             }
 
             // 检查禁止使用的特定密码列表是否为空
-            if (Boolean.TRUE.equals(requestDto.getProhibitSpecificPassword()) && CollectionUtils.isEmpty(requestDto.getProhibitedPasswordList())) {
+            if (Boolean.TRUE.equals(requestDto.getProhibitSpecificPassword())
+                    && CollectionUtils.isEmpty(requestDto.getProhibitedPasswordList())) {
                 throw new BizException(MessageConstants.PWD_POLICY_MSG_1003);
             }
         }
@@ -561,18 +577,22 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
 
         // 检查策略名称是否已存在
         if (isUpdate) {
-            if (super.exists(Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, requestDto.getName()).ne(PasswordPolicy::getPolicyId, requestDto.getId()))) {
+            if (super.exists(
+                    Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, requestDto.getName())
+                            .ne(PasswordPolicy::getPolicyId, requestDto.getId()))) {
                 throw new BizException(MessageConstants.PWD_POLICY_MSG_1005);
             }
         } else {
-            if (super.exists(Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, requestDto.getName()))) {
+            if (super.exists(
+                    Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, requestDto.getName()))) {
                 throw new BizException(MessageConstants.PWD_POLICY_MSG_1005);
             }
         }
 
         // 检查策略应用主体是否为空（只检查非默认策略）
         if (!isUpdate || (isUpdate && !requestDto.getId().equals(getDefaultPasswordPolicy().getPolicyId()))) {
-            if (CollectionUtils.isEmpty(requestDto.getUserIds()) && CollectionUtils.isEmpty(requestDto.getUserGroupIds())) {
+            if (CollectionUtils.isEmpty(requestDto.getUserIds())
+                    && CollectionUtils.isEmpty(requestDto.getUserGroupIds())) {
                 throw new BizException(MessageConstants.PWD_POLICY_MSG_1004);
             }
         }
@@ -623,7 +643,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
         // 是否禁止全部为连续字符
         complexityConfig.setProhibitConsecutiveChar(Boolean.TRUE.equals(requestDto.getProhibitConsecutiveChar()));
         // 是否禁止包含连续字符
-        complexityConfig.setProhibitContainConsecutiveChar(Boolean.TRUE.equals(requestDto.getProhibitContainConsecutiveChar()));
+        complexityConfig
+                .setProhibitContainConsecutiveChar(Boolean.TRUE.equals(requestDto.getProhibitContainConsecutiveChar()));
         // 禁止包含的连续字符的最小长度
         if (Objects.nonNull(requestDto.getMinConsecutiveCharLength())) {
             complexityConfig.setMinConsecutiveCharLength(requestDto.getMinConsecutiveCharLength());
@@ -650,7 +671,8 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
      * @return 默认密码策略
      */
     public PasswordPolicy getDefaultPasswordPolicy() {
-        return super.getOne(Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, DEFAULT_POLICY_NAME));
+        return super.getOne(
+                Wrappers.<PasswordPolicy>lambdaQuery().eq(PasswordPolicy::getPolicyName, DEFAULT_POLICY_NAME));
     }
 
     private List<PasswordPolicyMapping> getMappings(PasswordPolicyRequestDto requestDto, String policyId) {
@@ -661,20 +683,19 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
                     mapping.setPolicyId(policyId);
                     mapping.setUserId(userId);
                     return mapping;
-                }).toList()
-        );
+                }).toList());
         mappings.addAll(
                 CommonUtil.stream(requestDto.getUserGroupIds()).map(userGroupId -> {
                     PasswordPolicyMapping mapping = new PasswordPolicyMapping();
                     mapping.setPolicyId(policyId);
                     mapping.setUserGroupId(userGroupId);
                     return mapping;
-                }).toList()
-        );
+                }).toList());
         return mappings;
     }
 
-    private PasswordStrengthChecker getPasswordStrengthChecker(PasswordStrength passwordStrength, PasswordComplexityConfig complexityConfig) {
+    private PasswordStrengthChecker getPasswordStrengthChecker(PasswordStrength passwordStrength,
+            PasswordComplexityConfig complexityConfig) {
         return switch (passwordStrength) {
             case LOW -> new LowPasswordStrengthPasswordChecker();
             case MEDIUM -> new MediumPasswordStrengthChecker();
@@ -685,55 +706,69 @@ public class PasswordPolicyServiceImpl extends ServiceImpl<PasswordPolicyMapper,
     }
 
     private User getUserByIdentity(String identity) {
-        return  userService.getOne(Wrappers.<User>lambdaQuery()
+        return userService.getOne(Wrappers.<User>lambdaQuery()
                 .eq(User::getUserId, identity).or()
                 .eq(User::getPhoneNumber, identity).or()
                 .eq(User::getEmailAddress, identity).or()
                 .eq(User::getUsername, identity));
     }
 
-    private String getPasswordPolicyMappingChanges(List<PasswordPolicyMapping> beforeMappings, List<PasswordPolicyMapping> afterMappings) {
+    private String getPasswordPolicyMappingChanges(List<PasswordPolicyMapping> beforeMappings,
+            List<PasswordPolicyMapping> afterMappings) {
         List<String> beforeUserIds = CommonUtil.stream(beforeMappings).map(PasswordPolicyMapping::getUserId).toList();
         List<String> afterUserIds = CommonUtil.stream(afterMappings).map(PasswordPolicyMapping::getUserId).toList();
         List<String> addUserIds = afterUserIds.stream().filter(x -> !beforeUserIds.contains(x)).toList();
         List<String> removeUserIds = beforeUserIds.stream().filter(x -> !afterUserIds.contains(x)).toList();
 
-        List<String> beforeUserGroupIds = CommonUtil.stream(beforeMappings).map(PasswordPolicyMapping::getUserGroupId).toList();
-        List<String> afterUserGroupIds = CommonUtil.stream(afterMappings).map(PasswordPolicyMapping::getUserGroupId).toList();
-        List<String> addUserGroupIds = afterUserGroupIds.stream().filter(x ->!beforeUserGroupIds.contains(x)).toList();
-        List<String> removeUserGroupIds = beforeUserGroupIds.stream().filter(x ->!afterUserGroupIds.contains(x)).toList();
+        List<String> beforeUserGroupIds = CommonUtil.stream(beforeMappings).map(PasswordPolicyMapping::getUserGroupId)
+                .toList();
+        List<String> afterUserGroupIds = CommonUtil.stream(afterMappings).map(PasswordPolicyMapping::getUserGroupId)
+                .toList();
+        List<String> addUserGroupIds = afterUserGroupIds.stream().filter(x -> !beforeUserGroupIds.contains(x)).toList();
+        List<String> removeUserGroupIds = beforeUserGroupIds.stream().filter(x -> !afterUserGroupIds.contains(x))
+                .toList();
 
         StringBuilder changes = new StringBuilder();
         if (CollectionUtils.isNotEmpty(addUserIds)) {
-            changes.append("新增用户：").append(StringUtils.join(linkGenerator.toLinks(addUserIds, ResourceType.USER), "，")).append("；");
+            changes.append("新增用户：").append(StringUtils.join(linkGenerator.toLinks(addUserIds, ResourceType.USER), "，"))
+                    .append("；");
         }
 
         if (CollectionUtils.isNotEmpty(removeUserIds)) {
-            changes.append("删除用户：").append(StringUtils.join(linkGenerator.toLinks(removeUserIds, ResourceType.USER), "，")).append("；");
+            changes.append("删除用户：")
+                    .append(StringUtils.join(linkGenerator.toLinks(removeUserIds, ResourceType.USER), "，")).append("；");
         }
 
         if (CollectionUtils.isNotEmpty(addUserGroupIds)) {
-            changes.append("新增用户组：").append(StringUtils.join(linkGenerator.toLinks(addUserGroupIds, ResourceType.USER_GROUP), "，")).append("；");
+            changes.append("新增用户组：")
+                    .append(StringUtils.join(linkGenerator.toLinks(addUserGroupIds, ResourceType.USER_GROUP), "，"))
+                    .append("；");
         }
 
         if (CollectionUtils.isNotEmpty(removeUserGroupIds)) {
-            changes.append("删除用户组：").append(StringUtils.join(linkGenerator.toLinks(removeUserGroupIds, ResourceType.USER_GROUP), "，")).append("；");
+            changes.append("删除用户组：")
+                    .append(StringUtils.join(linkGenerator.toLinks(removeUserGroupIds, ResourceType.USER_GROUP), "，"))
+                    .append("；");
         }
 
         String result = changes.toString();
         return StringUtils.isEmpty(result) ? "无" : result;
     }
 
-    private String getPasswordPriorityAuditText(List<PasswordPolicy> beforePasswordPolicyList, List<UpdatePasswordPolicyPriorityRequestDto> afterPasswordPolicyPriorityList) {
+    private String getPasswordPriorityAuditText(List<PasswordPolicy> beforePasswordPolicyList,
+            List<UpdatePasswordPolicyPriorityRequestDto> afterPasswordPolicyPriorityList) {
         return "原执行顺序：" +
                 CommonUtil.stream(beforePasswordPolicyList)
                         .sorted(Comparator.comparing(PasswordPolicy::getPolicyId))
-                        .map(policy -> linkGenerator.toLink(policy.getPolicyId(), ResourceType.PWD_POLICY) + "：" + policy.getPriority())
-                        .collect(Collectors.joining("，")) +
+                        .map(policy -> linkGenerator.toLink(policy.getPolicyId(), ResourceType.PWD_POLICY) + "："
+                                + policy.getPriority())
+                        .collect(Collectors.joining("，"))
+                +
                 "；新执行顺序：" +
                 CommonUtil.stream(afterPasswordPolicyPriorityList)
                         .sorted(Comparator.comparing(UpdatePasswordPolicyPriorityRequestDto::getId))
-                        .map(policy -> linkGenerator.toLink(policy.getId(), ResourceType.PWD_POLICY) + "：" + policy.getPriority())
+                        .map(policy -> linkGenerator.toLink(policy.getId(), ResourceType.PWD_POLICY) + "："
+                                + policy.getPriority())
                         .collect(Collectors.joining("，"));
     }
 }

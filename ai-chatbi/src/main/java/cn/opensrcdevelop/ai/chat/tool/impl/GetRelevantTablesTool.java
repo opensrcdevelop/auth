@@ -4,15 +4,14 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(GetRelevantTablesTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -27,10 +26,7 @@ public class GetRelevantTablesTool implements MethodTool {
         return TOOL_NAME;
     }
 
-    @Tool(
-            name = TOOL_NAME,
-            description = "Get the relevant tables for the question"
-    )
+    @Tool(name = TOOL_NAME, description = "Get the relevant tables for the question")
     @SuppressWarnings("unchecked")
     public Response execute(@ToolParam(description = "The request to get relevant tables") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -46,7 +42,8 @@ public class GetRelevantTablesTool implements MethodTool {
                 chatContext.getChatClient(),
                 query,
                 chatContext.getDataSourceId(),
-                request.instruction);
+                request.instruction,
+                chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             List<Map<String, Object>> tables = (List<Map<String, Object>>) result.get("tables");

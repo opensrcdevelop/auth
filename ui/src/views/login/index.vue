@@ -10,7 +10,7 @@ export default loginTs;
 
 <template>
   <div class="login-container">
-    <div class="form-container" v-if="!toMfa && !toFogotPwd">
+    <div class="form-container" v-if="!toMfa && !toForgotPwd">
       <div v-if="tenantName" class="tenant-name">
         <icon-font
           type="icon-tenant"
@@ -120,10 +120,27 @@ export default loginTs;
             <span style="color: var(--color-text-2)"> 记住我 </span>
           </a-checkbox>
         </a-tab-pane>
+        <a-tab-pane key="3" title="Passkey 登录" v-if="isWebAuthnSupported">
+          <a-button
+            type="primary"
+            class="login-btn"
+            style="margin-bottom: 20px; height: 36px"
+            :loading="passkeyLoginLoading"
+            @click="handlePasskeyLoginSubmit"
+          >
+            <template #icon>
+              <icon-safe />
+            </template>
+            使用 Passkey 登录
+          </a-button>
+          <a-checkbox v-model="rememberMe" style="height: 24px">
+            <span style="color: var(--color-text-2)"> 记住我 </span>
+          </a-checkbox>
+        </a-tab-pane>
       </a-tabs>
       <FederationLogin />
     </div>
-    <div class="form-container" v-if="toMfa && !toBind && !toFogotPwd">
+    <div class="form-container" v-if="toMfa && toMfaValidate && !toForgotPwd">
       <a-spin style="width: 100%; height: 100%" :loading="mfaValidLoading">
         <a-button type="text" size="mini" @click="backToLogin">
           返回登录
@@ -131,19 +148,52 @@ export default loginTs;
             <icon-left />
           </template>
         </a-button>
-        <div class="title">MFA认证</div>
-        <div class="mfa-info">请输入 6 位动态安全码，进行多因素认证</div>
-        <div class="mfa-code">
-          <a-verification-code
-            size="large"
-            v-model="totpValidForm.code"
-            style="width: 300px"
-            @finish="handleTotpValidSubmit"
-          />
-        </div>
+        <div class="title">请选择一种方式进行 MFA 验证</div>
+        <a-tabs type="rounded" size="medium" @change="handleMfaMethodChange">
+          <a-tab-pane
+            style="height: 280px"
+            key="passkey"
+            title="Passkey"
+            v-if="mfaMethods.includes('WEBAUTHN')"
+          >
+            <div class="mfa-info">请点击下方按钮，进行验证</div>
+            <a-button
+              type="primary"
+              style="width: 100%; margin-top: 20px"
+              size="large"
+              :loading="webAuthnMfaLoading"
+              @click="handleWebAuthnMfa"
+            >
+              <template #icon>
+                <icon-safe />
+              </template>
+              使用 Passkey 验证
+            </a-button>
+          </a-tab-pane>
+          <a-tab-pane
+            style="height: 180px"
+            key="totp"
+            title="TOTP"
+            v-if="mfaMethods.includes('TOTP')"
+          >
+            <div class="mfa-info">
+              输入身份验证应用生成的 6 位验证码，进行验证
+            </div>
+            <a-verification-code
+              ref="totpVerificationCodeRef"
+              size="large"
+              v-model="totpValidForm.code"
+              style="width: 100%; margin-top: 20px; padding: 4px"
+              :separator="
+                (index) => ((index + 1) % 3 || index > 3 ? null : '-')
+              "
+              @finish="handleTotpValidSubmit"
+            />
+          </a-tab-pane>
+        </a-tabs>
       </a-spin>
     </div>
-    <div class="form-container" v-if="toMfa && toBind && !toFogotPwd">
+    <div class="form-container" v-if="toMfa && !toForgotPwd && !toMfaValidate">
       <div>
         <a-button type="text" size="mini" @click="backToLogin">
           返回登录
@@ -151,46 +201,56 @@ export default loginTs;
             <icon-left />
           </template>
         </a-button>
-        <div class="title">MFA认证</div>
-        <div class="mfa-info">请扫描二维码，添加安全码</div>
-        <div class="mfa-code">
-          <div>
-            <img :src="qrCodeData" />
-          </div>
-          <a-button type="text" style="width: 180px" @click="toBind = false"
-            >我已添加</a-button
+        <div class="title">请选择第二种验证方式开始 MFA 验证</div>
+        <a-tabs type="rounded" size="medium">
+          <a-tab-pane
+            style="height: 280px"
+            key="passkey"
+            title="Passkey"
+            v-if="toAddPasskey"
           >
-        </div>
-      </div>
-      <a-divider orientation="center">
-        <span class="mfa-info">下载验证器</span>
-      </a-divider>
-      <div class="app-download-container">
-        <a-popover position="lb">
-          <a-button type="text" size="mini"
-            >Microsoft Authenticator - iOS</a-button
+            <div class="mfa-info">请点击下方按钮，添加 Passkey 凭证</div>
+            <div class="mfa-passkey">
+              <a-button
+                class="mfa-btn"
+                type="primary"
+                size="large"
+                :loading="webAuthnMfaLoading"
+                @click="handleAddPasskey"
+              >
+                <template #icon>
+                  <icon-plus />
+                </template>
+                添加 Passkey 凭证
+              </a-button>
+            </div>
+          </a-tab-pane>
+          <a-tab-pane
+            style="height: 280px"
+            key="totp"
+            title="TOTP"
+            v-if="toBind"
           >
-          <template #content>
-            <a-qrcode
-              value="https://apps.apple.com/cn/app/id983156458"
-              :bordered="false"
-            ></a-qrcode>
-          </template>
-        </a-popover>
-        <a-popover position="lb">
-          <a-button type="text" size="mini"
-            >Microsoft Authenticator - Android</a-button
-          >
-          <template #content>
-            <a-qrcode
-              value="https://www.lenovomm.com/appdetail/com.azure.authenticator/20197724"
-              :bordered="false"
-            ></a-qrcode>
-          </template>
-        </a-popover>
+            <div class="mfa-info">
+              请身份验证应用程序（Microsoft Authenticator
+              等）扫描以下二维码，添加 TOTP 验证方式
+            </div>
+            <div class="mfa-code">
+              <div>
+                <img :src="qrCodeData" />
+              </div>
+              <a-button
+                type="primary"
+                class="mfa-btn"
+                @click="handleToValidateTotp"
+                >下一步</a-button
+              >
+            </div>
+          </a-tab-pane>
+        </a-tabs>
       </div>
     </div>
-    <div class="form-container" v-if="toFogotPwd">
+    <div class="form-container" v-if="toForgotPwd">
       <div class="forgot-pwd-container" v-if="toCheckForgotPwdCode">
         <div class="forgot-pwd-title">重置密码</div>
         <div class="forgot-pwd-info">

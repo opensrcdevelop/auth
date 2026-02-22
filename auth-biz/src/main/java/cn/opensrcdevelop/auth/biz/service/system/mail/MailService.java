@@ -2,7 +2,6 @@ package cn.opensrcdevelop.auth.biz.service.system.mail;
 
 import cn.opensrcdevelop.auth.biz.entity.system.password.PasswordPolicy;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
-
 import java.time.LocalDateTime;
 
 public interface MailService {
@@ -15,5 +14,6 @@ public interface MailService {
 
     void sendBindEmailCode(String to);
 
-    void sendRemindUpdatePwd(User user, PasswordPolicy passwordPolicy, LocalDateTime expireTime, LocalDateTime executeTime);
+    void sendRemindUpdatePwd(User user, PasswordPolicy passwordPolicy, LocalDateTime expireTime,
+            LocalDateTime executeTime);
 }

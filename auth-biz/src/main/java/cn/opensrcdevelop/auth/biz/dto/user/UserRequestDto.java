@@ -6,26 +6,25 @@ import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "创建用户请求")
 @Data
 public class UserRequestDto {
 
     @Schema(description = "用户ID")
-    @NotBlank(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.UPDATE.class})
     private String userId;
 
     @Schema(description = "用户名")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String username;
 
     @Schema(description = "密码")
-    @NotBlank(groups = { ValidationGroups.Operation.INSERT.class })
-    @NotBlankStr(groups = { ValidationGroups.Operation.UPDATE.class })
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String password;
 
     @Schema(description = "手机号码")

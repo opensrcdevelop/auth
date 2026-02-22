@@ -17,6 +17,11 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import jakarta.servlet.http.HttpSession;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -38,18 +43,13 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
 @Component
 @RequiredArgsConstructor
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private static final String INVALID_USER_INFO_RESPONSE_ERROR_CODE = "invalid_user_info_response";
-    private static final MediaType DEFAULT_CONTENT_TYPE = MediaType.valueOf(MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8");
+    private static final MediaType DEFAULT_CONTENT_TYPE = MediaType
+            .valueOf(MediaType.APPLICATION_FORM_URLENCODED_VALUE + ";charset=UTF-8");
 
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
     private final ThirdAccountService thirdAccountService;
@@ -60,18 +60,24 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         List<Map<String, Object>> attributesList = new ArrayList<>();
         ClientRegistration clientRegistration = userRequest.getClientRegistration();
-        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService.getByCode(clientRegistration.getRegistrationId());
+        IdentitySourceRegistration identitySourceRegistration = identitySourceRegistrationService
+                .getByCode(clientRegistration.getRegistrationId());
         IdentitySourceProvider identitySourceProvider = identitySourceRegistration.getIdentitySourceProvider();
 
-        String[] userInfoUris = StringUtils.delimitedListToStringArray(identitySourceProvider.getUserInfoUris(), CommonConstants.COMMA);
+        String[] userInfoUris = StringUtils.delimitedListToStringArray(identitySourceProvider.getUserInfoUris(),
+                CommonConstants.COMMA);
         Map<String, RequestConfigRequestDto> userInfoReqCfgMap = new HashMap<>();
         // 自定义用户信息请求
-        if (Boolean.TRUE.equals(identitySourceProvider.getEnableCustomUserInfoReq()) && StringUtils.hasText(identitySourceProvider.getUserInfoReqCfg())) {
+        if (Boolean.TRUE.equals(identitySourceProvider.getEnableCustomUserInfoReq())
+                && StringUtils.hasText(identitySourceProvider.getUserInfoReqCfg())) {
             // 填充请求配置
-            String requestCfgStr = fillRequestCfg(identitySourceProvider.getUserInfoReqCfg(), getRequestCfgValueContext(userRequest, identitySourceRegistration));
+            String requestCfgStr = fillRequestCfg(identitySourceProvider.getUserInfoReqCfg(),
+                    getRequestCfgValueContext(userRequest, identitySourceRegistration));
 
             // 反序列化
-            userInfoReqCfgMap = CommonUtil.deserializeObject(requestCfgStr, new TypeReference<Map<String, RequestConfigRequestDto>>() {});
+            userInfoReqCfgMap = CommonUtil.deserializeObject(requestCfgStr,
+                    new TypeReference<Map<String, RequestConfigRequestDto>>() {
+                    });
         }
 
         // 获取用户信息
@@ -111,7 +117,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     private String fillRequestCfg(String requestCfg, Map<String, Object> requestCfgValueContext) {
         try (StringReader reader = new StringReader(requestCfg);
-             StringWriter writer = new StringWriter()) {
+                StringWriter writer = new StringWriter()) {
             Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
             cfg.setTemplateExceptionHandler(TemplateExceptionHandler.IGNORE_HANDLER);
             Template processor = new Template(CommonUtil.getUUIDV7String(), reader, cfg, StandardCharsets.UTF_8.name());
@@ -122,23 +128,28 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         }
     }
 
-    private Map<String, Object> getRequestCfgValueContext(OAuth2UserRequest userRequest, IdentitySourceRegistration identitySourceRegistration) {
+    private Map<String, Object> getRequestCfgValueContext(OAuth2UserRequest userRequest,
+            IdentitySourceRegistration identitySourceRegistration) {
         Map<String, Object> requestCfgValueContext = new HashMap<>();
         requestCfgValueContext.put(OAuth2ParameterNames.ACCESS_TOKEN, userRequest.getAccessToken().getTokenValue());
         requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_ID, userRequest.getClientRegistration().getClientId());
-        requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_SECRET, userRequest.getClientRegistration().getClientSecret());
+        requestCfgValueContext.put(OAuth2ParameterNames.CLIENT_SECRET,
+                userRequest.getClientRegistration().getClientSecret());
 
         if (MapUtils.isNotEmpty(userRequest.getAdditionalParameters())) {
             requestCfgValueContext.putAll(userRequest.getAdditionalParameters());
         }
 
         if (StringUtils.hasText(identitySourceRegistration.getAdditionalParams())) {
-            requestCfgValueContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(), new TypeReference<Map<String, Object>>() {}));
+            requestCfgValueContext.putAll(CommonUtil.deserializeObject(identitySourceRegistration.getAdditionalParams(),
+                    new TypeReference<Map<String, Object>>() {
+                    }));
         }
         return requestCfgValueContext;
     }
 
-    private RequestEntity<?> getRequestEntity(String userInfoUri, OAuth2AccessToken accessToken, ClientRegistration clientRegistration) {
+    private RequestEntity<?> getRequestEntity(String userInfoUri, OAuth2AccessToken accessToken,
+            ClientRegistration clientRegistration) {
         HttpMethod httpMethod = getHttpMethod(clientRegistration);
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -153,10 +164,11 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             MultiValueMap<String, String> formParameters = new LinkedMultiValueMap<>();
             formParameters.add(OAuth2ParameterNames.ACCESS_TOKEN, accessToken.getTokenValue());
             request = new RequestEntity<>(formParameters, headers, httpMethod, uri);
-        } else if (AuthenticationMethod.QUERY.equals(clientRegistration.getProviderDetails().getUserInfoEndpoint().getAuthenticationMethod())) {
-            return new RequestEntity<>(headers, httpMethod, UriComponentsBuilder.fromUri(uri).queryParam(OAuth2ParameterNames.ACCESS_TOKEN, accessToken.getTokenValue()).build().toUri());
-        }
-        else {
+        } else if (AuthenticationMethod.QUERY
+                .equals(clientRegistration.getProviderDetails().getUserInfoEndpoint().getAuthenticationMethod())) {
+            return new RequestEntity<>(headers, httpMethod, UriComponentsBuilder.fromUri(uri)
+                    .queryParam(OAuth2ParameterNames.ACCESS_TOKEN, accessToken.getTokenValue()).build().toUri());
+        } else {
             headers.setBearerAuth(accessToken.getTokenValue());
             request = new RequestEntity<>(headers, httpMethod, uri);
         }
@@ -176,9 +188,11 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         }
 
         if (HttpMethod.GET.matches(method)) {
-            return new RequestEntity<>(convert2MultiValueMap(requestCfg.getHeaders()), HttpMethod.GET, uriBuilder.build().toUri());
+            return new RequestEntity<>(convert2MultiValueMap(requestCfg.getHeaders()), HttpMethod.GET,
+                    uriBuilder.build().toUri());
         }
-        return new RequestEntity<>(requestCfg.getBody(), convert2MultiValueMap(requestCfg.getHeaders()), HttpMethod.valueOf(method),  uriBuilder.build().toUri());
+        return new RequestEntity<>(requestCfg.getBody(), convert2MultiValueMap(requestCfg.getHeaders()),
+                HttpMethod.valueOf(method), uriBuilder.build().toUri());
     }
 
     private HttpMethod getHttpMethod(ClientRegistration clientRegistration) {
@@ -192,9 +206,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     private MultiValueMap<String, String> convert2MultiValueMap(Map<String, Object> requestHeaders) {
         MultiValueMap<String, String> multiValueHeaders = new LinkedMultiValueMap<>();
         if (MapUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach((key, value) ->
-                    multiValueHeaders.add(key, value != null ? value.toString() : null)
-            );
+            requestHeaders.forEach((key, value) -> multiValueHeaders.add(key, value != null ? value.toString() : null));
         }
         return multiValueHeaders;
     }
@@ -203,7 +215,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     private List<Map<String, Object>> getResponse(RequestEntity<?> request) {
         try {
             List<Map<String, Object>> responseObjList = new ArrayList<>();
-            Object responseObj  = this.restOperations.exchange(request, Object.class).getBody();
+            Object responseObj = this.restOperations.exchange(request, Object.class).getBody();
             if (responseObj instanceof Map<?, ?>) {
                 responseObjList.add((Map<String, Object>) responseObj);
             }

@@ -31,21 +31,22 @@ public class RoleController {
 
     @Operation(summary = "创建角色", description = "创建角色")
     @PostMapping
-    @Authorize({ "allRolePermissions", "createRole" })
-    public void createRole(@RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) RoleRequestDto requestDto) {
+    @Authorize({"allRolePermissions", "createRole"})
+    public void createRole(
+            @RequestBody @Validated({ValidationGroups.Operation.INSERT.class}) RoleRequestDto requestDto) {
         roleService.createRole(requestDto);
     }
 
     @Operation(summary = "创建用户角色映射", description = "创建用户角色映射")
     @PostMapping("/mapping")
-    @Authorize({ "allRoleMappingPermissions", "createRoleMapping" })
+    @Authorize({"allRoleMappingPermissions", "createRoleMapping"})
     public void createUserRoleMapping(@RequestBody @Valid RoleMappingRequestDto requestDto) {
         roleService.createUserRoleMapping(requestDto);
     }
 
     @Operation(summary = "删除用户角色映射", description = "删除用户角色映射")
     @DeleteMapping("/mapping")
-    @Authorize({ "allRoleMappingPermissions", "deleteRoleMapping" })
+    @Authorize({"allRoleMappingPermissions", "deleteRoleMapping"})
     public void removeUserRoleMapping(@RequestBody @Valid RoleMappingRequestDto requestDto) {
         roleService.removeUserRoleMapping(requestDto);
     }
@@ -57,8 +58,9 @@ public class RoleController {
             @Parameter(name = "keyword", description = "角色名称或标识检索关键字", in = ParameterIn.QUERY)
     })
     @GetMapping("/list")
-    @Authorize({ "allRolePermissions", "listRole" })
-    public PageData<RoleResponseDto> listRoles(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
+    @Authorize({"allRolePermissions", "listRole"})
+    public PageData<RoleResponseDto> listRoles(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @RequestParam(required = false) String keyword) {
         return roleService.listRoles(page, size, keyword);
     }
 
@@ -70,8 +72,10 @@ public class RoleController {
             @Parameter(name = "keyword", description = "用户名 / 用户组名检索关键字", in = ParameterIn.QUERY),
     })
     @GetMapping("/{id}/principals")
-    @Authorize({ "allRolePermissions", "getRolePrincipals" })
-    public PageData<RoleResponseDto> getRolePrincipals(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id, @RequestParam(required = false) String keyword) {
+    @Authorize({"allRolePermissions", "getRolePrincipals"})
+    public PageData<RoleResponseDto> getRolePrincipals(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+            @RequestParam(required = false) String keyword) {
         return roleService.getRolePrincipals(page, size, id, keyword);
     }
 
@@ -80,15 +84,16 @@ public class RoleController {
             @Parameter(name = "id", description = "角色ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/{id}")
-    @Authorize({ "allRolePermissions", "getRoleDetail" })
+    @Authorize({"allRolePermissions", "getRoleDetail"})
     public RoleResponseDto detail(@PathVariable @NotBlank String id) {
         return roleService.detail(id);
     }
 
     @Operation(summary = "更新角色", description = "更新角色")
     @PutMapping
-    @Authorize({ "allRolePermissions", "updateRole" })
-    public void updateRole(@RequestBody @Validated({ ValidationGroups.Operation.UPDATE.class }) RoleRequestDto requestDto) {
+    @Authorize({"allRolePermissions", "updateRole"})
+    public void updateRole(
+            @RequestBody @Validated({ValidationGroups.Operation.UPDATE.class}) RoleRequestDto requestDto) {
         roleService.updateRole(requestDto);
     }
 
@@ -97,7 +102,7 @@ public class RoleController {
             @Parameter(name = "id", description = "角色ID", in = ParameterIn.PATH, required = true)
     })
     @DeleteMapping("/{id}")
-    @Authorize({ "allRolePermissions", "deleteRole" })
+    @Authorize({"allRolePermissions", "deleteRole"})
     public void removeRole(@PathVariable @NotBlank String id) {
         roleService.removeRole(id);
     }
@@ -113,12 +118,14 @@ public class RoleController {
             @Parameter(name = "permissionCodeSearchKeyword", description = "权限标识检索关键字", in = ParameterIn.QUERY),
     })
     @GetMapping("/{id}/permissions")
-    @Authorize({ "allRolePermissions", "getRolePermissions" })
-    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
-                                                          @RequestParam(required = false) String resourceGroupNameSearchKeyword,
-                                                          @RequestParam(required = false) String resourceNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionNameSearchKeyword,
-                                                          @RequestParam(required = false) String permissionCodeSearchKeyword) {
-        return roleService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword, permissionNameSearchKeyword, permissionCodeSearchKeyword);
+    @Authorize({"allRolePermissions", "getRolePermissions"})
+    public PageData<PermissionResponseDto> getPermissions(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size, @PathVariable @NotBlank String id,
+            @RequestParam(required = false) String resourceGroupNameSearchKeyword,
+            @RequestParam(required = false) String resourceNameSearchKeyword,
+            @RequestParam(required = false) String permissionNameSearchKeyword,
+            @RequestParam(required = false) String permissionCodeSearchKeyword) {
+        return roleService.getPermissions(page, size, id, resourceGroupNameSearchKeyword, resourceNameSearchKeyword,
+                permissionNameSearchKeyword, permissionCodeSearchKeyword);
     }
 }

@@ -14,7 +14,8 @@ public class DictDataRepositoryImpl implements DictDatRepository {
     /**
      * 获取下一个显示顺序
      *
-     * @param dictId 字典ID
+     * @param dictId
+     *            字典ID
      * @return 显示顺序
      */
     @Override

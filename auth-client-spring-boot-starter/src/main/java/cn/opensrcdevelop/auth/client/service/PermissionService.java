@@ -8,6 +8,11 @@ import cn.opensrcdevelop.auth.client.support.OAuth2ContextHolder;
 import cn.opensrcdevelop.auth.client.support.PermissionVerifyRequestCustomizer;
 import cn.opensrcdevelop.auth.client.util.HttpUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.*;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInvocation;
@@ -23,11 +28,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.*;
-import java.util.stream.IntStream;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 客户端鉴权服务
@@ -48,7 +49,8 @@ public class PermissionService implements ApplicationContextAware {
     /**
      * 权限校验
      *
-     * @param rootObject SpringEL 表达式 root 对象
+     * @param rootObject
+     *            SpringEL 表达式 root 对象
      * @return 校验结果
      */
     @SuppressWarnings("all")
@@ -96,10 +98,12 @@ public class PermissionService implements ApplicationContextAware {
             return Collections.emptyList();
         }
 
-        HttpServletRequest originalRequest = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
+        HttpServletRequest originalRequest = ((ServletRequestAttributes) Objects
+                .requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
 
         // 1. 调用 API
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         if (Objects.isNull(requestAttributes)) {
             return Collections.emptyList();
         }
@@ -118,18 +122,19 @@ public class PermissionService implements ApplicationContextAware {
         var apiResponse = HttpUtil.getRestClient()
                 .post()
                 .uri(baseUrl + API_VERIFY_PERMISSIONS)
-                .header(HEADER_AUTHORIZATION, HEADER_BEARER + OAuth2ContextHolder.getContext().getAccessToken().getTokenValue())
+                .header(HEADER_AUTHORIZATION,
+                        HEADER_BEARER + OAuth2ContextHolder.getContext().getAccessToken().getTokenValue())
                 .header("X-Forwarded-For", originalRequest.getRemoteAddr())
                 .header("User-Agent", originalRequest.getHeader("User-Agent"))
                 .body(Map.of(
                         ApiConstants.PERMISSIONS, permissions,
                         ApiConstants.CONTEXT, Map.of(
-                                ApiConstants.REQ_PARAMS, methodParams
-                        )
-                ))
-                .httpRequest(httpRequest -> permissionVerifyRequestCustomizers.forEach(customizer -> customizer.customize(httpRequest)))
+                                ApiConstants.REQ_PARAMS, methodParams)))
+                .httpRequest(httpRequest -> permissionVerifyRequestCustomizers
+                        .forEach(customizer -> customizer.customize(httpRequest)))
                 .retrieve()
-                .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
 
         if (MapUtils.isEmpty(apiResponse)) {
             return Collections.emptyList();
@@ -148,7 +153,8 @@ public class PermissionService implements ApplicationContextAware {
     /**
      * 获取方法调用参数
      *
-     * @param mi 方法调用
+     * @param mi
+     *            方法调用
      * @return 方法调用参数
      */
     private Map<String, Object> getMethodParams(MethodInvocation mi) {
@@ -158,15 +164,24 @@ public class PermissionService implements ApplicationContextAware {
         String[] paramNames = parameterNameDiscoverer.getParameterNames(method);
 
         Map<String, Object> methodParams = LinkedHashMap.newLinkedHashMap(args.length);
-        if (Objects.nonNull(paramNames) && args.length == paramNames.length ) {
-            IntStream.range(0, args.length).forEach(i -> methodParams.put(paramNames[i], args[i]));
+        if (Objects.nonNull(paramNames) && args.length == paramNames.length) {
+            IntStream.range(0, args.length).forEach(i -> {
+                Object arg = args[i];
+                // 过滤掉 Servlet 相关的对象，避免序列化问题
+                if (!(arg instanceof HttpServletRequest)
+                        && !(arg instanceof HttpServletResponse)
+                        && !(arg instanceof MultipartFile)) {
+                    methodParams.put(paramNames[i], arg);
+                }
+            });
         }
         return methodParams;
     }
 
     @Override
     public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
-        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext
+                .getAutowireCapableBeanFactory();
         var beans = beanFactory.getBeansOfType(PermissionVerifyRequestCustomizer.class);
         if (MapUtils.isNotEmpty(beans)) {
             permissionVerifyRequestCustomizers = beans.values().stream().toList();

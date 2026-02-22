@@ -6,7 +6,9 @@ import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
+import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttr;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
+import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
@@ -14,7 +16,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.jackson2.CoreJackson2Module;
@@ -29,19 +38,13 @@ import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2A
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-
 /**
  * 认证工具
  */
 public class AuthUtil {
 
-    private AuthUtil() {}
+    private AuthUtil() {
+    }
 
     public static final ObjectMapper AUTH_OBJECT_MAPPER = new ObjectMapper();
 
@@ -110,9 +113,11 @@ public class AuthUtil {
     /**
      * 获取当前 Jwt claim
      *
-     * @param claim claim
+     * @param claim
+     *            claim
      * @return 值
-     * @param <T> T
+     * @param <T>
+     *            T
      */
     public static <T> T getCurrentJwtClaim(String claim) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -133,10 +138,12 @@ public class AuthUtil {
     /**
      * 从认证信息中获取客户端认证 token
      *
-     * @param authentication 认证信息
+     * @param authentication
+     *            认证信息
      * @return 客户端认证 token
      */
-    public static OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(Authentication authentication) {
+    public static OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(
+            Authentication authentication) {
         OAuth2ClientAuthenticationToken clientPrincipal = null;
         if (OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication.getPrincipal().getClass())) {
             clientPrincipal = (OAuth2ClientAuthenticationToken) authentication.getPrincipal();
@@ -151,14 +158,17 @@ public class AuthUtil {
     /**
      * 获取已授权的 scope
      *
-     * @param registeredClient 客户端
-     * @param requestedScopes 请求的 scope
+     * @param registeredClient
+     *            客户端
+     * @param requestedScopes
+     *            请求的 scope
      * @return 已授权的 scope
      */
     public static Set<String> getAuthorizedScopes(RegisteredClient registeredClient, Set<String> requestedScopes) {
         Set<String> authorizedScopes = registeredClient.getScopes();
         if (CollectionUtils.isNotEmpty(authorizedScopes)) {
-            Set<String> unauthorizedScopes = CommonUtil.stream(requestedScopes).filter(s -> !registeredClient.getScopes().contains(s)).collect(Collectors.toSet());
+            Set<String> unauthorizedScopes = CommonUtil.stream(requestedScopes)
+                    .filter(s -> !registeredClient.getScopes().contains(s)).collect(Collectors.toSet());
             if (CollectionUtils.isNotEmpty(unauthorizedScopes)) {
                 throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_SCOPE);
             }
@@ -175,7 +185,8 @@ public class AuthUtil {
     /**
      * Map 转 Json 字符串
      *
-     * @param data Map
+     * @param data
+     *            Map
      * @return Json 字符串
      */
     public static String writeMap(Map<String, Object> data) {
@@ -189,7 +200,8 @@ public class AuthUtil {
     /**
      * Json 字符串转 Map
      *
-     * @param data Json 字符串
+     * @param data
+     *            Json 字符串
      * @return Map
      */
     public static Map<String, Object> parseMap(String data) {
@@ -204,7 +216,8 @@ public class AuthUtil {
     /**
      * 将 User 转换为 Map（含扩展属性）
      *
-     * @param user 用户
+     * @param user
+     *            用户
      * @return User Map
      */
     public static Map<String, Object> convertUserMap(User user) {
@@ -214,16 +227,19 @@ public class AuthUtil {
     /**
      * 将 User 转换为 Map（含扩展属性）
      *
-     * @param user 用户
-     * @param withDictDataId 字典类型返回字典数据ID
-     * @param withTimestamp 日期 / 日期时间类型返回时间戳
+     * @param user
+     *            用户
+     * @param withDictDataId
+     *            字典类型返回字典数据ID
+     * @param withTimestamp
+     *            日期 / 日期时间类型返回时间戳
      * @return User Map
      */
     public static Map<String, Object> convertUserMap(User user, boolean withDictDataId, boolean withTimestamp) {
         if (user == null) {
             return Collections.emptyMap();
         }
-        Map<String, Object> userMap = new HashMap<>();
+        Map<String, Object> userMap = new LinkedHashMap<>();
         // 普通字段属性
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUserId), user.getUserId());
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getUsername), user.getUsername());
@@ -232,38 +248,36 @@ public class AuthUtil {
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getEnableMfa), user.getEnableMfa());
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getLocked), user.getLocked());
         userMap.put(CommonUtil.extractFieldNameFromGetter(User::getConsoleAccess), user.getConsoleAccess());
-        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getCreateTime), user.getCreateTime().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
+        userMap.put(CommonUtil.extractFieldNameFromGetter(User::getCreateTime), user.getCreateTime()
+                .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)));
 
         // 角色信息
-        userMap.put(CommonConstants.ROLES, CommonUtil.stream(user.getRoles()).map(Role::getRoleCode).collect(Collectors.toCollection(ArrayList::new)));
+        userMap.put(CommonConstants.ROLES, CommonUtil.stream(user.getRoles()).map(Role::getRoleCode)
+                .collect(Collectors.toCollection(ArrayList::new)));
 
         // 扩展字段属性
-        CommonUtil.stream(user.getUserAttrs()).forEach(userAttr ->
-                userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr.getAttrValue(), UserAttrDataTypeEnum.valueOf(userAttr.getAttrDataType()), withDictDataId, withTimestamp)));
+        CommonUtil.stream(user.getUserAttrs())
+                .forEach(userAttr -> userMap.put(userAttr.getAttrKey(), convertUserAttrData(userAttr,
+                        UserAttrDataTypeEnum.valueOf(userAttr.getAttrDataType()), withDictDataId, withTimestamp)));
         return userMap;
     }
 
     /**
      * 转换用户扩展属性值
      *
-     * @param value 用户扩展属性值
-     * @param dataType 数据类型
+     * @param userAttr
+     *            用户扩展属性
+     * @param dataType
+     *            数据类型
+     * @param withDictDataId
+     *            字典类型返回字典数据ID
+     * @param withTimestamp
+     *            日期 / 日期时间类型返回时间戳
      * @return 用户扩展属性值
      */
-    public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType) {
-        return convertUserAttrData(value, dataType, false, false);
-    }
-
-    /**
-     * 转换用户扩展属性值
-     *
-     * @param value 用户扩展属性值
-     * @param dataType 数据类型
-     * @param withDictDataId 字典类型返回字典数据ID
-     * @param withTimestamp 日期 / 日期时间类型返回时间戳
-     * @return 用户扩展属性值
-     */
-    public static Object convertUserAttrData(String value, UserAttrDataTypeEnum dataType, boolean withDictDataId, boolean withTimestamp) {
+    public static Object convertUserAttrData(UserAttr userAttr, UserAttrDataTypeEnum dataType, boolean withDictDataId,
+            boolean withTimestamp) {
+        String value = userAttr.getAttrValue();
         if (Objects.isNull(value)) {
             return null;
         }
@@ -271,9 +285,30 @@ public class AuthUtil {
         return switch (dataType) {
             case NUMBER -> new BigDecimal(value);
             case BOOLEAN -> Boolean.valueOf(value);
-            case DATETIME -> withTimestamp ? Long.parseLong(value) : CommonUtil.convertTimestamp2String(Long.parseLong(value), CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS);
-            case DATE -> withTimestamp ? Long.parseLong(value) : CommonUtil.convertTimestamp2String(Long.parseLong(value), CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDD);
-            case DICT -> withDictDataId ? SpringContextUtil.getBean(DictDataService.class).detail(value).getId() : SpringContextUtil.getBean(DictDataService.class).detail(value).getLabel();
+            case DATETIME -> withTimestamp
+                    ? Long.parseLong(value)
+                    : CommonUtil.convertTimestamp2String(Long.parseLong(value),
+                            CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS);
+            case DATE -> withTimestamp
+                    ? Long.parseLong(value)
+                    : CommonUtil.convertTimestamp2String(Long.parseLong(value),
+                            CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDD);
+            case DICT -> {
+                if (withDictDataId) {
+                    yield value;
+                } else {
+                    DictDataService dictDataService = SpringContextUtil.getBean(DictDataService.class);
+                    Optional<DictTreeFlattener.DictDisplayItem> dictDisplayItem = CommonUtil
+                            .stream(DictTreeFlattener
+                                    .flattenTreeWithId(dictDataService.getEnabledDictData(userAttr.getDictId())))
+                            .filter(x -> x.id().equals(userAttr.getAttrValue())).findFirst();
+                    if (dictDisplayItem.isPresent()) {
+                        yield dictDisplayItem.get().displayText();
+                    } else {
+                        yield value;
+                    }
+                }
+            }
             default -> value;
         };
     }
@@ -281,26 +316,34 @@ public class AuthUtil {
     /**
      * 编辑查询条件
      *
-     * @param queryWrapper query
-     * @param filter 过滤条件
-     * @param conjunction 连接符
-     * @param <T> T
+     * @param queryWrapper
+     *            query
+     * @param filter
+     *            过滤条件
+     * @param conjunction
+     *            连接符
+     * @param <T>
+     *            T
      */
     public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterDto filter, ConjunctionType conjunction) {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         UserAttrDataTypeEnum dataType = UserAttrDataTypeEnum.valueOf(filter.getDataType());
+        // IS_NULL 和 IS_NOT_NULL 不需要值，直接传 null
+        Object value = (filterType == DataFilterEnum.IS_NULL || filterType == DataFilterEnum.IS_NOT_NULL)
+                ? null
+                : filter.getValue();
         if (Boolean.TRUE.equals(filter.getExtFlg())) {
-            editExistsQuery(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
+            editExistsQuery(queryWrapper, filterType, filter.getKey(), value, dataType, conjunction);
         } else {
-            editQueryCondition(queryWrapper, filterType, filter.getKey(), filter.getValue(), dataType, conjunction);
+            editQueryCondition(queryWrapper, filterType, filter.getKey(), value, dataType, conjunction);
         }
     }
 
     private static <T> void editExistsQuery(QueryWrapper<T> queryWrapper,
-                                            DataFilterEnum filterType,
-                                            String attrKey, Object value,
-                                            UserAttrDataTypeEnum valueDataType,
-                                            ConjunctionType conjunction) {
+            DataFilterEnum filterType,
+            String attrKey, Object value,
+            UserAttrDataTypeEnum valueDataType,
+            ConjunctionType conjunction) {
         String sqlSegment = """
                 SELECT
                     1
@@ -315,17 +358,33 @@ public class AuthUtil {
                     %s
                 """;
         if (ConjunctionType.OR == conjunction) {
-            queryWrapper.or(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+            queryWrapper.or(q -> q.exists(String.format(sqlSegment,
+                    getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
         } else {
-            queryWrapper.and(q -> q.exists(String.format(sqlSegment, getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
+            queryWrapper.and(q -> q.exists(String.format(sqlSegment,
+                    getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
         }
     }
 
-    private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value, UserAttrDataTypeEnum valueDataType) {
+    private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value,
+            UserAttrDataTypeEnum valueDataType) {
+        // IS_NULL 和 IS_NOT_NULL 需要特殊处理，使用 EXISTS/NOT EXISTS 判断属性记录是否存在
+        if (filterType == DataFilterEnum.IS_NULL) {
+            return String.format(
+                    "NOT EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
+                    attrKey);
+        }
+        if (filterType == DataFilterEnum.IS_NOT_NULL) {
+            return String.format(
+                    "EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
+                    attrKey);
+        }
+
         String queryKey = "t_user_attr.attr_key";
         String valueKey;
         // 日期、日期时间、数字类型进行 sql 类型强制转换为数值类型进行条件判断
-        if (List.of(UserAttrDataTypeEnum.DATE, UserAttrDataTypeEnum.DATETIME, UserAttrDataTypeEnum.NUMBER).contains(valueDataType)) {
+        if (List.of(UserAttrDataTypeEnum.DATE, UserAttrDataTypeEnum.DATETIME, UserAttrDataTypeEnum.NUMBER)
+                .contains(valueDataType)) {
             valueKey = "CASE WHEN t_user_attr_mapping.attr_value ~ '^\\d+(\\.\\d+)?$' THEN CAST(t_user_attr_mapping.attr_value AS NUMERIC) ELSE NULL END";
         } else {
             valueKey = "t_user_attr_mapping.attr_value";
@@ -338,8 +397,12 @@ public class AuthUtil {
             case NE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ne(valueKey, value));
             case LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.like(valueKey, value));
             case NOT_LIKE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notLike(valueKey, value));
-            case IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.in(valueKey, value));
-            case NOT_IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notIn(valueKey, value));
+            case IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.in(valueKey,
+                    CommonUtil.stream(Arrays.asList(value.toString().split(CommonConstants.COMMA)))
+                            .filter(StringUtils::isNotEmpty).toList()));
+            case NOT_IN -> queryWrapper.eq(queryKey, attrKey).and(o -> o.notIn(valueKey,
+                    CommonUtil.stream(Arrays.asList(value.toString().split(CommonConstants.COMMA)))
+                            .filter(StringUtils::isNotEmpty).toList()));
             case GT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.gt(valueKey, value));
             case GE -> queryWrapper.eq(queryKey, attrKey).and(o -> o.ge(valueKey, value));
             case LT -> queryWrapper.eq(queryKey, attrKey).and(o -> o.lt(valueKey, value));
@@ -353,7 +416,7 @@ public class AuthUtil {
         sqlSegment = sqlSegment.replace(paramName1, "'" + attrKey + "'");
         if (value instanceof Number) {
             sqlSegment = sqlSegment.replace(paramName2, value.toString());
-        } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)){
+        } else if (filterType.equals(DataFilterEnum.LIKE) || filterType.equals(DataFilterEnum.NOT_LIKE)) {
             sqlSegment = sqlSegment.replace(paramName2, "'%" + value.toString() + "%'");
         } else {
             sqlSegment = sqlSegment.replace(paramName2, "'" + value.toString() + "'");
@@ -361,11 +424,12 @@ public class AuthUtil {
         return sqlSegment;
     }
 
+    @SuppressWarnings({"java:S6541", "java:S3776"})
     private static <T> void editQueryCondition(QueryWrapper<T> queryWrapper,
-                                               DataFilterEnum filterType,
-                                               String attrKey, Object value,
-                                               UserAttrDataTypeEnum valueDataType,
-                                               ConjunctionType conjunction) {
+            DataFilterEnum filterType,
+            String attrKey, Object value,
+            UserAttrDataTypeEnum valueDataType,
+            ConjunctionType conjunction) {
         String queryKey = "t_user." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
         Object queryValue = switch (valueDataType) {
             case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
@@ -406,16 +470,24 @@ public class AuthUtil {
             }
             case IN -> {
                 if (isOr) {
-                    queryWrapper.or(q -> q.in(queryKey, queryValue));
+                    queryWrapper.or(q -> q.in(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList()));
                 } else {
-                    queryWrapper.in(queryKey, queryValue);
+                    queryWrapper.in(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList());
                 }
             }
             case NOT_IN -> {
                 if (isOr) {
-                    queryWrapper.or(q -> q.notIn(queryKey, queryValue));
+                    queryWrapper.or(q -> q.notIn(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList()));
                 } else {
-                    queryWrapper.notIn(queryKey, queryValue);
+                    queryWrapper.notIn(queryKey,
+                            CommonUtil.stream(Arrays.asList(queryValue.toString().split(CommonConstants.COMMA)))
+                                    .filter(StringUtils::isNotEmpty).toList());
                 }
             }
             case GT -> {
@@ -444,6 +516,20 @@ public class AuthUtil {
                     queryWrapper.or(q -> q.le(queryKey, queryValue));
                 } else {
                     queryWrapper.le(queryKey, queryValue);
+                }
+            }
+            case IS_NULL -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.isNull(queryKey));
+                } else {
+                    queryWrapper.isNull(queryKey);
+                }
+            }
+            case IS_NOT_NULL -> {
+                if (isOr) {
+                    queryWrapper.or(q -> q.isNotNull(queryKey));
+                } else {
+                    queryWrapper.isNotNull(queryKey);
                 }
             }
         }

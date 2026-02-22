@@ -17,18 +17,19 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, ObjChangeLog> implements ObjChangeLogService {
+public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, ObjChangeLog>
+        implements
+            ObjChangeLogService {
 
     private final AuditLogService auditLogService;
     private final UserAttrService userAttrService;
@@ -36,7 +37,8 @@ public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, Obj
     /**
      * 获取对象变更日志
      *
-     * @param auditId 审计ID
+     * @param auditId
+     *            审计ID
      * @return 对象变更日志
      */
     @Override
@@ -48,7 +50,8 @@ public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, Obj
         if (Objects.isNull(auditLog)) {
             throw new BizException(MessageConstants.AUDIT_LOG_MSG_1000);
         }
-        List<ObjChangeLog> objChangeLogs = super.list(Wrappers.<ObjChangeLog>lambdaQuery().eq(ObjChangeLog::getAuditId, auditId));
+        List<ObjChangeLog> objChangeLogs = super.list(
+                Wrappers.<ObjChangeLog>lambdaQuery().eq(ObjChangeLog::getAuditId, auditId));
         if (CollectionUtils.isEmpty(objChangeLogs)) {
             throw new BizException(MessageConstants.AUDIT_LOG_MSG_1001);
         }
@@ -79,10 +82,12 @@ public class ObjChangeLogServiceImpl extends ServiceImpl<ObjChangeLogMapper, Obj
 
             if (ResourceType.USER.equals(resourceType)) {
                 Map<String, String> propertyNames = new HashMap<>();
-                CommonUtil.stream(userAttrService.list()).forEach(userAttr -> propertyNames.put(userAttr.getAttrKey(), userAttr.getAttrName()));
+                CommonUtil.stream(userAttrService.list())
+                        .forEach(userAttr -> propertyNames.put(userAttr.getAttrKey(), userAttr.getAttrName()));
                 compareObjBuilder.entityName(ResourceType.USER.getName());
                 compareObjBuilder.propertyNames(propertyNames);
-                compareObjBuilder.excludeProperty(List.of(CommonConstants.ROLES, CommonUtil.extractFieldNameFromGetter(User::getCreateTime)));
+                compareObjBuilder.excludeProperty(
+                        List.of(CommonConstants.ROLES, CommonUtil.extractFieldNameFromGetter(User::getCreateTime)));
             }
 
             return compareObjBuilder.build();

@@ -1,16 +1,15 @@
 package cn.opensrcdevelop.auth.biz.component;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -23,23 +22,28 @@ public class ScheduledTaskService {
     /**
      * 添加定时任务
      *
-     * @param taskName 任务名称
-     * @param task 任务
-     * @param executeTime 执行时间
+     * @param taskName
+     *            任务名称
+     * @param task
+     *            任务
+     * @param executeTime
+     *            执行时间
      * @return
      */
     @SuppressWarnings("all")
     public ScheduledFuture<?> addTaskAtFixedTime(String taskName, Runnable task, LocalDateTime executeTime) {
-        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task, executeTime.atZone(ZoneId.systemDefault()).toInstant());
+        ScheduledFuture<?> scheduledFuture = taskScheduler.schedule(task,
+                executeTime.atZone(ZoneId.systemDefault()).toInstant());
         scheduledTasks.put(taskName, scheduledFuture);
         log.info("成功添加任务：{}, 执行时间：{}", taskName, executeTime);
         return scheduledFuture;
     }
 
     /**
-     *  取消定时任务
+     * 取消定时任务
      *
-     * @param taskName 任务名称
+     * @param taskName
+     *            任务名称
      */
     public void cancelTask(String taskName) {
         Optional.ofNullable(scheduledTasks.get(taskName)).ifPresent(taskFuture -> {

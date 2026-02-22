@@ -2,7 +2,8 @@ package cn.opensrcdevelop.ai.constants;
 
 public class MessageConstants {
 
-    private MessageConstants() {}
+    private MessageConstants() {
+    }
 
     public static final String AI_MODEL_MSG_1000 = "ai.model.msg.1000";
     public static final String AI_MODEL_MSG_1001 = "ai.model.msg.1001";

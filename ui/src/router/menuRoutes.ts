@@ -186,6 +186,24 @@ const menuRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: "/task",
+    meta: {
+      title: "任务中心",
+      icon: "icon-tasks",
+      visible: () => true,
+    },
+    children: [
+      {
+        path: "/task/list",
+        component: () => import("@/views/task/index.vue"),
+        meta: {
+          title: "任务列表",
+          visible: () => true,
+        },
+      },
+    ],
+  },
+  {
     path: "/system_setting",
     meta: {
       title: "系统设置",

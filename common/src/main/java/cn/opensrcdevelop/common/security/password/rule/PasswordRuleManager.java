@@ -2,7 +2,6 @@ package cn.opensrcdevelop.common.security.password.rule;
 
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +12,8 @@ public class PasswordRuleManager {
     /**
      * 添加密码规则
      *
-     * @param rule 密码规则
+     * @param rule
+     *            密码规则
      */
     public void addRule(PasswordRule rule) {
         rules.add(rule);
@@ -22,7 +22,8 @@ public class PasswordRuleManager {
     /**
      * 密码规则校验
      *
-     * @param password 密码
+     * @param password
+     *            密码
      * @return 校验结果
      */
     public List<Tuple2<String, Boolean>> validate(String password) {
@@ -32,7 +33,8 @@ public class PasswordRuleManager {
     /**
      * 密码规则校验
      *
-     * @param password 密码
+     * @param password
+     *            密码
      * @return 校验结果
      */
     public Boolean validateAll(String password) {

@@ -13,18 +13,17 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -40,7 +39,8 @@ public class DataSourceManager {
     /**
      * 获取数据源
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      * @return 数据源
      */
     public synchronized DataSource getDataSource(String dataSourceId) {
@@ -53,10 +53,10 @@ public class DataSourceManager {
             throw new BizException(MessageConstants.AI_DATASOURCE_MSG_1000);
         }
 
-
         // 2. 判断是否为系统数据源
         if (Boolean.TRUE.equals(dataSourceConf.getSystemDs())) {
-            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil.getBean(DynamicRoutingDataSource.class);
+            DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextUtil
+                    .getBean(DynamicRoutingDataSource.class);
             return dynamicRoutingDataSource.getDataSource(DynamicDataSourceContextHolder.peek());
         }
 
@@ -69,7 +69,8 @@ public class DataSourceManager {
         DataSourceType dataSourceType = DataSourceType.valueOf(dataSourceConf.getDataSourceType());
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setDriverClassName(dataSourceType.getDriverClassName());
-        hikariConfig.setJdbcUrl(dataSourceType.getJdbcUrl(dataSourceConf.getHost(), dataSourceConf.getPort(), dataSourceConf.getDatabase(), dataSourceConf.getJdbcParams()));
+        hikariConfig.setJdbcUrl(dataSourceType.getJdbcUrl(dataSourceConf.getHost(), dataSourceConf.getPort(),
+                dataSourceConf.getDatabase(), dataSourceConf.getJdbcParams()));
         hikariConfig.setUsername(dataSourceConf.getUsername());
         hikariConfig.setPassword(dataSourceConf.getPassword());
         hikariConfig.setSchema(dataSourceConf.getSchema());
@@ -81,7 +82,8 @@ public class DataSourceManager {
     /**
      * 获取数据库连接
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      * @return 数据库连接
      */
     public Connection getConnection(String dataSourceId) {
@@ -97,7 +99,8 @@ public class DataSourceManager {
     /**
      * 移除数据源
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      */
     public void removeDataSource(String dataSourceId) {
         DATA_SOURCE_CACHE.remove(dataSourceId);
@@ -106,7 +109,8 @@ public class DataSourceManager {
     /**
      * 获取 JdbcTemplate
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      * @return JdbcTemplate
      */
     public JdbcTemplate getJdbcTemplate(String dataSourceId) {
@@ -117,7 +121,8 @@ public class DataSourceManager {
     /**
      * 获取数据源类型
      *
-     * @param dataSourceId 数据源ID
+     * @param dataSourceId
+     *            数据源ID
      * @return 数据源类型
      */
     public DataSourceType getDataSourceType(String dataSourceId) {

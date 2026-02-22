@@ -9,10 +9,14 @@ import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.text.MessageFormat;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.validation.BindingResult;
@@ -24,9 +28,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-
-import java.text.MessageFormat;
-import java.util.Collection;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
@@ -153,11 +154,26 @@ public class RestExceptionHandler {
     }
 
     /**
+     * JSON 反序列异常
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public R<Object> exception(HttpMessageNotReadableException e) {
+        log.debug(e.getMessage(), e);
+        return R.optFail(CodeEnum.RCD20001);
+    }
+
+    /**
      * 系统内部错误
      */
     @ExceptionHandler({Exception.class, ServerException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public R<Object> exception(Exception e) {
+    public R<Object> exception(Exception e, HttpServletResponse response) {
+        // 如果 response 已经提交或 getOutputStream 已被调用，直接返回 null
+        if (response.isCommitted()) {
+            log.error("Response already committed, skipping error response. Original error: {}", e.getMessage(), e);
+            return null;
+        }
         log.error(e.getMessage(), e);
         return R.internalFail();
     }

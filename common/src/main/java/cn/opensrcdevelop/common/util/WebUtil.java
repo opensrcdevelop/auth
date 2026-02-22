@@ -14,19 +14,6 @@ import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.lionsoul.ip2region.xdb.Searcher;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.session.SessionRepository;
-import org.springframework.session.web.http.SessionRepositoryFilter;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -39,6 +26,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.lionsoul.ip2region.xdb.Searcher;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.session.SessionRepository;
+import org.springframework.session.web.http.SessionRepositoryFilter;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Slf4j
 @SuppressWarnings("unused")
@@ -71,7 +70,8 @@ public class WebUtil {
         OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
-    private WebUtil () {}
+    private WebUtil() {
+    }
 
     public static void sendJsonResponse(Object object, HttpStatus status) {
         getResponse().ifPresent(response -> sendJsonResponse(response, object, status));
@@ -106,7 +106,8 @@ public class WebUtil {
     }
 
     public static Optional<HttpServletRequest> getRequest() {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         if (requestAttributes != null) {
             return Optional.of(requestAttributes.getRequest());
         }
@@ -114,7 +115,8 @@ public class WebUtil {
     }
 
     public static Optional<HttpServletResponse> getResponse() {
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         if (requestAttributes != null) {
             return Optional.ofNullable(requestAttributes.getResponse());
         }
@@ -138,7 +140,7 @@ public class WebUtil {
                 InetAddress inet = null;
                 try {
                     inet = InetAddress.getLocalHost();
-                    ipAddress= inet.getHostAddress();
+                    ipAddress = inet.getHostAddress();
                 } catch (UnknownHostException e) {
                     log.error(e.getMessage(), e);
                 }
@@ -156,9 +158,10 @@ public class WebUtil {
 
     @SuppressWarnings("all")
     public static String getRemoteIP() {
-        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
         if (servletRequestAttributes != null) {
-            var request =  servletRequestAttributes.getRequest();
+            var request = servletRequestAttributes.getRequest();
             return getRemoteIP(request);
         }
         return null;
@@ -167,14 +170,15 @@ public class WebUtil {
     /**
      * 获取请求参数
      *
-     * @param request 请求
+     * @param request
+     *            请求
      * @return 请求参数
      */
     public static MultiValueMap<String, String> getParameters(HttpServletRequest request) {
         Map<String, String[]> parameterMap = request.getParameterMap();
         MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>(parameterMap.size());
         parameterMap.forEach((k, v) -> {
-            for(String value : v) {
+            for (String value : v) {
                 parameters.add(k, value);
             }
         });
@@ -264,7 +268,8 @@ public class WebUtil {
     /**
      * 获取 IP 属地
      *
-     * @param ipAddress IP 地址
+     * @param ipAddress
+     *            IP 地址
      * @return IP 属地
      */
     public static String getIpRegion(String ipAddress) {
@@ -301,7 +306,8 @@ public class WebUtil {
     /**
      * 删除 session
      *
-     * @param sessionId session ID
+     * @param sessionId
+     *            session ID
      */
     public static void removeSession(String sessionId) {
         getRequest().ifPresent(request -> {
@@ -310,7 +316,8 @@ public class WebUtil {
                 if (StringUtils.equals(sessionId, session.getId())) {
                     session.invalidate();
                 } else {
-                    SessionRepository<?> sessionRepository = (SessionRepository<?>) request.getAttribute(SessionRepositoryFilter.SESSION_REPOSITORY_ATTR);
+                    SessionRepository<?> sessionRepository = (SessionRepository<?>) request
+                            .getAttribute(SessionRepositoryFilter.SESSION_REPOSITORY_ATTR);
                     if (Objects.nonNull(sessionRepository)) {
                         sessionRepository.deleteById(sessionId);
                     }
@@ -330,10 +337,13 @@ public class WebUtil {
 
     private static Capabilities getUserAgent() {
         Optional<HttpServletRequest> request = getRequest();
-        return request.map(httpServletRequest -> USER_AGENT_PARSER.parse(httpServletRequest.getHeader(REQ_HEADER_USER_AGENT))).orElse(null);
+        return request
+                .map(httpServletRequest -> USER_AGENT_PARSER.parse(httpServletRequest.getHeader(REQ_HEADER_USER_AGENT)))
+                .orElse(null);
     }
 
     private static String concatIpRegion(String[] ipRegionParts) {
-        return Stream.of(ipRegionParts).filter(ipRegionPart -> !"0".equals(ipRegionPart)).collect(Collectors.joining("-"));
+        return Stream.of(ipRegionParts).filter(ipRegionPart -> !"0".equals(ipRegionPart))
+                .collect(Collectors.joining("-"));
     }
 }

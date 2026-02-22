@@ -7,5 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthorizeConditionServiceImpl extends ServiceImpl<AuthorizeConditionMapper, AuthorizeCondition> implements AuthorizeConditionService {
+public class AuthorizeConditionServiceImpl extends ServiceImpl<AuthorizeConditionMapper, AuthorizeCondition>
+        implements
+            AuthorizeConditionService {
 }
