@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.dto.asynctask.AsyncTaskResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.*;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.SetUserAttrDisplaySeqRequestDto;
@@ -26,13 +27,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @Tag(name = "API-User", description = "接口-用户管理")
 @RestController
@@ -284,16 +286,16 @@ public class UserController {
     @Operation(summary = "导出用户数据", description = "导出用户数据，异步执行，任务完成后通过 WebSocket 通知")
     @PostMapping("/excel/export")
     @Authorize({"allUserPermissions", "exportUser"})
-    public Map<String, String> exportUsers(@RequestBody List<DataFilterDto> filters,
+    public AsyncTaskResponseDto exportUsers(@RequestBody List<DataFilterDto> filters,
             @RequestParam(defaultValue = "false") boolean all,
             @RequestParam(required = false) List<String> userIds) {
-        return Map.of("taskId", userExcelService.exportUsersAsync(filters, all, userIds));
+        return userExcelService.exportUsersAsync(filters, all, userIds);
     }
 
     @Operation(summary = "导入用户数据", description = "导入用户数据，异步执行，任务完成后通过 WebSocket 通知")
     @PostMapping("/excel/import")
     @Authorize({"allUserPermissions", "importUser"})
-    public Map<String, String> importUsers(@RequestParam("file") MultipartFile file) throws IOException {
-        return Map.of("taskId", userExcelService.importUsersAsync(file));
+    public AsyncTaskResponseDto importUsers(@RequestParam("file") MultipartFile file) throws IOException {
+        return userExcelService.importUsersAsync(file);
     }
 }

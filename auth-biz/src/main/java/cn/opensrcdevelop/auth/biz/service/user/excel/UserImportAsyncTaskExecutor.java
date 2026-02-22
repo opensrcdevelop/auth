@@ -3,18 +3,14 @@ package cn.opensrcdevelop.auth.biz.service.user.excel;
 import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
+import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.util.CommonUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 /**
  * 用户导入异步任务执行器
@@ -24,9 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
+    public static final String TASK_NAME = "用户数据导入";
+    public static final String PARAM_KEY_FILE_PATH = "filePath";
+    public static final String PARAM_KEY_FILE_NAME = "fileName";
+
     private final UserExcelService userExcelService;
     private final StorageService storageService;
-    private final ObjectMapper objectMapper;
 
     @Override
     public String getTaskType() {
@@ -39,13 +38,13 @@ public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
             context.updateProgress(10);
 
             // 解析任务参数
-            Map<String, Object> params = objectMapper.readValue(taskParams,
+            Map<String, Object> params = CommonUtil.nonJdkDeserializeObject(taskParams,
                     new TypeReference<Map<String, Object>>() {
                     });
 
             // 获取上传的文件信息
-            String filePath = (String) params.get("filePath");
-            String fileName = (String) params.get("fileName");
+            String filePath = (String) params.get(PARAM_KEY_FILE_PATH);
+            String fileName = (String) params.get(PARAM_KEY_FILE_NAME);
 
             context.updateProgress(30);
 
@@ -59,16 +58,13 @@ public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
             context.updateProgress(50);
 
-            // 转换为 MultipartFile 并执行导入
-            MultipartFile multipartFile = new ByteArrayMultipartFile(fileData, fileName);
-
             // 执行导入
-            var importResult = userExcelService.importUsers(multipartFile);
+            var importResult = userExcelService.importUsers(fileData);
 
             context.updateProgress(90);
 
             // 设置结果
-            String resultJson = objectMapper.writeValueAsString(importResult);
+            String resultJson = CommonUtil.nonJdkSerializeObject(importResult);
             context.setResult(resultJson);
 
             context.updateProgress(100);
@@ -79,60 +75,7 @@ public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
         } catch (Exception e) {
             log.error("用户导入任务执行失败: taskId={}", taskId, e);
-            throw new RuntimeException("用户导入任务执行失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 字节数组到 MultipartFile 的简单转换
-     */
-    private static class ByteArrayMultipartFile implements MultipartFile {
-        private final byte[] data;
-        private final String filename;
-
-        public ByteArrayMultipartFile(byte[] data, String filename) {
-            this.data = data;
-            this.filename = filename;
-        }
-
-        @Override
-        public String getName() {
-            return "file";
-        }
-
-        @Override
-        public String getOriginalFilename() {
-            return filename;
-        }
-
-        @Override
-        public String getContentType() {
-            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return data == null || data.length == 0;
-        }
-
-        @Override
-        public long getSize() {
-            return data.length;
-        }
-
-        @Override
-        public byte[] getBytes() {
-            return data;
-        }
-
-        @Override
-        public InputStream getInputStream() {
-            return new ByteArrayInputStream(data);
-        }
-
-        @Override
-        public void transferTo(File dest) throws IOException {
-            Files.write(dest.toPath(), data);
+            throw new ServerException("用户导入任务执行失败: " + e.getMessage(), e);
         }
     }
 }

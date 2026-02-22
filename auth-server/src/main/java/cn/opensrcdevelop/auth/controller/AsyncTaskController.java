@@ -11,14 +11,15 @@ import cn.opensrcdevelop.common.response.PageData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 /**
  * 异步任务控制器
  */
-@Tag(name = "API-AsyncTask", description = "接口-异步任务管理")
+@Tag(name = "API-AsyncTask", description = "接口-异步任务")
 @RestController
 @RestResponse
 @RequestMapping("/task")
@@ -41,7 +42,6 @@ public class AsyncTaskController {
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String taskType,
             @RequestParam(required = false) String status) {
-        // 从 SecurityContext 自动获取当前用户ID，强制过滤该用户创建的任务
         String userId = AuthUtil.getCurrentUserId();
         return asyncTaskService.listTasks(page, pageSize, taskType, status, userId);
     }

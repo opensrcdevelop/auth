@@ -1,10 +1,10 @@
-import { ref, onMounted, onUnmounted } from "vue";
-import { Client } from "@stomp/stompjs";
+import {onMounted, onUnmounted, ref} from "vue";
+import {Client} from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { Notification } from "@arco-design/web-vue";
-import { getOAuthIssuer } from "@/util/tool";
-import { taskEmitter } from "./taskEmitter";
-import { AUTH_TOKENS } from "@/util/constants";
+import {Notification} from "@arco-design/web-vue";
+import {getOAuthIssuer} from "@/util/tool";
+import {taskEmitter} from "./taskEmitter";
+import {AUTH_TOKENS} from "@/util/constants";
 
 /**
  * 任务通知消息类型
@@ -54,7 +54,6 @@ export const useTaskNotification = (onMessage?: (message: TaskNotificationMessag
         connected.value = true;
 
         // 订阅用户任务通知队列
-        // 注意：需要从 access_token (JWT) 中解析 sub 字段作为用户ID
         const authTokens = localStorage.getItem(AUTH_TOKENS);
         let userId = "anonymous";
         if (authTokens) {
@@ -62,11 +61,8 @@ export const useTaskNotification = (onMessage?: (message: TaskNotificationMessag
             const tokenData = JSON.parse(atob(authTokens));
             const accessToken = tokenData.access_token;
             if (accessToken) {
-              // JWT 格式: header.payload.signature，需要解析 payload (第二部分)
               const parts = accessToken.split(".");
-              // 处理 base64url 编码（将 - 替换为 +，_ 替换为 /）
               const payloadStr = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-              // 添加 padding
               const padding = "=".repeat((4 - payloadStr.length % 4) % 4);
               const paddedPayload = payloadStr + padding;
               const payload = JSON.parse(atob(paddedPayload));
@@ -85,11 +81,11 @@ export const useTaskNotification = (onMessage?: (message: TaskNotificationMessag
             const statusText = getStatusText(body.status);
             Notification.info({
               title: "任务状态更新",
-              content: `${body.taskName || body.taskType} ${statusText}`,
+              content: `${body.taskName || body.taskType} - ${statusText}`,
               duration: 3000,
             });
 
-            // 发射全局事件
+            // 发送全局事件
             taskEmitter.emit("task:update", body);
 
             // 回调处理

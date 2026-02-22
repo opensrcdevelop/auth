@@ -8,6 +8,7 @@ import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
+import cn.opensrcdevelop.auth.biz.dto.asynctask.AsyncTaskResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.UserAttrResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.attr.dict.DictDataResponseDto;
@@ -18,6 +19,7 @@ import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
+import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
@@ -27,6 +29,8 @@ import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrMappingService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.UserAttrService;
 import cn.opensrcdevelop.auth.biz.service.user.attr.dict.DictDataService;
 import cn.opensrcdevelop.auth.biz.service.user.excel.UserExcelService;
+import cn.opensrcdevelop.auth.biz.service.user.excel.UserExportAsyncTaskExecutor;
+import cn.opensrcdevelop.auth.biz.service.user.excel.UserImportAsyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupMappingService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.biz.util.excel.DictTreeFlattener;
@@ -43,12 +47,6 @@ import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -59,6 +57,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -128,7 +133,7 @@ public class UserExcelServiceImpl implements UserExcelService {
     @Audit(type = AuditType.SYS_OPERATION, sysOperation = SysOperationType.IMPORT, resource = ResourceType.USER, success = "{{ #excelImportResult.errors.size() == 0 ? '导入用户数据成功（ ' + #excelImportResult.createdCount + ' 条新增，' + #excelImportResult.updatedCount + ' 条更新，' + #excelImportResult.deletedCount + ' 条删除）' : '数据校验失败，无法导入用户数据（ ' + #excelImportResult.errors.size() + ' 条错误）'}}", fail = "导入用户数据失败")
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ExcelImportResultDto importUsers(MultipartFile file) {
+    public ExcelImportResultDto importUsers(byte[] fileBytes) {
         if (RedisUtil.getLock(IMPORT_USER_LOCK).isLocked()) {
             throw new BizException(MessageConstants.USER_MSG_1003);
         }
@@ -166,13 +171,6 @@ public class UserExcelServiceImpl implements UserExcelService {
             // 字段 key -> 中文标题的映射（用于错误显示）
             Map<String, String> keyToHeaderMap;
 
-            // 读取文件内容到字节数组（避免多次调用 getInputStream）
-            byte[] fileBytes;
-            try {
-                fileBytes = file.getBytes();
-            } catch (IOException e) {
-                throw new ServerException("读取上传文件失败", e);
-            }
             if (fileBytes.length == 0) {
                 ExcelImportResultDto excelImportResult = ExcelImportResultDto.builder()
                         .createdCount(0)
@@ -258,6 +256,76 @@ public class UserExcelServiceImpl implements UserExcelService {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     * 异步导出用户数据
+     *
+     * @param filters
+     *            筛选条件
+     * @param exportAll
+     *            是否导出全部
+     * @param userIds
+     *            用户ID列表
+     * @return 异步任务响应
+     */
+    @Override
+    public AsyncTaskResponseDto exportUsersAsync(List<DataFilterDto> filters, boolean exportAll, List<String> userIds) {
+        // 1. 获取当前登录用户ID
+        String userId = AuthUtil.getCurrentUserId();
+
+        // 2. 构建任务参数
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put(UserExportAsyncTaskExecutor.PARAM_KEY_FILTERS, filters);
+        taskParams.put(UserExportAsyncTaskExecutor.PARAM_KEY_EXPORT_ALL, exportAll);
+        taskParams.put(UserExportAsyncTaskExecutor.PARAM_KEY_USER_IDS, userIds);
+
+        // 3. 提交异步任务
+        String taskId = asyncTaskSchedulerService.submitTask(
+                AsyncTaskType.USER_EXPORT.getCode(),
+                UserExportAsyncTaskExecutor.TASK_NAME,
+                taskParams,
+                userId);
+
+        AsyncTaskResponseDto responseDto = new AsyncTaskResponseDto();
+        responseDto.setTaskId(taskId);
+        return responseDto;
+    }
+
+    /**
+     * 异步导入用户数据
+     *
+     * @param file
+     *            Excel 文件
+     * @return 异步任务响应
+     * @throws IOException
+     *             e
+     */
+    @Override
+    public AsyncTaskResponseDto importUsersAsync(MultipartFile file) throws IOException {
+        // 1. 获取当前登录用户ID
+        String userId = AuthUtil.getCurrentUserId();
+
+        // 2. 存储文件
+        String fileName = file.getOriginalFilename();
+        byte[] fileData = file.getBytes();
+        String filePath = storageService.store(fileData, fileName);
+
+        // 3. 建任务参数
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put(UserImportAsyncTaskExecutor.PARAM_KEY_FILE_PATH, filePath);
+        taskParams.put(UserImportAsyncTaskExecutor.PARAM_KEY_FILE_NAME, fileName);
+
+        // 4. 提交异步任务
+        String taskId = asyncTaskSchedulerService.submitTask(
+                AsyncTaskType.USER_IMPORT.getCode(),
+                UserImportAsyncTaskExecutor.TASK_NAME,
+                taskParams,
+                userId);
+
+        AsyncTaskResponseDto responseDto = new AsyncTaskResponseDto();
+        responseDto.setTaskId(taskId);
+        return responseDto;
     }
 
     /**
@@ -890,48 +958,5 @@ public class UserExcelServiceImpl implements UserExcelService {
             return phoneNumber.matches(PHONE_NUMBER_REGEX);
         }
         return false;
-    }
-
-    @Override
-    public String exportUsersAsync(List<DataFilterDto> filters, boolean exportAll, List<String> userIds) {
-        // 获取当前登录用户ID
-        String userId = AuthUtil.getCurrentUserId();
-
-        // 构建任务参数
-        Map<String, Object> taskParams = new HashMap<>();
-        taskParams.put("filters", filters);
-        taskParams.put("exportAll", exportAll);
-        taskParams.put("userIds", userIds);
-
-        // 提交异步任务
-        return asyncTaskSchedulerService.submitTask(
-                cn.opensrcdevelop.auth.biz.enums.AsyncTaskType.USER_EXPORT.getCode(),
-                "用户数据导出",
-                taskParams,
-                userId);
-    }
-
-    @Override
-    public String importUsersAsync(MultipartFile file) throws IOException {
-        // 获取当前登录用户ID
-        String userId = AuthUtil.getCurrentUserId();
-        // 先存储文件
-        String fileName = file.getOriginalFilename();
-        byte[] fileData = file.getBytes();
-
-        // 使用存储服务保存文件
-        String filePath = storageService.store(fileData, fileName);
-
-        // 构建任务参数
-        Map<String, Object> taskParams = new HashMap<>();
-        taskParams.put("filePath", filePath);
-        taskParams.put("fileName", fileName);
-
-        // 提交异步任务
-        return asyncTaskSchedulerService.submitTask(
-                cn.opensrcdevelop.auth.biz.enums.AsyncTaskType.USER_IMPORT.getCode(),
-                "用户数据导入",
-                taskParams,
-                userId);
     }
 }

@@ -1,9 +1,11 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel;
 
+import cn.opensrcdevelop.auth.biz.dto.asynctask.AsyncTaskResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
 import cn.opensrcdevelop.auth.biz.dto.user.excel.ExcelImportResultDto;
-import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface UserExcelService {
 
@@ -34,7 +36,7 @@ public interface UserExcelService {
      *            Excel 文件
      * @return 导入结果
      */
-    ExcelImportResultDto importUsers(MultipartFile file);
+    ExcelImportResultDto importUsers(byte[] fileBytes);
 
     /**
      * 异步导出用户数据
@@ -45,16 +47,16 @@ public interface UserExcelService {
      *            是否导出全部
      * @param userIds
      *            用户ID列表
-     * @return 任务ID
+     * @return 异步任务响应
      */
-    String exportUsersAsync(List<DataFilterDto> filters, boolean exportAll, List<String> userIds);
+    AsyncTaskResponseDto exportUsersAsync(List<DataFilterDto> filters, boolean exportAll, List<String> userIds);
 
     /**
      * 异步导入用户数据
      *
      * @param file
      *            Excel 文件
-     * @return 任务ID
+     * @return 异步任务响应
      */
-    String importUsersAsync(MultipartFile file) throws java.io.IOException;
+    AsyncTaskResponseDto importUsersAsync(MultipartFile file) throws java.io.IOException;
 }

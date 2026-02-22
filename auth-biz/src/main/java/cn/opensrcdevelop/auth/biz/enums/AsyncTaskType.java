@@ -1,8 +1,11 @@
 package cn.opensrcdevelop.auth.biz.enums;
 
+import lombok.Getter;
+
 /**
  * 异步任务类型枚举
  */
+@Getter
 public enum AsyncTaskType {
 
     /**
@@ -23,18 +26,6 @@ public enum AsyncTaskType {
         this.code = code;
         this.desc = desc;
         this.maxParallelism = maxParallelism;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
-
-    public int getMaxParallelism() {
-        return maxParallelism;
     }
 
     public static AsyncTaskType fromCode(String code) {

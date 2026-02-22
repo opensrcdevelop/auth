@@ -2,17 +2,23 @@ package cn.opensrcdevelop.auth.biz.service.asynctask;
 
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.entity.asynctask.AsyncTask;
+import cn.opensrcdevelop.auth.biz.enums.AsyncTaskStatus;
 import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.mapper.asynctask.AsyncTaskMapper;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.BizException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Map;
+import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.util.CommonUtil;
+import jakarta.annotation.Resource;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 /**
  * 异步任务调度服务
@@ -27,7 +33,10 @@ public class AsyncTaskSchedulerService {
     private final AsyncTaskExecutorManager executorManager;
     private final AsyncTaskNotificationService notificationService;
     private final StorageService storageService;
-    private final ObjectMapper objectMapper;
+
+    @Resource
+    @Lazy
+    private AsyncTaskSchedulerService schedulerService;
 
     /**
      * 提交异步任务
@@ -44,24 +53,24 @@ public class AsyncTaskSchedulerService {
      */
     public String submitTask(String taskType, String taskName, Map<String, Object> taskParams, String userId) {
         try {
-            // 检查并行度
+            // 1. 检查并行度
             AsyncTaskType asyncTaskType = AsyncTaskType.fromCode(taskType);
             if (asyncTaskType != null) {
                 int maxParallelism = asyncTaskType.getMaxParallelism();
                 long runningCount = asyncTaskService.countRunningTasks(taskType);
                 if (runningCount >= maxParallelism) {
-                    log.warn("任务类型 {} 当前运行数量 {}已达到最大并行度 {}，请稍后重试",
+                    log.warn("任务类型 {} 当前运行数量 {} 已达到最大并行度 {}",
                             taskType, runningCount, maxParallelism);
                     throw new BizException(MessageConstants.ASYNC_TASK_MSG_1000);
                 }
             }
 
-            // 创建任务记录
-            String taskParamsJson = objectMapper.writeValueAsString(taskParams);
+            // 2. 创建任务记录
+            String taskParamsJson = CommonUtil.nonJdkSerializeObject(taskParams);
             String taskId = asyncTaskService.createTask(taskType, taskName, taskParamsJson, userId);
 
-            // 异步执行任务
-            executeTaskAsync(taskId, taskType, taskParamsJson, userId);
+            // 3. 异步执行任务
+            schedulerService.executeTaskAsync(taskId, taskType, taskParamsJson);
 
             log.info("异步任务已提交: taskId={}, taskType={}, taskName={}", taskId, taskType, taskName);
 
@@ -70,7 +79,7 @@ public class AsyncTaskSchedulerService {
             throw e;
         } catch (Exception e) {
             log.error("提交异步任务失败: taskType={}, taskName={}", taskType, taskName, e);
-            throw new RuntimeException("提交异步任务失败", e);
+            throw new ServerException("提交异步任务失败", e);
         }
     }
 
@@ -78,7 +87,7 @@ public class AsyncTaskSchedulerService {
      * 异步执行任务
      */
     @Async(ExecutorConstants.EXECUTOR_IO_DENSE)
-    public void executeTaskAsync(String taskId, String taskType, String taskParams, String userId) {
+    public void executeTaskAsync(String taskId, String taskType, String taskParams) {
         AsyncTaskExecutor executor = executorManager.getExecutor(taskType);
         if (executor == null) {
             log.error("未找到任务执行器: taskId={}, taskType={}", taskId, taskType);
@@ -93,14 +102,14 @@ public class AsyncTaskSchedulerService {
 
             // 创建执行上下文
             TaskExecutionContextImpl context = new TaskExecutionContextImpl(
-                    taskId, asyncTaskService, asyncTaskMapper, storageService, notificationService, userId);
+                    taskId, asyncTaskService, asyncTaskMapper, storageService);
 
             // 执行任务
             executor.execute(taskId, taskParams, context);
 
             // 如果任务未完成（未设置结果），自动标记为成功
             task = asyncTaskMapper.selectById(taskId);
-            if (task != null && "RUNNING".equals(task.getStatus())) {
+            if (task != null && AsyncTaskStatus.RUNNING.getCode().equals(task.getStatus())) {
                 asyncTaskService.completeTaskSuccess(taskId, context.getResult(), null, null);
                 // 发送通知
                 task = asyncTaskMapper.selectById(taskId);
@@ -128,29 +137,26 @@ public class AsyncTaskSchedulerService {
         private final AsyncTaskService asyncTaskService;
         private final AsyncTaskMapper asyncTaskMapper;
         private final StorageService storageService;
-        private final AsyncTaskNotificationService notificationService;
-        private final String userId;
+
+        @Getter
         private String result;
+        @Getter
         private String resultFilePath;
+        @Getter
         private String resultFileName;
 
         public TaskExecutionContextImpl(String taskId, AsyncTaskService asyncTaskService,
                 AsyncTaskMapper asyncTaskMapper,
-                StorageService storageService,
-                AsyncTaskNotificationService notificationService,
-                String userId) {
+                StorageService storageService) {
             this.taskId = taskId;
             this.asyncTaskService = asyncTaskService;
             this.asyncTaskMapper = asyncTaskMapper;
             this.storageService = storageService;
-            this.notificationService = notificationService;
-            this.userId = userId;
         }
 
         @Override
         public void updateProgress(int progress) {
             asyncTaskService.updateProgress(taskId, progress);
-            // 进度更新不发送通知，只在状态变更时发送通知
         }
 
         @Override
@@ -173,18 +179,6 @@ public class AsyncTaskSchedulerService {
             }
 
             return filePath;
-        }
-
-        public String getResult() {
-            return result;
-        }
-
-        public String getResultFilePath() {
-            return resultFilePath;
-        }
-
-        public String getResultFileName() {
-            return resultFileName;
         }
     }
 }

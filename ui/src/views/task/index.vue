@@ -30,11 +30,11 @@ export default taskTs;
         :bordered="false"
         :data="taskList"
         :loading="loading"
-        :pagination="pagination"
+        :pagination="taskListPagination.pagination"
         :scroll="{ x: 800 }"
         row-key="taskId"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
+        @page-change="taskListPagination.handlePageChange"
+        @page-size-change="taskListPagination.handlePageSizeChange"
       >
         <template #columns>
           <a-table-column title="任务类型" data-index="taskType" :width="120">
@@ -56,14 +56,14 @@ export default taskTs;
           </a-table-column>
           <a-table-column title="创建时间" data-index="createTime" :width="180">
             <template #cell="{ record }">
-              {{ formatTime(record.createTime) }}
+              {{ record.createTime ? record.createTime : '-' }}
             </template>
           </a-table-column>
           <a-table-column title="操作" data-index="operations" :width="80" fixed="right">
             <template #cell="{ record }">
               <a-space>
-                <a-button type="primary" size="mini" @click="handleView(record)">
-                  查看
+                <a-button size="mini" @click="handleView(record)">
+                  查看详情
                 </a-button>
               </a-space>
             </template>
@@ -76,7 +76,7 @@ export default taskTs;
     <a-drawer
       v-model:visible="detailVisible"
       title="任务详情"
-      :width="'100%'"
+      :width="'60%'"
       :footer="false"
     >
       <a-descriptions :column="1" bordered>
@@ -98,19 +98,19 @@ export default taskTs;
           <a-progress :percent="(currentTask?.progress || 0) / 100" :stroke-width="6" style="width: 200px" />
         </a-descriptions-item>
         <a-descriptions-item label="创建时间">
-          {{ formatTime(currentTask?.createTime) }}
+          {{ currentTask?.createTime ? currentTask.createTime : '-'}}
         </a-descriptions-item>
         <a-descriptions-item label="开始时间">
-          {{ formatTime(currentTask?.startTime) }}
+          {{ currentTask?.startTime ? currentTask.startTime : '-'}}
         </a-descriptions-item>
         <a-descriptions-item label="结束时间">
-          {{ formatTime(currentTask?.endTime) }}
+          {{ currentTask?.endTime ? currentTask.endTime : '-'}}
         </a-descriptions-item>
         <a-descriptions-item label="耗时">
           {{ formatDuration(currentTask?.duration) }}
         </a-descriptions-item>
         <a-descriptions-item v-if="currentTask?.errorMessage" label="错误信息">
-          <a-alert type="error" :message="currentTask?.errorMessage" />
+          {{ currentTask?.errorMessage }}
         </a-descriptions-item>
         <!-- 用户导入结果 -->
         <a-descriptions-item v-if="currentTask?.taskType === 'USER_IMPORT' && parsedTaskParams?.fileName" label="上传文件">
@@ -129,19 +129,12 @@ export default taskTs;
                 {{ parsedTaskResult.deletedCount || 0 }}
               </a-descriptions-item>
               <a-descriptions-item label="失败">
-                <a-button v-if="parsedTaskResult.errors && parsedTaskResult.errors.length > 0" status="warning" size="small" @click="handleShowErrorDetail">
+                <a-button v-if="parsedTaskResult.errors && parsedTaskResult.errors.length > 0" status="warning" size="mini" @click="handleShowErrorDetail">
                   {{ parsedTaskResult.errors?.length }} 条
                 </a-button>
                 <span v-else>0</span>
               </a-descriptions-item>
             </a-descriptions>
-          </template>
-          <template v-else>
-            <a-alert type="warning" message="任务结果解析失败">
-              <template #content>
-                <pre style="white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto">{{ currentTask?.taskResult }}</pre>
-              </template>
-            </a-alert>
           </template>
         </a-descriptions-item>
         <!-- 其他任务类型的结果展示 -->
@@ -163,13 +156,8 @@ export default taskTs;
       :footer="false"
       width="900px"
     >
-      <a-alert v-if="!parsedTaskResult" type="warning" message="任务结果解析失败" style="margin-bottom: 12px">
-        <template #content>
-          <pre style="white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto">{{ currentTask?.taskResult }}</pre>
-        </template>
-      </a-alert>
       <a-table
-        v-else-if="parsedTaskResult.errors && parsedTaskResult.errors.length > 0"
+        v-if="parsedTaskResult?.errors"
         :data="parsedTaskResult.errors"
         :pagination="false"
         :scroll="{ y: '60vh' }"
@@ -180,7 +168,6 @@ export default taskTs;
           <a-table-column title="错误信息" data-index="message" />
         </template>
       </a-table>
-      <a-empty v-else description="没有错误数据" />
     </a-modal>
   </div>
 </template>

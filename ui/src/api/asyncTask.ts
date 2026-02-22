@@ -43,12 +43,7 @@ export interface AsyncTask {
   resultFileName?: string;
   errorMessage?: string;
   progress: number;
-  createBy?: string;
   createTime: string;
-  updateBy?: string;
-  updateTime?: string;
-  version?: number;
-  deleted?: boolean;
   startTime?: string;
   endTime?: string;
   duration?: number;
@@ -62,7 +57,6 @@ export interface TaskListParams {
   pageSize?: number;
   taskType?: TaskType;
   status?: TaskStatus;
-  createBy?: string;
 }
 
 /**
@@ -95,7 +89,7 @@ export interface TaskSubmitResponse {
  * @param taskId 任务ID
  * @returns 任务详情
  */
-export function getTask(taskId: string): Promise<AsyncTask> {
+export function getTask(taskId: string) {
   return apiRequest.get({
     url: `/task/${taskId}`,
   });
@@ -107,7 +101,7 @@ export function getTask(taskId: string): Promise<AsyncTask> {
  * @param params 查询参数
  * @returns 任务列表
  */
-export function getTaskList(params: TaskListParams): Promise<TaskListResponse> {
+export function getTaskList(params: TaskListParams) {
   return apiRequest.get({
     url: "/task/list",
     params,
@@ -120,7 +114,7 @@ export function getTaskList(params: TaskListParams): Promise<TaskListResponse> {
  * @param taskId 任务ID
  * @returns Blob
  */
-export function downloadTaskResult(taskId: string): Promise<Blob> {
+export function downloadTaskResult(taskId: string) {
   return apiRequest.get({
     url: `/task/${taskId}/download`,
     responseType: "blob",

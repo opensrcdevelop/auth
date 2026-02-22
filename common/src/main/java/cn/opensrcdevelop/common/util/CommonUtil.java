@@ -20,6 +20,12 @@ import freemarker.template.TemplateExceptionHandler;
 import io.vavr.control.Try;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.ReflectionUtils;
+
 import java.io.*;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.InvocationTargetException;
@@ -37,11 +43,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ReflectionUtils;
 
 @SuppressWarnings("unused")
 public class CommonUtil {
@@ -273,6 +274,21 @@ public class CommonUtil {
      */
     public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
         return OBJECT_MAPPER.convertValue(map, clazz);
+    }
+
+    /**
+     * 将 Object 转换为对象
+     *
+     * @param obj
+     *            obj
+     * @param typeReference
+     *            目标类
+     * @param <T>
+     *            目标类
+     * @return 目标对象
+     */
+    public static <T> T convertObj(Object obj, TypeReference<T> typeReference) {
+        return OBJECT_MAPPER.convertValue(obj, typeReference);
     }
 
     /**

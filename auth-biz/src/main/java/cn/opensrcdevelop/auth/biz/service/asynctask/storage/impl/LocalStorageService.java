@@ -1,6 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.asynctask.storage.impl;
 
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
+import cn.opensrcdevelop.common.exception.ServerException;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,10 +14,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 /**
  * 本地存储服务实现
@@ -31,28 +33,28 @@ public class LocalStorageService implements StorageService {
     @Override
     public String store(byte[] data, String fileName) {
         try {
-            // 按日期创建子目录
+            // 1. 按日期创建子目录
             String datePath = LocalDate.now().format(DATE_FORMATTER);
             Path directory = Paths.get(basePath, datePath);
 
-            // 创建目录
+            // 2. 创建目录
             Files.createDirectories(directory);
 
-            // 生成唯一文件名
+            // 3. 生成唯一文件名
             String uniqueFileName = UUID.randomUUID() + "_" + fileName;
             Path filePath = directory.resolve(uniqueFileName);
 
-            // 写入文件
+            // 4. 写入文件
             Files.write(filePath, data);
 
-            // 返回相对路径（包含日期目录）
-            String relativePath = datePath + "/" + uniqueFileName;
+            // 5. 返回相对路径（包含日期目录）
+            String relativePath = Paths.get(datePath, uniqueFileName).toString();
             log.info("文件存储成功: path={}", relativePath);
 
             return relativePath;
         } catch (IOException e) {
             log.error("文件存储失败: fileName={}", fileName, e);
-            throw new RuntimeException("文件存储失败", e);
+            throw new ServerException("文件存储失败", e);
         }
     }
 
@@ -63,7 +65,7 @@ public class LocalStorageService implements StorageService {
             return Files.readAllBytes(path);
         } catch (IOException e) {
             log.error("文件读取失败: filePath={}", filePath, e);
-            throw new RuntimeException("文件读取失败", e);
+            throw new ServerException("文件读取失败", e);
         }
     }
 
@@ -75,14 +77,14 @@ public class LocalStorageService implements StorageService {
             log.info("文件删除成功: filePath={}", filePath);
         } catch (IOException e) {
             log.error("文件删除失败: filePath={}", filePath, e);
-            throw new RuntimeException("文件删除失败", e);
+            throw new ServerException("文件删除失败", e);
         }
     }
 
     @Override
     public String getUrl(String filePath) {
         if (StringUtils.isNotBlank(baseUrl)) {
-            return baseUrl + "/" + filePath;
+            return Paths.get(basePath, filePath).toString();
         }
         // 如果没有配置 baseUrl，返回相对路径
         return filePath;

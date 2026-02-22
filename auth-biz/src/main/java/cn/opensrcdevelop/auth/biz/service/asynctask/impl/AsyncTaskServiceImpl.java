@@ -10,14 +10,15 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 异步任务服务实现
@@ -66,7 +67,6 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
     public void completeTaskSuccess(String taskId, String taskResult, String resultFilePath, String resultFileName) {
         AsyncTask task = asyncTaskMapper.selectById(taskId);
         if (task == null) {
-            log.warn("任务不存在: taskId={}", taskId);
             return;
         }
 
@@ -91,7 +91,6 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
     public void completeTaskFailed(String taskId, String errorMessage) {
         AsyncTask task = asyncTaskMapper.selectById(taskId);
         if (task == null) {
-            log.warn("任务不存在: taskId={}", taskId);
             return;
         }
 
@@ -202,7 +201,6 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
         dto.setDuration(entity.getDuration());
         dto.setUserId(entity.getUserId());
         dto.setCreateTime(entity.getCreateTime());
-        dto.setUpdateTime(entity.getUpdateTime());
         return dto;
     }
 

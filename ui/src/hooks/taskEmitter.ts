@@ -1,6 +1,6 @@
-// 全局任务通知事件发射器
-import mitt, { Emitter } from "mitt";
-import type { TaskNotificationMessage } from "./useTaskNotification";
+// 全局任务通知事件发送器
+import mitt, {Emitter} from "mitt";
+import type {TaskNotificationMessage} from "./useTaskNotification";
 
 export type TaskEvents = {
   "task:update": TaskNotificationMessage;
