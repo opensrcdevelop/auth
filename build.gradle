@@ -43,6 +43,8 @@ ext {
     snakeYamlVer = '2.5'
     easyexcelVer = '4.0.3'
     poiVer = '5.3.0'
+    webauthn4jVer = '0.31.0.RELEASE'
+    awsS3Ver = '2.41.34'
 }
 
 allprojects {
