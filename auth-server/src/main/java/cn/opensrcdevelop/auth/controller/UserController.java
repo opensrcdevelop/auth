@@ -15,6 +15,7 @@ import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.response.PageData;
+import cn.opensrcdevelop.common.util.WebUtil;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -278,7 +279,7 @@ public class UserController {
         byte[] template = userExcelService.generateImportTemplate();
         String filename = "user-import-template-" + System.currentTimeMillis() + ".xlsx";
         response.setContentType(CommonConstants.EXCEL_CONTENT_TYPE);
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+        response.setHeader("Content-Disposition", WebUtil.encodeContentDisposition(filename));
         response.getOutputStream().write(template);
         response.getOutputStream().flush();
     }
