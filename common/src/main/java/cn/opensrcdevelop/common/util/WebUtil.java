@@ -361,7 +361,6 @@ public class WebUtil {
             log.warn("文件名编码失败: {}", filename, e);
             encodedFilename = filename;
         }
-        // 同时提供 fallback 和 RFC 5987 编码格式
-        return "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename;
+        return "attachment; filename*=UTF-8''" + encodedFilename;
     }
 }
