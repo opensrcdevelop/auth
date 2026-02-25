@@ -10,6 +10,8 @@ import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
+import cn.opensrcdevelop.tenant.support.TenantHelper;
 import jakarta.annotation.Resource;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +90,9 @@ public class AsyncTaskSchedulerService {
      */
     @Async(ExecutorConstants.EXECUTOR_IO_DENSE)
     public void executeTaskAsync(String taskId, String taskType, String taskParams) {
+        // 异步场合，需要切换租户数据源
+        TenantHelper.switchTenantDs(TenantContextHolder.getTenantContext().getTenantCode());
+
         AsyncTaskExecutor executor = executorManager.getExecutor(taskType);
         if (executor == null) {
             log.error("未找到任务执行器: taskId={}, taskType={}", taskId, taskType);
