@@ -1,6 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.asynctask;
 
 import cn.opensrcdevelop.auth.biz.entity.asynctask.AsyncTask;
+import cn.opensrcdevelop.tenant.support.TenantContext;
+import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +17,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AsyncTaskNotificationService {
 
-    private static final String DESTINATION_FORMAT = "/queue/user/%s/tasks";
+    private static final String DESTINATION_FORMAT_TENANT = "/queue/%s/user/%s/tasks";
+    private static final String DESTINATION_FORMAT_DEFAULT = "/queue/user/%s/tasks";
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -40,12 +43,22 @@ public class AsyncTaskNotificationService {
         message.setErrorMessage(task.getErrorMessage());
         message.setResultFileName(task.getResultFileName());
 
-        // 2. 发送消息给指定用户
-        String destination = DESTINATION_FORMAT.formatted(task.getUserId());
+        // 2. 获取租户编码
+        TenantContext tenantContext = TenantContextHolder.getTenantContext();
+        String tenantCode = tenantContext.getTenantCode();
+        boolean isDefaultTenant = tenantContext.isDefaultTenant();
+
+        // 3. 发送消息给指定用户（默认租户不使用前缀）
+        String destination;
+        if (isDefaultTenant) {
+            destination = DESTINATION_FORMAT_DEFAULT.formatted(task.getUserId());
+        } else {
+            destination = DESTINATION_FORMAT_TENANT.formatted(tenantCode, task.getUserId());
+        }
         messagingTemplate.convertAndSend(destination, message);
 
-        log.info("任务状态通知已发送: taskId={}, userId={}, status={}",
-                task.getTaskId(), task.getUserId(), task.getStatus());
+        log.info("任务状态通知已发送: taskId={}, userId={}, tenantCode={}, status={}",
+                task.getTaskId(), task.getUserId(), tenantCode, task.getStatus());
     }
 
     /**
