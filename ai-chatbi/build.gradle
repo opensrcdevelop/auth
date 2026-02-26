@@ -98,6 +98,7 @@ dependencies {
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     implementation 'org.springframework.security:spring-security-core'
     implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
+    implementation 'com.github.ben-manes.caffeine:caffeine'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'

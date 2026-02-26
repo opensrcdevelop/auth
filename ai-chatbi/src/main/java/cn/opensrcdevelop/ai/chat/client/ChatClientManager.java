@@ -9,8 +9,8 @@ import cn.opensrcdevelop.ai.service.ModelProviderService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -30,10 +30,16 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
 @Component
 @RequiredArgsConstructor
 public class ChatClientManager {
-    private static final ConcurrentHashMap<String, ChatModel> CHAT_MODEL_CACHE = new ConcurrentHashMap<>();
+    private static final Cache<String, ChatModel> CHAT_MODEL_CACHE = Caffeine.newBuilder()
+            .expireAfterAccess(8, TimeUnit.HOURS)
+            .maximumSize(100)
+            .build();
 
     private final RetryTemplate retryTemplate;
     private final ToolCallingManager toolCallingManager;
@@ -54,7 +60,7 @@ public class ChatClientManager {
      */
     public synchronized ChatClient getChatClient(String providerId, String model, String chatId) {
         // 1. 检查缓存中是否已经存在该模型
-        ChatModel chatModel = CHAT_MODEL_CACHE.get(providerId);
+        ChatModel chatModel = CHAT_MODEL_CACHE.getIfPresent(providerId);
 
         // 2. 获取模型提供商
         if (Objects.isNull(chatModel)) {
@@ -86,6 +92,16 @@ public class ChatClientManager {
                 .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
                         SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build());
         return builder.build();
+    }
+
+    /**
+     * 移除模型缓存
+     *
+     * @param providerId
+     *            模型提供商ID
+     */
+    public void removeChatModelCache(String providerId) {
+        CHAT_MODEL_CACHE.invalidate(providerId);
     }
 
     private ChatModel createOpenAiChatModel(ModelProvider modelProvider) {
