@@ -39,10 +39,40 @@ const tenantInfoForm = reactive({
   code: undefined,
   desc: undefined,
   enabled: undefined,
+  effectiveTime: undefined,
+  expirationTime: undefined,
   createTime: undefined,
 });
 const tenantInfoFormFormRules = {
   name: [{ required: true, message: "租户名称未填写" }],
+  effectiveTime: [
+    {
+      validator: (value: any, cb: any) => {
+        const expirationTime = tenantInfoForm.expirationTime;
+        // 如果生效时间为空，或者失效时间为空，或者生效时间早于失效时间，则通过
+        if (!value || !expirationTime || new Date(value) <= new Date(expirationTime)) {
+          cb();
+        } else {
+          cb("生效时间必须早于失效时间");
+        }
+      },
+      trigger: "change",
+    },
+  ],
+  expirationTime: [
+    {
+      validator: (value: any, cb: any) => {
+        const effectiveTime = tenantInfoForm.effectiveTime;
+        // 如果生效时间为空，或者失效时间为空，或者生效时间早于失效时间，则通过
+        if (!effectiveTime || !value || new Date(effectiveTime) <= new Date(value)) {
+          cb();
+        } else {
+          cb("生效时间必须早于失效时间");
+        }
+      },
+      trigger: "change",
+    },
+  ],
 };
 
 /** 端点信息 */
@@ -68,6 +98,8 @@ const handleGetTenantDetail = (id: string) => {
         tenantInfoForm.code = data.code;
         tenantInfoForm.desc = data.desc;
         tenantInfoForm.enabled = data.enabled;
+        tenantInfoForm.effectiveTime = data.effectiveTime;
+        tenantInfoForm.expirationTime = data.expirationTime;
         tenantInfoForm.createTime = data.createTime;
 
         endpointInfo.issuer = data.issuer;
@@ -85,6 +117,13 @@ const handleGetTenantDetail = (id: string) => {
 const handleResetTenantInfoForm = () => {
   tenantInfoFormRef.value.resetFields();
   handleGetTenantDetail(tenantId.value);
+};
+
+/**
+ * 生效时间或失效时间变化时触发验证
+ */
+const handleTimeChange = () => {
+  tenantInfoFormRef.value.validateField(["effectiveTime", "expirationTime"]);
 };
 
 /**
@@ -126,6 +165,7 @@ export default defineComponent({
       tenantInfoFormRef,
       handleTenantInfoFormSubmit,
       handleResetTenantInfoForm,
+      handleTimeChange,
       endpointInfo,
     };
   },

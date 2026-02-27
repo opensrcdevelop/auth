@@ -70,6 +70,20 @@ export default tenantTs;
               </span>
             </template>
           </a-table-column>
+          <a-table-column title="生效时间" :width="180">
+            <template #cell="{ record }">
+              <span>
+                {{ record.effectiveTime || '-' }}
+              </span>
+            </template>
+          </a-table-column>
+          <a-table-column title="失效时间" :width="180">
+            <template #cell="{ record }">
+              <span>
+                {{ record.expirationTime || '-' }}
+              </span>
+            </template>
+          </a-table-column>
           <a-table-column title="操作" :width="60">
             <template #cell="{ record }">
               <a-dropdown>
