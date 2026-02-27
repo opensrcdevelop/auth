@@ -16,6 +16,8 @@ const createTenantInfoForm = reactive({
   name: undefined,
   code: undefined,
   desc: undefined,
+  effectiveTime: undefined,
+  expirationTime: undefined,
 });
 const createTenantInfoFormRef = ref();
 const createTenantInfoFormRules = {
@@ -30,6 +32,34 @@ const createTenantInfoFormRules = {
           cb();
         }
       },
+    },
+  ],
+  effectiveTime: [
+    {
+      validator: (value: any, cb: any) => {
+        const expirationTime = createTenantInfoForm.expirationTime;
+        // 如果生效时间为空，或者失效时间为空，或者生效时间早于失效时间，则通过
+        if (!value || !expirationTime || new Date(value) <= new Date(expirationTime)) {
+          cb();
+        } else {
+          cb("生效时间必须早于失效时间");
+        }
+      },
+      trigger: "change",
+    },
+  ],
+  expirationTime: [
+    {
+      validator: (value: any, cb: any) => {
+        const effectiveTime = createTenantInfoForm.effectiveTime;
+        // 如果生效时间为空，或者失效时间为空，或者生效时间早于失效时间，则通过
+        if (!effectiveTime || !value || new Date(effectiveTime) <= new Date(value)) {
+          cb();
+        } else {
+          cb("生效时间必须早于失效时间");
+        }
+      },
+      trigger: "change",
     },
   ],
 };
@@ -61,7 +91,7 @@ const handleCreateTenantInfoFormSubmit = (formData: any) => {
 
 /**
  * 生成租户标识
- * 
+ *
  * @returns 租户标识
  */
 const handleGenerateTenantCode = () => {
@@ -72,7 +102,14 @@ const handleGenerateTenantCode = () => {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   createTenantInfoForm.code = text;
-}
+};
+
+/**
+ * 生效时间或失效时间变化时触发验证
+ */
+const handleTimeChange = () => {
+  createTenantInfoFormRef.value.validateField(["effectiveTime", "expirationTime"]);
+};
 
 export default defineComponent({
   setup() {
@@ -83,7 +120,8 @@ export default defineComponent({
       createTenantInfoFormRules,
       handleResetCreateTenantInfoForm,
       handleCreateTenantInfoFormSubmit,
-      handleGenerateTenantCode
+      handleGenerateTenantCode,
+      handleTimeChange,
     };
   },
 });

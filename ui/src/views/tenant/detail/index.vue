@@ -62,6 +62,32 @@ export default detailTs;
                   </a-form-item>
                 </a-col>
               </a-row>
+              <a-row :gutter="24">
+                <a-col :span="6">
+                  <a-form-item field="effectiveTime" label="生效时间">
+                    <a-date-picker
+                      v-model="tenantInfoForm.effectiveTime"
+                      style="width: 100%"
+                      format="YYYY-MM-DD HH:mm:ss"
+                      show-time
+                      placeholder="请选择生效时间"
+                      @change="handleTimeChange"
+                    />
+                  </a-form-item>
+                </a-col>
+                <a-col :span="6">
+                  <a-form-item field="expirationTime" label="失效时间">
+                    <a-date-picker
+                      v-model="tenantInfoForm.expirationTime"
+                      style="width: 100%"
+                      format="YYYY-MM-DD HH:mm:ss"
+                      show-time
+                      placeholder="请选择失效时间"
+                      @change="handleTimeChange"
+                    />
+                  </a-form-item>
+                </a-col>
+              </a-row>
               <a-form-item field="desc" label="租户描述">
                 <a-textarea
                   v-model="tenantInfoForm.desc"
