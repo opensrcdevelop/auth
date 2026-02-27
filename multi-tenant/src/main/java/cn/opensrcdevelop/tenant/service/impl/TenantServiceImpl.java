@@ -23,15 +23,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.sql.DataSource;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -82,12 +83,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     public Tuple2<Boolean, Tenant> exists(String tenantCode) {
         Tenant tenant = super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode)
                 .and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
-        if (Objects.isNull(tenant)) {
+        if (Objects.isNull(tenant) || !isTenantEffective(tenant)) {
             return Tuple.of(false, null);
-        }
-        // 检查租户是否在有效期内
-        if (!isTenantEffective(tenant)) {
-            return Tuple.of(false, tenant);
         }
         return Tuple.of(true, tenant);
     }
@@ -105,11 +102,9 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         if (Objects.nonNull(tenant.getEffectiveTime()) && now.isBefore(tenant.getEffectiveTime())) {
             return false;
         }
+
         // 检查失效时间
-        if (Objects.nonNull(tenant.getExpirationTime()) && now.isAfter(tenant.getExpirationTime())) {
-            return false;
-        }
-        return true;
+        return !Objects.nonNull(tenant.getExpirationTime()) || !now.isAfter(tenant.getExpirationTime());
     }
 
     /**
