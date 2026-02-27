@@ -13,6 +13,7 @@ import cn.opensrcdevelop.common.filter.RestFilter;
 import cn.opensrcdevelop.common.filter.TraceFilter;
 import cn.opensrcdevelop.common.interceptor.RestResponseInterceptor;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -22,8 +23,6 @@ import org.springframework.http.CacheControl;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.config.annotation.*;
-
-import java.util.concurrent.TimeUnit;
 
 @Configuration
 @RequiredArgsConstructor

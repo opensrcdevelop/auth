@@ -66,8 +66,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         tenant.setTenantName(requestDto.getName());
         tenant.setDescription(requestDto.getDesc());
         CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEnabled, requestDto::getEnabled);
-        CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEffectiveTime, requestDto::getEffectiveTime);
-        CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setExpirationTime, requestDto::getExpirationTime);
+        tenant.setEffectiveTime(requestDto.getEffectiveTime());
+        tenant.setExpirationTime(requestDto.getExpirationTime());
         super.save(tenant);
     }
 

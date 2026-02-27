@@ -12,6 +12,9 @@ import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -19,10 +22,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.lang.reflect.Method;
-import java.util.Objects;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 public class OpenApiInterceptor implements HandlerInterceptor {
@@ -49,7 +48,8 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 // 2.1 存储控制台客户端 ID
                 if (StringUtils.isEmpty(consoleClientId)) {
                     Client client = clientService
-                            .getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, CommonConstants.CONSOLE_CLIENT_NAME));
+                            .getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName,
+                                    CommonConstants.CONSOLE_CLIENT_NAME));
                     if (Objects.nonNull(client)) {
                         String clientId = client.getClientId();
                         systemSettingService.saveSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, clientId);
