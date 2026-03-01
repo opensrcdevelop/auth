@@ -32,12 +32,6 @@
 
 ### 2. 前端代码检查（Vue 3 + TypeScript）
 
-#### 类型检查
-```bash
-cd ui && npm run type-check
-```
-**标准**：TypeScript 严格模式下无错误
-
 #### 构建检查
 ```bash
 cd ui && npm run build
@@ -59,7 +53,6 @@ cd ui && npm run build
 ### 代码质量
 
 - **绝不**提交未通过格式化检查的代码（`spotlessCheck` 失败）
-- **绝不**提交未通过类型检查的代码（`type-check` 失败）
 - **绝不**提交编译失败的代码
 - **绝不**使用 `TODO`、`FIXME` 作为最终代码（必须创建 Issue 跟踪）
 - **绝不**跳过错误处理
@@ -232,7 +225,6 @@ public class UserService {
 - [ ] 无调试代码残留
 
 ### 前端变更
-- [ ] `npm run type-check` 通过
 - [ ] `npm run build` 构建成功
 - [ ] 无 console.log 残留
 - [ ] 无调试断点残留

@@ -83,9 +83,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # 构建并运行 auth-server
 ./gradlew :auth-server:bootRun
 
-# 仅构建前端
-./gradlew :ui:assembleFrontend
-
 # 更新 AI 提示词模板
 ./gradlew :ai-chatbi:updatePromptTemplates
 

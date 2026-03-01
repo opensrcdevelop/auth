@@ -132,9 +132,6 @@ echo "# 任务描述" > .claude/tmp/tasks/$(date +%Y-%m-%d)/task-name.md
 
 # 4. 运行测试
 ./gradlew test
-
-# 5. 如果是前端变更，构建前端
-./gradlew :ui:assembleFrontend
 ```
 
 **检查清单：**
@@ -174,7 +171,7 @@ sudo nano /etc/hosts
 # 4. Redis 连接正常
 
 # 访问 Swagger 文档验证 API 端点
-# http://localhost:6543/swagger-ui.html
+# https://auth.local.opensrcdevelop.cn:6543/swagger-ui.html
 
 # 验证完成后，使用 Ctrl+C 停止服务
 ```
@@ -273,13 +270,13 @@ print(f'导出文件已下载到: {export_path}')
 
 **后端服务：**
 - ✓ 启动成功，无错误日志
-- ✓ 服务地址：http://auth.local.opensrcdevelop.cn:6543
-- ✓ Swagger 文档：http://auth.local.opensrcdevelop.cn:6543/swagger-ui.html
+- ✓ 服务地址：https://auth.local.opensrcdevelop.cn:6543
+- ✓ Swagger 文档：https://auth.local.opensrcdevelop.cn:6543/swagger-ui.html
 - ✓ 新增 API 端点可用
 
 **前端服务：**
 - ✓ 启动成功，无编译错误
-- ✓ 页面地址：http://auth.local.opensrcdevelop.cn:4321/ui
+- ✓ 页面地址：https://auth.local.opensrcdevelop.cn:4321/ui
 - ✓ 新增功能可正常使用
 
 请用户验证上述功能是否正常。验证通过后，通知 AI 停止服务并继续后续步骤。

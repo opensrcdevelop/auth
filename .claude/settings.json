@@ -31,5 +31,7 @@
       }
     ]
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true
+  }
 }

@@ -7,12 +7,12 @@
             type="text"
             size="mini"
             :disabled="loading"
-            @click="handleFullscreen"
+            @click="handleOpenNewTab"
           >
             <template #icon>
-              <icon-fullscreen />
+              <icon-launch />
             </template>
-            <template #default>全屏显示</template>
+            <template #default>新标签页打开</template>
           </a-button>
           <a-button
             type="text"
@@ -69,8 +69,17 @@ const handleIframeLoad = () => {
   }
 };
 
-const handleFullscreen = () => {
-  htmlReportRef.value.requestFullscreen();
+const handleOpenNewTab = () => {
+  const iframeDoc =
+    htmlReportRef.value.contentDocument ||
+    htmlReportRef.value.contentWindow?.document;
+
+  if (iframeDoc) {
+    const htmlContent = iframeDoc.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  }
 };
 
 const handleDownloadReport = () => {
