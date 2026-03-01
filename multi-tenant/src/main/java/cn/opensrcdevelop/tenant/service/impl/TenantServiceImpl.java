@@ -86,7 +86,7 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             tenant.setExpirationTime(requestDto.getExpirationTime());
             super.save(tenant);
         } finally {
-            if (lock.isHeldByCurrentThread()) {
+            if (lock.isLocked()) {
                 lock.unlock();
             }
         }
