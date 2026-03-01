@@ -32,7 +32,7 @@ public class ExecutePythonTool implements MethodTool {
 
     // 资源限制
     @Value("${python.exec.limit.enabled:true}")
-    private String ulimitEnabled;
+    private boolean ulimitEnabled;
 
     @Value("${python.exec.limit.cpu-time:60}")
     private int ulimitCpuTime;
@@ -88,7 +88,7 @@ public class ExecutePythonTool implements MethodTool {
             // 4. 使用虚拟环境执行 Python 脚本（带资源限制）
             String pythonPath = Path.of(venvDir, "bin", "python").toString();
 
-            if ("true".equalsIgnoreCase(ulimitEnabled)) {
+            if (ulimitEnabled) {
                 // 创建内存限制包装脚本
                 String wrapperScript = String.format("""
                     import resource
