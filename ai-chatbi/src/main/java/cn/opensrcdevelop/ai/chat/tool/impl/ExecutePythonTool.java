@@ -112,7 +112,7 @@ public class ExecutePythonTool implements MethodTool {
 
                 // 带 ulimit 限制
                 String[] cmd = {
-                    "bash", "-c",
+                    "sh", "-c",
                     String.format(
                         "ulimit -t %d -f %d -u %d && %s %s",
                         ulimitCpuTime, ulimitFileSize, ulimitMaxProcesses,

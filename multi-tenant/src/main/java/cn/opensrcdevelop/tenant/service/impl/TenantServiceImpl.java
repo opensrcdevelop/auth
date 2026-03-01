@@ -10,6 +10,7 @@ import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.tenant.constants.MessageConstants;
 import cn.opensrcdevelop.tenant.dto.CheckTenantResponseDto;
 import cn.opensrcdevelop.tenant.dto.TenantRequestDto;
@@ -25,6 +26,7 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,8 @@ import java.util.Objects;
 @Service
 public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> implements TenantService {
 
+    private static final String TENANT_LOCK_PREFIX = "lock:tenant:create:";
+
     /**
      * 创建租户
      *
@@ -48,28 +52,44 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
-        // 1. 检查租户标识是否存在
-        checkTenantCode(requestDto);
+        String lockKey = TENANT_LOCK_PREFIX + requestDto.getCode();
+        if (RedisUtil.getLock(lockKey).isLocked()) {
+            throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
+        }
 
-        // 2. 检查时间有效性
-        checkEffectiveTime(requestDto);
+        RLock lock = RedisUtil.getLock(lockKey);
+        try {
+            if (!lock.tryLock()) {
+                throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
+            }
 
-        // 3. 创建租户数据库
-        TenantHelper.createTenantDatabase(requestDto.getCode());
+            // 1. 检查租户标识是否存在
+            checkTenantCode(requestDto);
 
-        // 2. 数据库操作
-        String tenantId = CommonUtil.getUUIDV7String();
-        AuditContext.setSpelVariable("tenantId", tenantId);
+            // 2. 检查时间有效性
+            checkEffectiveTime(requestDto);
 
-        Tenant tenant = new Tenant();
-        tenant.setTenantId(tenantId);
-        tenant.setTenantCode(requestDto.getCode());
-        tenant.setTenantName(requestDto.getName());
-        tenant.setDescription(requestDto.getDesc());
-        CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEnabled, requestDto::getEnabled);
-        tenant.setEffectiveTime(requestDto.getEffectiveTime());
-        tenant.setExpirationTime(requestDto.getExpirationTime());
-        super.save(tenant);
+            // 3. 创建租户数据库
+            TenantHelper.createTenantDatabase(requestDto.getCode());
+
+            // 4. 数据库操作
+            String tenantId = CommonUtil.getUUIDV7String();
+            AuditContext.setSpelVariable("tenantId", tenantId);
+
+            Tenant tenant = new Tenant();
+            tenant.setTenantId(tenantId);
+            tenant.setTenantCode(requestDto.getCode());
+            tenant.setTenantName(requestDto.getName());
+            tenant.setDescription(requestDto.getDesc());
+            CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEnabled, requestDto::getEnabled);
+            tenant.setEffectiveTime(requestDto.getEffectiveTime());
+            tenant.setExpirationTime(requestDto.getExpirationTime());
+            super.save(tenant);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     /**
