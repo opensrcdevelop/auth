@@ -1,6 +1,6 @@
 ---
 name: git-worktree
-version: "1.0.0"
+version: "1.1.0"
 description: Git Worktree 管理命令。提供 init、list、remove 三个子命令来管理项目 worktree。
 user-invocable: true
 allowed-tools:
@@ -8,23 +8,24 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# Git Worktree 管理命令 (v1.0.0)
+# Git Worktree 管理命令 (v1.1.0)
 
 管理项目中的 Git worktree，支持创建、列表查看和删除操作。
 
 ## 调用方式
 
 ```
-/git-worktree init "任务描述"   # 创建 worktree
-/git-worktree list             # 列出所有 worktree
-/git-worktree remove           # 删除 worktree
+/git-worktree init "任务描述"           # AI 自动生成分支名称
+/git-worktree init "任务描述" --branch "分支名称"  # 指定分支名称
+/git-worktree list                     # 列出所有 worktree
+/git-worktree remove                   # 删除 worktree
 ```
 
 ## 命令详解
 
 ### init - 创建新的 Worktree
 
-根据用户描述的任务，自动推断分支类型并创建 worktree。创建完成后询问用户是否要在 iTerm2 中打开新 tab 并启动 Claude。
+根据用户描述的任务，创建 worktree。**分支名称由 AI 根据任务描述自动生成**。
 
 **调用方式：**
 ```
@@ -34,18 +35,14 @@ allowed-tools:
 **参数说明：**
 - `任务描述` - 任务的简短描述（必需）
 
-**交互流程：**
-1. 执行脚本创建 worktree
-2. 脚本输出 `[ASK_USER_OPEN_ITERM]` 标记和信息
-3. AI 检测到标记后，使用 AskUserQuestion 询问用户是否打开 iTerm2
-4. 用户同意后，执行以下命令打开 iTerm2：
+**AI 生成分支名称的规则：**
 
-```bash
-cd /Users/lee0407/dev/projs/auth && python3 .claude/skills/git-worktree/scripts/open_iterm.py "<worktree_path>" "<branch_name>" "<description>"
-```
+AI 会根据任务描述生成分支名称，格式为 `<type>/<description>`，例如：
+- "添加用户 Excel 导入导出功能" → `feature/user-excel-import-export`
+- "修复登录页面样式问题" → `bugfix/login-page-style`
+- "优化用户查询性能" → `refactor/user-query-performance`
 
-**自动推断的分支类型：**
-
+分支类型前缀：
 | 关键词 | 分支类型 |
 |--------|----------|
 | feat, 功能, 添加, 新增, 实现 | feature |
@@ -55,21 +52,39 @@ cd /Users/lee0407/dev/projs/auth && python3 .claude/skills/git-worktree/scripts/
 | test, 测试, 单元 | test |
 | chore, 配置, 构建, 依赖 | chore |
 
+名称要求：
+- 必须是英文字母、数字和连字符
+- 全部小写
+- 简洁描述任务内容
+
+**交互流程：**
+1. AI 分析任务描述，生成分支名称
+2. 执行脚本创建 worktree（传入分支名称）
+3. 脚本输出 `[ASK_USER_OPEN_ITERM]` 标记和信息
+4. AI 检测到标记后，使用 AskUserQuestion 询问用户是否打开 iTerm2
+5. 用户同意后，执行以下命令打开 iTerm2：
+
+```bash
+cd /Users/lee0407/dev/projs/auth && python3 .claude/skills/git-worktree/scripts/open_iterm.py "<worktree_path>" "<branch_name>" "<description>"
+```
+
 **执行流程：**
-1. 切换到 develop 分支并拉取最新代码
-2. 根据描述推断分支类型并生成分支名
-3. 创建新分支
-4. 在 `worktrees/` 目录下创建 worktree
-5. 切换回 develop 分支
-6. 输出 `[ASK_USER_OPEN_ITERM]` 标记，等待 AI 询问用户
+1. AI 分析任务描述，生成英文分支名称（如 `feature/user-excel-import`）
+2. 调用脚本创建 worktree，传入分支名称
+3. 脚本基于 develop 分支创建新分支和 worktree
+4. 输出 `[ASK_USER_OPEN_ITERM]` 标记，等待 AI 询问用户
 
 **使用示例：**
 ```
 /git-worktree init "添加用户 Excel 导入导出功能"
-# 结果：创建 feature/excel-import-export 分支和 worktree
-#       AI 检测到 [ASK_USER_OPEN_ITERM] 标记
-#       AI 使用 AskUserQuestion 询问用户
-#       用户同意后执行 open_iterm.py 打开 iTerm2 并启动 Claude
+# AI 生成分支名称: feature/user-excel-import-export
+# 创建 worktree 后询问是否打开 iTerm2
+```
+
+**指定分支名称（可选）：**
+如果用户希望自定义分支名称，可以使用 `--branch` 参数：
+```
+/git-worktree init "任务描述" --branch "feature/custom-name"
 ```
 
 ## AI 响应规则
