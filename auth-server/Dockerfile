@@ -15,7 +15,7 @@ ENV LANG C.UTF-8
 ENV TZ=Asia/Shanghai
 ENV APP_VERSION=${VERSION}
 RUN ln -snf /usr/share/zoneinfo/'${TZ}' /etc/localtime && echo '${TZ}' > /etc/timezone
-RUN apk --no-cache add fontconfig ttf-dejavu python3 py3-pip py3-venv
+RUN apk add --no-cache fontconfig ttf-dejavu python3 py3-pip
 
 USER appuser
 WORKDIR /app
