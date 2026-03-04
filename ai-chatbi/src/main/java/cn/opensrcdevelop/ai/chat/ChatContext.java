@@ -54,4 +54,34 @@ public class ChatContext {
     private List<Map<String, String>> sampleSqls;
 
     private Boolean terminated = false;
+
+    /** 等待用户输入的问题 */
+    private Map<String, Object> pendingQuestion;
+
+    /** 等待用户输入的上下文 */
+    private Map<String, Object> askUserContext;
+
+    /**
+     * 设置等待用户输入
+     * @param question 待回答的问题
+     */
+    public void setWaitingForUser(Map<String, Object> question) {
+        this.pendingQuestion = question;
+        this.askUserContext = question;
+    }
+
+    /**
+     * 清除等待状态
+     */
+    public void clearWaitingState() {
+        this.pendingQuestion = null;
+        this.askUserContext = null;
+    }
+
+    /**
+     * 是否在等待用户输入
+     */
+    public boolean isWaitingForUser() {
+        return this.pendingQuestion != null;
+    }
 }
