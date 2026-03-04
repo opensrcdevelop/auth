@@ -10,6 +10,7 @@ import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
+import cn.opensrcdevelop.ai.dto.UserResponseRequestDto;
 import cn.opensrcdevelop.ai.dto.VoteAnswerRequestDto;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -147,6 +148,98 @@ public class ChatBIServiceImpl implements ChatBIService {
                 .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
                 .set(ChatAnswer::getFeedback,
                         requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+    }
+
+    /**
+     * 处理用户对问题的回答
+     *
+     * @param request
+     *            用户响应
+     * @return SseEmitter
+     */
+    @Override
+    public SseEmitter handleUserResponse(UserResponseRequestDto request) {
+        SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        AtomicBoolean interruptFlag = new AtomicBoolean(false);
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+
+        String chatId = request.getChatId();
+        if (StringUtils.isEmpty(chatId)) {
+            SseUtil.sendChatBIError(emitter, "对话ID不能为空");
+            emitter.complete();
+            return emitter;
+        }
+
+        executor.execute(() -> {
+            SecurityContextHolder.setContext(securityContext);
+            try {
+                // 获取已有的 ChatContext
+                ChatContext chatContext = ChatContextHolder.getChatContext(chatId);
+                if (chatContext == null) {
+                    SseUtil.sendChatBIError(emitter, "对话上下文不存在，请重新开始对话");
+                    emitter.complete();
+                    return;
+                }
+
+                // 检查是否在等待用户回答
+                if (!chatContext.isWaitingForUser()) {
+                    SseUtil.sendChatBIError(emitter, "当前没有等待用户回答的问题");
+                    emitter.complete();
+                    return;
+                }
+
+                // 获取等待的问题列表
+                Map<String, Object> pendingQuestion = chatContext.getPendingQuestion();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> questions = (List<Map<String, Object>>) pendingQuestion.get("questions");
+
+                // 找到对应的问题
+                String questionId = request.getQuestionId();
+                Map<String, Object> targetQuestion = null;
+                if (StringUtils.isNotEmpty(questionId) && questions != null) {
+                    for (Map<String, Object> q : questions) {
+                        if (questionId.equals(q.get("id"))) {
+                            targetQuestion = q;
+                            break;
+                        }
+                    }
+                }
+
+                // 如果没有指定 questionId，使用第一个问题
+                if (targetQuestion == null && questions != null && !questions.isEmpty()) {
+                    targetQuestion = questions.get(0);
+                }
+
+                if (targetQuestion != null) {
+                    // 将用户回答添加到上下文
+                    String userAnswer = request.getAnswer();
+                    String questionText = (String) targetQuestion.get("question");
+
+                    // 保存用户回答到历史消息
+                    chatMessageHistoryService.createUserChatMessageHistory("回答: " + userAnswer);
+
+                    // 清除等待状态
+                    chatContext.clearWaitingState();
+
+                    // 继续对话流程（将用户回答融入上下文中）
+                    SseUtil.sendChatBILoading(emitter, "正在处理您的回答...");
+
+                    // 这里可以添加继续对话的逻辑，
+                    // 目前先返回完成信号，让前端知道用户已回答
+                    SseUtil.sendChatBIDone(emitter);
+                } else {
+                    SseUtil.sendChatBIError(emitter, "未找到对应的问题");
+                    emitter.complete();
+                }
+            } catch (Exception e) {
+                log.error("处理用户回答失败", e);
+                SseUtil.sendChatBIError(emitter, "处理用户回答失败: " + e.getMessage());
+            } finally {
+                emitter.complete();
+            }
+        });
+
+        return emitter;
     }
 
     @SuppressWarnings("all")
