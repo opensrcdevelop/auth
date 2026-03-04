@@ -265,4 +265,11 @@ public class ChatBIController {
     public ChatAnswerResponseDto getAnsweredSql(@PathVariable @NotBlank String id) {
         return chatAnswerService.getAnsweredSql(id);
     }
+
+    @Operation(summary = "处理用户对问题的回答", description = "处理用户对问题的回答")
+    @PostMapping(path = "/chat/user-response", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Authorize({"allChatBIPermissions", "chat"})
+    public SseEmitter handleUserResponse(@RequestBody UserResponseRequestDto request) {
+        return chatBIService.handleUserResponse(request);
+    }
 }
