@@ -3,6 +3,7 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.chat.tool.impl.ExecutePythonTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
@@ -15,6 +16,14 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -29,15 +38,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
@@ -244,6 +244,11 @@ public class ThinkAnswerAgent {
             String result = CommonUtil.nonJdkSerializeObject(executeMethodResult);
             log.info("Tool {} executed: {}", toolName, result);
 
+            // 检查是否是 ask_user tool
+            if (AskUserTool.TOOL_NAME.equals(toolName)) {
+                handleAskUserTool(executeMethodResult, emitter);
+            }
+
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,
@@ -284,6 +289,45 @@ public class ThinkAnswerAgent {
             chatContext.setToolCallResults(new ArrayList<>());
         }
         chatContext.getToolCallResults().addFirst(toolCallResult);
+    }
+
+    /**
+     * 处理 ask_user tool 的返回结果
+     *
+     * @param executeMethodResult
+     *            tool 执行结果
+     * @param emitter
+     *            SSE
+     */
+    @SuppressWarnings("unchecked")
+    private void handleAskUserTool(Object executeMethodResult, SseEmitter emitter) {
+        if (executeMethodResult == null) {
+            return;
+        }
+
+        // 转换为 Map
+        Map<String, Object> resultMap;
+        if (executeMethodResult instanceof Map) {
+            resultMap = (Map<String, Object>) executeMethodResult;
+        } else {
+            return;
+        }
+
+        // 检查是否需要向用户提问
+        Boolean isAskUser = (Boolean) resultMap.get("isAskUser");
+        if (Boolean.TRUE.equals(isAskUser)) {
+            List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
+            if (questions != null && !questions.isEmpty()) {
+                // 保存等待问题到上下文
+                Map<String, Object> pendingQuestion = new HashMap<>();
+                pendingQuestion.put("questions", questions);
+                ChatContextHolder.getChatContext().setWaitingForUser(pendingQuestion);
+
+                // 发送向用户提问的事件
+                SseUtil.sendChatBIAskUser(emitter, questions);
+                log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
+            }
+        }
     }
 
     /**
