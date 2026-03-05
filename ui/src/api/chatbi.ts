@@ -311,7 +311,7 @@ export function getAnsweredSql(id: string) {
  * @param data 请求数据
  * @returns 调用结果
  */
-export function handleUserResponse(data: { chatId: string; questionId?: string; answer: any }) {
+export function handleUserResponse(data: { chatId: string; answers: { questionId: string; answer: any }[] }) {
   return noneLoadingApiRequest.post({
     url: "/chatbi/chat/user-response",
     data,

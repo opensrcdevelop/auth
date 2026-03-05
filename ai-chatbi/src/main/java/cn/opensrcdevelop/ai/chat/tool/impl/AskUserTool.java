@@ -38,9 +38,6 @@ public class AskUserTool implements MethodTool {
     @Data
     public static class Question {
 
-        @ToolParam(description = "问题 ID，用于关联用户回答", required = true)
-        private String id;
-
         @ToolParam(description = "需要询问的问题", required = true)
         private String question;
 

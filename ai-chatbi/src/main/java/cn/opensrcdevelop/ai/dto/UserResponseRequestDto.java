@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+import java.util.Map;
+
 @Schema(description = "用户响应请求")
 @Data
 public class UserResponseRequestDto {
@@ -12,10 +15,6 @@ public class UserResponseRequestDto {
     @NotBlank
     private String chatId;
 
-    @Schema(description = "用户回答")
-    @NotBlank
-    private String answer;
-
-    @Schema(description = "问题ID（用于关联具体问题）")
-    private String questionId;
+    @Schema(description = "用户回答列表（支持多个问题）")
+    private List<Map<String, Object>> answers;
 }

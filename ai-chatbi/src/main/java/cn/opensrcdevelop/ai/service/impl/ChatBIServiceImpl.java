@@ -36,6 +36,7 @@ import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -193,46 +194,49 @@ public class ChatBIServiceImpl implements ChatBIService {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> questions = (List<Map<String, Object>>) pendingQuestion.get("questions");
 
-                // 找到对应的问题
-                String questionId = request.getQuestionId();
-                Map<String, Object> targetQuestion = null;
-                if (StringUtils.isNotEmpty(questionId) && questions != null) {
-                    for (Map<String, Object> q : questions) {
-                        if (questionId.equals(q.get("id"))) {
-                            targetQuestion = q;
-                            break;
+                // 获取用户回答列表
+                List<Map<String, Object>> userAnswers = request.getAnswers();
+
+                if (userAnswers == null || userAnswers.isEmpty()) {
+                    SseUtil.sendChatBIError(emitter, "用户回答不能为空");
+                    emitter.complete();
+                    return;
+                }
+
+                // 构建用户回答列表（带问题文本）
+                List<Map<String, Object>> processedAnswers = new ArrayList<>();
+
+                for (Map<String, Object> userAnswer : userAnswers) {
+                    String questionId = (String) userAnswer.get("questionId");
+                    Object answer = userAnswer.get("answer");
+
+                    // 找到对应的问题获取问题文本
+                    String questionText = "";
+                    if (questions != null) {
+                        for (Map<String, Object> q : questions) {
+                            if (questionId != null && questionId.equals(q.get("id"))) {
+                                questionText = (String) q.get("question");
+                                break;
+                            }
                         }
                     }
+
+                    // 构建带问题文本的回答
+                    Map<String, Object> processedAnswer = new HashMap<>();
+                    processedAnswer.put("questionId", questionId != null ? questionId : "");
+                    processedAnswer.put("question", questionText);
+                    processedAnswer.put("answer", answer);
+                    processedAnswers.add(processedAnswer);
                 }
 
-                // 如果没有指定 questionId，使用第一个问题
-                if (targetQuestion == null && questions != null && !questions.isEmpty()) {
-                    targetQuestion = questions.get(0);
-                }
+                // 保存用户回答到上下文，唤醒等待线程
+                chatContext.addUserAnswers(processedAnswers);
 
-                if (targetQuestion != null) {
-                    // 将用户回答添加到上下文
-                    String userAnswer = request.getAnswer();
-                    String questionText = (String) targetQuestion.get("question");
+                // 清除等待状态
+                chatContext.clearWaitingState();
 
-                    // 保存用户回答到上下文，唤醒等待线程
-                    chatContext.setUserAnswer(Map.of(
-                            "questionId", questionId != null ? questionId : "",
-                            "question", questionText,
-                            "answer", userAnswer));
-
-                    // 保存用户回答到历史消息
-                    chatMessageHistoryService.createUserChatMessageHistory("回答: " + userAnswer);
-
-                    // 清除等待状态
-                    chatContext.clearWaitingState();
-
-                    // 返回完成信号，让前端知道用户已回答
-                    SseUtil.sendChatBIDone(emitter);
-                } else {
-                    SseUtil.sendChatBIError(emitter, "未找到对应的问题");
-                    emitter.complete();
-                }
+                // 返回完成信号，让前端知道用户已回答
+                SseUtil.sendChatBIDone(emitter);
             } catch (Exception e) {
                 log.error("处理用户回答失败", e);
                 SseUtil.sendChatBIError(emitter, "处理用户回答失败: " + e.getMessage());

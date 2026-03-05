@@ -313,14 +313,13 @@ const resendMessage = (qId: string) => {
 /**
  * 提交用户回答
  */
-const handleAskUserSubmit = async (data: { questionId: string; answer: any }) => {
+const handleAskUserSubmit = async (data: { answers: { questionId: string; answer: any }[] }) => {
   askUserVisible.value = false;
   loading.value = true;
   try {
     await handleUserResponse({
       chatId: activeChatId.value || props.chatId,
-      questionId: data.questionId,
-      answer: data.answer,
+      answers: data.answers,
     });
   } catch (error) {
     handleApiError(error, "提交回答失败");

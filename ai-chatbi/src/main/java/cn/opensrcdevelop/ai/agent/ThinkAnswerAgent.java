@@ -106,8 +106,8 @@ public class ThinkAnswerAgent {
                     SseUtil.sendChatBILoading(emitter, "等待用户回答...");
                     // 等待用户回答，超时 5 分钟
                     ChatContext chatContext = ChatContextHolder.getChatContext();
-                    Map<String, Object> userAnswer = chatContext.waitForUserAnswer(300);
-                    if (userAnswer == null) {
+                    List<Map<String, Object>> userAnswers = chatContext.waitForUserAnswer(300);
+                    if (userAnswers == null || userAnswers.isEmpty()) {
                         // 超时，返回空结果
                         SseUtil.sendChatBIText(emitter, "等待用户回答超时，请重新提问。");
                         return Collections.emptyMap();
@@ -185,6 +185,9 @@ public class ThinkAnswerAgent {
         // 获取示例 SQL
         List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
 
+        // 获取用户回答（如果有）
+        List<Map<String, Object>> userAnswers = ChatContextHolder.getChatContext().getUserAnswers();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -195,7 +198,8 @@ public class ThinkAnswerAgent {
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
-                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
+                .param("user_answers", CollectionUtils.isEmpty(userAnswers) ? new ArrayList<>() : userAnswers);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -329,21 +333,22 @@ public class ThinkAnswerAgent {
             return false;
         }
 
-        // 检查是否需要向用户提问
-        Boolean isAskUserResult = (Boolean) resultMap.get("isAskUser");
-        if (Boolean.TRUE.equals(isAskUserResult)) {
-            List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
-            if (questions != null && !questions.isEmpty()) {
-                // 保存等待问题到上下文
-                Map<String, Object> pendingQuestion = new HashMap<>();
-                pendingQuestion.put("questions", questions);
-                ChatContextHolder.getChatContext().setWaitingForUser(pendingQuestion);
-
-                // 发送向用户提问的事件
-                SseUtil.sendChatBIAskUser(emitter, questions);
-                log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
-                return true;
+        // 获取问题列表
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
+        if (questions != null && !questions.isEmpty()) {
+            // 为每个问题生成 UUID
+            for (Map<String, Object> q : questions) {
+                q.put("id", UUID.randomUUID().toString());
             }
+            // 保存等待问题到上下文
+            Map<String, Object> pendingQuestion = new HashMap<>();
+            pendingQuestion.put("questions", questions);
+            ChatContextHolder.getChatContext().setWaitingForUser(pendingQuestion);
+
+            // 发送向用户提问的事件
+            SseUtil.sendChatBIAskUser(emitter, questions);
+            log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
+            return true;
         }
         return false;
     }

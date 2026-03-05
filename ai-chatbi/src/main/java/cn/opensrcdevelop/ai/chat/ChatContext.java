@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.chat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -60,9 +61,6 @@ public class ChatContext {
     /** 等待用户输入的问题 */
     private Map<String, Object> pendingQuestion;
 
-    /** 等待用户输入的上下文 */
-    private Map<String, Object> askUserContext;
-
     /**
      * 设置等待用户输入
      *
@@ -71,7 +69,6 @@ public class ChatContext {
      */
     public void setWaitingForUser(Map<String, Object> question) {
         this.pendingQuestion = question;
-        this.askUserContext = question;
     }
 
     /**
@@ -79,7 +76,6 @@ public class ChatContext {
      */
     public void clearWaitingState() {
         this.pendingQuestion = null;
-        this.askUserContext = null;
     }
 
     /**
@@ -92,20 +88,20 @@ public class ChatContext {
     /** 用户响应信号量 */
     private transient CountDownLatch userResponseLatch;
 
-    /** 用户回答 */
-    private transient Map<String, Object> userAnswer;
+    /** 用户回答列表（支持多个问题） */
+    private transient List<Map<String, Object>> userAnswers;
 
     /**
      * 等待用户回答
      * @param timeoutSeconds 超时时间（秒）
-     * @return 用户回答，超时返回 null
+     * @return 用户回答列表，超时返回 null
      */
-    public Map<String, Object> waitForUserAnswer(long timeoutSeconds) {
+    public List<Map<String, Object>> waitForUserAnswer(long timeoutSeconds) {
         this.userResponseLatch = new CountDownLatch(1);
         try {
             boolean completed = userResponseLatch.await(timeoutSeconds, TimeUnit.SECONDS);
             if (completed) {
-                return this.userAnswer;
+                return this.userAnswers;
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -114,10 +110,13 @@ public class ChatContext {
     }
 
     /**
-     * 设置用户回答并唤醒等待线程
+     * 添加用户回答并唤醒等待线程（累加而不是覆盖）
      */
-    public void setUserAnswer(Map<String, Object> answer) {
-        this.userAnswer = answer;
+    public void addUserAnswers(List<Map<String, Object>> answers) {
+        if (this.userAnswers == null) {
+            this.userAnswers = new ArrayList<>();
+        }
+        this.userAnswers.addAll(answers);
         if (this.userResponseLatch != null) {
             this.userResponseLatch.countDown();
         }

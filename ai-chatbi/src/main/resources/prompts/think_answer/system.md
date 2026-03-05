@@ -75,7 +75,7 @@ Do not call if these keywords are not present.
 - Path D (Reporting): get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
 - Path E (Multiple SQL): generate_sql → execute_sql → generate_sql → execute_sql → ... → final_answer
 
-## ask_user Tool
+## Ask User Tool
 Use `ask_user` tool when you cannot answer the user's question because you lack necessary information.
 
 ### When to Use
