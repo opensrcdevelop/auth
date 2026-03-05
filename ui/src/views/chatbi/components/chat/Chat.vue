@@ -9,6 +9,13 @@
         @send-message="sendMessage"
       />
     </div>
+    <!-- 用户回答弹窗 -->
+    <AskUserDialog
+      :visible="askUserVisible"
+      :questions="askUserQuestions"
+      @submit="handleAskUserSubmit"
+      @cancel="handleAskUserCancel"
+    />
     <div class="input-area">
       <a-textarea
         class="no-border-textarea"
@@ -92,9 +99,10 @@
 import {useEventSource} from "@/hooks/useEventSource";
 import {nextTick, reactive, ref, watch} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory,} from "@/api/chatbi";
+import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory, handleUserResponse,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
+import AskUserDialog from "@/components/chatbi/AskUserDialog.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -117,6 +125,8 @@ const messages = reactive([]);
 const userInput = ref("");
 const loading = ref(false);
 const questionId = ref("");
+const askUserVisible = ref(false);
+const askUserQuestions = ref<any[]>([]);
 const dataSourceList = reactive([]);
 const modelProviderList = reactive([]);
 const selectedDataSource = ref("");
@@ -301,6 +311,32 @@ const resendMessage = (qId: string) => {
 };
 
 /**
+ * 提交用户回答
+ */
+const handleAskUserSubmit = async (data: { questionId: string; answer: any }) => {
+  askUserVisible.value = false;
+  loading.value = true;
+  try {
+    await handleUserResponse({
+      chatId: activeChatId.value || props.chatId,
+      questionId: data.questionId,
+      answer: data.answer,
+    });
+  } catch (error) {
+    handleApiError(error, "提交回答失败");
+    loading.value = false;
+  }
+};
+
+/**
+ * 取消用户回答
+ */
+const handleAskUserCancel = () => {
+  askUserVisible.value = false;
+  askUserQuestions.value = [];
+};
+
+/**
  * 处理消息
  */
 const handleMessage = (message) => {
@@ -352,6 +388,14 @@ const handleMessage = (message) => {
     } else {
       messages.push(message);
     }
+    return;
+  }
+
+  // 处理向用户提问
+  if (message.type === "ASK_USER") {
+    askUserQuestions.value = message.content || [];
+    askUserVisible.value = true;
+    loading.value = false;
     return;
   }
 
