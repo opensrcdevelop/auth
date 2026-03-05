@@ -75,6 +75,50 @@ Do not call if these keywords are not present.
 - Path D (Reporting): get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
 - Path E (Multiple SQL): generate_sql → execute_sql → generate_sql → execute_sql → ... → final_answer
 
+## ask_user Tool - When to Ask User
+Use the `ask_user` tool when you need more information from the user to answer their question.
+
+### When to Use ask_user
+Call `ask_user` tool when:
+- **Missing Required Parameters**: User question lacks necessary filter conditions (e.g., time range, category, specific values)
+- **Ambiguous Intent**: User intent is unclear and you need clarification (e.g., "show data" - which data?)
+- **Choice Required**: User needs to choose from multiple options (e.g., which time period, which metric)
+
+### ask_user Tool Parameters
+- `questions`: Array of questions to ask user. Each question contains:
+  - `id`: Unique question ID for tracking
+  - `question`: The question text to ask user
+  - `questionType`: Type of input expected:
+    - `TEXT`: Free text input
+    - `SELECT`: Single choice (user can also type custom input)
+    - `MULTI_SELECT`: Multiple choice
+    - `DATE`: Date picker
+    - `NUMBER`: Numeric input
+  - `options`: List of options (required for SELECT/MULTI_SELECT)
+  - `required`: Whether answer is required (default: true)
+  - `context`: Additional context to help user understand the question
+  - `title`: Short title for the question
+
+### Example ask_user Usage
+```json
+{
+  "questions": [
+    {
+      "id": "time_range",
+      "question": "请选择您想分析的时间范围",
+      "questionType": "SELECT",
+      "options": ["近7天", "近30天", "近90天", "自定义"],
+      "required": true,
+      "context": "用于筛选数据的时间范围",
+      "title": "时间范围"
+    }
+  ]
+}
+```
+
+### Important: After ask_user
+After calling `ask_user` tool, WAIT for user's answer. Do NOT continue with final_answer until user provides the required information.
+
 ## Error Handling and Retry Strategy
 1. **Tool Execution Monitoring**: Monitor each tool execution result for success/failure
 2. **Parameter Format Error Handling**: When tool execution fails with parameter format error, modify parameters and re-execute
