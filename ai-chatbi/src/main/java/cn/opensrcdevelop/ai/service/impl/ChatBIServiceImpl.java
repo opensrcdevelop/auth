@@ -282,6 +282,12 @@ public class ChatBIServiceImpl implements ChatBIService {
             return Tuple.of(null, question);
         }
 
+        // 检测是否需要等待用户回答
+        if (answer != null && Boolean.TRUE.equals(answer.get("isWaitingForUser"))) {
+            // ask_user tool 已被调用，等待用户回答，不保存答案
+            return Tuple.of(null, question);
+        }
+
         if (MapUtils.isEmpty(answer)) {
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);
