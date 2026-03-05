@@ -102,7 +102,7 @@ import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/to
 import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory, handleUserResponse,} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
-import AskUserDialog from "@/components/chatbi/AskUserDialog.vue";
+import AskUserDialog from "./components/AskUserDialog.vue";
 
 const props = withDefaults(
   defineProps<{
