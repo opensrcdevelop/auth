@@ -100,7 +100,13 @@ public class ThinkAnswerAgent {
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
-                executeToolCall(parseResult._2(), emitter);
+                boolean isAskUser = executeToolCall(parseResult._2(), emitter);
+                // 如果调用了 ask_user tool，返回等待用户回答的标记
+                if (isAskUser) {
+                    Map<String, Object> waitingResult = new HashMap<>();
+                    waitingResult.put("isWaitingForUser", true);
+                    return waitingResult;
+                }
             }
             step++;
         }
@@ -191,8 +197,12 @@ public class ThinkAnswerAgent {
         return builder.build();
     }
 
+    /**
+     * 执行工具调用
+     * @return 是否是 ask_user tool
+     */
     @SuppressWarnings("all")
-    private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
+    private boolean executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
         Object toolNameObj = toolCall.get("name");
         Object parametersObj = toolCall.get("parameters");
@@ -201,7 +211,7 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            return;
+            return false;
         }
 
         if (Objects.isNull(parametersObj)) {
@@ -209,7 +219,7 @@ public class ThinkAnswerAgent {
                     "error",
                     "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            return;
+            return false;
         }
 
         String toolName = toolNameObj.toString();
@@ -217,6 +227,7 @@ public class ThinkAnswerAgent {
 
         String executeTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
+        boolean isAskUser = false;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
@@ -246,7 +257,7 @@ public class ThinkAnswerAgent {
 
             // 检查是否是 ask_user tool
             if (AskUserTool.TOOL_NAME.equals(toolName)) {
-                handleAskUserTool(executeMethodResult, emitter);
+                isAskUser = handleAskUserTool(executeMethodResult, emitter);
             }
 
             toolCallResult = Map.of(
@@ -281,6 +292,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         setToolCallResult(toolCallResult);
+        return isAskUser;
     }
 
     private void setToolCallResult(Map<String, Object> toolCallResult) {
@@ -293,16 +305,12 @@ public class ThinkAnswerAgent {
 
     /**
      * 处理 ask_user tool 的返回结果
-     *
-     * @param executeMethodResult
-     *            tool 执行结果
-     * @param emitter
-     *            SSE
+     * @return 是否成功处理了 ask_user 请求
      */
     @SuppressWarnings("unchecked")
-    private void handleAskUserTool(Object executeMethodResult, SseEmitter emitter) {
+    private boolean handleAskUserTool(Object executeMethodResult, SseEmitter emitter) {
         if (executeMethodResult == null) {
-            return;
+            return false;
         }
 
         // 转换为 Map
@@ -310,12 +318,12 @@ public class ThinkAnswerAgent {
         if (executeMethodResult instanceof Map) {
             resultMap = (Map<String, Object>) executeMethodResult;
         } else {
-            return;
+            return false;
         }
 
         // 检查是否需要向用户提问
-        Boolean isAskUser = (Boolean) resultMap.get("isAskUser");
-        if (Boolean.TRUE.equals(isAskUser)) {
+        Boolean isAskUserResult = (Boolean) resultMap.get("isAskUser");
+        if (Boolean.TRUE.equals(isAskUserResult)) {
             List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
             if (questions != null && !questions.isEmpty()) {
                 // 保存等待问题到上下文
@@ -326,8 +334,10 @@ public class ThinkAnswerAgent {
                 // 发送向用户提问的事件
                 SseUtil.sendChatBIAskUser(emitter, questions);
                 log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
+                return true;
             }
         }
+        return false;
     }
 
     /**
