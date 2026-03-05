@@ -10,6 +10,7 @@ import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
+import cn.opensrcdevelop.ai.dto.UserResponseRequestDto;
 import cn.opensrcdevelop.ai.dto.VoteAnswerRequestDto;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -35,6 +36,7 @@ import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -149,6 +151,103 @@ public class ChatBIServiceImpl implements ChatBIService {
                         requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
     }
 
+    /**
+     * 处理用户对问题的回答
+     *
+     * @param request
+     *            用户响应
+     * @return SseEmitter
+     */
+    @Override
+    public SseEmitter handleUserResponse(UserResponseRequestDto request) {
+        SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
+        AtomicBoolean interruptFlag = new AtomicBoolean(false);
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+
+        String chatId = request.getChatId();
+        if (StringUtils.isEmpty(chatId)) {
+            SseUtil.sendChatBIError(emitter, "对话ID不能为空");
+            emitter.complete();
+            return emitter;
+        }
+
+        executor.execute(() -> {
+            SecurityContextHolder.setContext(securityContext);
+            try {
+                // 获取已有的 ChatContext
+                ChatContext chatContext = ChatContextHolder.getChatContext(chatId);
+                if (chatContext == null) {
+                    SseUtil.sendChatBIError(emitter, "对话上下文不存在，请重新开始对话");
+                    emitter.complete();
+                    return;
+                }
+
+                // 检查是否在等待用户回答
+                if (!chatContext.isWaitingForUser()) {
+                    SseUtil.sendChatBIError(emitter, "当前没有等待用户回答的问题");
+                    emitter.complete();
+                    return;
+                }
+
+                // 获取等待的问题列表
+                Map<String, Object> pendingQuestion = chatContext.getPendingQuestion();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> questions = (List<Map<String, Object>>) pendingQuestion.get("questions");
+
+                // 获取用户回答列表
+                List<Map<String, Object>> userAnswers = request.getAnswers();
+
+                if (userAnswers == null || userAnswers.isEmpty()) {
+                    SseUtil.sendChatBIError(emitter, "用户回答不能为空");
+                    emitter.complete();
+                    return;
+                }
+
+                // 构建用户回答列表（带问题文本）
+                List<Map<String, Object>> processedAnswers = new ArrayList<>();
+
+                for (Map<String, Object> userAnswer : userAnswers) {
+                    String questionId = (String) userAnswer.get("questionId");
+                    Object answer = userAnswer.get("answer");
+
+                    // 找到对应的问题获取问题文本
+                    String questionText = "";
+                    if (questions != null) {
+                        for (Map<String, Object> q : questions) {
+                            if (questionId != null && questionId.equals(q.get("id"))) {
+                                questionText = (String) q.get("question");
+                                break;
+                            }
+                        }
+                    }
+
+                    // 构建带问题文本的回答
+                    Map<String, Object> processedAnswer = new HashMap<>();
+                    processedAnswer.put("questionId", questionId != null ? questionId : "");
+                    processedAnswer.put("question", questionText);
+                    processedAnswer.put("answer", answer);
+                    processedAnswers.add(processedAnswer);
+                }
+
+                // 保存用户回答到上下文，唤醒等待线程
+                chatContext.addUserAnswers(processedAnswers);
+
+                // 清除等待状态
+                chatContext.clearWaitingState();
+
+                // 返回完成信号，让前端知道用户已回答
+                SseUtil.sendChatBIDone(emitter);
+            } catch (Exception e) {
+                log.error("处理用户回答失败", e);
+                SseUtil.sendChatBIError(emitter, "处理用户回答失败: " + e.getMessage());
+            } finally {
+                emitter.complete();
+            }
+        });
+
+        return emitter;
+    }
+
     @SuppressWarnings("all")
     private Tuple2<String, String> processStreamChatBIRequest(SseEmitter emitter,
             AtomicBoolean interruptFlag,
@@ -186,6 +285,12 @@ public class ChatBIServiceImpl implements ChatBIService {
                 30);
 
         if (interruptFlag.get()) {
+            return Tuple.of(null, question);
+        }
+
+        // 检测是否需要等待用户回答
+        if (answer != null && Boolean.TRUE.equals(answer.get("isWaitingForUser"))) {
+            // ask_user tool 已被调用，等待用户回答，不保存答案
             return Tuple.of(null, question);
         }
 

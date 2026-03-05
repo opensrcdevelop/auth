@@ -9,6 +9,8 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
@@ -290,5 +292,23 @@ public class SseUtil {
         if (saveMessage) {
             chatMessageHistoryService.createChatMessageHistory(thinkingMsg, ChatContentType.THINKING);
         }
+    }
+
+    /**
+     * 发送向用户提问的消息
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param questions
+     *            问题列表
+     */
+    public static void sendChatBIAskUser(SseEmitter emitter, List<Map<String, Object>> questions) {
+        Try.run(() -> emitter.send(SseEmitter.event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .content(questions)
+                        .type(ChatContentType.ASK_USER)
+                        .build(), MediaType.APPLICATION_JSON)));
     }
 }

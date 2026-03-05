@@ -3,6 +3,7 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.chat.tool.impl.ExecutePythonTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
@@ -15,6 +16,14 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -29,15 +38,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
@@ -100,7 +100,21 @@ public class ThinkAnswerAgent {
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
-                executeToolCall(parseResult._2(), emitter);
+                boolean isAskUser = executeToolCall(parseResult._2(), emitter);
+                // 如果调用了 ask_user tool，等待用户回答
+                if (isAskUser) {
+                    SseUtil.sendChatBILoading(emitter, "等待用户回答...");
+                    // 等待用户回答，超时 5 分钟
+                    ChatContext chatContext = ChatContextHolder.getChatContext();
+                    List<Map<String, Object>> userAnswers = chatContext.waitForUserAnswer(300);
+                    if (userAnswers == null || userAnswers.isEmpty()) {
+                        // 超时，返回空结果
+                        SseUtil.sendChatBIText(emitter, "等待用户回答超时，请重新提问。");
+                        return Collections.emptyMap();
+                    }
+                    // 用户已回答，继续循环让 AI 基于用户回答继续处理
+                    log.info("用户已回答，继续执行对话");
+                }
             }
             step++;
         }
@@ -171,6 +185,9 @@ public class ThinkAnswerAgent {
         // 获取示例 SQL
         List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
 
+        // 获取用户回答（如果有）
+        List<Map<String, Object>> userAnswers = ChatContextHolder.getChatContext().getUserAnswers();
+
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -181,7 +198,8 @@ public class ThinkAnswerAgent {
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
-                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
+                .param("user_answers", CollectionUtils.isEmpty(userAnswers) ? new ArrayList<>() : userAnswers);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -191,8 +209,12 @@ public class ThinkAnswerAgent {
         return builder.build();
     }
 
+    /**
+     * 执行工具调用
+     * @return 是否是 ask_user tool
+     */
     @SuppressWarnings("all")
-    private void executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
+    private boolean executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
         Object toolNameObj = toolCall.get("name");
         Object parametersObj = toolCall.get("parameters");
@@ -201,7 +223,7 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            return;
+            return false;
         }
 
         if (Objects.isNull(parametersObj)) {
@@ -209,7 +231,7 @@ public class ThinkAnswerAgent {
                     "error",
                     "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            return;
+            return false;
         }
 
         String toolName = toolNameObj.toString();
@@ -217,6 +239,7 @@ public class ThinkAnswerAgent {
 
         String executeTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
+        boolean isAskUser = false;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
@@ -243,6 +266,11 @@ public class ThinkAnswerAgent {
 
             String result = CommonUtil.nonJdkSerializeObject(executeMethodResult);
             log.info("Tool {} executed: {}", toolName, result);
+
+            // 检查是否是 ask_user tool
+            if (AskUserTool.TOOL_NAME.equals(toolName)) {
+                isAskUser = handleAskUserTool(executeMethodResult, emitter);
+            }
 
             toolCallResult = Map.of(
                     "tool_name", toolName,
@@ -276,6 +304,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         setToolCallResult(toolCallResult);
+        return isAskUser;
     }
 
     private void setToolCallResult(Map<String, Object> toolCallResult) {
@@ -284,6 +313,44 @@ public class ThinkAnswerAgent {
             chatContext.setToolCallResults(new ArrayList<>());
         }
         chatContext.getToolCallResults().addFirst(toolCallResult);
+    }
+
+    /**
+     * 处理 ask_user tool 的返回结果
+     * @return 是否成功处理了 ask_user 请求
+     */
+    @SuppressWarnings("unchecked")
+    private boolean handleAskUserTool(Object executeMethodResult, SseEmitter emitter) {
+        if (executeMethodResult == null) {
+            return false;
+        }
+
+        // 转换为 Map
+        Map<String, Object> resultMap;
+        if (executeMethodResult instanceof Map) {
+            resultMap = (Map<String, Object>) executeMethodResult;
+        } else {
+            return false;
+        }
+
+        // 获取问题列表
+        List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
+        if (questions != null && !questions.isEmpty()) {
+            // 为每个问题生成 UUID
+            for (Map<String, Object> q : questions) {
+                q.put("id", UUID.randomUUID().toString());
+            }
+            // 保存等待问题到上下文
+            Map<String, Object> pendingQuestion = new HashMap<>();
+            pendingQuestion.put("questions", questions);
+            ChatContextHolder.getChatContext().setWaitingForUser(pendingQuestion);
+
+            // 发送向用户提问的事件
+            SseUtil.sendChatBIAskUser(emitter, questions);
+            log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
+            return true;
+        }
+        return false;
     }
 
     /**

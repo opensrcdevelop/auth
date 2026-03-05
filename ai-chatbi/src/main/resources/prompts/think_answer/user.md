@@ -2,16 +2,16 @@
 
 Based on the following question, consider the execution of the first step.
 
-### Historical Questions
 <#if historical_questions?? && historical_questions?size gt 0>
+### Historical Questions
 <#list historical_questions as histQuestion>
 
 - ${histQuestion}
 </#list>
 </#if>
 
-### Sample SQL References
 <#if sample_sqls?? && sample_sqls?size gt 0>
+### Sample SQL References
 The following are similar questions and their SQL queries for reference:
 <#list sample_sqls as sample>
 
@@ -29,8 +29,8 @@ Question: ${question}
 
 Analyze the below tool execution results and the raw user question to determine the next step.
 
-### Historical Questions
 <#if historical_questions?? && historical_questions?size gt 0>
+### Historical Questions
 The following are the user's previous questions in this conversation for context:
 <#list historical_questions as histQuestion>
 
@@ -38,8 +38,8 @@ The following are the user's previous questions in this conversation for context
 </#list>
 </#if>
 
-### Sample SQL References
 <#if sample_sqls?? && sample_sqls?size gt 0>
+### Sample SQL References
 The following are similar questions and their SQL queries for reference:
 <#list sample_sqls as sample>
 
@@ -68,8 +68,8 @@ Output the final answer when ANY of the following is true:
 - The data source doesn't contain information to answer the question
 - Maximum tool execution attempts have been reached
 
-### Tool Execution Results
 <#if tool_execution_results?? && tool_execution_results?size gt 0>
+### Tool Execution Results
 
 <#list tool_execution_results as item>
 <#if item.tool_name??>
@@ -81,9 +81,18 @@ Output the final answer when ANY of the following is true:
 
 </#if>
 
-### Previous Thinking
 <#if previous_thinking?? && previous_thinking != "">
+### Previous Thinking
 Your previous thinking: ${previous_thinking}
+</#if>
+
+<#if user_answers?? && user_answers?size gt 0>
+### User Answers
+The following are user answers to your previous questions:
+<#list user_answers as ua>
+- Question: ${ua.question}
+  Answer: ${ua.answer}
+</#list>
 </#if>
 
 ### Raw User Question

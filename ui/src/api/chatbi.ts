@@ -295,12 +295,25 @@ export function deleteModelProvider(id: string) {
 
 /**
  * 获取回答的 SQL
- * 
+ *
  * @param id 回答ID
  * @returns 回答的 SQL
  */
 export function getAnsweredSql(id: string) {
   return noneLoadingApiRequest.get({
     url: `/chatbi/answer/${id}/sql`,
+  });
+}
+
+/**
+ * 处理用户对问题的回答
+ *
+ * @param data 请求数据
+ * @returns 调用结果
+ */
+export function handleUserResponse(data: { chatId: string; answers: { questionId: string; answer: any }[] }) {
+  return noneLoadingApiRequest.post({
+    url: "/chatbi/chat/user-response",
+    data,
   });
 }
