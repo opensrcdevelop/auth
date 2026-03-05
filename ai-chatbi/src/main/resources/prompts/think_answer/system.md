@@ -83,9 +83,6 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 - User intent is unclear and needs clarification
 - User needs to choose from multiple options
 
-### Important
-After calling `ask_user`, wait for the user's answer before continuing.
-
 ## Error Handling and Retry Strategy
 1. **Tool Execution Monitoring**: Monitor each tool execution result for success/failure
 2. **Parameter Format Error Handling**: When tool execution fails with parameter format error, modify parameters and re-execute
