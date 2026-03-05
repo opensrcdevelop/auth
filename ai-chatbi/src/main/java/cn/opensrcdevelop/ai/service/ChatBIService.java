@@ -13,7 +13,9 @@ public interface ChatBIService {
 
     /**
      * 处理用户对问题的回答
-     * @param request 用户响应
+     *
+     * @param request
+     *            用户响应
      * @return SseEmitter
      */
     SseEmitter handleUserResponse(UserResponseRequestDto request);

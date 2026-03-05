@@ -2,6 +2,12 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -10,13 +16,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
@@ -91,19 +90,19 @@ public class ExecutePythonTool implements MethodTool {
             if (ulimitEnabled) {
                 // 创建内存限制包装脚本
                 String wrapperScript = String.format("""
-                    import resource
-                    import sys
-                    max_memory = %d * 1024 * 1024
-                    try:
-                        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-                        if hard == resource.RLIM_INFINITY:
-                            hard = max_memory
-                        if soft > max_memory:
-                            resource.setrlimit(resource.RLIMIT_AS, (max_memory, hard))
-                    except ValueError:
-                        pass  # 无法设置限制时忽略
-                    exec(open('%s').read())
-                    """, pythonMaxMemoryMb, tempScriptFile.getAbsolutePath());
+                        import resource
+                        import sys
+                        max_memory = %d * 1024 * 1024
+                        try:
+                            soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+                            if hard == resource.RLIM_INFINITY:
+                                hard = max_memory
+                            if soft > max_memory:
+                                resource.setrlimit(resource.RLIMIT_AS, (max_memory, hard))
+                        except ValueError:
+                            pass  # 无法设置限制时忽略
+                        exec(open('%s').read())
+                        """, pythonMaxMemoryMb, tempScriptFile.getAbsolutePath());
 
                 wrapperPath = tempScriptFile.getAbsolutePath() + "_wrapper.py";
                 try (FileWriter writer = new FileWriter(wrapperPath)) {
@@ -112,12 +111,11 @@ public class ExecutePythonTool implements MethodTool {
 
                 // 带 ulimit 限制
                 String[] cmd = {
-                    "sh", "-c",
-                    String.format(
-                        "ulimit -t %d -f %d -u %d && %s %s",
-                        ulimitCpuTime, ulimitFileSize, ulimitMaxProcesses,
-                        pythonPath, wrapperPath
-                    )
+                        "sh", "-c",
+                        String.format(
+                                "ulimit -t %d -f %d -u %d && %s %s",
+                                ulimitCpuTime, ulimitFileSize, ulimitMaxProcesses,
+                                pythonPath, wrapperPath)
                 };
                 process = Runtime.getRuntime().exec(cmd);
             } else {
