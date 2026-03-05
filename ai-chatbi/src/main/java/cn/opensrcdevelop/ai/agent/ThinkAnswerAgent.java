@@ -101,11 +101,19 @@ public class ThinkAnswerAgent {
                 return parseResult._2();
             } else {
                 boolean isAskUser = executeToolCall(parseResult._2(), emitter);
-                // 如果调用了 ask_user tool，返回等待用户回答的标记
+                // 如果调用了 ask_user tool，等待用户回答
                 if (isAskUser) {
-                    Map<String, Object> waitingResult = new HashMap<>();
-                    waitingResult.put("isWaitingForUser", true);
-                    return waitingResult;
+                    SseUtil.sendChatBILoading(emitter, "等待用户回答...");
+                    // 等待用户回答，超时 5 分钟
+                    ChatContext chatContext = ChatContextHolder.getChatContext();
+                    Map<String, Object> userAnswer = chatContext.waitForUserAnswer(300);
+                    if (userAnswer == null) {
+                        // 超时，返回空结果
+                        SseUtil.sendChatBIText(emitter, "等待用户回答超时，请重新提问。");
+                        return Collections.emptyMap();
+                    }
+                    // 用户已回答，继续循环让 AI 基于用户回答继续处理
+                    log.info("用户已回答，继续执行对话");
                 }
             }
             step++;

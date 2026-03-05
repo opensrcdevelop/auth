@@ -215,17 +215,19 @@ public class ChatBIServiceImpl implements ChatBIService {
                     String userAnswer = request.getAnswer();
                     String questionText = (String) targetQuestion.get("question");
 
+                    // 保存用户回答到上下文，唤醒等待线程
+                    chatContext.setUserAnswer(Map.of(
+                            "questionId", questionId != null ? questionId : "",
+                            "question", questionText,
+                            "answer", userAnswer));
+
                     // 保存用户回答到历史消息
                     chatMessageHistoryService.createUserChatMessageHistory("回答: " + userAnswer);
 
                     // 清除等待状态
                     chatContext.clearWaitingState();
 
-                    // 继续对话流程（将用户回答融入上下文中）
-                    SseUtil.sendChatBILoading(emitter, "正在处理您的回答...");
-
-                    // 这里可以添加继续对话的逻辑，
-                    // 目前先返回完成信号，让前端知道用户已回答
+                    // 返回完成信号，让前端知道用户已回答
                     SseUtil.sendChatBIDone(emitter);
                 } else {
                     SseUtil.sendChatBIError(emitter, "未找到对应的问题");
