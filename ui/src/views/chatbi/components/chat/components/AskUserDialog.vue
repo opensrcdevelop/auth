@@ -33,51 +33,42 @@
 
       <!-- 单选（支持自定义输入） -->
       <a-form-item v-else-if="currentQuestion?.questionType === 'SELECT'" required>
-        <a-select
-          v-model="form.answer"
-          :placeholder="currentQuestion?.required !== false ? '请选择' : '可选选择'"
-          allow-clear
-          allow-create
-          :style="{ width: '100%' }"
-        >
-          <a-option v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
+        <a-radio-group v-model="form.answer">
+          <a-radio v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
             {{ opt }}
-          </a-option>
-        </a-select>
+          </a-radio>
+        </a-radio-group>
+        <div class="mt-3">
+          <a-input
+            v-model="form.customAnswer"
+            placeholder="或输入自定义内容"
+            @press-enter="handleCustomAnswerSelect"
+          >
+            <template #append>
+              <a-button @click="handleCustomAnswerSelect">添加</a-button>
+            </template>
+          </a-input>
+        </div>
       </a-form-item>
 
-      <!-- 多选 -->
+      <!-- 多选（支持自定义输入） -->
       <a-form-item v-else-if="currentQuestion?.questionType === 'MULTI_SELECT'" required>
-        <a-select
-          v-model="form.answer"
-          :placeholder="currentQuestion?.required !== false ? '请选择' : '可选选择'"
-          multiple
-          allow-clear
-        >
-          <a-option v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
+        <a-checkbox-group v-model="form.answers">
+          <a-checkbox v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
             {{ opt }}
-          </a-option>
-        </a-select>
-      </a-form-item>
-
-      <!-- 日期选择 -->
-      <a-form-item v-else-if="currentQuestion?.questionType === 'DATE'" required>
-        <a-date-picker
-          v-model="form.answer"
-          :style="{ width: '100%' }"
-          :placeholder="currentQuestion?.required !== false ? '请选择日期' : '可选选择日期'"
-        />
-      </a-form-item>
-
-      <!-- 数字输入 -->
-      <a-form-item v-else-if="currentQuestion?.questionType === 'NUMBER'" required>
-        <a-input-number
-          v-model="form.answer"
-          :min="currentQuestion?.min"
-          :max="currentQuestion?.max"
-          :placeholder="currentQuestion?.required !== false ? '请输入数字' : '可选输入'"
-          :style="{ width: '100%' }"
-        />
+          </a-checkbox>
+        </a-checkbox-group>
+        <div class="mt-3">
+          <a-input
+            v-model="form.customAnswer"
+            placeholder="或输入自定义内容"
+            @press-enter="handleCustomMultiAnswer"
+          >
+            <template #append>
+              <a-button @click="handleCustomMultiAnswer">添加</a-button>
+            </template>
+          </a-input>
+        </div>
       </a-form-item>
 
       <!-- 默认文本输入 -->
@@ -102,8 +93,6 @@ export interface Question {
   required?: boolean;
   context?: string;
   title?: string;
-  min?: number;
-  max?: number;
 }
 
 const props = defineProps<{
@@ -117,7 +106,11 @@ const emit = defineEmits<{
 }>();
 
 const activeTab = ref(0);
-const form = ref<{ answer: any }>({ answer: "" });
+const form = ref<{ answer: string; answers: string[]; customAnswer: string }>({
+  answer: "",
+  answers: [],
+  customAnswer: "",
+});
 
 const currentQuestion = computed(() => {
   if (!props.questions || props.questions.length === 0) return null;
@@ -129,6 +122,8 @@ watch(
   (val) => {
     if (val) {
       form.value.answer = "";
+      form.value.answers = [];
+      form.value.customAnswer = "";
       activeTab.value = 0;
     }
   }
@@ -136,7 +131,27 @@ watch(
 
 watch(activeTab, () => {
   form.value.answer = "";
+  form.value.answers = [];
+  form.value.customAnswer = "";
 });
+
+// 单选自定义输入
+const handleCustomAnswerSelect = () => {
+  if (form.value.customAnswer && form.value.customAnswer.trim()) {
+    form.value.answer = form.value.customAnswer.trim();
+    form.value.customAnswer = "";
+  }
+};
+
+// 多选自定义输入
+const handleCustomMultiAnswer = () => {
+  if (form.value.customAnswer && form.value.customAnswer.trim()) {
+    if (!form.value.answers.includes(form.value.customAnswer.trim())) {
+      form.value.answers.push(form.value.customAnswer.trim());
+    }
+    form.value.customAnswer = "";
+  }
+};
 
 const handleSubmit = (done: (close: boolean) => void) => {
   const q = currentQuestion.value;
@@ -145,22 +160,42 @@ const handleSubmit = (done: (close: boolean) => void) => {
     return;
   }
 
+  let answer: any;
+  if (q.questionType === "MULTI_SELECT") {
+    answer = form.value.answers;
+  } else {
+    answer = form.value.answer;
+  }
+
   // 验证必填
-  if (q.required !== false && (form.value.answer === "" || form.value.answer === null || form.value.answer === undefined)) {
-    done(false);
-    return;
+  if (q.required !== false) {
+    if (q.questionType === "MULTI_SELECT") {
+      if (!answer || answer.length === 0) {
+        done(false);
+        return;
+      }
+    } else {
+      if (!answer || answer === "") {
+        done(false);
+        return;
+      }
+    }
   }
 
   emit("submit", {
     questionId: q.id,
-    answer: form.value.answer,
+    answer: answer,
   });
   form.value.answer = "";
+  form.value.answers = [];
+  form.value.customAnswer = "";
   done(true);
 };
 
 const handleCancel = () => {
   form.value.answer = "";
+  form.value.answers = [];
+  form.value.customAnswer = "";
   emit("cancel");
 };
 </script>
