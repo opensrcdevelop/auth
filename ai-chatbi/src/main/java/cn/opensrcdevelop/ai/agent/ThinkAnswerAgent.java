@@ -16,14 +16,6 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -39,6 +31,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -48,9 +49,8 @@ public class ThinkAnswerAgent {
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
 
-    /** JSON 模式检测正则：检测 { "key": value } 或类似的 JSON 对象模式 */
     private static final Pattern JSON_OBJECT_PATTERN = Pattern.compile(
-            "\\{[\\s]*\"[^\"]+\"[\\s]*:[^}]*\\}", Pattern.CASE_INSENSITIVE);
+            "\\{[\\s\\S]*}", Pattern.CASE_INSENSITIVE);
 
     /**
      * 思考并回答用户提问
@@ -100,21 +100,7 @@ public class ThinkAnswerAgent {
             if (isFinalAnswer) {
                 return parseResult._2();
             } else {
-                boolean isAskUser = executeToolCall(parseResult._2(), emitter);
-                // 如果调用了 ask_user tool，等待用户回答
-                if (isAskUser) {
-                    SseUtil.sendChatBILoading(emitter, "等待用户回答...");
-                    // 等待用户回答，超时 5 分钟
-                    ChatContext chatContext = ChatContextHolder.getChatContext();
-                    List<Map<String, Object>> userAnswers = chatContext.waitForUserAnswer(300);
-                    if (userAnswers == null || userAnswers.isEmpty()) {
-                        // 超时，返回空结果
-                        SseUtil.sendChatBIText(emitter, "等待用户回答超时，请重新提问。");
-                        return Collections.emptyMap();
-                    }
-                    // 用户已回答，继续循环让 AI 基于用户回答继续处理
-                    log.info("用户已回答，继续执行对话");
-                }
+                executeToolCall(parseResult._2(), emitter);
             }
             step++;
         }
@@ -185,9 +171,6 @@ public class ThinkAnswerAgent {
         // 获取示例 SQL
         List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
 
-        // 获取用户回答（如果有）
-        List<Map<String, Object>> userAnswers = ChatContextHolder.getChatContext().getUserAnswers();
-
         var thinkAnswerPrompt = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
@@ -198,8 +181,7 @@ public class ThinkAnswerAgent {
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
-                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
-                .param("user_answers", CollectionUtils.isEmpty(userAnswers) ? new ArrayList<>() : userAnswers);
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -211,7 +193,12 @@ public class ThinkAnswerAgent {
 
     /**
      * 执行工具调用
-     * @return 是否是 ask_user tool
+     *
+     * @param toolCall
+     *            工具调用参数，包含工具名称和参数
+     * @param emitter
+     *            SSE 事件发射器，用于发送工具调用结果
+     * @return
      */
     @SuppressWarnings("all")
     private boolean executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
@@ -259,18 +246,18 @@ public class ThinkAnswerAgent {
                         });
                 Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"),
                         executeMethodParamTypes[0]);
-                executeMethodResult = executeMethod.invoke(tool, request);
+
+                if (AskUserTool.TOOL_NAME.equals(toolName)) {
+                    executeMethodResult = executeMethod.invoke(tool, request, emitter);
+                } else {
+                    executeMethodResult = executeMethod.invoke(tool, request);
+                }
             } else {
                 executeMethodResult = executeMethod.invoke(tool);
             }
 
             String result = CommonUtil.nonJdkSerializeObject(executeMethodResult);
             log.info("Tool {} executed: {}", toolName, result);
-
-            // 检查是否是 ask_user tool
-            if (AskUserTool.TOOL_NAME.equals(toolName)) {
-                isAskUser = handleAskUserTool(executeMethodResult, emitter);
-            }
 
             toolCallResult = Map.of(
                     "tool_name", toolName,
@@ -290,7 +277,8 @@ public class ThinkAnswerAgent {
             }
 
             if (ex.getCause() instanceof JacksonException) {
-                errorMsg = errorMsg + ", Please check the tool parameters format.";
+                errorMsg = errorMsg + ", Please check the tool parameters format. The invalid parameters are: "
+                        + parameters;
             }
             toolCallResult = Map.of(
                     "tool_name", toolName,
@@ -307,50 +295,18 @@ public class ThinkAnswerAgent {
         return isAskUser;
     }
 
+    /**
+     * 设置工具调用结果到上下文
+     *
+     * @param toolCallResult
+     *            工具调用结果，包含工具名称、执行时间和结果
+     */
     private void setToolCallResult(Map<String, Object> toolCallResult) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         if (CollectionUtils.isEmpty(chatContext.getToolCallResults())) {
             chatContext.setToolCallResults(new ArrayList<>());
         }
         chatContext.getToolCallResults().addFirst(toolCallResult);
-    }
-
-    /**
-     * 处理 ask_user tool 的返回结果
-     * @return 是否成功处理了 ask_user 请求
-     */
-    @SuppressWarnings("unchecked")
-    private boolean handleAskUserTool(Object executeMethodResult, SseEmitter emitter) {
-        if (executeMethodResult == null) {
-            return false;
-        }
-
-        // 转换为 Map
-        Map<String, Object> resultMap;
-        if (executeMethodResult instanceof Map) {
-            resultMap = (Map<String, Object>) executeMethodResult;
-        } else {
-            return false;
-        }
-
-        // 获取问题列表
-        List<Map<String, Object>> questions = (List<Map<String, Object>>) resultMap.get("questions");
-        if (questions != null && !questions.isEmpty()) {
-            // 为每个问题生成 UUID
-            for (Map<String, Object> q : questions) {
-                q.put("id", UUID.randomUUID().toString());
-            }
-            // 保存等待问题到上下文
-            Map<String, Object> pendingQuestion = new HashMap<>();
-            pendingQuestion.put("questions", questions);
-            ChatContextHolder.getChatContext().setWaitingForUser(pendingQuestion);
-
-            // 发送向用户提问的事件
-            SseUtil.sendChatBIAskUser(emitter, questions);
-            log.info("AskUser tool triggered, {} questions sent to frontend", questions.size());
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -363,6 +319,13 @@ public class ThinkAnswerAgent {
         ChatContextHolder.getChatContext().setPreviousThinking(thinkingContent);
     }
 
+    /**
+     * 解析 LLM 结果，提取思考原因和 JSON 内容
+     *
+     * @param llmResult
+     *            LLM 原始结果字符串
+     * @return 包含思考原因和 JSON 内容的元组
+     */
     private Tuple2<String, Map<String, Object>> parseLlmResult(String llmResult) {
         int startIndex = llmResult.indexOf("{");
         int endIndex = llmResult.lastIndexOf("}");
@@ -404,7 +367,14 @@ public class ThinkAnswerAgent {
         return Tuple.of(reason, jsonMap);
     }
 
-    /** 检测文本中是否包含 JSON 对象模式（不在代码块中） */
+    /**
+     * 检查文本是否包含 JSON 模式
+     *
+     * @param text
+     *            待检查的文本
+     * @return 如果文本包含 JSON 模式则返回 true，否则返回 false
+     */
+    @SuppressWarnings("java:S3776")
     private boolean containsJsonPattern(String text) {
         if (text == null) {
             return false;

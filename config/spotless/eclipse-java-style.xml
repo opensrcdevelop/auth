@@ -29,6 +29,8 @@
         <setting id="org.eclipse.jdt.core.formatter.insert_new_line_in_empty_block" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_new_line_in_empty_enum_constant" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_new_line_in_empty_enum_declaration" value="insert"/>
+        <setting id="org.eclipse.jdt.core.formatter.enum_constants_separated_by_line_break" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants" value="49"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_new_line_in_empty_method_body" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_new_line_in_empty_type_declaration" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.join_lines_in_comments" value="true"/>

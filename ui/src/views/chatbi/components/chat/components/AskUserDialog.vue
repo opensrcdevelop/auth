@@ -1,81 +1,127 @@
 <template>
   <a-modal
     :visible="visible"
-    :title="currentQuestion?.title || currentQuestion?.question || '请回答'"
+    :closable="false"
+    :maskClosable="false"
+    :title="currentQuestion?.questionText || '请回答 AI 提问'"
     :width="520"
     @cancel="handleCancel"
     @before-ok="handleSubmit"
   >
-    <a-tabs v-model:activeTab="activeTab" v-if="questions.length > 1">
-      <a-tab-pane
-        v-for="(q, index) in questions"
-        :key="q.id || index"
-        :title="q.title || `问题 ${index + 1}`"
-      />
-    </a-tabs>
+    <a-radio-group
+      type="button"
+      v-model="activeQuestion"
+      v-if="questions.length > 1"
+      style="margin-bottom: 16px"
+    >
+      <a-radio :value="index" v-for="(q, index) in questions">{{
+        `问题 ${index + 1}`
+      }}</a-radio>
+    </a-radio-group>
 
-    <a-form :model="currentForm" layout="vertical">
+    <a-form
+      ref="formRef"
+      :model="currentForm"
+      :rules="formRules"
+      layout="vertical"
+    >
       <!-- 上下文信息 -->
       <a-alert
         v-if="currentQuestion?.context"
-        :message="currentQuestion.context"
-        type="info"
-        class="mb-4"
-      />
+        type="normal"
+        :style="{ marginBottom: '16px' }"
+        >{{ currentQuestion.context }}</a-alert
+      >
 
       <!-- 文本输入 -->
-      <a-form-item v-if="currentQuestion?.questionType === 'TEXT'" required>
+      <a-form-item
+        v-if="currentQuestion?.questionType === 'TEXT'"
+        field="answer"
+        :required="currentQuestion?.required !== false"
+        :label="currentQuestion?.title"
+      >
         <a-input
           v-model="currentForm.answer"
-          :placeholder="currentQuestion?.required !== false ? '请输入' : '可选输入'"
+          :placeholder="
+            currentQuestion?.required !== false ? '请输入' : '可选输入'
+          "
         />
       </a-form-item>
 
       <!-- 单选（支持自定义输入） -->
-      <a-form-item v-else-if="currentQuestion?.questionType === 'SELECT'" required>
-        <a-radio-group v-model="currentForm.answer">
-          <a-radio v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
+      <a-form-item
+        v-else-if="currentQuestion?.questionType === 'SELECT'"
+        field="answer"
+        :required="currentQuestion?.required !== false"
+        :label="currentQuestion?.title"
+      >
+        <a-radio-group v-model="currentForm.answer" direction="vertical">
+          <a-radio
+            v-for="opt in currentQuestion?.options"
+            :key="opt"
+            :value="opt"
+          >
             {{ opt }}
           </a-radio>
+          <!-- 其他选项，带输入框 -->
+          <a-radio value="__other__">
+            <div class="other-radio">
+              <span>其他</span>
+              <a-input
+                v-model="currentForm.customAnswer"
+                placeholder="请输入"
+                :style="{ width: '160px', marginLeft: '8px' }"
+                :disabled="currentForm.answer !== '__other__'"
+                @click.stop
+              />
+            </div>
+          </a-radio>
         </a-radio-group>
-        <div class="mt-3">
-          <a-input
-            v-model="currentForm.customAnswer"
-            placeholder="或输入自定义内容"
-            @press-enter="handleCustomAnswerSelect"
-          >
-            <template #append>
-              <a-button @click="handleCustomAnswerSelect">添加</a-button>
-            </template>
-          </a-input>
-        </div>
       </a-form-item>
 
       <!-- 多选（支持自定义输入） -->
-      <a-form-item v-else-if="currentQuestion?.questionType === 'MULTI_SELECT'" required>
-        <a-checkbox-group v-model="currentForm.answers">
-          <a-checkbox v-for="opt in currentQuestion?.options" :key="opt" :value="opt">
+      <a-form-item
+        v-else-if="currentQuestion?.questionType === 'MULTI_SELECT'"
+        field="answers"
+        :required="currentQuestion?.required !== false"
+        :label="currentQuestion?.title"
+      >
+        <a-checkbox-group v-model="currentForm.answers" direction="vertical">
+          <a-checkbox
+            v-for="opt in currentQuestion?.options"
+            :key="opt"
+            :value="opt"
+          >
             {{ opt }}
           </a-checkbox>
+          <!-- 其他选项，带输入框 -->
+          <a-checkbox value="__other__">
+            <div class="other-checkbox">
+              <span>其他</span>
+              <a-input
+                v-model="currentForm.customAnswer"
+                placeholder="请输入"
+                :style="{ width: '160px', marginLeft: '8px' }"
+                :disabled="!currentForm.answers.includes('__other__')"
+                @click.stop
+              />
+            </div>
+          </a-checkbox>
         </a-checkbox-group>
-        <div class="mt-3">
-          <a-input
-            v-model="currentForm.customAnswer"
-            placeholder="或输入自定义内容"
-            @press-enter="handleCustomMultiAnswer"
-          >
-            <template #append>
-              <a-button @click="handleCustomMultiAnswer">添加</a-button>
-            </template>
-          </a-input>
-        </div>
       </a-form-item>
 
       <!-- 默认文本输入 -->
-      <a-form-item v-else required>
+      <a-form-item
+        v-else
+        field="answer"
+        :required="currentQuestion?.required !== false"
+        :label="currentQuestion?.title"
+      >
         <a-input
           v-model="currentForm.answer"
-          :placeholder="currentQuestion?.required !== false ? '请输入' : '可选输入'"
+          :placeholder="
+            currentQuestion?.required !== false ? '请输入' : '可选输入'
+          "
         />
       </a-form-item>
     </a-form>
@@ -83,12 +129,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
+import {computed, nextTick, onUnmounted, ref, watch} from "vue";
+import {Message} from "@arco-design/web-vue";
 
 export interface Question {
   id: string;
-  question: string;
+  questionText: string;
   questionType?: string;
   options?: string[];
   required?: boolean;
@@ -106,9 +152,16 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const activeTab = ref(0);
+const formRef = ref<any>(null);
+
+let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+const TIMEOUT_MS = 60 * 1000 * 2; // 2 分钟
+
+const activeQuestion = ref(0);
 // 存储所有问题的回答，key 是问题 id
-const forms = ref<Record<string, { answer: string; answers: string[]; customAnswer: string }>>({});
+const forms = ref<
+  Record<string, { answer: string; answers: string[]; customAnswer: string }>
+>({});
 
 const currentForm = computed(() => {
   const q = currentQuestion.value;
@@ -121,7 +174,40 @@ const currentForm = computed(() => {
 
 const currentQuestion = computed(() => {
   if (!props.questions || props.questions.length === 0) return null;
-  return props.questions[activeTab.value] || props.questions[0];
+  return props.questions[activeQuestion.value] || props.questions[0];
+});
+
+const formRules = computed(() => {
+  const q = currentQuestion.value;
+  if (!q || q.required === false) return {};
+
+  const rules: Record<string, any> = {};
+  if (q.questionType === "MULTI_SELECT") {
+    rules.answers = [
+      {
+        type: "array",
+        required: true,
+        message: `请选择：${q.title || q.questionText}`,
+      },
+    ];
+  } else if (q.questionType === "SELECT") {
+    rules.answer = [
+      {
+        type: "string",
+        required: true,
+        message: `请选择：${q.title || q.questionText}`,
+      },
+    ];
+  } else {
+    rules.answer = [
+      {
+        type: "string",
+        required: true,
+        message: `请输入`,
+      },
+    ];
+  }
+  return rules;
 });
 
 watch(
@@ -133,63 +219,119 @@ watch(
       props.questions.forEach((q) => {
         forms.value[q.id] = { answer: "", answers: [], customAnswer: "" };
       });
-      activeTab.value = 0;
+      activeQuestion.value = 0;
+
+      // 启动 2 分钟超时定时器
+      timeoutTimer = setTimeout(() => {
+        handleCancel();
+      }, TIMEOUT_MS);
+    } else {
+      // 关闭对话框时清除定时器
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
     }
-  }
+  },
 );
 
-watch(activeTab, () => {
-  // 切换标签时保存当前表单状态（通过 computed 已自动处理）
-});
+const handleSubmit = async (done: (close: boolean) => void) => {
+  await nextTick();
 
-// 单选自定义输入
-const handleCustomAnswerSelect = () => {
-  const form = currentForm.value;
-  if (form.customAnswer && form.customAnswer.trim()) {
-    form.answer = form.customAnswer.trim();
-    form.customAnswer = "";
+  const validateRes = await formRef.value?.validate();
+  if (validateRes) {
+    done(false);
+    return;
   }
-};
 
-// 多选自定义输入
-const handleCustomMultiAnswer = () => {
-  const form = currentForm.value;
-  if (form.customAnswer && form.customAnswer.trim()) {
-    if (!form.answers.includes(form.customAnswer.trim())) {
-      form.answers.push(form.customAnswer.trim());
+  // 自定义验证：选择了"其他"但没有输入内容
+  const currentQ = currentQuestion.value;
+  if (currentQ) {
+    const form = currentForm.value;
+    if (
+      currentQ.questionType === "SELECT" &&
+      form.answer === "__other__" &&
+      !form.customAnswer
+    ) {
+      Message.warning("请输入其他内容");
+      done(false);
+      return;
     }
-    form.customAnswer = "";
+    if (
+      currentQ.questionType === "MULTI_SELECT" &&
+      form.answers?.includes("__other__") &&
+      !form.customAnswer
+    ) {
+      Message.warning("请输入其他内容");
+      done(false);
+      return;
+    }
   }
-};
 
-const handleSubmit = (done: (close: boolean) => void) => {
+  // 验证所有必填问题
+  for (const q of props.questions) {
+    if (q.required === false) continue;
+
+    const form = forms.value[q.id] || {
+      answer: "",
+      answers: [],
+      customAnswer: "",
+    };
+    let isValid = false;
+
+    if (q.questionType === "MULTI_SELECT") {
+      isValid = form.answers && form.answers.length > 0;
+      // 如果选择了"其他"选项，必须填写自定义内容
+      if (isValid && form.answers.includes("__other__")) {
+        isValid = !!form.customAnswer && form.customAnswer.trim() !== "";
+      }
+    } else if (q.questionType === "SELECT") {
+      if (form.answer === "__other__") {
+        // 选择了"其他"选项，必须填写自定义内容
+        isValid = !!form.customAnswer && form.customAnswer.trim() !== "";
+      } else {
+        isValid = form.answer && form.answer !== "";
+      }
+    } else {
+      isValid = form.answer && form.answer !== "";
+    }
+
+    if (!isValid) {
+      // 切换到未填写的问题
+      const index = props.questions.findIndex((item) => item.id === q.id);
+      if (index !== -1) {
+        activeQuestion.value = index;
+      }
+      done(false);
+      return;
+    }
+  }
+
   // 收集所有问题的回答
   const allAnswers: { questionId: string; answer: any }[] = [];
 
   for (const q of props.questions) {
-    const form = forms.value[q.id] || { answer: "", answers: [], customAnswer: "" };
+    const form = forms.value[q.id] || {
+      answer: "",
+      answers: [],
+      customAnswer: "",
+    };
 
     let answer: any;
     if (q.questionType === "MULTI_SELECT") {
-      answer = form.answers;
+      const answerList = [...form.answers];
+      // 如果选择了"其他"选项，将自定义输入的值添加到答案中
+      const otherIndex = answerList.indexOf("__other__");
+      if (otherIndex !== -1 && form.customAnswer) {
+        answerList.splice(otherIndex, 1, form.customAnswer);
+      }
+      // 转为逗号分隔的字符串
+      answer = answerList.join(",");
     } else {
       answer = form.answer;
-    }
-
-    // 验证必填
-    if (q.required !== false) {
-      if (q.questionType === "MULTI_SELECT") {
-        if (!answer || answer.length === 0) {
-          Message.warning(`请回答问题：${q.title || q.question}`);
-          done(false);
-          return;
-        }
-      } else {
-        if (!answer || answer === "") {
-          Message.warning(`请回答问题：${q.title || q.question}`);
-          done(false);
-          return;
-        }
+      // 如果选择了"其他"选项，使用自定义输入的值
+      if (answer === "__other__" && form.customAnswer) {
+        answer = form.customAnswer;
       }
     }
 
@@ -208,9 +350,26 @@ const handleSubmit = (done: (close: boolean) => void) => {
 };
 
 const handleCancel = () => {
-  form.value.answer = "";
-  form.value.answers = [];
-  form.value.customAnswer = "";
+  if (timeoutTimer) {
+    clearTimeout(timeoutTimer);
+    timeoutTimer = null;
+  }
+  forms.value = {};
   emit("cancel");
 };
+
+onUnmounted(() => {
+  if (timeoutTimer) {
+    clearTimeout(timeoutTimer);
+    timeoutTimer = null;
+  }
+});
 </script>
+
+<style scoped>
+.other-radio,
+.other-checkbox {
+  display: inline-flex;
+  align-items: center;
+}
+</style>

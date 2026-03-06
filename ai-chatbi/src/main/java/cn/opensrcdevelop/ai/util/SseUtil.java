@@ -1,20 +1,21 @@
 package cn.opensrcdevelop.ai.util;
 
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Random;
 
 public class SseUtil {
 
@@ -302,7 +303,7 @@ public class SseUtil {
      * @param questions
      *            问题列表
      */
-    public static void sendChatBIAskUser(SseEmitter emitter, List<Map<String, Object>> questions) {
+    public static void sendChatBIAskUser(SseEmitter emitter, List<AskUserTool.Question> questions) {
         Try.run(() -> emitter.send(SseEmitter.event()
                 .data(ChatBIResponseDto.builder()
                         .chatId(ChatContextHolder.getChatContext().getChatId())

@@ -13,12 +13,13 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
 @RestController
@@ -267,9 +268,9 @@ public class ChatBIController {
     }
 
     @Operation(summary = "处理用户对问题的回答", description = "处理用户对问题的回答")
-    @PostMapping(path = "/chat/user-response", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(path = "/chat/answerAskUserQuestion")
     @Authorize({"allChatBIPermissions", "chat"})
-    public SseEmitter handleUserResponse(@RequestBody UserResponseRequestDto request) {
-        return chatBIService.handleUserResponse(request);
+    public void answerAskUserQuestion(@RequestBody @Validated UserAnswerRequestDto requestDto) {
+        chatBIService.answerAskUserQuestion(requestDto);
     }
 }

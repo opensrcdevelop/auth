@@ -99,7 +99,12 @@
 import {useEventSource} from "@/hooks/useEventSource";
 import {nextTick, reactive, ref, watch} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory, handleUserResponse,} from "@/api/chatbi";
+import {
+  getEnabledDataSourceConf,
+  getEnabledModelProvider,
+  getUserChatMessageHistory,
+  handleUserResponse,
+} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
 import AskUserDialog from "./components/AskUserDialog.vue";
@@ -126,7 +131,7 @@ const userInput = ref("");
 const loading = ref(false);
 const questionId = ref("");
 const askUserVisible = ref(false);
-const askUserQuestions = ref<any[]>([]);
+const askUserQuestions = ref([]);
 const dataSourceList = reactive([]);
 const modelProviderList = reactive([]);
 const selectedDataSource = ref("");
@@ -315,7 +320,6 @@ const resendMessage = (qId: string) => {
  */
 const handleAskUserSubmit = async (data: { answers: { questionId: string; answer: any }[] }) => {
   askUserVisible.value = false;
-  loading.value = true;
   try {
     await handleUserResponse({
       chatId: activeChatId.value || props.chatId,
@@ -323,15 +327,22 @@ const handleAskUserSubmit = async (data: { answers: { questionId: string; answer
     });
   } catch (error) {
     handleApiError(error, "提交回答失败");
-    loading.value = false;
   }
 };
 
 /**
  * 取消用户回答
  */
-const handleAskUserCancel = () => {
+const handleAskUserCancel = async () => {
   askUserVisible.value = false;
+  try {
+    await handleUserResponse({
+      chatId: activeChatId.value || props.chatId,
+      answers: []
+    });
+  } catch (error) {
+    handleApiError(error, "取消回答失败");
+  }
   askUserQuestions.value = [];
 };
 
@@ -393,8 +404,9 @@ const handleMessage = (message) => {
   // 处理向用户提问
   if (message.type === "ASK_USER") {
     askUserQuestions.value = message.content || [];
+
+    console.log("askUserQuestions", askUserQuestions.value);
     askUserVisible.value = true;
-    loading.value = false;
     return;
   }
 

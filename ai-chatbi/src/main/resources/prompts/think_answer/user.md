@@ -86,15 +86,6 @@ Output the final answer when ANY of the following is true:
 Your previous thinking: ${previous_thinking}
 </#if>
 
-<#if user_answers?? && user_answers?size gt 0>
-### User Answers
-The following are user answers to your previous questions:
-<#list user_answers as ua>
-- Question: ${ua.question}
-  Answer: ${ua.answer}
-</#list>
-</#if>
-
 ### Raw User Question
 ${raw_question}
 

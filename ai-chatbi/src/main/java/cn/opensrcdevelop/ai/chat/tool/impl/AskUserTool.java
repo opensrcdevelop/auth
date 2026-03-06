@@ -1,25 +1,114 @@
 package cn.opensrcdevelop.ai.chat.tool.impl;
 
+import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.List;
+import cn.opensrcdevelop.ai.constants.RedisTopicConstants;
+import cn.opensrcdevelop.ai.dto.UserAnswerDto;
+import cn.opensrcdevelop.ai.dto.UserAnswerRequestDto;
+import cn.opensrcdevelop.ai.enums.QuestionType;
+import cn.opensrcdevelop.ai.util.SseUtil;
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Slf4j
 @Component(AskUserTool.TOOL_NAME)
 @RequiredArgsConstructor
 public class AskUserTool implements MethodTool {
 
     public static final String TOOL_NAME = "ask_user";
 
-    @Tool(name = TOOL_NAME, description = "当 AI 无法直接回答问题或缺少必要信息时，向用户提问获取更多信息。适用于：1. 缺少关键筛选条件；2. 用户意图不明确；3. 需要用户从多个选项中选择（支持自定义输入）。支持同时传递多个问题，用户可通过 tab 切换不同问题。")
-    public Response execute(@ToolParam(description = "请求参数") Request request) {
+    @SuppressWarnings("all")
+    @Tool(name = TOOL_NAME, description = "Used when AI cannot answer directly or needs more information." +
+            " Apply when: 1. Missing key filter conditions; 2. User intent is unclear;" +
+            " 3. User needs to choose from multiple options;")
+    public Response execute(@ToolParam(description = "Request parameters") Request request, SseEmitter emitter) {
         Response response = new Response();
+        if (CollectionUtils.isEmpty(request.getQuestions())) {
+            response.setSuccess(false);
+            response.setError("Questions cannot be empty, please provide at least one question.");
+            return response;
+        }
+
+        // 1. 设置提问 ID
+        CommonUtil.stream(request.questions).forEach(q -> q.setId(UUID.randomUUID().toString()));
+
+        // 2. 向用户发送提问
+        SseUtil.sendChatBILoading(emitter, "等待用户回答...");
+        SseUtil.sendChatBIAskUser(emitter, request.getQuestions());
+
+        // 3. 等待用户回答（2 分钟）
+        ChatContext chatContext = ChatContextHolder.getChatContext();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<UserAnswerRequestDto> answerRef = new AtomicReference<>();
+
+        int listenerId = RedisUtil.subscribeMessage(RedisTopicConstants.getTopic(chatContext.getChatId()),
+                UserAnswerRequestDto.class, (x, message) -> {
+                    answerRef.set(message);
+                    latch.countDown();
+                });
+
+        try {
+            boolean received = latch.await(2, TimeUnit.MINUTES);
+            RedisUtil.removeListener(RedisTopicConstants.getTopic(chatContext.getChatId()), listenerId);
+
+            if (!received || answerRef.get() == null) {
+                log.warn("User did not answer in time, timeout.");
+
+                response.setSuccess(false);
+                response.setError("User did not answer in time, timeout.");
+                return response;
+            }
+        } catch (InterruptedException e) {
+            log.error("Wait for user answer interrupted", e);
+            Thread.currentThread().interrupt();
+        }
+
+        // 4. 处理用户回答
+        List<UserAnswerDto> userAnswers = answerRef.get().getAnswers();
+        if (CollectionUtils.isEmpty(userAnswers)) {
+            response.setSuccess(true);
+            response.setError("User did not answer any question.");
+            return response;
+        }
+
         response.setSuccess(true);
-        response.setQuestions(request.getQuestions());
-        response.setIsAskUser(true);
+        response.setAnswers(CommonUtil.stream(userAnswers).map(a -> {
+            String questionText = CommonUtil.stream(request.getQuestions())
+                    .filter(q -> q.getId().equals(a.getQuestionId())).findFirst().map(Question::getQuestionText)
+                    .orElse(null);
+            String answerText = a.getAnswer();
+
+            Answer answer = new Answer();
+            answer.setQuestionId(a.getQuestionId());
+            answer.setQuestionText(questionText);
+            answer.setAnswerText(answerText);
+
+            String thinkingMsg = "\n%s - 收到问题【%s】的回答: %s\n".formatted(
+                    LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                    questionText, answerText);
+            SseUtil.sendChatBIThinking(emitter, thinkingMsg, true);
+
+            return answer;
+        }).toList());
         return response;
     }
 
@@ -31,42 +120,56 @@ public class AskUserTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "问题列表，支持同时传递多个问题（使用 tab 切换）", required = true)
+        @ToolParam(description = "List of questions, supports multiple questions (switchable via tab)", required = true)
         private List<Question> questions;
     }
 
     @Data
     public static class Question {
+        private String id;
 
-        @ToolParam(description = "需要询问的问题", required = true)
-        private String question;
+        @ToolParam(description = "The question to ask the user")
+        private String questionText;
 
-        @ToolParam(description = "问题类型：TEXT（文本输入）、SELECT（单选，支持自定义输入）、MULTI_SELECT（多选）、DATE（日期选择）、NUMBER（数字输入）", required = false)
-        private String questionType;
+        @ToolParam(description = "Question type: TEXT, SELECT, MULTI_SELECT")
+        private QuestionType questionType;
 
-        @ToolParam(description = "选项列表，当 questionType 为 SELECT 或 MULTI_SELECT 时必填", required = false)
+        @ToolParam(description = "List of options, required when questionType is SELECT or MULTI_SELECT", required = false)
         private List<String> options;
 
-        @ToolParam(description = "是否必填，默认为 true", required = false)
+        @ToolParam(description = "Whether the question is required, defaults to true")
         private Boolean required;
 
-        @ToolParam(description = "上下文信息，帮助用户理解问题", required = false)
+        @ToolParam(description = "Context information to help user understand the question", required = false)
         private String context;
 
-        @ToolParam(description = "问题标题（简短）", required = false)
+        @ToolParam(description = "Question title (short)")
         private String title;
+    }
+
+    @Data
+    public static class Answer {
+
+        @ToolParam(description = "Question ID")
+        private String questionId;
+
+        @ToolParam(description = "The question to ask the user")
+        private String questionText;
+
+        @ToolParam(description = "The user's answer")
+        private String answerText;
     }
 
     @Data
     public static class Response {
 
-        @ToolParam(description = "是否成功")
+        @ToolParam(description = "Whether the operation was successful")
         private Boolean success;
 
-        @ToolParam(description = "问题列表")
-        private List<Question> questions;
+        @ToolParam(description = "List of user answers")
+        private List<Answer> answers;
 
-        @ToolParam(description = "标记需要向用户询问")
-        private Boolean isAskUser;
+        @ToolParam(description = "The error message if ask user failed")
+        private String error;
     }
 }
