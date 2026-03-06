@@ -18,6 +18,5 @@ public class UserAnswerDto implements Serializable {
     private String questionId;
 
     @Schema(description = "用户回答")
-    @NotBlank
     private String answer;
 }

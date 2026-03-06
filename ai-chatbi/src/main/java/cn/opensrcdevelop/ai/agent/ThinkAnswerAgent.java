@@ -77,9 +77,9 @@ public class ThinkAnswerAgent {
         // 将示例 SQL 存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
 
-        SseUtil.sendChatBILoading(emitter, "思考中...");
         int step = 0;
         while (step < maxSteps) {
+            SseUtil.sendChatBILoading(emitter, "思考中...");
             if (interruptFlag.get()) {
                 log.info("ChatBI 对话（{}）被中断", ChatContextHolder.getChatContext().getChatId());
                 break;

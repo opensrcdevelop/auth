@@ -3,7 +3,7 @@
     :visible="visible"
     :closable="false"
     :maskClosable="false"
-    :title="currentQuestion?.questionText || '请回答 AI 提问'"
+    hide-title
     :width="520"
     @cancel="handleCancel"
     @before-ok="handleSubmit"
@@ -18,6 +18,11 @@
         `问题 ${index + 1}`
       }}</a-radio>
     </a-radio-group>
+
+    <!-- 自定义标题 -->
+    <div class="modal-title">
+      {{ currentQuestion?.questionText || '请回答 AI 提问' }}
+    </div>
 
     <a-form
       ref="formRef"
@@ -367,6 +372,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.modal-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-1);
+  margin-bottom: 16px;
+}
+
 .other-radio,
 .other-checkbox {
   display: inline-flex;
