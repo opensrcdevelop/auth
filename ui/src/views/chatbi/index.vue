@@ -41,6 +41,9 @@ export default indexTs;
       <a-tab-pane key="llm_management" title="LLM 管理">
         <LLMManagement ref="llmManagementRef" />
       </a-tab-pane>
+      <a-tab-pane key="sample_sql_management" title="示例 SQL 管理">
+        <SampleSqlManagement ref="sampleSqlManagementRef" />
+      </a-tab-pane>
     </a-tabs>
   </div>
 </template>

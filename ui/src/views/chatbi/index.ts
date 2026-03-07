@@ -5,12 +5,14 @@ import DataSourceManagement from "./components/datasource/DataSourceManagement.v
 import {getQueryString} from "@/util/tool";
 import ChatHistory from "./components/chat/ChatHistory.vue";
 import LLMManagement from "./components/llm/LLMManagement.vue";
+import SampleSqlManagement from "./sampleSql/index.vue";
 
 const activeTab = ref("chat");
 const chatRef = ref();
 const chatHistoryRef = ref();
 const dataSourceManagementRef = ref();
 const llmManagementRef = ref();
+const sampleSqlManagementRef = ref();
 
 /**
  * tab 切换事件
@@ -41,6 +43,10 @@ const handleTabInit = (tabKey: string) => {
       break;
     case "llm_management":
       llmManagementRef.value?.init();
+      break;
+    case "sample_sql_management":
+      sampleSqlManagementRef.value?.loadData();
+      sampleSqlManagementRef.value?.loadConfig();
       break;
   }
 };
@@ -83,6 +89,7 @@ export default defineComponent({
     ChatHistory,
     DataSourceManagement,
     LLMManagement,
+    SampleSqlManagement,
   },
   setup() {
     onMounted(() => {
@@ -102,7 +109,8 @@ export default defineComponent({
       handleAddNewChat,
       dataSourceId,
       handleUpdateDataSourceId,
-      llmManagementRef
+      llmManagementRef,
+      sampleSqlManagementRef
     };
   },
 });
