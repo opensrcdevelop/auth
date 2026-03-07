@@ -28,4 +28,7 @@ public class SampleSqlDto {
 
     @Schema(description = "创建时间")
     private String createdAt;
+
+    @Schema(description = "相似度分数")
+    private Double score;
 }

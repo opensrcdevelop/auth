@@ -10,6 +10,9 @@ public class EmbeddingConfigDto {
     @Schema(description = "模型提供商ID")
     private String providerId;
 
+    @Schema(description = "嵌入模型名称")
+    private String model;
+
     @Schema(description = "相似度阈值")
     private Double similarityThreshold;
 }

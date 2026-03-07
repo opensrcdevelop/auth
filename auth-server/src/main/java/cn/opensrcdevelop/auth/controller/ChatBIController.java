@@ -2,8 +2,9 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
+import cn.opensrcdevelop.auth.biz.entity.system.SystemSetting;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
-import cn.opensrcdevelop.biz.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -278,10 +279,13 @@ public class ChatBIController {
 
     // ==================== 示例 SQL 管理 ====================
 
-    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表")
+    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表（分页）")
     @GetMapping("/sampleSql/list")
-    public List<SampleSqlDto> listSampleSql(@RequestParam(required = false) String dataSourceId) {
-        return sampleSqlService.list(dataSourceId);
+    public PageData<SampleSqlDto> listSampleSql(
+            @RequestParam(required = false) String dataSourceId,
+            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "10") long size) {
+        return sampleSqlService.list(dataSourceId, current, size);
     }
 
     @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
@@ -312,17 +316,44 @@ public class ChatBIController {
     @GetMapping("/embedding/config")
     public EmbeddingConfigDto getEmbeddingConfig() {
         EmbeddingConfigDto config = new EmbeddingConfigDto();
-        config.setProviderId(systemSettingService.getValueByKey("chatbi.embedding.provider.id", ""));
-        String threshold = systemSettingService.getValueByKey("chatbi.embedding.similarity.threshold", "0.7");
-        config.setSimilarityThreshold(Double.parseDouble(threshold));
+        SystemSetting providerSetting = systemSettingService.getByKey("chatbi.embedding.provider.id");
+        SystemSetting modelSetting = systemSettingService.getByKey("chatbi.embedding.model");
+        SystemSetting thresholdSetting = systemSettingService.getByKey("chatbi.embedding.similarity.threshold");
+
+        // 去掉存储值外层的引号
+        config.setProviderId(stripQuotes(providerSetting != null ? providerSetting.getValue() : null));
+        config.setModel(stripQuotes(modelSetting != null ? modelSetting.getValue() : null));
+
+        double threshold = 0.7;
+        String thresholdValue = thresholdSetting != null ? thresholdSetting.getValue() : null;
+        if (thresholdValue != null && !thresholdValue.isEmpty()) {
+            try {
+                threshold = Double.parseDouble(stripQuotes(thresholdValue));
+            } catch (NumberFormatException e) {
+                // 使用默认值
+            }
+        }
+        config.setSimilarityThreshold(threshold);
         return config;
+    }
+
+    private String stripQuotes(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 
     @Operation(summary = "更新嵌入配置", description = "更新嵌入模型配置")
     @PutMapping("/embedding/config")
     public void updateEmbeddingConfig(@RequestBody EmbeddingConfigDto config) {
-        systemSettingService.setValueByKey("chatbi.embedding.provider.id", config.getProviderId());
-        systemSettingService.setValueByKey("chatbi.embedding.similarity.threshold",
+        systemSettingService.saveSystemSetting("chatbi.embedding.provider.id", config.getProviderId());
+        systemSettingService.saveSystemSetting("chatbi.embedding.model", config.getModel());
+        systemSettingService.saveSystemSetting("chatbi.embedding.similarity.threshold",
                 String.valueOf(config.getSimilarityThreshold()));
     }
 }

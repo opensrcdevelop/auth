@@ -2,6 +2,7 @@ package cn.opensrcdevelop.ai.service;
 
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
 import cn.opensrcdevelop.ai.dto.SampleSqlRequestDto;
+import cn.opensrcdevelop.common.response.PageData;
 import java.util.List;
 
 public interface SampleSqlService {
@@ -14,6 +15,19 @@ public interface SampleSqlService {
      * @return 示例 SQL 列表
      */
     List<SampleSqlDto> list(String dataSourceId);
+
+    /**
+     * 分页获取示例 SQL 列表
+     *
+     * @param dataSourceId
+     *            数据源 ID（可选）
+     * @param current
+     *            当前页
+     * @param size
+     *            每页数量
+     * @return 分页的示例 SQL 列表
+     */
+    PageData<SampleSqlDto> list(String dataSourceId, long current, long size);
 
     /**
      * 添加示例 SQL
@@ -62,13 +76,17 @@ public interface SampleSqlService {
     void removeFromVectorStore(String answerId);
 
     /**
-     * RAG 检索相关示例 SQL
+     * RAG 检索相关示例 SQL（分页）
      *
      * @param dataSourceId
      *            数据源 ID
      * @param question
      *            问题
-     * @return 相关示例 SQL 列表
+     * @param current
+     *            当前页
+     * @param size
+     *            每页数量
+     * @return 分页的相关示例 SQL 列表
      */
-    List<SampleSqlDto> search(String dataSourceId, String question);
+    PageData<SampleSqlDto> search(String dataSourceId, String question, long current, long size);
 }

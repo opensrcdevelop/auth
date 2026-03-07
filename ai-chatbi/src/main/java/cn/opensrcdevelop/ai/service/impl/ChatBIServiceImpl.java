@@ -22,6 +22,7 @@ import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
+import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
@@ -377,16 +378,16 @@ public class ChatBIServiceImpl implements ChatBIService {
     private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
             ChatClient chatClient) {
         try {
-            // 使用向量检索替代 LLM 判断
-            List<SampleSqlDto> sampleSqls = sampleSqlService.search(dataSourceId, currentQuestion);
+            // 使用向量检索替代 LLM 判断（默认查询第一页，每页5条）
+            PageData<SampleSqlDto> pageData = sampleSqlService.search(dataSourceId, currentQuestion, 1, 5);
 
-            if (sampleSqls.isEmpty()) {
+            if (pageData == null || pageData.getList() == null || pageData.getList().isEmpty()) {
                 return new ArrayList<>();
             }
 
             // 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
-            for (SampleSqlDto dto : sampleSqls) {
+            for (SampleSqlDto dto : pageData.getList()) {
                 result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
             }
 
