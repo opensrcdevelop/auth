@@ -64,6 +64,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatAgent chatAgent;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatHistoryService chatHistoryService;
+    private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
@@ -365,54 +366,20 @@ public class ChatBIServiceImpl implements ChatBIService {
     private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
             ChatClient chatClient) {
         try {
-            // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
-            List<ChatAnswer> historicalAnswers = chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
-                    .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
-                    .eq(ChatAnswer::getDataSourceId, dataSourceId)
-                    .eq(ChatAnswer::getFeedback, "LIKE")
-                    .isNotNull(ChatAnswer::getSql)
-                    .ne(ChatAnswer::getSql, "")
-                    .last("LIMIT 500"));
-            log.info("获取到 {} 条历史 LIKE 回答", historicalAnswers.size());
-            if (historicalAnswers.isEmpty()) {
+            // 使用向量检索替代 LLM 判断
+            List<SampleSqlDto> sampleSqls = sampleSqlService.search(dataSourceId, currentQuestion);
+
+            if (sampleSqls.isEmpty()) {
                 return new ArrayList<>();
             }
 
-            // 2. 转换为 Map 列表（只包含 answerId 和 question）
-            List<Map<String, String>> answerMaps = new ArrayList<>();
-            for (ChatAnswer answer : historicalAnswers) {
-                answerMaps.add(Map.of("answerId", answer.getAnswerId(), "question", answer.getQuestion()));
-            }
-
-            // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
-            Map<String, Object> filterResult = chatAgent.filterRelatedHistoricalAnswers(
-                    chatClient, currentQuestion, answerMaps, 5);
-            List<String> relatedAnswerIds = new ArrayList<>();
-            if (filterResult.containsKey("related_answer_ids")
-                    && filterResult.get("related_answer_ids") instanceof List) {
-                Object ids = filterResult.get("related_answer_ids");
-                for (Object id : (List<?>) ids) {
-                    if (id instanceof String strId) {
-                        relatedAnswerIds.add(strId);
-                    }
-                }
-            }
-            log.info("Agent 返回 {} 个相关 answerId: {}", relatedAnswerIds.size(), relatedAnswerIds);
-
-            if (relatedAnswerIds.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            // 4. 根据 answerId 查询对应的 SQL
-            List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
-            log.info("根据 answerId 查询到 {} 条示例 SQL", sampleSqls.size());
-
-            // 5. 转换为 Map 列表返回
+            // 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
             for (SampleSqlDto dto : sampleSqls) {
                 result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
             }
 
+            log.info("向量检索返回 {} 条相关示例 SQL", result.size());
             return result;
         } catch (Exception e) {
             log.error("获取示例 SQL 失败", e);
