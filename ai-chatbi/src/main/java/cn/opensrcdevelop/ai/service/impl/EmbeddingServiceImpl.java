@@ -4,9 +4,9 @@ import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.service.EmbeddingService;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
 import cn.opensrcdevelop.biz.biz.service.system.SystemSettingService;
-import cn.opensrcdevelop.common.exception.BizException;
-import cn.opensrcdevelop.common.util.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -14,9 +14,6 @@ import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service

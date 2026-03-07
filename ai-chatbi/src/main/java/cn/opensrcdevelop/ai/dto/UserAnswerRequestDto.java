@@ -3,11 +3,10 @@ package cn.opensrcdevelop.ai.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "回答 AI 对用户的提问请求")
 @Data

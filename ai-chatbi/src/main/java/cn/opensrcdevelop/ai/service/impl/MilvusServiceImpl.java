@@ -4,7 +4,6 @@ import cn.opensrcdevelop.ai.config.MilvusConfig;
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
 import cn.opensrcdevelop.ai.service.MilvusService;
 import io.milvus.client.MilvusServiceClient;
-import io.milvus.param.CollectionNameParam;
 import io.milvus.param.MetricType;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.FieldType;
@@ -15,13 +14,12 @@ import io.milvus.param.dml.QueryParam;
 import io.milvus.param.dml.SearchParam;
 import io.milvus.response.QueryResultsWrapper;
 import io.milvus.response.SearchResultsWrapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service

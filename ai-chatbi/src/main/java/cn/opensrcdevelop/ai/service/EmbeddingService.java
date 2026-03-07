@@ -7,7 +7,8 @@ public interface EmbeddingService {
     /**
      * 获取文本的嵌入向量
      *
-     * @param text 文本
+     * @param text
+     *            文本
      * @return 向量列表
      */
     List<Float> embedText(String text);

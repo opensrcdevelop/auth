@@ -7,12 +7,11 @@ import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.biz.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.util.TenantContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
