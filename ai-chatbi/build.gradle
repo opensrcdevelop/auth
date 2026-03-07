@@ -103,4 +103,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+
+    // Milvus 向量数据库
+    implementation 'io.milvus:milvus-sdk-java:2.4.3'
 }
