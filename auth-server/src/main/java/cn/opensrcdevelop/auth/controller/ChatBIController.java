@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.controller;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
+import cn.opensrcdevelop.biz.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
@@ -36,6 +37,8 @@ public class ChatBIController {
     private final ChatHistoryService chatHistoryService;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatAnswerService chatAnswerService;
+    private final SampleSqlService sampleSqlService;
+    private final SystemSettingService systemSettingService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -272,5 +275,55 @@ public class ChatBIController {
     @Authorize({"allChatBIPermissions", "chat"})
     public void answerAskUserQuestion(@RequestBody @Validated UserAnswerRequestDto requestDto) {
         chatBIService.answerAskUserQuestion(requestDto);
+    }
+
+    // ==================== 示例 SQL 管理 ====================
+
+    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表")
+    @GetMapping("/sampleSql/list")
+    public List<SampleSqlDto> listSampleSql(@RequestParam(required = false) String dataSourceId) {
+        return sampleSqlService.list(dataSourceId);
+    }
+
+    @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
+    @PostMapping("/sampleSql")
+    public void addSampleSql(@RequestBody @Valid SampleSqlRequestDto request) {
+        sampleSqlService.add(request);
+    }
+
+    @Operation(summary = "删除示例 SQL", description = "删除示例 SQL")
+    @DeleteMapping("/sampleSql/{id}")
+    public void deleteSampleSql(@PathVariable String id) {
+        sampleSqlService.delete(id);
+    }
+
+    @Operation(summary = "从 LIKE 反馈同步", description = "从 LIKE 反馈同步到向量库")
+    @PostMapping("/sampleSql/syncFromLikes")
+    public int syncFromLikes() {
+        return sampleSqlService.syncFromLikes();
+    }
+
+    @Operation(summary = "重建索引", description = "重建向量索引")
+    @PostMapping("/sampleSql/rebuild")
+    public int rebuild() {
+        return sampleSqlService.rebuild();
+    }
+
+    @Operation(summary = "获取嵌入配置", description = "获取嵌入模型配置")
+    @GetMapping("/embedding/config")
+    public EmbeddingConfigDto getEmbeddingConfig() {
+        EmbeddingConfigDto config = new EmbeddingConfigDto();
+        config.setProviderId(systemSettingService.getValueByKey("chatbi.embedding.provider.id", ""));
+        String threshold = systemSettingService.getValueByKey("chatbi.embedding.similarity.threshold", "0.7");
+        config.setSimilarityThreshold(Double.parseDouble(threshold));
+        return config;
+    }
+
+    @Operation(summary = "更新嵌入配置", description = "更新嵌入模型配置")
+    @PutMapping("/embedding/config")
+    public void updateEmbeddingConfig(@RequestBody EmbeddingConfigDto config) {
+        systemSettingService.setValueByKey("chatbi.embedding.provider.id", config.getProviderId());
+        systemSettingService.setValueByKey("chatbi.embedding.similarity.threshold",
+                String.valueOf(config.getSimilarityThreshold()));
     }
 }
