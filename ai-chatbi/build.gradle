@@ -106,4 +106,7 @@ dependencies {
 
     // Milvus 向量数据库
     implementation 'io.milvus:milvus-sdk-java:2.4.3'
+
+    // Spring AI Embedding
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 }
