@@ -11,6 +11,7 @@ import cn.opensrcdevelop.ai.constants.RedisTopicConstants;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
+import cn.opensrcdevelop.ai.enums.Feedback;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
@@ -148,6 +149,17 @@ public class ChatBIServiceImpl implements ChatBIService {
                 .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
                 .set(ChatAnswer::getFeedback,
                         requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+
+        // 2. 同步向量库
+        try {
+            if (requestDto.getFeedback() == Feedback.LIKE) {
+                sampleSqlService.addToVectorStore(requestDto.getAnswerId());
+            } else if (requestDto.getFeedback() == Feedback.DISLIKE) {
+                sampleSqlService.removeFromVectorStore(requestDto.getAnswerId());
+            }
+        } catch (Exception e) {
+            log.error("同步向量库失败，不影响投票结果", e);
+        }
     }
 
     /**
