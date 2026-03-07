@@ -11,6 +11,7 @@ import cn.opensrcdevelop.ai.constants.RedisTopicConstants;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
+import cn.opensrcdevelop.ai.enums.Feedback;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
@@ -21,6 +22,7 @@ import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
+import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
@@ -31,6 +33,13 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -40,14 +49,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -64,6 +65,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatAgent chatAgent;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatHistoryService chatHistoryService;
+    private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
@@ -147,6 +149,17 @@ public class ChatBIServiceImpl implements ChatBIService {
                 .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
                 .set(ChatAnswer::getFeedback,
                         requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+
+        // 2. 同步向量库
+        try {
+            if (requestDto.getFeedback() == Feedback.LIKE) {
+                sampleSqlService.addToVectorStore(requestDto.getAnswerId());
+            } else if (requestDto.getFeedback() == Feedback.DISLIKE) {
+                sampleSqlService.removeFromVectorStore(requestDto.getAnswerId());
+            }
+        } catch (Exception e) {
+            log.error("同步向量库失败，不影响投票结果", e);
+        }
     }
 
     /**
@@ -365,54 +378,20 @@ public class ChatBIServiceImpl implements ChatBIService {
     private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
             ChatClient chatClient) {
         try {
-            // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
-            List<ChatAnswer> historicalAnswers = chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
-                    .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
-                    .eq(ChatAnswer::getDataSourceId, dataSourceId)
-                    .eq(ChatAnswer::getFeedback, "LIKE")
-                    .isNotNull(ChatAnswer::getSql)
-                    .ne(ChatAnswer::getSql, "")
-                    .last("LIMIT 500"));
-            log.info("获取到 {} 条历史 LIKE 回答", historicalAnswers.size());
-            if (historicalAnswers.isEmpty()) {
+            // 使用向量检索替代 LLM 判断（默认查询第一页，每页5条）
+            PageData<SampleSqlDto> pageData = sampleSqlService.search(dataSourceId, currentQuestion, 1, 5);
+
+            if (pageData == null || pageData.getList() == null || pageData.getList().isEmpty()) {
                 return new ArrayList<>();
             }
 
-            // 2. 转换为 Map 列表（只包含 answerId 和 question）
-            List<Map<String, String>> answerMaps = new ArrayList<>();
-            for (ChatAnswer answer : historicalAnswers) {
-                answerMaps.add(Map.of("answerId", answer.getAnswerId(), "question", answer.getQuestion()));
-            }
-
-            // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
-            Map<String, Object> filterResult = chatAgent.filterRelatedHistoricalAnswers(
-                    chatClient, currentQuestion, answerMaps, 5);
-            List<String> relatedAnswerIds = new ArrayList<>();
-            if (filterResult.containsKey("related_answer_ids")
-                    && filterResult.get("related_answer_ids") instanceof List) {
-                Object ids = filterResult.get("related_answer_ids");
-                for (Object id : (List<?>) ids) {
-                    if (id instanceof String strId) {
-                        relatedAnswerIds.add(strId);
-                    }
-                }
-            }
-            log.info("Agent 返回 {} 个相关 answerId: {}", relatedAnswerIds.size(), relatedAnswerIds);
-
-            if (relatedAnswerIds.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            // 4. 根据 answerId 查询对应的 SQL
-            List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
-            log.info("根据 answerId 查询到 {} 条示例 SQL", sampleSqls.size());
-
-            // 5. 转换为 Map 列表返回
+            // 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
-            for (SampleSqlDto dto : sampleSqls) {
+            for (SampleSqlDto dto : pageData.getList()) {
                 result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
             }
 
+            log.info("向量检索返回 {} 条相关示例 SQL", result.size());
             return result;
         } catch (Exception e) {
             log.error("获取示例 SQL 失败", e);

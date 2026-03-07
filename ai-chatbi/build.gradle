@@ -85,6 +85,8 @@ bootJar {
 dependencies {
     implementation project(':common')
     implementation project(':auth-audit')
+    implementation project(':multi-tenant')
+    implementation project(':auth-biz')
     implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
@@ -103,4 +105,13 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+
+    // Milvus 向量数据库
+    implementation 'io.milvus:milvus-sdk-java:2.6.14'
+    // gRPC 依赖（Milvus SDK 需要 1.60+）
+    implementation 'io.grpc:grpc-core:1.68.1'
+    implementation 'io.grpc:grpc-api:1.68.1'
+    implementation 'io.grpc:grpc-protobuf:1.68.1'
+    implementation 'io.grpc:grpc-stub:1.68.1'
+    implementation 'io.grpc:grpc-netty-shaded:1.68.1'
 }

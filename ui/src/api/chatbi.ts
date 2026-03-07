@@ -317,3 +317,89 @@ export function handleUserResponse(data: any) {
     data,
   });
 }
+
+// ==================== 示例 SQL 管理 ====================
+
+/**
+ * 获取示例 SQL 列表
+ *
+ * @param params 请求参数
+ * @returns 示例 SQL 列表
+ */
+export function getSampleSqlList(params: any) {
+  return apiRequest.get({
+    url: "/chatbi/sampleSql/list",
+    params,
+  });
+}
+
+/**
+ * 添加示例 SQL
+ *
+ * @param data 添加示例 SQL 表单
+ * @returns 响应结果
+ */
+export function addSampleSql(data: any) {
+  return apiRequest.post({
+    url: "/chatbi/sampleSql",
+    data,
+  });
+}
+
+/**
+ * 删除示例 SQL
+ *
+ * @param id 示例 SQL ID
+ * @returns 响应结果
+ */
+export function deleteSampleSql(id: string) {
+  return apiRequest.delete({
+    url: `/chatbi/sampleSql/${id}`,
+  });
+}
+
+/**
+ * 从 LIKE 反馈同步
+ *
+ * @returns 同步数量
+ */
+export function syncSampleSqlFromLikes() {
+  return apiRequest.post({
+    url: "/chatbi/sampleSql/syncFromLikes",
+  });
+}
+
+/**
+ * 重建索引
+ *
+ * @returns 重建数量
+ */
+export function rebuildSampleSqlIndex() {
+  return apiRequest.post({
+    url: "/chatbi/sampleSql/rebuild",
+  });
+}
+
+/**
+ * 获取嵌入配置
+ *
+ * @returns 嵌入配置
+ */
+export function getEmbeddingConfig() {
+  return apiRequest.get({
+    url: "/chatbi/embedding/config",
+  });
+}
+
+/**
+ * 更新嵌入配置
+ *
+ * @param data 嵌入配置
+ * @returns 响应结果
+ */
+export function updateEmbeddingConfig(data: any) {
+  return apiRequest.put({
+    url: "/chatbi/embedding/config",
+    data,
+  });
+}

@@ -2,6 +2,8 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
+import cn.opensrcdevelop.auth.biz.entity.system.SystemSetting;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -13,13 +15,12 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.List;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
 @RestController
@@ -36,6 +37,8 @@ public class ChatBIController {
     private final ChatHistoryService chatHistoryService;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatAnswerService chatAnswerService;
+    private final SampleSqlService sampleSqlService;
+    private final SystemSettingService systemSettingService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -272,5 +275,85 @@ public class ChatBIController {
     @Authorize({"allChatBIPermissions", "chat"})
     public void answerAskUserQuestion(@RequestBody @Validated UserAnswerRequestDto requestDto) {
         chatBIService.answerAskUserQuestion(requestDto);
+    }
+
+    // ==================== 示例 SQL 管理 ====================
+
+    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表（分页）")
+    @GetMapping("/sampleSql/list")
+    public PageData<SampleSqlDto> listSampleSql(
+            @RequestParam(required = false) String dataSourceId,
+            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "10") long size) {
+        return sampleSqlService.list(dataSourceId, current, size);
+    }
+
+    @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
+    @PostMapping("/sampleSql")
+    public void addSampleSql(@RequestBody @Valid SampleSqlRequestDto request) {
+        sampleSqlService.add(request);
+    }
+
+    @Operation(summary = "删除示例 SQL", description = "删除示例 SQL")
+    @DeleteMapping("/sampleSql/{id}")
+    public void deleteSampleSql(@PathVariable String id) {
+        sampleSqlService.delete(id);
+    }
+
+    @Operation(summary = "从 LIKE 反馈同步", description = "从 LIKE 反馈同步到向量库")
+    @PostMapping("/sampleSql/syncFromLikes")
+    public int syncFromLikes() {
+        return sampleSqlService.syncFromLikes();
+    }
+
+    @Operation(summary = "重建索引", description = "重建向量索引")
+    @PostMapping("/sampleSql/rebuild")
+    public int rebuild() {
+        return sampleSqlService.rebuild();
+    }
+
+    @Operation(summary = "获取嵌入配置", description = "获取嵌入模型配置")
+    @GetMapping("/embedding/config")
+    public EmbeddingConfigDto getEmbeddingConfig() {
+        EmbeddingConfigDto config = new EmbeddingConfigDto();
+        SystemSetting providerSetting = systemSettingService.getByKey("chatbi.embedding.provider.id");
+        SystemSetting modelSetting = systemSettingService.getByKey("chatbi.embedding.model");
+        SystemSetting thresholdSetting = systemSettingService.getByKey("chatbi.embedding.similarity.threshold");
+
+        // 去掉存储值外层的引号
+        config.setProviderId(stripQuotes(providerSetting != null ? providerSetting.getValue() : null));
+        config.setModel(stripQuotes(modelSetting != null ? modelSetting.getValue() : null));
+
+        double threshold = 0.7;
+        String thresholdValue = thresholdSetting != null ? thresholdSetting.getValue() : null;
+        if (thresholdValue != null && !thresholdValue.isEmpty()) {
+            try {
+                threshold = Double.parseDouble(stripQuotes(thresholdValue));
+            } catch (NumberFormatException e) {
+                // 使用默认值
+            }
+        }
+        config.setSimilarityThreshold(threshold);
+        return config;
+    }
+
+    private String stripQuotes(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
+    @Operation(summary = "更新嵌入配置", description = "更新嵌入模型配置")
+    @PutMapping("/embedding/config")
+    public void updateEmbeddingConfig(@RequestBody EmbeddingConfigDto config) {
+        systemSettingService.saveSystemSetting("chatbi.embedding.provider.id", config.getProviderId());
+        systemSettingService.saveSystemSetting("chatbi.embedding.model", config.getModel());
+        systemSettingService.saveSystemSetting("chatbi.embedding.similarity.threshold",
+                String.valueOf(config.getSimilarityThreshold()));
     }
 }
