@@ -8,15 +8,15 @@ import lombok.Data;
 @Data
 public class SampleSqlRequestDto {
 
-    @NotBlank(message = "数据源ID不能为空")
     @Schema(description = "数据源ID")
+    @NotBlank
     private String dataSourceId;
 
-    @NotBlank(message = "问题不能为空")
     @Schema(description = "问题")
+    @NotBlank
     private String question;
 
-    @NotBlank(message = "SQL不能为空")
     @Schema(description = "SQL")
+    @NotBlank
     private String sql;
 }

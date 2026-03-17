@@ -1,6 +1,5 @@
 package cn.opensrcdevelop.ai.service.impl;
 
-import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.agent.ThinkAnswerAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
@@ -22,7 +21,6 @@ import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
-import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
@@ -33,13 +31,6 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -49,6 +40,14 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -62,7 +61,6 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatClientManager chatClientManager;
     private final DataSourceConfService dataSourceConfService;
     private final ThinkAnswerAgent thinkAnswerAgent;
-    private final ChatAgent chatAgent;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatHistoryService chatHistoryService;
     private final SampleSqlService sampleSqlService;
@@ -197,7 +195,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
-        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion, chatClient);
+        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -371,23 +369,14 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            数据源ID
      * @param currentQuestion
      *            当前问题
-     * @param chatClient
-     *            ChatClient
      * @return 相关的问题-SQL 对列表
      */
-    private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
-            ChatClient chatClient) {
+    private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion) {
         try {
-            // 使用向量检索替代 LLM 判断（默认查询第一页，每页5条）
-            PageData<SampleSqlDto> pageData = sampleSqlService.search(dataSourceId, currentQuestion, 1, 5);
+            List<SampleSqlDto> sampleSqls = sampleSqlService.search(dataSourceId, currentQuestion, null);
 
-            if (pageData == null || pageData.getList() == null || pageData.getList().isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            // 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
-            for (SampleSqlDto dto : pageData.getList()) {
+            for (SampleSqlDto dto : sampleSqls) {
                 result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
             }
 

@@ -16,7 +16,17 @@ public enum AsyncTaskType {
     /**
      * 用户导出，并行度为 3
      */
-    USER_EXPORT("USER_EXPORT", "用户导出", 3);
+    USER_EXPORT("USER_EXPORT", "用户导出", 3),
+
+    /**
+     * 示例 SQL 同步，并行度为 1
+     */
+    SAMPLE_SQL_SYNC("SAMPLE_SQL_SYNC", "示例 SQL 同步", 1),
+
+    /**
+     * 示例 SQL 重建索引，并行度为 1
+     */
+    SAMPLE_SQL_REBUILD("SAMPLE_SQL_REBUILD", "示例 SQL 重建索引", 1);
 
     private final String code;
     private final String desc;

@@ -3,8 +3,8 @@
     <a-form :model="form" layout="vertical">
       <a-form-item label="数据源" required>
         <a-select v-model="form.dataSourceId" placeholder="请选择数据源">
-          <a-option v-for="ds in dataSourceList" :key="ds.dataSourceId" :value="ds.dataSourceId">
-            {{ ds.dataSourceName }}
+          <a-option v-for="ds in dataSourceList" :key="ds.id" :value="ds.id">
+            {{ ds.name }}
           </a-option>
         </a-select>
       </a-form-item>
@@ -19,12 +19,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { Message } from '@arco-design/web-vue';
-import { addSampleSql, getDataSourceConfList } from '@/api/chatbi';
+import {ref, watch} from 'vue';
+import {Message} from '@arco-design/web-vue';
+import {addSampleSql} from '@/api/chatbi';
 
 const props = defineProps<{
   visible: boolean;
+  dataSourceList: any[];
 }>();
 
 const emit = defineEmits<{
@@ -33,7 +34,6 @@ const emit = defineEmits<{
 }>();
 
 const visible = ref(false);
-const dataSourceList = ref([]);
 
 const form = ref({
   dataSourceId: '',
@@ -43,23 +43,11 @@ const form = ref({
 
 watch(() => props.visible, (val) => {
   visible.value = val;
-  if (val) {
-    loadDataSource();
-  }
 });
 
 watch(visible, (val) => {
   emit('update:visible', val);
 });
-
-const loadDataSource = async () => {
-  try {
-    const res = await getDataSourceConfList({});
-    dataSourceList.value = res.data?.data || [];
-  } catch (e) {
-    console.error('加载数据源失败', e);
-  }
-};
 
 const handleSubmit = async () => {
   if (!form.value.dataSourceId || !form.value.question || !form.value.sql) {

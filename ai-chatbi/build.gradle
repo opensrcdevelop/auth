@@ -101,17 +101,14 @@ dependencies {
     implementation 'org.springframework.security:spring-security-core'
     implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
     implementation 'com.github.ben-manes.caffeine:caffeine'
+    implementation "io.milvus:milvus-sdk-java:${rootProject.milvusSdkVer}"
+    implementation "io.grpc:grpc-core:${rootProject.grpcVer}"
+    implementation "io.grpc:grpc-api:${rootProject.grpcVer}"
+    implementation "io.grpc:grpc-protobuf:${rootProject.grpcVer}"
+    implementation "io.grpc:grpc-stub:${rootProject.grpcVer}"
+    implementation "io.grpc:grpc-netty-shaded:${rootProject.grpcVer}"
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
-
-    // Milvus 向量数据库
-    implementation 'io.milvus:milvus-sdk-java:2.6.14'
-    // gRPC 依赖（Milvus SDK 需要 1.60+）
-    implementation 'io.grpc:grpc-core:1.68.1'
-    implementation 'io.grpc:grpc-api:1.68.1'
-    implementation 'io.grpc:grpc-protobuf:1.68.1'
-    implementation 'io.grpc:grpc-stub:1.68.1'
-    implementation 'io.grpc:grpc-netty-shaded:1.68.1'
 }

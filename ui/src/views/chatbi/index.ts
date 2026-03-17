@@ -5,7 +5,7 @@ import DataSourceManagement from "./components/datasource/DataSourceManagement.v
 import {getQueryString} from "@/util/tool";
 import ChatHistory from "./components/chat/ChatHistory.vue";
 import LLMManagement from "./components/llm/LLMManagement.vue";
-import SampleSqlManagement from "./sampleSql/index.vue";
+import SampleSqlManagement from "./components/sampleSql/SampleSqlManagement.vue";
 
 const activeTab = ref("chat");
 const chatRef = ref();

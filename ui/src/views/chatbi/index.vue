@@ -45,5 +45,5 @@ export default indexTs;
         <SampleSqlManagement ref="sampleSqlManagementRef" />
       </a-tab-pane>
     </a-tabs>
-  </div>
+  </div> 
 </template>

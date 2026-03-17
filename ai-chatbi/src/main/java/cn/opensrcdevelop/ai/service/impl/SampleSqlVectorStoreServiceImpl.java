@@ -1,11 +1,17 @@
 package cn.opensrcdevelop.ai.service.impl;
 
-import cn.opensrcdevelop.ai.config.VectorStoreConfig;
+import cn.opensrcdevelop.ai.constants.MessageConstants;
+import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
+import cn.opensrcdevelop.ai.dto.SampleSqlEmbeddingConfigDto;
 import cn.opensrcdevelop.ai.service.SampleSqlVectorStoreService;
-import cn.opensrcdevelop.common.response.PageData;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.exception.BizException;
+import cn.opensrcdevelop.common.exception.ServerException;
+import cn.opensrcdevelop.common.util.CommonUtil;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import io.milvus.v2.client.ConnectConfig;
 import io.milvus.v2.client.MilvusClientV2;
 import io.milvus.v2.common.DataType;
 import io.milvus.v2.common.IndexParam;
@@ -18,16 +24,16 @@ import io.milvus.v2.service.vector.request.InsertReq;
 import io.milvus.v2.service.vector.request.QueryReq;
 import io.milvus.v2.service.vector.request.SearchReq;
 import io.milvus.v2.service.vector.request.data.FloatVec;
-import io.milvus.v2.service.vector.response.DeleteResp;
-import io.milvus.v2.service.vector.response.InsertResp;
+import io.milvus.v2.service.vector.response.QueryResp;
 import io.milvus.v2.service.vector.response.SearchResp;
-import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -35,123 +41,79 @@ import org.springframework.stereotype.Service;
 public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreService {
 
     private static final String COLLECTION_PREFIX = "sample_sql_";
-    private static final int VECTOR_DIMENSION = 1536;
+    private static final String FIELD_ID = "id";
+    private static final String FIELD_ANSWER_ID = "answer_id";
+    private static final String FIELD_QUESTION = "question";
+    private static final String FIELD_SQL = "sql";
+    private static final String FIELD_DATA_SOURCE_ID = "data_source_id";
+    private static final String FIELD_CREATED_AT = "created_at";
+    private static final String FIELD_QUESTION_VECTOR = "question_vector";
 
-    private final VectorStoreConfig vectorStoreConfig;
-    private MilvusClientV2 milvusClient;
+    private final MilvusClientV2 milvusClient;
+    private final SystemSettingService systemSettingService;
 
-    @PostConstruct
-    public void init() {
-        ConnectConfig connectConfig = ConnectConfig.builder()
-                .uri("http://" + vectorStoreConfig.getHost() + ":" + vectorStoreConfig.getPort())
-                .build();
-        milvusClient = new MilvusClientV2(connectConfig);
-        log.info("Milvus client initialized: {}:{}", vectorStoreConfig.getHost(), vectorStoreConfig.getPort());
-    }
-
+    /**
+     * 创建 Collection（如果不存在）
+     *
+     * @param tenantCode
+     *            租户 Code
+     */
     @Override
     public void createCollectionIfNotExists(String tenantCode) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
 
         try {
-            HasCollectionReq hasCollectionReq = HasCollectionReq.builder()
+            boolean exists = milvusClient.hasCollection(HasCollectionReq.builder()
                     .collectionName(collectionName)
-                    .build();
-            boolean exists = milvusClient.hasCollection(hasCollectionReq).booleanValue();
+                    .build());
             if (!exists) {
                 createCollection(collectionName);
             }
         } catch (Exception e) {
-            createCollection(collectionName);
+            throw new ServerException(e);
         }
     }
 
-    private void createCollection(String collectionName) {
-        CreateCollectionReq.CollectionSchema schema = milvusClient.createSchema();
-        schema.setEnableDynamicField(true);
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("id")
-                .dataType(DataType.VarChar)
-                .maxLength(64)
-                .isPrimaryKey(true)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("answer_id")
-                .dataType(DataType.VarChar)
-                .maxLength(64)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("question")
-                .dataType(DataType.VarChar)
-                .maxLength(2000)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("sql")
-                .dataType(DataType.VarChar)
-                .maxLength(4000)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("data_source_id")
-                .dataType(DataType.VarChar)
-                .maxLength(64)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("question_vector")
-                .dataType(DataType.FloatVector)
-                .dimension(VECTOR_DIMENSION)
-                .build());
-
-        schema.addField(AddFieldReq.builder()
-                .fieldName("created_at")
-                .dataType(DataType.VarChar)
-                .maxLength(32)
-                .build());
-
-        List<IndexParam> indexes = new ArrayList<>();
-        indexes.add(IndexParam.builder()
-                .fieldName("question_vector")
-                .indexType(IndexParam.IndexType.AUTOINDEX)
-                .metricType(IndexParam.MetricType.IP)
-                .build());
-
-        CreateCollectionReq createCollectionReq = CreateCollectionReq.builder()
-                .collectionName(collectionName)
-                .collectionSchema(schema)
-                .indexParams(indexes)
-                .build();
-
-        milvusClient.createCollection(createCollectionReq);
-        log.info("Collection {} created successfully", collectionName);
-    }
-
+    /**
+     * 插入示例 SQL 向量
+     *
+     * @param tenantCode
+     *            租户 Code
+     * @param sampleSqlDto
+     *            示例 SQL
+     * @param vector
+     *            向量
+     */
     @Override
     public void insert(String tenantCode, SampleSqlDto sampleSqlDto, List<Float> vector) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
         JsonObject data = new JsonObject();
-        data.addProperty("id", sampleSqlDto.getId());
-        data.addProperty("answer_id", sampleSqlDto.getAnswerId());
-        data.addProperty("question", sampleSqlDto.getQuestion());
-        data.addProperty("sql", sampleSqlDto.getSql());
-        data.addProperty("data_source_id", sampleSqlDto.getDataSourceId());
-        data.addProperty("created_at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        data.addProperty(FIELD_ID, sampleSqlDto.getId());
+        data.addProperty(FIELD_ANSWER_ID, sampleSqlDto.getAnswerId());
+        data.addProperty(FIELD_QUESTION, sampleSqlDto.getQuestion());
+        data.addProperty(FIELD_SQL, sampleSqlDto.getSql());
+        data.addProperty(FIELD_DATA_SOURCE_ID, sampleSqlDto.getDataSourceId());
+        data.addProperty(FIELD_CREATED_AT, LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)));
+        JsonArray questionVector = new JsonArray();
+        CommonUtil.stream(vector).forEach(questionVector::add);
+        data.add(FIELD_QUESTION_VECTOR, questionVector);
 
-        InsertReq insertReq = InsertReq.builder()
+        milvusClient.insert(InsertReq.builder()
                 .collectionName(collectionName)
-                .data(Collections.singletonList(data))
-                .build();
-
-        InsertResp insertResp = milvusClient.insert(insertReq);
-        log.info("Inserted sample SQL: id={}, answerId={}", sampleSqlDto.getId(), sampleSqlDto.getAnswerId());
+                .data(List.of(data)).build());
     }
 
+    /**
+     * 删除示例 SQL 向量（根据回答 ID）
+     *
+     * @param tenantCode
+     *            租户 Code
+     * @param answerId
+     *            回答 ID
+     */
     @Override
     public void deleteByAnswerId(String tenantCode, String answerId) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
@@ -162,10 +124,17 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
                 .filter(deleteExpr)
                 .build();
 
-        DeleteResp deleteResp = milvusClient.delete(deleteReq);
-        log.info("Deleted sample SQL by answerId: {}", answerId);
+        milvusClient.delete(deleteReq);
     }
 
+    /**
+     * 删除示例 SQL 向量（根据 ID）
+     *
+     * @param tenantCode
+     *            租户 Code
+     * @param id
+     *            ID
+     */
     @Override
     public void deleteById(String tenantCode, String id) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
@@ -177,9 +146,14 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
                 .build();
 
         milvusClient.delete(deleteReq);
-        log.info("Deleted sample SQL by id: {}", id);
     }
 
+    /**
+     * 删除示例 SQL 向量（根据租户 Code）
+     *
+     * @param tenantCode
+     *            租户 Code
+     */
     @Override
     public void deleteAll(String tenantCode) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
@@ -189,34 +163,47 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
                     .collectionName(collectionName)
                     .build();
             milvusClient.dropCollection(dropCollectionReq);
-            log.info("Dropped collection: {}", collectionName);
         } catch (Exception e) {
-            log.warn("Collection {} does not exist or already dropped", collectionName);
+            log.warn("删除 Collection {} 失败", collectionName);
         }
     }
 
+    /**
+     * 搜索示例 SQL 向量
+     *
+     * @param tenantCode
+     *            租户 Code
+     * @param dataSourceId
+     *            数据源 ID
+     * @param vector
+     *            查询向量
+     * @param threshold
+     *            相似度阈值
+     * @param topK
+     *            返回的最大结果数
+     * @return 示例 SQL 向量分页数据
+     */
     @Override
-    public PageData<SampleSqlDto> search(String tenantCode, String dataSourceId, List<Float> vector,
-            double threshold, long current, long size) {
+    public List<SampleSqlDto> search(String tenantCode, String dataSourceId, List<Float> vector, double threshold,
+            Integer topK) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
-        FloatVec queryVector = new FloatVec(vector);
+        int limit = Objects.nonNull(topK) && topK > 0 ? topK : 100;
 
-        // 使用 Milvus 原生分页：offset = (current - 1) * size
-        long offset = (current - 1) * size;
-        int searchLimit = (int) size;
-        SearchReq searchReq = SearchReq.builder()
+        SearchReq.SearchReqBuilder searchReqBuilder = SearchReq.builder()
                 .collectionName(collectionName)
-                .data(Collections.singletonList(queryVector))
-                .annsField("question_vector")
-                .filter("data_source_id == '" + dataSourceId + "'")
-                .offset(offset)
-                .topK(searchLimit)
-                .outputFields(Arrays.asList("id", "answer_id", "question", "sql", "data_source_id", "created_at"))
-                .build();
+                .data(Collections.singletonList(new FloatVec(vector)))
+                .annsField(FIELD_QUESTION_VECTOR)
+                .outputFields(List.of(FIELD_ID, FIELD_ANSWER_ID, FIELD_QUESTION, FIELD_SQL, FIELD_DATA_SOURCE_ID,
+                        FIELD_CREATED_AT))
+                .limit(limit);
 
-        SearchResp searchResp = milvusClient.search(searchReq);
+        if (StringUtils.isNotEmpty(dataSourceId)) {
+            searchReqBuilder.filter("data_source_id == '" + dataSourceId + "'");
+        }
+
+        SearchResp searchResp = milvusClient.search(searchReqBuilder.build());
         List<SampleSqlDto> results = new ArrayList<>();
 
         List<List<SearchResp.SearchResult>> searchResults = searchResp.getSearchResults();
@@ -229,67 +216,63 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
 
                 Map<String, Object> entity = result.getEntity();
                 SampleSqlDto dto = SampleSqlDto.builder()
-                        .id((String) entity.get("id"))
-                        .answerId((String) entity.get("answer_id"))
-                        .question((String) entity.get("question"))
-                        .sql((String) entity.get("sql"))
-                        .dataSourceId((String) entity.get("data_source_id"))
-                        .createdAt((String) entity.get("created_at"))
+                        .id((String) entity.get(FIELD_ID))
+                        .answerId((String) entity.get(FIELD_ANSWER_ID))
+                        .question((String) entity.get(FIELD_QUESTION))
+                        .sql((String) entity.get(FIELD_SQL))
+                        .dataSourceId((String) entity.get(FIELD_DATA_SOURCE_ID))
+                        .createdAt((String) entity.get(FIELD_CREATED_AT))
                         .score(score)
                         .build();
                 results.add(dto);
             }
         }
-
-        // 由于 Milvus 不直接返回总数，这里使用返回结果数作为参考
-        // 实际总数需要通过其他方式获取，这里简单处理
-        long total = results.isEmpty() ? 0 : (current * size + results.size());
-        long pages = (total + size - 1) / size;
-
-        PageData<SampleSqlDto> pageData = new PageData<>();
-        pageData.setCurrent(current);
-        pageData.setSize(size);
-        pageData.setTotal(total);
-        pageData.setPages(pages);
-        pageData.setList(results);
-
-        log.info("Search returned {} results (threshold={}, current={}, size={})",
-                results.size(), threshold, current, size);
-        return pageData;
+        return results;
     }
 
     @Override
-    public List<SampleSqlDto> list(String tenantCode, int offset, int limit) {
+    public List<SampleSqlDto> list(String tenantCode, String dataSourceId, String question, long offset, int limit) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
-        QueryReq queryReq = QueryReq.builder()
+        // 构建过滤条件
+        StringBuilder filterBuilder = new StringBuilder("id != ''");
+        if (StringUtils.isNotEmpty(dataSourceId)) {
+            filterBuilder.append(" and data_source_id == '").append(dataSourceId).append("'");
+        }
+        if (StringUtils.isNotEmpty(question)) {
+            filterBuilder.append(" and question like \"%").append(question).append("%\"");
+        }
+
+        QueryReq.QueryReqBuilder queryReqBuilder = QueryReq.builder()
                 .collectionName(collectionName)
-                .filter("id != ''")
+                .filter(filterBuilder.toString())
+                .outputFields(List.of(FIELD_ID, FIELD_ANSWER_ID, FIELD_QUESTION, FIELD_SQL, FIELD_DATA_SOURCE_ID,
+                        FIELD_CREATED_AT))
                 .offset(offset)
-                .limit(limit)
-                .outputFields(Arrays.asList("id", "answer_id", "question", "sql", "data_source_id", "created_at"))
-                .build();
+                .limit(limit);
 
         try {
-            var queryResp = milvusClient.query(queryReq);
+            var queryResp = milvusClient.query(queryReqBuilder.build());
             List<SampleSqlDto> results = new ArrayList<>();
 
-            List<io.milvus.v2.service.vector.response.QueryResp.QueryResult> queryResults = queryResp.getQueryResults();
-            for (io.milvus.v2.service.vector.response.QueryResp.QueryResult queryResult : queryResults) {
+            List<QueryResp.QueryResult> queryResults = queryResp.getQueryResults();
+            for (QueryResp.QueryResult queryResult : queryResults) {
                 Map<String, Object> row = queryResult.getEntity();
                 SampleSqlDto dto = SampleSqlDto.builder()
-                        .id((String) row.get("id"))
-                        .answerId((String) row.get("answer_id"))
-                        .question((String) row.get("question"))
-                        .sql((String) row.get("sql"))
-                        .dataSourceId((String) row.get("data_source_id"))
-                        .createdAt((String) row.get("created_at"))
+                        .id((String) row.get(FIELD_ID))
+                        .answerId((String) row.get(FIELD_ANSWER_ID))
+                        .question((String) row.get(FIELD_QUESTION))
+                        .sql((String) row.get(FIELD_SQL))
+                        .dataSourceId((String) row.get(FIELD_DATA_SOURCE_ID))
+                        .createdAt((String) row.get(FIELD_CREATED_AT))
                         .build();
                 results.add(dto);
             }
 
-            log.info("List returned {} results (offset={}, limit={})", results.size(), offset, limit);
+            // 按创建时间降序排列
+            results.sort(Comparator.comparing(SampleSqlDto::getCreatedAt, Comparator.reverseOrder()));
+
             return results;
         } catch (Exception e) {
             log.error("查询示例 SQL 失败", e);
@@ -298,85 +281,118 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
     }
 
     @Override
-    public PageData<SampleSqlDto> list(String tenantCode, long current, long size) {
+    public long count(String tenantCode, String dataSourceId, String question) {
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
-        // 使用 Milvus 原生分页
-        long offset = (current - 1) * size;
-        int limit = (int) size;
-
-        QueryReq queryReq = QueryReq.builder()
-                .collectionName(collectionName)
-                .filter("id != ''")
-                .offset(offset)
-                .limit(limit)
-                .outputFields(Arrays.asList("id", "answer_id", "question", "sql", "data_source_id", "created_at"))
-                .build();
-
-        try {
-            var queryResp = milvusClient.query(queryReq);
-            List<SampleSqlDto> results = new ArrayList<>();
-
-            List<io.milvus.v2.service.vector.response.QueryResp.QueryResult> queryResults = queryResp.getQueryResults();
-            for (io.milvus.v2.service.vector.response.QueryResp.QueryResult queryResult : queryResults) {
-                Map<String, Object> row = queryResult.getEntity();
-                SampleSqlDto dto = SampleSqlDto.builder()
-                        .id((String) row.get("id"))
-                        .answerId((String) row.get("answer_id"))
-                        .question((String) row.get("question"))
-                        .sql((String) row.get("sql"))
-                        .dataSourceId((String) row.get("data_source_id"))
-                        .createdAt((String) row.get("created_at"))
-                        .build();
-                results.add(dto);
-            }
-
-            // 估算总数（当前页结果数 + 之前页数）
-            long total = results.isEmpty() ? 0 : (current - 1) * size + results.size();
-            long pages = (total + size - 1) / size;
-
-            PageData<SampleSqlDto> pageData = new PageData<>();
-            pageData.setCurrent(current);
-            pageData.setSize(size);
-            pageData.setTotal(total);
-            pageData.setPages(pages);
-            pageData.setList(results);
-
-            log.info("List returned {} results (current={}, size={})", results.size(), current, size);
-            return pageData;
-        } catch (Exception e) {
-            log.error("查询示例 SQL 失败", e);
-            PageData<SampleSqlDto> emptyPageData = new PageData<>();
-            emptyPageData.setCurrent(current);
-            emptyPageData.setSize(size);
-            emptyPageData.setTotal(0L);
-            emptyPageData.setPages(0L);
-            emptyPageData.setList(new ArrayList<>());
-            return emptyPageData;
+        // 构建过滤条件
+        StringBuilder filterBuilder = new StringBuilder("id != ''");
+        if (StringUtils.isNotEmpty(dataSourceId)) {
+            filterBuilder.append(" and data_source_id == '").append(dataSourceId).append("'");
         }
-    }
+        if (StringUtils.isNotEmpty(question)) {
+            filterBuilder.append(" and question like \"%").append(question).append("%\"");
+        }
 
-    @Override
-    public long count(String tenantCode) {
-        String collectionName = COLLECTION_PREFIX + tenantCode;
-        createCollectionIfNotExists(tenantCode);
-
-        QueryReq queryReq = QueryReq.builder()
+        QueryReq.QueryReqBuilder queryReqBuilder = QueryReq.builder()
                 .collectionName(collectionName)
-                .filter("id != ''")
-                .outputFields(Collections.singletonList("id"))
-                .limit(1)
-                .build();
+                .filter(filterBuilder.toString())
+                .outputFields(List.of(FIELD_ID));
 
         try {
-            var queryResp = milvusClient.query(queryReq);
-            // Milvus v2 不支持直接 count，需要用其他方式
-            // 这里简单返回 -1 表示未知，实际可用 getCollectionStats
-            return -1;
+            var queryResp = milvusClient.query(queryReqBuilder.build());
+            return queryResp.getQueryResults().size();
         } catch (Exception e) {
             log.error("统计示例 SQL 数量失败", e);
             return 0;
         }
+    }
+
+    /**
+     * 创建 Collection
+     *
+     * @param collectionName
+     *            集合名称
+     */
+    private void createCollection(String collectionName) {
+        SampleSqlEmbeddingConfigDto embeddingConfig = systemSettingService.getSystemSetting(
+                SystemSettingConstants.SAMPLE_SQL_EMBEDDING_CONFIG, SampleSqlEmbeddingConfigDto.class);
+        if (Objects.isNull(embeddingConfig) || Objects.isNull(embeddingConfig.getDimension())) {
+            throw new BizException(MessageConstants.AI_SAMPLE_SQL_MSG_1000);
+        }
+
+        CreateCollectionReq.CollectionSchema schema = MilvusClientV2.CreateSchema();
+        schema.setEnableDynamicField(true);
+
+        // 主键字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_ID)
+                        .dataType(DataType.VarChar)
+                        .maxLength(64)
+                        .isPrimaryKey(true)
+                        .build());
+
+        // 回答 ID 字段（允许 null）
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_ANSWER_ID)
+                        .dataType(DataType.VarChar)
+                        .maxLength(64)
+                        .isNullable(true)
+                        .build());
+
+        // 问题字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_QUESTION)
+                        .dataType(DataType.VarChar)
+                        .build());
+
+        // SQL 字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_SQL)
+                        .dataType(DataType.VarChar)
+                        .build());
+
+        // 数据源 ID 字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_DATA_SOURCE_ID)
+                        .dataType(DataType.VarChar)
+                        .maxLength(64)
+                        .build());
+
+        // 创建时间字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_CREATED_AT)
+                        .dataType(DataType.VarChar)
+                        .maxLength(32)
+                        .build());
+
+        // 问题向量字段
+        schema.addField(
+                AddFieldReq.builder()
+                        .fieldName(FIELD_QUESTION_VECTOR)
+                        .dataType(DataType.FloatVector)
+                        .dimension(embeddingConfig.getDimension())
+                        .build());
+
+        List<IndexParam> indexes = new ArrayList<>();
+        indexes.add(IndexParam.builder()
+                .fieldName(FIELD_QUESTION_VECTOR)
+                .indexType(IndexParam.IndexType.AUTOINDEX)
+                .metricType(IndexParam.MetricType.IP)
+                .build());
+
+        CreateCollectionReq createCollectionReq = CreateCollectionReq.builder()
+                .collectionName(collectionName)
+                .collectionSchema(schema)
+                .indexParams(indexes)
+                .build();
+        milvusClient.createCollection(createCollectionReq);
+        log.info("Collection {} created successfully", collectionName);
     }
 }

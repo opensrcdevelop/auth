@@ -2,8 +2,11 @@ package cn.opensrcdevelop.auth.controller;
 
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
-import cn.opensrcdevelop.auth.biz.entity.system.SystemSetting;
-import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import cn.opensrcdevelop.ai.service.impl.SampleSqlRebuildTaskExecutor;
+import cn.opensrcdevelop.ai.service.impl.SampleSqlSyncTaskExecutor;
+import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -15,12 +18,15 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Collections;
+import java.util.List;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
 @RestController
@@ -38,7 +44,7 @@ public class ChatBIController {
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatAnswerService chatAnswerService;
     private final SampleSqlService sampleSqlService;
-    private final SystemSettingService systemSettingService;
+    private final AsyncTaskSchedulerService asyncTaskSchedulerService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -277,20 +283,47 @@ public class ChatBIController {
         chatBIService.answerAskUserQuestion(requestDto);
     }
 
-    // ==================== 示例 SQL 管理 ====================
-
-    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表（分页）")
+    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表")
+    @Parameters({
+            @Parameter(name = "dataSourceId", description = "数据源ID", in = ParameterIn.QUERY),
+            @Parameter(name = "question", description = "问题", in = ParameterIn.QUERY),
+            @Parameter(name = "searchType", description = "查询类型：simple-简单查询，similarity-相似检索", in = ParameterIn.QUERY),
+            @Parameter(name = "current", description = "当前页", in = ParameterIn.QUERY),
+            @Parameter(name = "size", description = "每页大小", in = ParameterIn.QUERY)
+    })
     @GetMapping("/sampleSql/list")
     public PageData<SampleSqlDto> listSampleSql(
             @RequestParam(required = false) String dataSourceId,
-            @RequestParam(defaultValue = "1") long current,
-            @RequestParam(defaultValue = "10") long size) {
-        return sampleSqlService.list(dataSourceId, current, size);
+            @RequestParam(required = false) String question,
+            @RequestParam(required = false, defaultValue = "simple") String searchType,
+            @RequestParam(defaultValue = "1") Long current,
+            @RequestParam(defaultValue = "15") Long size) {
+        long offset = (current - 1) * size;
+        if ("similarity".equals(searchType) && StringUtils.isNotEmpty(question)) {
+            List<SampleSqlDto> list = sampleSqlService.search(dataSourceId, question, null);
+            PageData<SampleSqlDto> pageData = new PageData<>();
+            pageData.setList(list);
+            pageData.setTotal((long) list.size());
+            pageData.setCurrent(1L);
+            pageData.setSize((long) list.size());
+            pageData.setPages(1L);
+            return pageData;
+        }
+        int pageSize = size.intValue();
+        List<SampleSqlDto> list = sampleSqlService.list(dataSourceId, question, offset, pageSize);
+        long total = sampleSqlService.count(dataSourceId, question);
+        PageData<SampleSqlDto> pageData = new PageData<>();
+        pageData.setList(list);
+        pageData.setTotal(total);
+        pageData.setCurrent(current);
+        pageData.setSize(size);
+        pageData.setPages(total % pageSize == 0 ? total / pageSize : total / pageSize + 1);
+        return pageData;
     }
 
     @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
     @PostMapping("/sampleSql")
-    public void addSampleSql(@RequestBody @Valid SampleSqlRequestDto request) {
+    public void addSampleSql(@RequestBody @Validated SampleSqlRequestDto request) {
         sampleSqlService.add(request);
     }
 
@@ -300,60 +333,45 @@ public class ChatBIController {
         sampleSqlService.delete(id);
     }
 
-    @Operation(summary = "从 LIKE 反馈同步", description = "从 LIKE 反馈同步到向量库")
+    @Operation(summary = "从 Likes 同步示例 SQL", description = "从 Likes 同步示例 SQL 到向量存储")
     @PostMapping("/sampleSql/syncFromLikes")
-    public int syncFromLikes() {
-        return sampleSqlService.syncFromLikes();
+    public String syncFromLikes() {
+        return asyncTaskSchedulerService.submitTask(
+                AsyncTaskType.SAMPLE_SQL_SYNC.getCode(),
+                SampleSqlSyncTaskExecutor.TASK_NAME,
+                Collections.emptyMap(),
+                AuthUtil.getCurrentUserId());
     }
 
-    @Operation(summary = "重建索引", description = "重建向量索引")
-    @PostMapping("/sampleSql/rebuild")
-    public int rebuild() {
-        return sampleSqlService.rebuild();
+    @Operation(summary = "重新构建示例 SQL 索引", description = "重新构建示例 SQL 索引")
+    @PostMapping("/sampleSql/rebuildIndex")
+    public String rebuildIndex() {
+        return asyncTaskSchedulerService.submitTask(
+                AsyncTaskType.SAMPLE_SQL_REBUILD.getCode(),
+                SampleSqlRebuildTaskExecutor.TASK_NAME,
+                Collections.emptyMap(),
+                AuthUtil.getCurrentUserId());
     }
 
-    @Operation(summary = "获取嵌入配置", description = "获取嵌入模型配置")
-    @GetMapping("/embedding/config")
-    public EmbeddingConfigDto getEmbeddingConfig() {
-        EmbeddingConfigDto config = new EmbeddingConfigDto();
-        SystemSetting providerSetting = systemSettingService.getByKey("chatbi.embedding.provider.id");
-        SystemSetting modelSetting = systemSettingService.getByKey("chatbi.embedding.model");
-        SystemSetting thresholdSetting = systemSettingService.getByKey("chatbi.embedding.similarity.threshold");
+    @Operation(summary = "获取示例 SQL 嵌入配置", description = "获取示例 SQL 嵌入模型配置")
+    @GetMapping("/sampleSql/embedding/config")
+    public SampleSqlEmbeddingConfigDto getEmbeddingConfig() {
+        return sampleSqlService.getEmbeddingConfig();
+    }
 
-        // 去掉存储值外层的引号
-        config.setProviderId(stripQuotes(providerSetting != null ? providerSetting.getValue() : null));
-        config.setModel(stripQuotes(modelSetting != null ? modelSetting.getValue() : null));
+    @Operation(summary = "更新示例 SQL 嵌入配置", description = "更新示例 SQL 嵌入模型配置")
+    @PutMapping("/sampleSql/embedding/config")
+    public String updateEmbeddingConfig(@RequestBody @Validated SampleSqlEmbeddingConfigDto config) {
+        boolean needRebuild = sampleSqlService.needRebuildIndex(config);
+        sampleSqlService.updateEmbeddingConfig(config);
 
-        double threshold = 0.7;
-        String thresholdValue = thresholdSetting != null ? thresholdSetting.getValue() : null;
-        if (thresholdValue != null && !thresholdValue.isEmpty()) {
-            try {
-                threshold = Double.parseDouble(stripQuotes(thresholdValue));
-            } catch (NumberFormatException e) {
-                // 使用默认值
-            }
+        if (needRebuild) {
+            return asyncTaskSchedulerService.submitTask(
+                    AsyncTaskType.SAMPLE_SQL_REBUILD.getCode(),
+                    SampleSqlRebuildTaskExecutor.TASK_NAME,
+                    Collections.emptyMap(),
+                    AuthUtil.getCurrentUserId());
         }
-        config.setSimilarityThreshold(threshold);
-        return config;
-    }
-
-    private String stripQuotes(String value) {
-        if (value == null) {
-            return "";
-        }
-        String trimmed = value.trim();
-        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() >= 2) {
-            return trimmed.substring(1, trimmed.length() - 1);
-        }
-        return trimmed;
-    }
-
-    @Operation(summary = "更新嵌入配置", description = "更新嵌入模型配置")
-    @PutMapping("/embedding/config")
-    public void updateEmbeddingConfig(@RequestBody EmbeddingConfigDto config) {
-        systemSettingService.saveSystemSetting("chatbi.embedding.provider.id", config.getProviderId());
-        systemSettingService.saveSystemSetting("chatbi.embedding.model", config.getModel());
-        systemSettingService.saveSystemSetting("chatbi.embedding.similarity.threshold",
-                String.valueOf(config.getSimilarityThreshold()));
+        return null;
     }
 }

@@ -2,14 +2,16 @@ package cn.opensrcdevelop.auth.biz.service.user.excel;
 
 import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 用户导入异步任务执行器
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@AsyncTaskExecutorAnno(taskType = "USER_IMPORT")
 public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     public static final String TASK_NAME = "用户数据导入";

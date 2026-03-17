@@ -318,8 +318,6 @@ export function handleUserResponse(data: any) {
   });
 }
 
-// ==================== 示例 SQL 管理 ====================
-
 /**
  * 获取示例 SQL 列表
  *
@@ -361,7 +359,7 @@ export function deleteSampleSql(id: string) {
 /**
  * 从 LIKE 反馈同步
  *
- * @returns 同步数量
+ * @returns 任务ID
  */
 export function syncSampleSqlFromLikes() {
   return apiRequest.post({
@@ -372,11 +370,11 @@ export function syncSampleSqlFromLikes() {
 /**
  * 重建索引
  *
- * @returns 重建数量
+ * @returns 任务ID
  */
 export function rebuildSampleSqlIndex() {
   return apiRequest.post({
-    url: "/chatbi/sampleSql/rebuild",
+    url: "/chatbi/sampleSql/rebuildIndex",
   });
 }
 
@@ -387,7 +385,7 @@ export function rebuildSampleSqlIndex() {
  */
 export function getEmbeddingConfig() {
   return apiRequest.get({
-    url: "/chatbi/embedding/config",
+    url: "/chatbi/sampleSql/embedding/config",
   });
 }
 
@@ -399,7 +397,7 @@ export function getEmbeddingConfig() {
  */
 export function updateEmbeddingConfig(data: any) {
   return apiRequest.put({
-    url: "/chatbi/embedding/config",
+    url: "/chatbi/sampleSql/embedding/config",
     data,
   });
 }
