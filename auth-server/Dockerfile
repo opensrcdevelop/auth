@@ -1,7 +1,7 @@
 # Docker image for springboot file run
 # Docker Docs: https://docs.docker.com/
 
-FROM amazoncorretto:21.0.10.7-1
+FROM amazoncorretto:21.0.10
 
 ARG VERSION
 
