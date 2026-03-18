@@ -5,8 +5,8 @@ import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
 import cn.opensrcdevelop.ai.dto.SampleSqlEmbeddingConfigDto;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
-import cn.opensrcdevelop.ai.service.EmbeddingService;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
+import cn.opensrcdevelop.ai.service.SampleSqlEmbeddingService;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class EmbeddingServiceImpl implements EmbeddingService {
+public class SampleSqlEmbeddingServiceImpl implements SampleSqlEmbeddingService {
 
     private static final Cache<String, EmbeddingModel> EMBEDDING_MODEL_CACHE = Caffeine.newBuilder()
             .expireAfterAccess(8, TimeUnit.HOURS)

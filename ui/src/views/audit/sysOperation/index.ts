@@ -44,6 +44,7 @@ const resourceTypes = [
   { id: "0199c427-9df0-7fbe-bfe4-de1a8cbebbfa", name: "ChatBI 问数" },
   { id: "0199c923-b73d-73db-a654-76ddd12dd408", name: "ChatBI 问数-数据源" },
   { id: "0199c926-f7e6-79d2-a864-f234ce930b07", name: "ChatBI 问数-模型提供商" },
+  { id: "019cfc50-fa16-721c-bea5-e03647a7029f", name: "ChatBI 问数-示例 SQL" },
 ];
 
 /**

@@ -319,8 +319,8 @@ const loadConfig = () => {
 
 const saveConfig = async () => {
   try {
-    const taskId = await updateEmbeddingConfig(embeddingConfigform);
-    if (taskId) {
+    const res = await updateEmbeddingConfig(embeddingConfigform);
+    if (res?.data) {
       Notification.info("配置已保存，索引重建任务已提交，请前往任务中心查看进度")
     } else {
       Notification.success("保存成功");

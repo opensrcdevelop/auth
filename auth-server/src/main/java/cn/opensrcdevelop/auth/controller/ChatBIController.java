@@ -292,6 +292,7 @@ public class ChatBIController {
             @Parameter(name = "size", description = "每页大小", in = ParameterIn.QUERY)
     })
     @GetMapping("/sampleSql/list")
+    @Authorize({"allChatBISampleSqlPermissions", "getSampleSqlList"})
     public PageData<SampleSqlDto> listSampleSql(
             @RequestParam(required = false) String dataSourceId,
             @RequestParam(required = false) String question,
@@ -323,18 +324,21 @@ public class ChatBIController {
 
     @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
     @PostMapping("/sampleSql")
+    @Authorize({"allChatBISampleSqlPermissions", "createSampleSql"})
     public void addSampleSql(@RequestBody @Validated SampleSqlRequestDto request) {
         sampleSqlService.add(request);
     }
 
     @Operation(summary = "删除示例 SQL", description = "删除示例 SQL")
     @DeleteMapping("/sampleSql/{id}")
+    @Authorize({"allChatBISampleSqlPermissions", "deleteSampleSql"})
     public void deleteSampleSql(@PathVariable String id) {
         sampleSqlService.delete(id);
     }
 
     @Operation(summary = "从 Likes 同步示例 SQL", description = "从 Likes 同步示例 SQL 到向量存储")
     @PostMapping("/sampleSql/syncFromLikes")
+    @Authorize({"allChatBISampleSqlPermissions", "syncFromLikes"})
     public String syncFromLikes() {
         return asyncTaskSchedulerService.submitTask(
                 AsyncTaskType.SAMPLE_SQL_SYNC.getCode(),
@@ -345,6 +349,7 @@ public class ChatBIController {
 
     @Operation(summary = "重新构建示例 SQL 索引", description = "重新构建示例 SQL 索引")
     @PostMapping("/sampleSql/rebuildIndex")
+    @Authorize({"allChatBISampleSqlPermissions", "rebuildIndex"})
     public String rebuildIndex() {
         return asyncTaskSchedulerService.submitTask(
                 AsyncTaskType.SAMPLE_SQL_REBUILD.getCode(),
@@ -355,12 +360,14 @@ public class ChatBIController {
 
     @Operation(summary = "获取示例 SQL 嵌入配置", description = "获取示例 SQL 嵌入模型配置")
     @GetMapping("/sampleSql/embedding/config")
+    @Authorize({"allChatBISampleSqlPermissions", "getEmbeddingConfig"})
     public SampleSqlEmbeddingConfigDto getEmbeddingConfig() {
         return sampleSqlService.getEmbeddingConfig();
     }
 
     @Operation(summary = "更新示例 SQL 嵌入配置", description = "更新示例 SQL 嵌入模型配置")
     @PutMapping("/sampleSql/embedding/config")
+    @Authorize({"allChatBISampleSqlPermissions", "updateEmbeddingConfig"})
     public String updateEmbeddingConfig(@RequestBody @Validated SampleSqlEmbeddingConfigDto config) {
         boolean needRebuild = sampleSqlService.needRebuildIndex(config);
         sampleSqlService.updateEmbeddingConfig(config);
@@ -372,6 +379,6 @@ public class ChatBIController {
                     Collections.emptyMap(),
                     AuthUtil.getCurrentUserId());
         }
-        return null;
+        return "";
     }
 }

@@ -11,11 +11,13 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.constants.MessageConstants;
 import cn.opensrcdevelop.tenant.dto.CheckTenantResponseDto;
 import cn.opensrcdevelop.tenant.dto.TenantRequestDto;
 import cn.opensrcdevelop.tenant.dto.TenantResponseDto;
 import cn.opensrcdevelop.tenant.entity.Tenant;
+import cn.opensrcdevelop.tenant.event.RemoveTenantEvent;
 import cn.opensrcdevelop.tenant.mapper.TenantMapper;
 import cn.opensrcdevelop.tenant.service.TenantService;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
@@ -24,16 +26,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.sql.DataSource;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -276,6 +279,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
 
         // 3. 数据库操作
         super.removeById(tenantId);
+
+        SpringContextUtil.publishEvent(new RemoveTenantEvent(tenant));
     }
 
     /**

@@ -35,7 +35,7 @@ public class SampleSqlSyncTaskExecutor implements AsyncTaskExecutor {
 
             int count = sampleSqlService.syncFromLikes();
 
-            context.setResult("{\"count\": " + count + "}");
+            context.setResult("同步了 " + count + " 条示例 SQL");
             log.info("示例 SQL 同步任务完成: taskId={}, count={}", taskId, count);
         } catch (Exception e) {
             log.error("示例 SQL 同步任务执行失败: taskId={}", taskId, e);

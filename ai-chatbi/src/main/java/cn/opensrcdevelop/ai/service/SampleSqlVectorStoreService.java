@@ -99,4 +99,12 @@ public interface SampleSqlVectorStoreService {
      * @return 向量数量
      */
     long count(String tenantCode, String dataSourceId, String question);
+
+    /**
+     * 删除 Collection
+     *
+     * @param tenantCode
+     *            租户 Code
+     */
+    void removeCollection(String tenantCode);
 }

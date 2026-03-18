@@ -12,7 +12,7 @@ public interface SampleSqlService {
 
     long count(String dataSourceId, String question);
 
-    void add(SampleSqlRequestDto request);
+    void add(SampleSqlRequestDto requestDto);
 
     void delete(String id);
 

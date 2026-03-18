@@ -8,9 +8,15 @@ import cn.opensrcdevelop.ai.dto.SampleSqlRequestDto;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.Feedback;
 import cn.opensrcdevelop.ai.service.ChatAnswerService;
-import cn.opensrcdevelop.ai.service.EmbeddingService;
+import cn.opensrcdevelop.ai.service.SampleSqlEmbeddingService;
 import cn.opensrcdevelop.ai.service.SampleSqlService;
 import cn.opensrcdevelop.ai.service.SampleSqlVectorStoreService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -34,7 +40,7 @@ public class SampleSqlServiceImpl implements SampleSqlService {
     private static final double DEFAULT_THRESHOLD = 0.6;
 
     private final SampleSqlVectorStoreService sampleSqlVectorStoreService;
-    private final EmbeddingService embeddingService;
+    private final SampleSqlEmbeddingService embeddingService;
     private final ChatAnswerService chatAnswerService;
     private final SystemSettingService systemSettingService;
 
@@ -55,26 +61,31 @@ public class SampleSqlServiceImpl implements SampleSqlService {
     /**
      * 添加一个示例 SQL
      *
-     * @param request
+     * @param requestDto
      *            示例 SQL 请求参数
      */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_SAMPLE_SQL, sysOperation = SysOperationType.CREATE, success = "添加了示例 SQL，ID: {{ #sampleSqlId }}", fail = "添加示例 SQL 失败, 问题：{{ #request.question }}，SQL: {{ #request.sql }}")
     @Override
-    public void add(SampleSqlRequestDto request) {
+    public void add(SampleSqlRequestDto requestDto) {
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
 
+        String sampleSqlId = CommonUtil.getUUIDV7String();
+
         SampleSqlDto dto = SampleSqlDto.builder()
-                .id(CommonUtil.getUUIDV7String())
-                .question(request.getQuestion())
-                .sql(request.getSql())
-                .dataSourceId(request.getDataSourceId())
+                .id(sampleSqlId)
+                .question(requestDto.getQuestion())
+                .sql(requestDto.getSql())
+                .dataSourceId(requestDto.getDataSourceId())
                 .build();
 
-        List<Float> vector = embeddingService.embedText(request.getQuestion());
+        List<Float> vector = embeddingService.embedText(requestDto.getQuestion());
         if (vector.isEmpty()) {
             throw new BizException(MessageConstants.AI_SAMPLE_SQL_MSG_1000);
         }
 
         sampleSqlVectorStoreService.insert(tenantCode, dto, vector);
+
+        AuditContext.setSpelVariable("sampleSqlId", sampleSqlId);
     }
 
     /**
@@ -83,6 +94,7 @@ public class SampleSqlServiceImpl implements SampleSqlService {
      * @param id
      *            示例 SQL ID
      */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_SAMPLE_SQL, sysOperation = SysOperationType.DELETE, success = "删除了示例 SQL，ID: {{ #id }}", fail = "删除示例 SQL 失败，ID: {{ #id }}")
     @Override
     public void delete(String id) {
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
@@ -94,6 +106,7 @@ public class SampleSqlServiceImpl implements SampleSqlService {
      *
      * @return 同步成功的记录数
      */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_SAMPLE_SQL, sysOperation = SysOperationType.CREATE, success = "从 LIKE 反馈同步了示例 SQL，共 {{ #syncedCount }} 条", fail = "从 LIKE 反馈同步示例 SQL 失败")
     @Override
     public int syncFromLikes() {
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
@@ -127,6 +140,8 @@ public class SampleSqlServiceImpl implements SampleSqlService {
                     syncedCount.getAndIncrement();
                 });
         log.info("从 LIKE 反馈同步完成，共 {} 条", syncedCount.get());
+
+        AuditContext.setSpelVariable("syncedCount", syncedCount.get());
         return syncedCount.get();
     }
 
@@ -223,14 +238,24 @@ public class SampleSqlServiceImpl implements SampleSqlService {
      * @param configDto
      *            示例 SQL 嵌入模型配置
      */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_SAMPLE_SQL, sysOperation = SysOperationType.UPDATE, success = "更新了示例 SQL 嵌入模型配置", fail = "更新示例 SQL 嵌入模型配置失败")
     @Override
     public void updateEmbeddingConfig(SampleSqlEmbeddingConfigDto configDto) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
         SampleSqlEmbeddingConfigDto rawEmbeddingConfigDto = systemSettingService.getSystemSetting(
                 SystemSettingConstants.SAMPLE_SQL_EMBEDDING_CONFIG, SampleSqlEmbeddingConfigDto.class);
+
+        compareObjBuilder.before(rawEmbeddingConfigDto);
+        compareObjBuilder.after(configDto);
+
         configDto.setPreviousModel(rawEmbeddingConfigDto.getModel());
         configDto.setPreviousDimension(rawEmbeddingConfigDto.getDimension());
 
         systemSettingService.saveSystemSetting(SystemSettingConstants.SAMPLE_SQL_EMBEDDING_CONFIG, configDto);
+
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     /**
@@ -252,6 +277,7 @@ public class SampleSqlServiceImpl implements SampleSqlService {
      * 重新构建示例 SQL 索引
      *
      */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_SAMPLE_SQL, sysOperation = SysOperationType.UPDATE, success = "重新构建了示例 SQL 索引", fail = "重新构建示例 SQL 索引失败")
     @Override
     public void rebuildIndex() {
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();

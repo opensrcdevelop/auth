@@ -309,6 +309,18 @@ public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreServ
     }
 
     /**
+     * 删除 Collection
+     *
+     * @param tenantCode
+     *            租户 Code
+     */
+    @Override
+    public void removeCollection(String tenantCode) {
+        String collectionName = COLLECTION_PREFIX + tenantCode;
+        milvusClient.dropCollection(DropCollectionReq.builder().collectionName(collectionName).build());
+    }
+
+    /**
      * 创建 Collection
      *
      * @param collectionName
