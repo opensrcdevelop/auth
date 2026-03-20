@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -65,6 +66,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatHistoryService chatHistoryService;
     private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
+    private final HeartbeatManager heartbeatManager;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -82,6 +84,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         AtomicBoolean interruptFlag = new AtomicBoolean(false);
         SecurityContext securityContext = SecurityContextHolder.getContext();
+
+        ScheduledFuture<?> heartbeatFuture = heartbeatManager.startHeartbeat(emitter);
 
         if (isRequestInvalid(emitter, requestDto)) {
             return emitter;
@@ -128,6 +132,19 @@ public class ChatBIServiceImpl implements ChatBIService {
         emitter.onCompletion(() -> {
             log.info("ChatBI 对话（{}）中断/结束", finalChatId);
             interruptFlag.set(true);
+            heartbeatManager.stopHeartbeat(heartbeatFuture);
+        });
+
+        emitter.onTimeout(() -> {
+            log.info("ChatBI 对话（{}）超时", finalChatId);
+            interruptFlag.set(true);
+            heartbeatManager.stopHeartbeat(heartbeatFuture);
+        });
+
+        emitter.onError(e -> {
+            log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
+            interruptFlag.set(true);
+            heartbeatManager.stopHeartbeat(heartbeatFuture);
         });
 
         return emitter;
