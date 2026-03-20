@@ -54,4 +54,7 @@ public class ChatContext {
     private List<Map<String, String>> sampleSqls;
 
     private Boolean terminated = false;
+
+    /** 临时文件路径（存储超阈值查询结果） */
+    private String tempFilePath;
 }
