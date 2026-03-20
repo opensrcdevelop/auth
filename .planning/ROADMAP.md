@@ -13,7 +13,7 @@
 ## Phases
 
 - [x] **Phase 1: SSE 心跳** - 实现每 10 秒发送空消息心跳，保持连接不断开 (completed 2026-03-20)
-- [ ] **Phase 2: 临时文件存储** - SQL 查询结果超过阈值时存储为 JSON Lines 临时文件，会话结束时删除
+- [x] **Phase 2: 临时文件存储** - SQL 查询结果超过阈值时存储为 JSON Lines 临时文件，会话结束时删除 (completed 2026-03-20)
 - [ ] **Phase 3: 随机读取 Tool** - 创建 read_query_result Tool，支持按偏移量读取临时文件
 
 ## Phase Details
@@ -79,7 +79,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. SSE 心跳 | 1/1 | Complete   | 2026-03-20 |
-| 2. 临时文件存储 | 1/2 | In Progress|  |
+| 2. 临时文件存储 | 1/2 | Complete    | 2026-03-20 |
 | 3. 随机读取 Tool | 0/1 | Not started | - |
 
 ---
