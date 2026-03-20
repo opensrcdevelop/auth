@@ -7,14 +7,13 @@
 | Project | ChatBI 连接增强 |
 | Core Value | 保持 SSE 连接稳定，避免大数据集导致的连接断开，同时让 AI 能够处理超出内存限制的查询结果。 |
 | Granularity | coarse |
-| Total Phases | 3 |
-| Total Requirements | 4 |
+| Total Phases | 3 | 1/1 | Complete   | 2026-03-20 |
 
 ## Phases
 
 - [x] **Phase 1: SSE 心跳** - 实现每 10 秒发送空消息心跳，保持连接不断开 (completed 2026-03-20)
 - [x] **Phase 2: 临时文件存储** - SQL 查询结果超过阈值时存储为 JSON Lines 临时文件，会话结束时删除 (completed 2026-03-20)
-- [ ] **Phase 3: 随机读取 Tool** - 创建 read_query_result Tool，支持按偏移量读取临时文件
+- [x] **Phase 3: 随机读取 Tool** - 创建 read_query_result Tool，支持按偏移量读取临时文件 (completed 2026-03-20)
 
 ## Phase Details
 
