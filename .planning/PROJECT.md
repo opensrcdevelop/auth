@@ -20,10 +20,13 @@
 - ✓ `SseUtil` 提供多种消息发送方法 — 现有
 - ✓ Tool 通过 `MethodTool` 接口实现，`@Component` 注册 — 现有
 - ✓ `ChatContextHolder` 管理会话上下文 — 现有
+- ✓ **HEARTBEAT-01**: SSE 连接每 10 秒自动发送空消息心跳，保持连接不断开 — Phase 1 完成
 
 ### Active
 
-- [ ] **HEARTBEAT-01**: SSE 连接每 10 秒自动发送空消息心跳，保持连接不断开
+- [ ] **TEMPFILE-01**: SQL 查询结果超过配置阈值时，每条数据 JSON 化存储为一行 txt 文件
+- [ ] **TEMPFILE-02**: 临时文件在单轮会话结束时自动删除
+- [ ] **READERTOOL-01**: 创建 `read_query_result` Tool，支持 AI 传入 offset 和 limit 按偏移量读取临时文件
 - [ ] **TEMPFILE-01**: SQL 查询结果超过配置阈值时，每条数据 JSON 化存储为一行 txt 文件
 - [ ] **TEMPFILE-02**: 临时文件在单轮会话结束时自动删除
 - [ ] **READERTOOL-01**: 创建 `read_query_result` Tool，支持 AI 传入 offset 和 limit 按偏移量读取临时文件
@@ -62,4 +65,4 @@
 | 单轮会话结束删除文件 | 避免占用磁盘空间 | — Pending |
 
 ---
-*Last updated: 2026-03-20 after questioning*
+*Last updated: 2026-03-20 after Phase 1*
