@@ -31,6 +31,14 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -40,15 +48,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -67,6 +66,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
     private final HeartbeatManager heartbeatManager;
+    private final TempFileManager tempFileManager;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -102,6 +102,54 @@ public class ChatBIServiceImpl implements ChatBIService {
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             ChatContext chatContext = new ChatContext();
+            java.util.concurrent.atomic.AtomicReference<String> tempFilePathRef = new java.util.concurrent.atomic.AtomicReference<>();
+
+            // 注册 SSE 回调（在 executor 线程中注册，确保能访问 tempFilePathRef）
+            emitter.onCompletion(() -> {
+                log.info("ChatBI 对话（{}）中断/结束", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                // 清理临时文件
+                String path = tempFilePathRef.get();
+                if (StringUtils.isNotBlank(path)) {
+                    try {
+                        tempFileManager.deleteTempFile(path);
+                    } catch (Exception e) {
+                        log.warn("清理临时文件失败: {}", path, e);
+                    }
+                }
+            });
+
+            emitter.onTimeout(() -> {
+                log.info("ChatBI 对话（{}）超时", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                // 清理临时文件
+                String path = tempFilePathRef.get();
+                if (StringUtils.isNotBlank(path)) {
+                    try {
+                        tempFileManager.deleteTempFile(path);
+                    } catch (Exception e) {
+                        log.warn("清理临时文件失败: {}", path, e);
+                    }
+                }
+            });
+
+            emitter.onError(e -> {
+                log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                // 清理临时文件
+                String path = tempFilePathRef.get();
+                if (StringUtils.isNotBlank(path)) {
+                    try {
+                        tempFileManager.deleteTempFile(path);
+                    } catch (Exception cleanupEx) {
+                        log.warn("清理临时文件失败: {}", path, cleanupEx);
+                    }
+                }
+            });
+
             try {
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
@@ -124,27 +172,22 @@ public class ChatBIServiceImpl implements ChatBIService {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
             } finally {
+                // 在移除 ChatContext 前捕获 tempFilePath
+                if (chatContext != null) {
+                    tempFilePathRef.set(chatContext.getTempFilePath());
+                }
                 emitter.complete();
                 ChatContextHolder.removeChatContext(finalChatId);
+                // 清理临时文件（兜底，确保无论何种结束方式都会清理）
+                String path = tempFilePathRef.get();
+                if (StringUtils.isNotBlank(path)) {
+                    try {
+                        tempFileManager.deleteTempFile(path);
+                    } catch (Exception e) {
+                        log.warn("清理临时文件失败: {}", path, e);
+                    }
+                }
             }
-        });
-
-        emitter.onCompletion(() -> {
-            log.info("ChatBI 对话（{}）中断/结束", finalChatId);
-            interruptFlag.set(true);
-            heartbeatManager.stopHeartbeat(heartbeatFuture);
-        });
-
-        emitter.onTimeout(() -> {
-            log.info("ChatBI 对话（{}）超时", finalChatId);
-            interruptFlag.set(true);
-            heartbeatManager.stopHeartbeat(heartbeatFuture);
-        });
-
-        emitter.onError(e -> {
-            log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
-            interruptFlag.set(true);
-            heartbeatManager.stopHeartbeat(heartbeatFuture);
         });
 
         return emitter;
