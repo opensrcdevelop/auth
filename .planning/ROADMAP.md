@@ -7,7 +7,7 @@
 | Project | ChatBI 连接增强 |
 | Core Value | 保持 SSE 连接稳定，避免大数据集导致的连接断开，同时让 AI 能够处理超出内存限制的查询结果。 |
 | Granularity | coarse |
-| Total Phases | 3 | 1/1 | Complete   | 2026-03-20 |
+| Total Phases | 3 | 1/1 | Complete    | 2026-03-20 |
 
 ## Phases
 

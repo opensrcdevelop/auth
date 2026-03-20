@@ -23,10 +23,7 @@
 - ✓ **HEARTBEAT-01**: SSE 连接每 10 秒自动发送空消息心跳，保持连接不断开 — Phase 1 完成
 - ✓ **TEMPFILE-01**: SQL 查询结果超过配置阈值时，每条数据 JSON 化存储为一行 txt 文件 — Phase 2 完成
 - ✓ **TEMPFILE-02**: 临时文件在单轮会话结束时自动删除 — Phase 2 完成
-
-### Active
-
-- [ ] **READERTOOL-01**: 创建 `read_query_result` Tool，支持 AI 传入 offset 和 limit 按偏移量读取临时文件
+- ✓ **READERTOOL-01**: 创建 `read_query_result` Tool，支持 AI 传入 offset 和 limit 按偏移量读取临时文件 — Phase 3 完成
 
 ### Out of Scope
 
@@ -57,9 +54,9 @@
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| 临时文件用 JSON Lines 格式 | 每行独立解析，适合随机读取 | — Pending |
-| Tool 命名 `read_query_result` | 与 `execute_sql` 对应，语义清晰 | — Pending |
-| 单轮会话结束删除文件 | 避免占用磁盘空间 | — Pending |
+| 临时文件用 JSON Lines 格式 | 每行独立解析，适合随机读取 | ✓ 实现 |
+| Tool 命名 `read_query_result` | 与 `execute_sql` 对应，语义清晰 | ✓ 实现 |
+| 单轮会话结束删除文件 | 避免占用磁盘空间 | ✓ 实现 |
 
 ---
-*Last updated: 2026-03-20 after Phase 2*
+*Last updated: 2026-03-20 after Phase 3*
