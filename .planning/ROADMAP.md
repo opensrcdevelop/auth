@@ -70,7 +70,8 @@
 3. Tool 返回 JSON Lines 格式的原始数据，AI 可继续分析
 4. Tool 在文件不存在或读取失败时返回明确的错误信息
 
-**Plans**: TBD
+**Plans**:
+- [ ] 03-01-reader-READERTOOL-01-PLAN.md - read_query_result Tool 实现
 
 ---
 
@@ -79,7 +80,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. SSE 心跳 | 1/1 | Complete   | 2026-03-20 |
-| 2. 临时文件存储 | 1/2 | Complete    | 2026-03-20 |
+| 2. 临时文件存储 | 2/2 | Complete    | 2026-03-20 |
 | 3. 随机读取 Tool | 0/1 | Not started | - |
 
 ---
