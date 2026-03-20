@@ -11,7 +11,7 @@
 
 ### 临时文件存储
 
-- [ ] **TEMPFILE-01**: SQL 查询结果超过配置阈值时，每条数据 JSON 化存储为一行 txt 文件
+- [x] **TEMPFILE-01**: SQL 查询结果超过配置阈值时，每条数据 JSON 化存储为一行 txt 文件
 - [ ] **TEMPFILE-02**: 临时文件在单轮会话结束时自动删除
 
 ### 随机读取 Tool
@@ -31,7 +31,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | HEARTBEAT-01 | Phase 1 | Complete |
-| TEMPFILE-01 | Phase 2 | Pending |
+| TEMPFILE-01 | Phase 2 | Complete |
 | TEMPFILE-02 | Phase 2 | Pending |
 | READERTOOL-01 | Phase 3 | Pending |
 

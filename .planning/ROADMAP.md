@@ -79,7 +79,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. SSE 心跳 | 1/1 | Complete   | 2026-03-20 |
-| 2. 临时文件存储 | 2/2 | Planning complete | - |
+| 2. 临时文件存储 | 1/2 | In Progress|  |
 | 3. 随机读取 Tool | 0/1 | Not started | - |
 
 ---
