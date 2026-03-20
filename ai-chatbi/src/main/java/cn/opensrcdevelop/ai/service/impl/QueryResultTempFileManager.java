@@ -21,20 +21,20 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class TempFileManager {
+public class QueryResultTempFileManager {
 
-    private static final String FILE_PREFIX = "chatbi_";
+    private static final String FILE_PREFIX = "chatbi_query_result_";
     private static final String FILE_SUFFIX = ".txt";
 
-    @Value("${tempfile.threshold:100}")
+    @Value("${chatbi.query-result.threshold:100}")
     private int threshold;
 
-    @Value("${tempfile.directory:#{systemProperties['java.io.tmpdir']}}")
+    @Value("${chatbi.query-result.directory:#{systemProperties['java.io.tmpdir']}}")
     private String directory;
 
     private final ObjectMapper objectMapper;
 
-    public TempFileManager() {
+    public QueryResultTempFileManager() {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -78,13 +78,13 @@ public class TempFileManager {
     }
 
     /**
-     * 获取指定会话的临时文件路径
+     * 获取指定会话的最新临时文件路径
      *
      * @param chatId
      *            会话 ID
      * @return 临时文件路径，如果不存在则返回 null
      */
-    public String getTempFilePath(String chatId) {
+    public String getLatestTempFilePath(String chatId) {
         File dir = new File(directory);
         if (!dir.exists() || !dir.isDirectory()) {
             return null;
@@ -106,6 +106,32 @@ public class TempFileManager {
             }
         }
         return latestPath;
+    }
+
+    /**
+     * 获取指定会话的所有临时文件路径
+     *
+     * @param chatId
+     *            会话 ID
+     * @return 临时文件路径列表
+     */
+    public List<String> getAllTempFilePaths(String chatId) {
+        List<String> paths = new ArrayList<>();
+        File dir = new File(directory);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return paths;
+        }
+
+        File[] files = dir
+                .listFiles((d, name) -> name.startsWith(FILE_PREFIX + chatId + "_") && name.endsWith(FILE_SUFFIX));
+        if (files == null || files.length == 0) {
+            return paths;
+        }
+
+        for (File file : files) {
+            paths.add(file.getAbsolutePath());
+        }
+        return paths;
     }
 
     /**
@@ -144,7 +170,6 @@ public class TempFileManager {
             int count = 0;
             while (count < limit && (line = reader.readLine()) != null) {
                 try {
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> row = objectMapper.readValue(line, Map.class);
                     result.add(row);
                     count++;
@@ -183,6 +208,24 @@ public class TempFileManager {
             log.error("删除临时文件失败: {}", filePath, e);
             return false;
         }
+    }
+
+    /**
+     * 删除指定会话的所有临时文件
+     *
+     * @param chatId
+     *            会话 ID
+     * @return 删除的文件数量
+     */
+    public int deleteAllTempFiles(String chatId) {
+        List<String> paths = getAllTempFilePaths(chatId);
+        int deletedCount = 0;
+        for (String path : paths) {
+            if (deleteTempFile(path)) {
+                deletedCount++;
+            }
+        }
+        return deletedCount;
     }
 
     /**

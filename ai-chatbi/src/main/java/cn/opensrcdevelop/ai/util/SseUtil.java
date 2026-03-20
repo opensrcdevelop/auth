@@ -315,7 +315,8 @@ public class SseUtil {
     /**
      * 发送 SSE 心跳（空消息）
      *
-     * @param emitter SseEmitter
+     * @param emitter
+     *            SseEmitter
      */
     public static void sendHeartbeat(SseEmitter emitter) {
         Try.run(() -> emitter.send(SseEmitter.event().data("")));

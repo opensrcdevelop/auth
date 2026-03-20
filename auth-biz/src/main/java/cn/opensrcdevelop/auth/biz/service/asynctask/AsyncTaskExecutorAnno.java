@@ -3,8 +3,7 @@ package cn.opensrcdevelop.auth.biz.service.asynctask;
 import java.lang.annotation.*;
 
 /**
- * 异步任务执行器注解
- * 标记在实现 {@link AsyncTaskExecutor} 接口的类上
+ * 异步任务执行器注解 标记在实现 {@link AsyncTaskExecutor} 接口的类上
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

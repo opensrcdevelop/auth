@@ -1,13 +1,12 @@
 package cn.opensrcdevelop.auth.biz.service.asynctask;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.stereotype.Component;
 
 /**
  * 异步任务执行器管理器
@@ -31,7 +30,8 @@ public class AsyncTaskExecutorManager {
     public void init() {
         for (AsyncTaskExecutor executor : executorList) {
             Class<?> executorClass = executor.getClass();
-            AsyncTaskExecutorAnno annotation = AnnotationUtils.findAnnotation(executorClass, AsyncTaskExecutorAnno.class);
+            AsyncTaskExecutorAnno annotation = AnnotationUtils.findAnnotation(executorClass,
+                    AsyncTaskExecutorAnno.class);
             if (annotation != null) {
                 String taskType = annotation.taskType();
                 executors.put(taskType, executor);

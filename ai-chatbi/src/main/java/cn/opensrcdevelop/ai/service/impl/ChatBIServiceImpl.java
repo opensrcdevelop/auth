@@ -66,7 +66,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
     private final HeartbeatManager heartbeatManager;
-    private final TempFileManager tempFileManager;
+    private final QueryResultTempFileManager queryResultTempFileManager;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -102,52 +102,27 @@ public class ChatBIServiceImpl implements ChatBIService {
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             ChatContext chatContext = new ChatContext();
-            java.util.concurrent.atomic.AtomicReference<String> tempFilePathRef = new java.util.concurrent.atomic.AtomicReference<>();
 
-            // 注册 SSE 回调（在 executor 线程中注册，确保能访问 tempFilePathRef）
+            // 注册 SSE 回调
             emitter.onCompletion(() -> {
                 log.info("ChatBI 对话（{}）中断/结束", finalChatId);
                 interruptFlag.set(true);
                 heartbeatManager.stopHeartbeat(heartbeatFuture);
-                // 清理临时文件
-                String path = tempFilePathRef.get();
-                if (StringUtils.isNotBlank(path)) {
-                    try {
-                        tempFileManager.deleteTempFile(path);
-                    } catch (Exception e) {
-                        log.warn("清理临时文件失败: {}", path, e);
-                    }
-                }
+                cleanupTempFiles(chatContext);
             });
 
             emitter.onTimeout(() -> {
                 log.info("ChatBI 对话（{}）超时", finalChatId);
                 interruptFlag.set(true);
                 heartbeatManager.stopHeartbeat(heartbeatFuture);
-                // 清理临时文件
-                String path = tempFilePathRef.get();
-                if (StringUtils.isNotBlank(path)) {
-                    try {
-                        tempFileManager.deleteTempFile(path);
-                    } catch (Exception e) {
-                        log.warn("清理临时文件失败: {}", path, e);
-                    }
-                }
+                cleanupTempFiles(chatContext);
             });
 
             emitter.onError(e -> {
                 log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
                 interruptFlag.set(true);
                 heartbeatManager.stopHeartbeat(heartbeatFuture);
-                // 清理临时文件
-                String path = tempFilePathRef.get();
-                if (StringUtils.isNotBlank(path)) {
-                    try {
-                        tempFileManager.deleteTempFile(path);
-                    } catch (Exception cleanupEx) {
-                        log.warn("清理临时文件失败: {}", path, cleanupEx);
-                    }
-                }
+                cleanupTempFiles(chatContext);
             });
 
             try {
@@ -172,25 +147,33 @@ public class ChatBIServiceImpl implements ChatBIService {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
             } finally {
-                // 在移除 ChatContext 前捕获 tempFilePath
-                if (chatContext != null) {
-                    tempFilePathRef.set(chatContext.getTempFilePath());
-                }
+                cleanupTempFiles(chatContext);
                 emitter.complete();
                 ChatContextHolder.removeChatContext(finalChatId);
-                // 清理临时文件（兜底，确保无论何种结束方式都会清理）
-                String path = tempFilePathRef.get();
-                if (StringUtils.isNotBlank(path)) {
-                    try {
-                        tempFileManager.deleteTempFile(path);
-                    } catch (Exception e) {
-                        log.warn("清理临时文件失败: {}", path, e);
-                    }
-                }
             }
         });
 
         return emitter;
+    }
+
+    /**
+     * 清理会话的所有临时文件
+     */
+    private void cleanupTempFiles(ChatContext chatContext) {
+        if (chatContext == null) {
+            return;
+        }
+        List<String> paths = chatContext.getQueryResultFilePaths();
+        if (paths != null && !paths.isEmpty()) {
+            for (String path : paths) {
+                try {
+                    queryResultTempFileManager.deleteTempFile(path);
+                } catch (Exception e) {
+                    log.warn("清理临时文件失败: {}", path, e);
+                }
+            }
+            chatContext.clearQueryResultFilePaths();
+        }
     }
 
     /**

@@ -3,7 +3,7 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import cn.opensrcdevelop.ai.service.impl.TempFileManager;
+import cn.opensrcdevelop.ai.service.impl.QueryResultTempFileManager;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -21,17 +21,22 @@ public class ReadQueryResultTool implements MethodTool {
 
     public static final String TOOL_NAME = "read_query_result";
 
-    private final TempFileManager tempFileManager;
+    private final QueryResultTempFileManager queryResultTempFileManager;
 
     @Tool(name = TOOL_NAME, description = "Read query result data from temp file with pagination support. "
             + "Use this tool when the query result is too large and stored in a temp file. "
             + "AI can call this multiple times with different offset and limit to get all data.")
     public Response execute(@ToolParam(description = "The request to read query result") Request request) {
-        ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
-        // 从 ChatContext 获取临时文件路径
-        String tempFilePath = chatContext.getTempFilePath();
+        // 优先使用请求中指定的文件路径，否则从 ChatContext 获取最新路径
+        String tempFilePath = request.getFilePath();
+        if (StringUtils.isEmpty(tempFilePath)) {
+            ChatContext chatContext = ChatContextHolder.getChatContext();
+            List<String> paths = chatContext.getQueryResultFilePaths();
+            tempFilePath = (paths != null && !paths.isEmpty()) ? paths.get(paths.size() - 1) : null;
+        }
+
         if (StringUtils.isEmpty(tempFilePath)) {
             response.setSuccess(false);
             response.setError("No temp file found. Please execute SQL first.");
@@ -48,7 +53,8 @@ public class ReadQueryResultTool implements MethodTool {
             limit = 100;
         }
 
-        List<Map<String, Object>> queryData = tempFileManager.readLinesFromTempFile(tempFilePath, offset, limit);
+        List<Map<String, Object>> queryData = queryResultTempFileManager.readLinesFromTempFile(tempFilePath, offset,
+                limit);
         if (queryData == null) {
             response.setSuccess(false);
             response.setError("Failed to read temp file or file not found: " + tempFilePath);
@@ -71,6 +77,9 @@ public class ReadQueryResultTool implements MethodTool {
 
     @Data
     public static class Request {
+
+        @ToolParam(description = "The temp file path returned from execute_sql tool response (optional if not provided, will use the latest file from ChatContext)", required = false)
+        private String filePath;
 
         @ToolParam(description = "The starting offset position (0-based index)", required = true)
         private int offset;

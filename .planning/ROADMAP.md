@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-3 (shipped 2026-03-20)
-- 📋 **vNext** — TBD (planning needed)
+- 🚧 **v1.1 Quality Fix** — Phase 4 (in progress)
 
 ## Phases
 
@@ -16,17 +16,27 @@
 
 </details>
 
-### 📋 vNext (TBD)
+### 🚧 v1.1 Quality Fix (In Progress)
 
-Ready to plan next milestone with `/gsd:new-milestone`.
+| Phase | Status | Plans | Description |
+|-------|--------|-------|-------------|
+| 4. 质量修复 | Planned | 1 | 修复 v1.0 实现质量问题 |
+
+**Phase 4 Goals:**
+- 修复 ExecuteSqlTool 不应清除 ChatContext.queryData
+- 重命名 TempFileManager → QueryResultTempFileManager
+- 属性命名规范化为 chatbi.query-result.*
+- 支持多次 SQL 执行的 temp 文件清理
+- 添加 application-ai.properties 配置
 
 ## Progress
 
-| Phase             | Milestone | Plans Complete | Status      | Completed    |
-| ----------------- | --------- | -------------- | ----------- | ------------ |
-| 1. SSE 心跳       | v1.0      | 1/1            | Complete    | 2026-03-20  |
-| 2. 临时文件存储    | v1.0      | 2/2            | Complete    | 2026-03-20  |
-| 3. 随机读取 Tool   | v1.0      | 1/1            | Complete    | 2026-03-20  |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. SSE 心跳 | v1.0 | 1/1 | Complete | 2026-03-20 |
+| 2. 临时文件存储 | v1.0 | 2/2 | Complete | 2026-03-20 |
+| 3. 随机读取 Tool | v1.0 | 1/1 | Complete | 2026-03-20 |
+| 4. 质量修复 | v1.1 | 0/1 | Planned | - |
 
 ---
 

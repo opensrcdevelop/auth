@@ -1,8 +1,7 @@
 package cn.opensrcdevelop.tenant.event;
 
-import org.springframework.context.ApplicationEvent;
-
 import java.io.Serial;
+import org.springframework.context.ApplicationEvent;
 
 public class RemoveTenantEvent extends ApplicationEvent {
 
