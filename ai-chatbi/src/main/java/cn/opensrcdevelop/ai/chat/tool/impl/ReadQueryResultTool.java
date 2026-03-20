@@ -1,0 +1,100 @@
+package cn.opensrcdevelop.ai.chat.tool.impl;
+
+import cn.opensrcdevelop.ai.chat.ChatContext;
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.service.impl.TempFileManager;
+import java.util.List;
+import java.util.Map;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
+
+@Component(ReadQueryResultTool.TOOL_NAME)
+@RequiredArgsConstructor
+@Slf4j
+public class ReadQueryResultTool implements MethodTool {
+
+    public static final String TOOL_NAME = "read_query_result";
+
+    private final TempFileManager tempFileManager;
+
+    @Tool(name = TOOL_NAME, description = "Read query result data from temp file with pagination support. "
+            + "Use this tool when the query result is too large and stored in a temp file. "
+            + "AI can call this multiple times with different offset and limit to get all data.")
+    public Response execute(@ToolParam(description = "The request to read query result") Request request) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
+        Response response = new Response();
+
+        // 从 ChatContext 获取临时文件路径
+        String tempFilePath = chatContext.getTempFilePath();
+        if (StringUtils.isEmpty(tempFilePath)) {
+            response.setSuccess(false);
+            response.setError("No temp file found. Please execute SQL first.");
+            return response;
+        }
+
+        int offset = request.getOffset();
+        int limit = request.getLimit();
+
+        if (offset < 0) {
+            offset = 0;
+        }
+        if (limit <= 0 || limit > 1000) {
+            limit = 100;
+        }
+
+        List<Map<String, Object>> queryData = tempFileManager.readLinesFromTempFile(tempFilePath, offset, limit);
+        if (queryData == null) {
+            response.setSuccess(false);
+            response.setError("Failed to read temp file or file not found: " + tempFilePath);
+            return response;
+        }
+
+        response.setSuccess(true);
+        response.setQueryData(queryData);
+        response.setRecordCount(queryData.size());
+        response.setHasMore(queryData.size() == limit);
+
+        log.info("从临时文件读取 {} 条数据，offset={}, limit={}", queryData.size(), offset, limit);
+        return response;
+    }
+
+    @Override
+    public String toolName() {
+        return TOOL_NAME;
+    }
+
+    @Data
+    public static class Request {
+
+        @ToolParam(description = "The starting offset position (0-based index)", required = true)
+        private int offset;
+
+        @ToolParam(description = "The maximum number of records to read (recommended: 100-500)", required = true)
+        private int limit;
+    }
+
+    @Data
+    public static class Response {
+
+        @ToolParam(description = "The success of the read operation")
+        private Boolean success;
+
+        @ToolParam(description = "The query data read from temp file")
+        private List<Map<String, Object>> queryData;
+
+        @ToolParam(description = "The number of records returned in this response")
+        private Integer recordCount;
+
+        @ToolParam(description = "Whether there is more data to read (true if limit reached)")
+        private Boolean hasMore;
+
+        @ToolParam(description = "The error message if read failed")
+        private String error;
+    }
+}
