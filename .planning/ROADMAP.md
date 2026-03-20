@@ -32,7 +32,7 @@
 3. SSE 连接关闭时，心跳调度正确停止，不产生资源泄漏
 
 **Plans**:
-- [ ] 01-heartbeat-HEARTBEAT-01-PLAN.md - SSE 心跳实现
+- [x] 01-heartbeat-HEARTBEAT-01-PLAN.md - SSE 心跳实现
 
 ---
 
@@ -50,7 +50,9 @@
 3. 单轮会话结束时（正常完成或超时），临时文件被自动删除
 4. 临时文件存储路径可配置
 
-**Plans**: TBD
+**Plans**:
+- [x] 02-01-tempfile-TEMPFILE-01-PLAN.md - 临时文件写入和 ChatContext 扩展
+- [x] 02-02-tempfile-TEMPFILE-02-PLAN.md - 会话结束时清理临时文件
 
 ---
 
@@ -77,7 +79,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. SSE 心跳 | 1/1 | Complete   | 2026-03-20 |
-| 2. 临时文件存储 | 0/2 | Not started | - |
+| 2. 临时文件存储 | 2/2 | Planning complete | - |
 | 3. 随机读取 Tool | 0/1 | Not started | - |
 
 ---
