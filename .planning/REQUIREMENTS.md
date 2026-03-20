@@ -7,7 +7,7 @@
 
 ### SSE 心跳
 
-- [ ] **HEARTBEAT-01**: SSE 连接每 10 秒自动发送空消息心跳，保持连接不断开
+- [x] **HEARTBEAT-01**: SSE 连接每 10 秒自动发送空消息心跳，保持连接不断开
 
 ### 临时文件存储
 
@@ -30,7 +30,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HEARTBEAT-01 | Phase 1 | Pending |
+| HEARTBEAT-01 | Phase 1 | Complete |
 | TEMPFILE-01 | Phase 2 | Pending |
 | TEMPFILE-02 | Phase 2 | Pending |
 | READERTOOL-01 | Phase 3 | Pending |

@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-20T12:40:21.571Z"
+progress:
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+---
+
 # STATE: ChatBI 连接增强
 
 ## Project Reference
@@ -11,12 +24,8 @@
 
 ## Current Position
 
-| Field | Value |
-|-------|-------|
-| Phase | 1 - SSE 心跳 |
-| Plan | Not started |
-| Status | Not started |
-| Progress | 0/1 plans complete |
+Phase: 01 (sse-heartbeat) — EXECUTING
+Plan: 1 of 1
 
 ### Phase Progress
 

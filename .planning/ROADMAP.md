@@ -12,7 +12,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: SSE 心跳** - 实现每 10 秒发送空消息心跳，保持连接不断开
+- [x] **Phase 1: SSE 心跳** - 实现每 10 秒发送空消息心跳，保持连接不断开 (completed 2026-03-20)
 - [ ] **Phase 2: 临时文件存储** - SQL 查询结果超过阈值时存储为 JSON Lines 临时文件，会话结束时删除
 - [ ] **Phase 3: 随机读取 Tool** - 创建 read_query_result Tool，支持按偏移量读取临时文件
 
@@ -31,7 +31,8 @@
 2. 心跳在 SSE 连接整个生命周期内持续发送，直到连接关闭
 3. SSE 连接关闭时，心跳调度正确停止，不产生资源泄漏
 
-**Plans**: TBD
+**Plans**:
+- [ ] 01-heartbeat-HEARTBEAT-01-PLAN.md - SSE 心跳实现
 
 ---
 
@@ -75,7 +76,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. SSE 心跳 | 0/1 | Not started | - |
+| 1. SSE 心跳 | 1/1 | Complete   | 2026-03-20 |
 | 2. 临时文件存储 | 0/2 | Not started | - |
 | 3. 随机读取 Tool | 0/1 | Not started | - |
 
