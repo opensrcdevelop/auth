@@ -30,16 +30,16 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HEARTBEAT-01 | — | Pending |
-| TEMPFILE-01 | — | Pending |
-| TEMPFILE-02 | — | Pending |
-| READERTOOL-01 | — | Pending |
+| HEARTBEAT-01 | Phase 1 | Pending |
+| TEMPFILE-01 | Phase 2 | Pending |
+| TEMPFILE-02 | Phase 2 | Pending |
+| READERTOOL-01 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 4 total
-- Mapped to phases: 0
-- Unmapped: 4 ⚠️
+- Mapped to phases: 4
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-20*
-*Last updated: 2026-03-20 after initial definition*
+*Last updated: 2026-03-20 after roadmap creation*
