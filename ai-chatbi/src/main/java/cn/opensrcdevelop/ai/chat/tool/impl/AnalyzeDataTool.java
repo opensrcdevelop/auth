@@ -8,6 +8,16 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,13 +25,6 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component(AnalyzeDataTool.TOOL_NAME)
@@ -42,29 +45,35 @@ public class AnalyzeDataTool implements MethodTool {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
-        chatContext.setQuestion(request.getQuestion());
         chatContext.setAnalyzeDataSummary(null);
         chatContext.setAnalyzeDataResult(null);
         File tempDataFile = null;
         try {
-            // 1. 创建临时数据文件
+            // 1. 检查是否存在查询数据
+            if (CollectionUtils.isEmpty(ChatContextHolder.getChatContext().getQueryData())) {
+                response.setSuccess(false);
+                response.setError("The query data is empty, check the sql is executed");
+                return response;
+            }
+
+            // 2. 创建临时数据文件
             tempDataFile = File.createTempFile(ANALYZE_DATA_FILE_NAME.formatted(System.currentTimeMillis()),
                     ANALYZE_DATA_FILE_EXT);
             try (FileWriter writer = new FileWriter(tempDataFile)) {
                 writer.write(CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()));
             }
 
-            // 2. 生成 Python 数据分析代码
+            // 3. 生成 Python 数据分析代码
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
                     ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(),
-                    request.generatePythonCodeInstruction);
+                    request.analyzeDataInstruction);
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
                 response.setSuccess(false);
                 response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
                 return response;
             }
 
-            // 3. 执行 Python 数据分析代码
+            // 4. 执行 Python 数据分析代码
             Tuple3<Boolean, String, String> executeResult = executePythonCodeWithFix(
                     ChatContextHolder.getChatContext().getChatClient(),
                     tempDataFile.getAbsolutePath(),
@@ -78,7 +87,7 @@ public class AnalyzeDataTool implements MethodTool {
                 return response;
             }
 
-            // 4. 处理 Python 数据分析代码执行结果
+            // 5. 处理 Python 数据分析代码执行结果
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(
                     ChatContextHolder.getChatContext().getChatClient(),
                     executeResult._2,
@@ -157,18 +166,12 @@ public class AnalyzeDataTool implements MethodTool {
 
     @Data
     public static class Request {
-
-        @ToolParam(description = "The question to analyze data")
-        private String question;
-
-        @ToolParam(description = "The instruction to generate Python code used to analyze data", required = false)
-        private String generatePythonCodeInstruction;
+        @ToolParam(description = "The instruction to analyze data")
+        @NotBlank
+        private String analyzeDataInstruction;
 
         @ToolParam(description = "The instruction to fix Python code used to analyze data", required = false)
         private String fixGeneratePythonCodeInstruction;
-
-        @ToolParam(description = "The instruction to analyze data", required = false)
-        private String analyzeDataInstruction;
     }
 
     @Data

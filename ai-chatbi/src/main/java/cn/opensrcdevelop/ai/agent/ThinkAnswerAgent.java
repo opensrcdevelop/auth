@@ -10,20 +10,14 @@ import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
+import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
+import jakarta.validation.ConstraintViolation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -38,6 +32,16 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -78,12 +82,12 @@ public class ThinkAnswerAgent {
 
         int step = 0;
         while (step < maxSteps) {
-            SseUtil.sendChatBILoading(emitter, "思考中...");
             if (interruptFlag.get()) {
                 log.info("ChatBI 对话（{}）被中断", ChatContextHolder.getChatContext().getChatId());
                 break;
             }
 
+            SseUtil.sendChatBILoading(emitter, "思考中...");
             String stepThinkingMsg = step > 0
                     ? "\n<strong>Step " + (step + 1) + "</strong>\n"
                     : "<strong>Step " + (step + 1) + "</strong>\n";
@@ -137,8 +141,8 @@ public class ThinkAnswerAgent {
                     }
                 }, error -> {
                     log.error("Error in chat response stream", error);
-                    // 发送错误消息给用户并设置中断标志
                     interruptFlag.set(true);
+                    ChatContextHolder.setChatContext(chatContext);
                     SseUtil.sendChatBIError(emitter, "模型调用失败，请检查提供商配置和额度");
                     latch.countDown();
                 }, latch::countDown);
@@ -249,6 +253,7 @@ public class ThinkAnswerAgent {
                 Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"),
                         executeMethodParamTypes[0]);
 
+                CommonUtil.validateBean(request);
                 if (AskUserTool.TOOL_NAME.equals(toolName)) {
                     executeMethodResult = executeMethod.invoke(tool, request, emitter);
                 } else {
@@ -282,6 +287,13 @@ public class ThinkAnswerAgent {
                 errorMsg = errorMsg + ", Please check the tool parameters format. The invalid parameters are: "
                         + parameters;
             }
+
+            if (ex.getCause() instanceof ValidationException vEx) {
+                errorMsg = errorMsg + ", Please check the tool parameters. The invalid parameters are: "
+                        + CommonUtil.stream(vEx.getConstraintViolations()).map(ConstraintViolation::getMessage)
+                                .collect(Collectors.joining(CommonConstants.COMMA));
+            }
+
             toolCallResult = Map.of(
                     "tool_name", toolName,
                     "execute_time", executeTime,

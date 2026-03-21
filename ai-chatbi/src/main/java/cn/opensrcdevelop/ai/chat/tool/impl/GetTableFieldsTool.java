@@ -4,8 +4,7 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.service.TableService;
-import java.util.List;
-import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -13,6 +12,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(GetTableFieldsTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -55,6 +57,7 @@ public class GetTableFieldsTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "The table ID to get fields for", required = true)
+        @NotBlank
         private String tableId;
     }
 

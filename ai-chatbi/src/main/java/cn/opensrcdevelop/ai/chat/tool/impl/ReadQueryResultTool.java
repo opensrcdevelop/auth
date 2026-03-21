@@ -3,9 +3,9 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import cn.opensrcdevelop.ai.service.impl.QueryResultTempFileManager;
-import java.util.List;
-import java.util.Map;
+import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +13,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(ReadQueryResultTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -29,12 +32,11 @@ public class ReadQueryResultTool implements MethodTool {
     public Response execute(@ToolParam(description = "The request to read query result") Request request) {
         Response response = new Response();
 
-        // 优先使用请求中指定的文件路径，否则从 ChatContext 获取最新路径
         String tempFilePath = request.getFilePath();
         if (StringUtils.isEmpty(tempFilePath)) {
             ChatContext chatContext = ChatContextHolder.getChatContext();
             List<String> paths = chatContext.getQueryResultFilePaths();
-            tempFilePath = (paths != null && !paths.isEmpty()) ? paths.get(paths.size() - 1) : null;
+            tempFilePath = (paths != null && !paths.isEmpty()) ? paths.getLast() : null;
         }
 
         if (StringUtils.isEmpty(tempFilePath)) {
@@ -49,7 +51,7 @@ public class ReadQueryResultTool implements MethodTool {
         if (offset < 0) {
             offset = 0;
         }
-        if (limit <= 0 || limit > 1000) {
+        if (limit <= 0) {
             limit = 100;
         }
 
@@ -79,12 +81,15 @@ public class ReadQueryResultTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "The temp file path returned from execute_sql tool response (optional if not provided, will use the latest file from ChatContext)", required = false)
+        @NotBlank
         private String filePath;
 
-        @ToolParam(description = "The starting offset position (0-based index)", required = true)
+        @ToolParam(description = "The starting offset position (0-based index)")
+        @Min(0)
         private int offset;
 
-        @ToolParam(description = "The maximum number of records to read (recommended: 100-500)", required = true)
+        @ToolParam(description = "The maximum number of records to read (recommended: 100-500)")
+        @Min(0)
         private int limit;
     }
 

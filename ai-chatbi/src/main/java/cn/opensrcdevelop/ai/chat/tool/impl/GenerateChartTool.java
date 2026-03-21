@@ -5,12 +5,14 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
-import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component(GenerateChartTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -63,6 +65,7 @@ public class GenerateChartTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "The question to generate the chart")
+        @NotBlank
         private String question;
 
         @ToolParam(description = "The instruction to generate the chart", required = false)

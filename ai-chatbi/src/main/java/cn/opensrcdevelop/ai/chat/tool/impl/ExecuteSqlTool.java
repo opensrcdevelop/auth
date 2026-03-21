@@ -4,13 +4,10 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
-import cn.opensrcdevelop.ai.service.impl.QueryResultTempFileManager;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +18,10 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -70,12 +71,11 @@ public class ExecuteSqlTool implements MethodTool {
             String tempFilePath = queryResultTempFileManager.writeQueryDataToTempFile(queryData,
                     chatContext.getChatId());
             if (tempFilePath != null) {
-                // 超过阈值，数据已写入临时文件
-                // ChatContext.queryData 保持不变，其他工具仍可使用
+                // 超过阈值，数据写入临时文件
                 chatContext.addQueryResultFilePath(tempFilePath);
                 response.setTempFilePath(tempFilePath);
                 response.setRecordCount(queryData.size());
-                response.setQueryData(null); // Response 只返回引用，不返回大量数据
+                response.setQueryData(null);
                 log.info("查询结果 {} 条已写入临时文件: {}", queryData.size(), tempFilePath);
             } else {
                 // 未超过阈值，直接返回数据

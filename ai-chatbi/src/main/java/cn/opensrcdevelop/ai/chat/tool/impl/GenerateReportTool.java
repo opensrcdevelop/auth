@@ -4,13 +4,15 @@ import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.Map;
-import java.util.Objects;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Objects;
 
 @Component(GenerateReportTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -19,21 +21,20 @@ public class GenerateReportTool implements MethodTool {
     public static final String TOOL_NAME = "generate_report";
 
     private final AnalyzeAgent analyzeAgent;
-    private final AnalyzeDataTool analyzeDataTool;
 
     @Tool(name = TOOL_NAME, description = "Generate analysis report for the question")
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
+        Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
+
         // 1. 未分析数据时，先执行分析数据工具
-        if (Objects.isNull(chatContext.getAnalyzeDataResult()) ||
-                Objects.isNull(chatContext.getAnalyzeDataSummary())) {
-            AnalyzeDataTool.Request analyzeDataRequest = new AnalyzeDataTool.Request();
-            analyzeDataRequest.setQuestion(chatContext.getRawQuestion());
-            analyzeDataTool.execute(analyzeDataRequest);
+        if (Objects.isNull(chatContext.getAnalyzeDataResult())) {
+            response.setSuccess(false);
+            response.setError("Analysis data result is null, please run analyze_data tool first");
+            return response;
         }
 
         // 2. 生成分析报告
-        Response response = new Response();
         chatContext.setQuestion(request.getQuestion());
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
                 chatContext.getChatClient(),
@@ -61,6 +62,7 @@ public class GenerateReportTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "The question to generate report")
+        @NotBlank
         private String question;
 
         @ToolParam(description = "The instruction to generate report", required = false)

@@ -1,4 +1,4 @@
-package cn.opensrcdevelop.ai.service.impl;
+package cn.opensrcdevelop.ai.component;
 
 import cn.opensrcdevelop.ai.service.SampleSqlService;
 import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;

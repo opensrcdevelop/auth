@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.ai.component.SampleSqlRebuildTaskExecutor;
+import cn.opensrcdevelop.ai.component.SampleSqlSyncTaskExecutor;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
-import cn.opensrcdevelop.ai.service.impl.SampleSqlRebuildTaskExecutor;
-import cn.opensrcdevelop.ai.service.impl.SampleSqlSyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -18,14 +18,15 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.util.Collections;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Collections;
+import java.util.List;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
 @RestController

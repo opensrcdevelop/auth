@@ -1,23 +1,21 @@
-package cn.opensrcdevelop.ai.service.impl;
+package cn.opensrcdevelop.ai.component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -29,7 +27,7 @@ public class QueryResultTempFileManager {
     @Value("${chatbi.query-result.threshold:100}")
     private int threshold;
 
-    @Value("${chatbi.query-result.directory:#{systemProperties['java.io.tmpdir']}}")
+    @Value("${chatbi.query-result.directory:${java.io.tmpdir}/chatbi-query-results}")
     private String directory;
 
     private final ObjectMapper objectMapper;
@@ -69,7 +67,6 @@ public class QueryResultTempFileManager {
                     writer.newLine();
                 }
             }
-            log.info("已将 {} 条数据写入临时文件: {}", data.size(), filePath);
             return filePath.toString();
         } catch (IOException e) {
             log.error("写入临时文件失败: {}", filePath, e);
@@ -124,7 +121,7 @@ public class QueryResultTempFileManager {
 
         File[] files = dir
                 .listFiles((d, name) -> name.startsWith(FILE_PREFIX + chatId + "_") && name.endsWith(FILE_SUFFIX));
-        if (files == null || files.length == 0) {
+        if (files == null) {
             return paths;
         }
 
@@ -147,20 +144,21 @@ public class QueryResultTempFileManager {
      */
     public List<Map<String, Object>> readLinesFromTempFile(String filePath, int offset, int limit) {
         if (filePath == null || filePath.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
 
         Path path = Paths.get(filePath);
         if (!Files.exists(path)) {
             log.warn("临时文件不存在: {}", filePath);
-            return null;
+            return Collections.emptyList();
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(path.toFile()))) {
             // 跳过前 offset 行
             for (int i = 0; i < offset; i++) {
-                if (reader.readLine() == null) {
+                String skippedLine = reader.readLine();
+                if (skippedLine == null) {
                     break;
                 }
             }
@@ -169,17 +167,14 @@ public class QueryResultTempFileManager {
             String line;
             int count = 0;
             while (count < limit && (line = reader.readLine()) != null) {
-                try {
-                    Map<String, Object> row = objectMapper.readValue(line, Map.class);
-                    result.add(row);
-                    count++;
-                } catch (IOException e) {
-                    log.warn("解析 JSON 行失败: {}", line, e);
-                }
+                Map<String, Object> row = objectMapper.readValue(line, new TypeReference<Map<String, Object>>() {
+                });
+                result.add(row);
+                count++;
             }
         } catch (IOException e) {
             log.error("读取临时文件失败: {}", filePath, e);
-            return null;
+            return Collections.emptyList();
         }
 
         return result;
@@ -226,12 +221,5 @@ public class QueryResultTempFileManager {
             }
         }
         return deletedCount;
-    }
-
-    /**
-     * 获取阈值配置
-     */
-    public int getThreshold() {
-        return threshold;
     }
 }

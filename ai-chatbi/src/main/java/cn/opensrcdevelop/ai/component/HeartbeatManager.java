@@ -1,12 +1,13 @@
-package cn.opensrcdevelop.ai.service.impl;
+package cn.opensrcdevelop.ai.component;
 
 import cn.opensrcdevelop.ai.util.SseUtil;
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * SSE 心跳管理器 负责调度和取消 SSE 连接的心跳
