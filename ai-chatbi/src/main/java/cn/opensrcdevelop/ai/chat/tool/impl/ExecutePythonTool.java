@@ -29,18 +29,12 @@ public class ExecutePythonTool implements MethodTool {
     private static final String VENV_NAME_PREFIX = "ai_chat_venv_";
     private static final int DEFAULT_TIMEOUT_MINUTES = 3;
 
-    // 资源限制
+    // 资源限制 - 仅保留文件写入和内存限制
     @Value("${python.exec.limit.enabled:true}")
     private boolean ulimitEnabled;
 
-    @Value("${python.exec.limit.cpu-time:60}")
-    private int ulimitCpuTime;
-
     @Value("${python.exec.limit.file-size-kb:51200}")
     private int ulimitFileSize;
-
-    @Value("${python.exec.limit.max-processes:1000}")
-    private int ulimitMaxProcesses;
 
     @Value("${python.exec.limit.memory-mb:256}")
     private int pythonMaxMemoryMb;
@@ -109,13 +103,12 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             if (ulimitEnabled) {
-                // 使用更兼容的 ulimit 命令格式，分步设置避免 BusyBox 兼容性问题
-                // 先设置 CPU 时间，再设置文件大小和进程数
+                // 仅限制文件大小
                 String[] cmd = {
                         "sh", "-c",
                         String.format(
-                                "ulimit -t %d && ulimit -f %d && ulimit -u %d && exec %s %s",
-                                ulimitCpuTime, ulimitFileSize, ulimitMaxProcesses,
+                                "ulimit -f %d && exec %s %s",
+                                ulimitFileSize,
                                 pythonPath, wrapperPath)
                 };
                 process = Runtime.getRuntime().exec(cmd);
@@ -256,7 +249,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Package installation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 
@@ -314,7 +306,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Virtual environment creation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 
