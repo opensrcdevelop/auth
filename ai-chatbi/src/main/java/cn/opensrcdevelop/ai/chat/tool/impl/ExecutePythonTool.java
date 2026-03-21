@@ -103,8 +103,8 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             if (ulimitEnabled) {
-                // 文件写入限制: 0 = 禁止写文件, >0 = 允许的文件大小(块)
-                int fileLimit = fileWriteEnabled ? 1 : 0;
+                // 文件写入限制: 0 = 禁止写文件, 2048 = 1MB (块=512字节)
+                int fileLimit = fileWriteEnabled ? 2048 : 0;
                 String[] cmd = {
                         "sh", "-c",
                         String.format(
