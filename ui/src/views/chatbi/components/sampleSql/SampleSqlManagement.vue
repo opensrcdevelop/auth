@@ -38,7 +38,7 @@
             </a-form-item>
           </a-col>
           <a-col :span="4">
-            <a-form-item field="model" label="嵌入模型维度">
+            <a-form-item field="dimension" label="嵌入模型维度">
               <a-input-number
                 v-model="embeddingConfigform.dimension"
                 :min="1"
@@ -363,10 +363,10 @@ const openDeleteModal = (id: string) => {
     onOk: async () => {
       try {
         await deleteSampleSql(id);
-        Message.success("删除成功");
+        Notification.success("删除成功");
         loadData();
       } catch (e) {
-        Message.error("删除失败");
+        handleApiError(e, "删除示例 SQL");
       }
     },
   });
