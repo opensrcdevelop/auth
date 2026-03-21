@@ -68,8 +68,7 @@ public enum ResourceType {
             "ChatBI 问数-模型提供商"),
     CHAT_BI_SAMPLE_SQL(
             "019cfc50-fa16-721c-bea5-e03647a7029f",
-            "ChatBI 问数-示例 SQL"
-    );
+            "ChatBI 问数-示例 SQL");
 
     private final String id;
 

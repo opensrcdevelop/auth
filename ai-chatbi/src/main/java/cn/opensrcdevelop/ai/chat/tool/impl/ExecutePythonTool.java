@@ -2,6 +2,12 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -10,13 +16,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
@@ -30,18 +29,12 @@ public class ExecutePythonTool implements MethodTool {
     private static final String VENV_NAME_PREFIX = "ai_chat_venv_";
     private static final int DEFAULT_TIMEOUT_MINUTES = 3;
 
-    // 资源限制
+    // 资源限制 - 仅保留文件写入和内存限制
     @Value("${python.exec.limit.enabled:true}")
     private boolean ulimitEnabled;
 
-    @Value("${python.exec.limit.cpu-time:60}")
-    private int ulimitCpuTime;
-
-    @Value("${python.exec.limit.file-size-kb:51200}")
-    private int ulimitFileSize;
-
-    @Value("${python.exec.limit.max-processes:1000}")
-    private int ulimitMaxProcesses;
+    @Value("${python.exec.limit.file-write-enabled:false}")
+    private boolean fileWriteEnabled;
 
     @Value("${python.exec.limit.memory-mb:256}")
     private int pythonMaxMemoryMb;
@@ -110,13 +103,13 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             if (ulimitEnabled) {
-                // 使用更兼容的 ulimit 命令格式，分步设置避免 BusyBox 兼容性问题
-                // 先设置 CPU 时间，再设置文件大小和进程数
+                // 文件写入限制: 0 = 禁止写文件, 2048 = 1MB (块=512字节)
+                int fileLimit = fileWriteEnabled ? 2048 : 0;
                 String[] cmd = {
                         "sh", "-c",
                         String.format(
-                                "ulimit -t %d && ulimit -f %d && ulimit -u %d && exec %s %s",
-                                ulimitCpuTime, ulimitFileSize, ulimitMaxProcesses,
+                                "ulimit -f %d && exec %s %s",
+                                fileLimit,
                                 pythonPath, wrapperPath)
                 };
                 process = Runtime.getRuntime().exec(cmd);
@@ -257,7 +250,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Package installation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 
@@ -315,7 +307,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Virtual environment creation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 

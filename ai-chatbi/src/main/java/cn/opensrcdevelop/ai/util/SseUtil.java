@@ -311,4 +311,14 @@ public class SseUtil {
                         .type(ChatContentType.ASK_USER)
                         .build(), MediaType.APPLICATION_JSON)));
     }
+
+    /**
+     * 发送 SSE 心跳（空消息）
+     *
+     * @param emitter
+     *            SseEmitter
+     */
+    public static void sendHeartbeat(SseEmitter emitter) {
+        Try.run(() -> emitter.send(SseEmitter.event().data("")));
+    }
 }

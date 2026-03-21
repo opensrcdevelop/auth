@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.chat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,4 +55,21 @@ public class ChatContext {
     private List<Map<String, String>> sampleSqls;
 
     private Boolean terminated = false;
+
+    /** 临时文件路径（存储超阈值查询结果） */
+    /** 查询结果临时文件路径列表（支持多次 SQL 执行） */
+    private List<String> queryResultFilePaths = new ArrayList<>();
+
+    public void addQueryResultFilePath(String path) {
+        if (queryResultFilePaths == null) {
+            queryResultFilePaths = new ArrayList<>();
+        }
+        queryResultFilePaths.add(path);
+    }
+
+    public void clearQueryResultFilePaths() {
+        if (queryResultFilePaths != null) {
+            queryResultFilePaths.clear();
+        }
+    }
 }

@@ -31,6 +31,14 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -40,14 +48,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -65,6 +65,8 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatHistoryService chatHistoryService;
     private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
+    private final HeartbeatManager heartbeatManager;
+    private final QueryResultTempFileManager queryResultTempFileManager;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -83,6 +85,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         AtomicBoolean interruptFlag = new AtomicBoolean(false);
         SecurityContext securityContext = SecurityContextHolder.getContext();
 
+        ScheduledFuture<?> heartbeatFuture = heartbeatManager.startHeartbeat(emitter);
+
         if (isRequestInvalid(emitter, requestDto)) {
             return emitter;
         }
@@ -98,6 +102,29 @@ public class ChatBIServiceImpl implements ChatBIService {
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             ChatContext chatContext = new ChatContext();
+
+            // 注册 SSE 回调
+            emitter.onCompletion(() -> {
+                log.info("ChatBI 对话（{}）中断/结束", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
+            emitter.onTimeout(() -> {
+                log.info("ChatBI 对话（{}）超时", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
+            emitter.onError(e -> {
+                log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
             try {
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
@@ -120,17 +147,33 @@ public class ChatBIServiceImpl implements ChatBIService {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
             } finally {
+                cleanupTempFiles(chatContext);
                 emitter.complete();
                 ChatContextHolder.removeChatContext(finalChatId);
             }
         });
 
-        emitter.onCompletion(() -> {
-            log.info("ChatBI 对话（{}）中断/结束", finalChatId);
-            interruptFlag.set(true);
-        });
-
         return emitter;
+    }
+
+    /**
+     * 清理会话的所有临时文件
+     */
+    private void cleanupTempFiles(ChatContext chatContext) {
+        if (chatContext == null) {
+            return;
+        }
+        List<String> paths = chatContext.getQueryResultFilePaths();
+        if (paths != null && !paths.isEmpty()) {
+            for (String path : paths) {
+                try {
+                    queryResultTempFileManager.deleteTempFile(path);
+                } catch (Exception e) {
+                    log.warn("清理临时文件失败: {}", path, e);
+                }
+            }
+            chatContext.clearQueryResultFilePaths();
+        }
     }
 
     /**

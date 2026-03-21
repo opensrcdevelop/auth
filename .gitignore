@@ -55,6 +55,9 @@ ai-chatbi/src/main/resources/application-prompt_template.yml
 .claude/tmp/
 worktrees/
 
+### Planning (generated, not to be committed) ###
+.planning/
+
 # SSL certificates
 **/ssl/
 **/*.p12

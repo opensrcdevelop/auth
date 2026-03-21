@@ -3,7 +3,6 @@ package cn.opensrcdevelop.ai.service;
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
 import cn.opensrcdevelop.ai.dto.SampleSqlEmbeddingConfigDto;
 import cn.opensrcdevelop.ai.dto.SampleSqlRequestDto;
-
 import java.util.List;
 
 public interface SampleSqlService {

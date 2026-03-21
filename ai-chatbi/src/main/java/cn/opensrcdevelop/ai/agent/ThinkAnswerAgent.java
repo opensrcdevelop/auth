@@ -89,7 +89,7 @@ public class ThinkAnswerAgent {
                     : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
-            String result = callLlm(emitter, chatClient, step > 0 ? null : userQuestion);
+            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
             String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
@@ -106,7 +106,7 @@ public class ThinkAnswerAgent {
         return Collections.emptyMap();
     }
 
-    private String callLlm(SseEmitter emitter, ChatClient chatClient, String question) {
+    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Prompt prompt = getPrompt(question);
@@ -137,6 +137,9 @@ public class ThinkAnswerAgent {
                     }
                 }, error -> {
                     log.error("Error in chat response stream", error);
+                    // 发送错误消息给用户并设置中断标志
+                    interruptFlag.set(true);
+                    SseUtil.sendChatBIError(emitter, "模型调用失败，请检查提供商配置和额度");
                     latch.countDown();
                 }, latch::countDown);
         try {
