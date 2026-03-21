@@ -33,8 +33,8 @@ public class ExecutePythonTool implements MethodTool {
     @Value("${python.exec.limit.enabled:true}")
     private boolean ulimitEnabled;
 
-    @Value("${python.exec.limit.file-size-kb:51200}")
-    private int ulimitFileSize;
+    @Value("${python.exec.limit.file-write-enabled:false}")
+    private boolean fileWriteEnabled;
 
     @Value("${python.exec.limit.memory-mb:256}")
     private int pythonMaxMemoryMb;
@@ -103,12 +103,13 @@ public class ExecutePythonTool implements MethodTool {
             }
 
             if (ulimitEnabled) {
-                // 仅限制文件大小
+                // 文件写入限制: 0 = 禁止写文件, >0 = 允许的文件大小(块)
+                int fileLimit = fileWriteEnabled ? 1 : 0;
                 String[] cmd = {
                         "sh", "-c",
                         String.format(
                                 "ulimit -f %d && exec %s %s",
-                                ulimitFileSize,
+                                fileLimit,
                                 pythonPath, wrapperPath)
                 };
                 process = Runtime.getRuntime().exec(cmd);
