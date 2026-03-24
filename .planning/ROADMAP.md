@@ -35,7 +35,7 @@ Success criteria:
 | Phase | Status | Plans | Progress |
 |-------|--------|-------|----------|
 | 1 | ✓ Complete | 3/3 | 100% |
-| 2 | ◐ Planned | 1/1 | 100% |
+| 2 | ◐ Planned | 2/2 | 100% |
 
 ---
 
@@ -52,8 +52,9 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Chroma 向量数据库配置和接口实现
+- [x] 02-02-PLAN.md — Gap Closure: 修复 Bean 冲突（添加 @ConditionalOnProperty）
 
 ---
 
 *Roadmap created: 2026-03-24*
-*Last updated: 2026-03-24 after 02-01 plan execution*
+*Last updated: 2026-03-24 after 02-02 plan creation (gap closure)*
