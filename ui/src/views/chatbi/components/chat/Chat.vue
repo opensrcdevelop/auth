@@ -68,9 +68,9 @@
             </a-select>
           </a-space>
         </div>
-        <div>
+        <div style="margin-right: 12px;">
           <a-tooltip content="显示思考过程">
-            <a-switch v-model="showThinking" @change="toggleShowThinking" />
+            <a-switch v-model="showThinking" size="small" />
           </a-tooltip>
           <a-button
             type="primary"
@@ -494,6 +494,11 @@ const toggleShowThinking = () => {
   showThinking.value = !showThinking.value;
   localStorage.setItem(SHOW_THINKING_KEY, String(showThinking.value));
 };
+
+// 监听 showThinking 变化，同步到 localStorage
+watch(showThinking, (newVal) => {
+  localStorage.setItem(SHOW_THINKING_KEY, String(newVal));
+});
 
 /**
  * 将消息容器滚动到底部
