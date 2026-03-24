@@ -190,7 +190,8 @@ public class ThinkAnswerAgent {
                 .param("tool_definitions", getToolDefinitions())
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
-                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
+                .param("show_thinking", Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking()));
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -242,9 +243,7 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
-                SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
-            }
+            SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -280,9 +279,7 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
-                SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
-            }
+            SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
@@ -310,9 +307,7 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
-                SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
-            }
+            SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
         }
         setToolCallResult(toolCallResult);
         return isAskUser;
