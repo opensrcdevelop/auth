@@ -68,9 +68,9 @@
             </a-select>
           </a-space>
         </div>
-        <div style="margin-right: 12px;">
+        <div>
           <a-tooltip content="显示思考过程">
-            <a-switch v-model="showThinking" size="small" />
+            <a-switch v-model="showThinking" size="small" style="margin-right: 12px;" />
           </a-tooltip>
           <a-button
             type="primary"
