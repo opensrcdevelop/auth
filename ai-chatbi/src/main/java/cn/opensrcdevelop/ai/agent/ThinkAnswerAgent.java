@@ -18,6 +18,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import jakarta.validation.ConstraintViolation;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -32,16 +41,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -91,7 +90,9 @@ public class ThinkAnswerAgent {
             String stepThinkingMsg = step > 0
                     ? "\n<strong>Step " + (step + 1) + "</strong>\n"
                     : "<strong>Step " + (step + 1) + "</strong>\n";
-            SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
+            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
+                SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
+            }
 
             String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);
@@ -137,7 +138,9 @@ public class ThinkAnswerAgent {
                     }
 
                     if (!hasJsonOutput.get()) {
-                        SseUtil.sendChatBIThinking(emitter, outputText, false);
+                        if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
+                            SseUtil.sendChatBIThinking(emitter, outputText, false);
+                        }
                     }
                 }, error -> {
                     log.error("Error in chat response stream", error);
@@ -239,7 +242,9 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
+            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
+                SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
+            }
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -275,7 +280,9 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
+            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
+                SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
+            }
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
@@ -303,7 +310,9 @@ public class ThinkAnswerAgent {
                     LocalDateTime.now()
                             .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
                     toolName);
-            SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
+            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
+                SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
+            }
         }
         setToolCallResult(toolCallResult);
         return isAskUser;
