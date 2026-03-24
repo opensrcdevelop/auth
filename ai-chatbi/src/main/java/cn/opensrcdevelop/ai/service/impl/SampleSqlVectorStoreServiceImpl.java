@@ -32,10 +32,12 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "vectorstore.type", havingValue = "milvus", matchIfMissing = true)
 @RequiredArgsConstructor
 public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreService {
 
