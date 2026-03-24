@@ -1,33 +1,25 @@
 package cn.opensrcdevelop.ai.agent;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import cn.opensrcdevelop.ai.chat.ChatContext;
-import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
-import cn.opensrcdevelop.ai.util.SseUtil;
+import java.util.Collections;
+import java.util.LinkedList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 /**
  * ThinkAnswerAgent showThinking 控制逻辑测试
  *
- * 测试场景：
- * 1. showThinking=true 时，THINKING 消息应该被发送
- * 2. showThinking=false 时，THINKING 消息不应该被发送
+ * 测试场景： 1. showThinking=true 时，THINKING 消息应该被发送 2. showThinking=false
+ * 时，THINKING 消息不应该被发送
  *
  * 注意：此测试骨架依赖于 ChatContext.showThinking 字段的添加（01-02 plan）
  */
