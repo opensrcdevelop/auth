@@ -9,21 +9,18 @@ import cn.opensrcdevelop.ai.vectorstore.chroma.ChromaConfigProperties;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chroma.api.ChromaApi;
-import org.springframework.ai.chroma.api.ChromaApi.AddEmbeddingsRequest;
-import org.springframework.ai.chroma.api.ChromaApi.Collection;
-import org.springframework.ai.chroma.api.ChromaApi.DeleteRequest;
-import org.springframework.ai.chroma.api.ChromaApi.GetRequest;
-import org.springframework.ai.chroma.api.ChromaApi.QueryRequest;
-import org.springframework.ai.chroma.api.ChromaApi.QueryResponse;
-import org.springframework.ai.chroma.api.ChromaApi.TransformedVector;
+import org.springframework.ai.chroma.vectorstore.ChromaApi;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.Collection;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.CreateCollectionRequest;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryResponse;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -44,8 +41,6 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
     private static final String FIELD_DATA_SOURCE_ID = "data_source_id";
 
     private static final String FIELD_CREATED_AT = "created_at";
-
-    private static final String FIELD_QUESTION_VECTOR = "question_vector";
 
     private final ChromaApi chromaApi;
 
@@ -76,12 +71,12 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
+        String collectionId = getCollectionId(tenantCode, collectionName);
+
         List<String> ids = List.of(sampleSqlDto.getId());
         List<float[]> embeddings = List.of(toFloatArray(vector));
         List<Map<String, Object>> metadatas = List.of(buildMetadata(sampleSqlDto));
         List<String> documents = List.of(sampleSqlDto.getQuestion());
-
-        String collectionId = getCollectionId(tenantCode, collectionName);
 
         chromaApi.upsertEmbeddings(
                 chromaConfigProperties.getTenantName(),
@@ -95,10 +90,11 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         String collectionName = COLLECTION_PREFIX + tenantCode;
         String collectionId = getCollectionId(tenantCode, collectionName);
 
-        DeleteRequest deleteRequest = new DeleteRequest();
-        deleteRequest.where(Map.of("answer_id", Map.of("$eq", answerId)));
+        DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(
+                null, // ids 为空
+                Map.of("answer_id", Map.of("$eq", answerId))); // 使用 where 条件
 
-        chromaApi.delete(
+        chromaApi.deleteEmbeddings(
                 chromaConfigProperties.getTenantName(),
                 chromaConfigProperties.getDatabaseName(),
                 collectionId,
@@ -110,10 +106,11 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         String collectionName = COLLECTION_PREFIX + tenantCode;
         String collectionId = getCollectionId(tenantCode, collectionName);
 
-        DeleteRequest deleteRequest = new DeleteRequest();
-        deleteRequest.where(Map.of("id", Map.of("$eq", id)));
+        DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(
+                List.of(id), // 使用 IDs
+                null); // where 为空
 
-        chromaApi.delete(
+        chromaApi.deleteEmbeddings(
                 chromaConfigProperties.getTenantName(),
                 chromaConfigProperties.getDatabaseName(),
                 collectionId,
@@ -150,10 +147,9 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         }
 
         QueryRequest queryRequest = new QueryRequest(
-                List.of(toFloatArray(vector)),
+                toFloatArray(vector),
                 limit,
-                where,
-                null);
+                where);
 
         QueryResponse queryResponse = chromaApi.queryCollection(
                 chromaConfigProperties.getTenantName(),
@@ -163,33 +159,46 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
 
         List<SampleSqlDto> results = new ArrayList<>();
 
-        if (queryResponse != null && queryResponse.getResults() != null) {
-            List<TransformedVector> vectors = queryResponse.getResults();
-            for (TransformedVector tv : vectors) {
-                if (tv.getDistances() != null && !tv.getDistances().isEmpty()) {
-                    // Chroma 使用余弦距离，similarity = 1 - distance
-                    double distance = tv.getDistances().get(0);
-                    double similarity = 1 - distance;
-                    if (similarity < threshold) {
-                        continue;
-                    }
+        if (queryResponse != null) {
+            List<List<String>> idsList = queryResponse.ids();
+            List<List<Double>> distancesList = queryResponse.distances();
+            List<List<Map<String, Object>>> metadataList = queryResponse.metadata();
+            List<List<String>> documentsList = queryResponse.documents();
 
-                    Map<String, Object> metadata = tv.getMetadatas() != null && !tv.getMetadatas().isEmpty()
-                            ? tv.getMetadatas().get(0)
-                            : null;
+            if (idsList != null && !idsList.isEmpty()) {
+                List<String> ids = idsList.get(0);
+                List<Double> distances = distancesList != null && !distancesList.isEmpty()
+                        ? distancesList.get(0)
+                        : null;
+                List<Map<String, Object>> metadatas = metadataList != null && !metadataList.isEmpty()
+                        ? metadataList.get(0)
+                        : null;
+                List<String> documents = documentsList != null && !documentsList.isEmpty()
+                        ? documentsList.get(0)
+                        : null;
 
-                    if (metadata != null) {
-                        SampleSqlDto dto = SampleSqlDto.builder()
-                                .id((String) metadata.get(FIELD_ID))
-                                .answerId((String) metadata.get(FIELD_ANSWER_ID))
-                                .question(tv.getDocuments() != null && !tv.getDocuments().isEmpty()
-                                        ? tv.getDocuments().get(0) : null)
-                                .sql((String) metadata.get(FIELD_SQL))
-                                .dataSourceId((String) metadata.get(FIELD_DATA_SOURCE_ID))
-                                .createdAt((String) metadata.get(FIELD_CREATED_AT))
-                                .score(similarity)
-                                .build();
-                        results.add(dto);
+                for (int i = 0; i < ids.size(); i++) {
+                    if (distances != null && i < distances.size()) {
+                        // Chroma 使用余弦距离，similarity = 1 - distance
+                        double distance = distances.get(i);
+                        double similarity = 1 - distance;
+                        if (similarity < threshold) {
+                            continue;
+                        }
+
+                        if (metadatas != null && i < metadatas.size()) {
+                            Map<String, Object> metadata = metadatas.get(i);
+                            SampleSqlDto dto = SampleSqlDto.builder()
+                                    .id((String) metadata.get(FIELD_ID))
+                                    .answerId((String) metadata.get(FIELD_ANSWER_ID))
+                                    .question(documents != null && i < documents.size() ? documents.get(i) : null)
+                                    .sql((String) metadata.get(FIELD_SQL))
+                                    .dataSourceId((String) metadata.get(FIELD_DATA_SOURCE_ID))
+                                    .createdAt((String) metadata.get(FIELD_CREATED_AT))
+                                    .score(similarity)
+                                    .build();
+                            results.add(dto);
+                        }
                     }
                 }
             }
@@ -203,6 +212,7 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         String collectionName = COLLECTION_PREFIX + tenantCode;
         createCollectionIfNotExists(tenantCode);
 
+        // Chroma 的 list API 使用 queryCollection 进行分页查询
         String collectionId = getCollectionId(tenantCode, collectionName);
 
         // 构建过滤条件
@@ -216,35 +226,44 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
             where.put("question", Map.of("$contains", question));
         }
 
-        GetRequest getRequest = new GetRequest();
-        getRequest.where(where);
-        getRequest.limit(limit);
-        getRequest.offset(offset);
+        // 使用 queryCollection 获取结果（传入空向量表示获取所有）
+        float[] emptyVector = new float[0];
+        QueryRequest queryRequest = new QueryRequest(emptyVector, (int) limit, where);
 
-        var getResponse = chromaApi.get(
+        QueryResponse queryResponse = chromaApi.queryCollection(
                 chromaConfigProperties.getTenantName(),
                 chromaConfigProperties.getDatabaseName(),
                 collectionId,
-                getRequest);
+                queryRequest);
 
         List<SampleSqlDto> results = new ArrayList<>();
 
-        if (getResponse != null && getResponse.getResults() != null) {
-            for (var item : getResponse.getResults()) {
-                Map<String, Object> metadata = item.getMetadata();
-                SampleSqlDto dto = SampleSqlDto.builder()
-                        .id((String) metadata.get(FIELD_ID))
-                        .answerId((String) metadata.get(FIELD_ANSWER_ID))
-                        .question(item.getDocument())
-                        .sql((String) metadata.get(FIELD_SQL))
-                        .dataSourceId((String) metadata.get(FIELD_DATA_SOURCE_ID))
-                        .createdAt((String) metadata.get(FIELD_CREATED_AT))
-                        .build();
-                results.add(dto);
-            }
+        if (queryResponse != null) {
+            List<List<Map<String, Object>>> metadataList = queryResponse.metadata();
+            List<List<String>> documentsList = queryResponse.documents();
 
-            // 按创建时间降序排列
-            results.sort(Comparator.comparing(SampleSqlDto::getCreatedAt, Comparator.reverseOrder()));
+            if (metadataList != null && !metadataList.isEmpty()) {
+                List<Map<String, Object>> metadatas = metadataList.get(0);
+                List<String> documents = documentsList != null && !documentsList.isEmpty()
+                        ? documentsList.get(0)
+                        : null;
+
+                for (int i = 0; i < metadatas.size(); i++) {
+                    Map<String, Object> metadata = metadatas.get(i);
+                    SampleSqlDto dto = SampleSqlDto.builder()
+                            .id((String) metadata.get(FIELD_ID))
+                            .answerId((String) metadata.get(FIELD_ANSWER_ID))
+                            .question(documents != null && i < documents.size() ? documents.get(i) : null)
+                            .sql((String) metadata.get(FIELD_SQL))
+                            .dataSourceId((String) metadata.get(FIELD_DATA_SOURCE_ID))
+                            .createdAt((String) metadata.get(FIELD_CREATED_AT))
+                            .build();
+                    results.add(dto);
+                }
+
+                // 按创建时间降序排列
+                results.sort(Comparator.comparing(SampleSqlDto::getCreatedAt, Comparator.reverseOrder()));
+            }
         }
 
         return results;
@@ -257,35 +276,12 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
 
         String collectionId = getCollectionId(tenantCode, collectionName);
 
-        // 构建过滤条件
-        Map<String, Object> where = new HashMap<>();
-        where.put("id", Map.of("$ne", ""));
+        Long count = chromaApi.countEmbeddings(
+                chromaConfigProperties.getTenantName(),
+                chromaConfigProperties.getDatabaseName(),
+                collectionId);
 
-        if (dataSourceId != null && !dataSourceId.isEmpty()) {
-            where.put("data_source_id", Map.of("$eq", dataSourceId));
-        }
-        if (question != null && !question.isEmpty()) {
-            where.put("question", Map.of("$contains", question));
-        }
-
-        GetRequest getRequest = new GetRequest();
-        getRequest.where(where);
-        getRequest.limit(1);
-
-        try {
-            var getResponse = chromaApi.get(
-                    chromaConfigProperties.getTenantName(),
-                    chromaConfigProperties.getDatabaseName(),
-                    collectionId,
-                    getRequest);
-            // Chroma 没有 count API，通过 total 来获取
-            if (getResponse != null && getResponse.getResults() != null) {
-                return getResponse.getResults().size();
-            }
-        } catch (Exception e) {
-            log.error("统计示例 SQL 数量失败", e);
-        }
-        return 0;
+        return count != null ? count : 0;
     }
 
     @Override
@@ -307,7 +303,7 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
         chromaApi.createCollection(
                 chromaConfigProperties.getTenantName(),
                 chromaConfigProperties.getDatabaseName(),
-                new ChromaApi.CreateCollectionRequest(collectionName, embeddingConfig.getDimension()));
+                new CreateCollectionRequest(collectionName));
         log.info("Collection {} created successfully", collectionName);
     }
 
@@ -316,7 +312,7 @@ public class SampleSqlChromaVectorStoreServiceImpl implements SampleSqlVectorSto
                 chromaConfigProperties.getTenantName(),
                 chromaConfigProperties.getDatabaseName(),
                 collectionName);
-        return collection.getId();
+        return collection.id();
     }
 
     private float[] toFloatArray(List<Float> vector) {

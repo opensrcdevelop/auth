@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.ai.vectorstore.chroma;
 
-import org.springframework.ai.chroma.api.ChromaApi;
+import org.springframework.ai.chroma.vectorstore.ChromaApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
