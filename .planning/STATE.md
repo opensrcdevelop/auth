@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-03-24T14:35:40Z"
+status: unknown
+last_updated: "2026-03-24T14:57:04.081Z"
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # State: ChatBI 多向量数据库与思考过程控制
@@ -39,6 +39,7 @@ Phase 2 - Chroma 向量数据库支持 (Plan 01 executed, 04 remaining)
 - Chroma API 包路径为 `org.springframework.ai.chroma.vectorstore.ChromaApi`
 - Chroma 相似度计算: `similarity = 1 - distance`（余弦距离转相似度）
 - 向量数据库切换使用 `@ConditionalOnProperty(havingValue="chroma")`
+- [Phase 02]: 使用 @ConditionalOnProperty 实现向量数据库切换，matchIfMissing=true 确保 Milvus 默认激活
 
 ## Next Action
 

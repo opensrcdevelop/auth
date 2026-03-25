@@ -7,7 +7,7 @@
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|-----------------|
 | 1 | 思考过程控制 | 前端可开关思考过程展示 | THINK-01, THINK-02, THINK-03 | 3 |
-| 2 | Chroma 向量数据库支持 | 支持 Chroma 向量数据库 | VDB-01, VDB-02, VDB-03, VDB-04 | 4 |
+| 2 | Chroma 向量数据库支持 | Complete    | 2026-03-24 | 4 |
 
 ### Phase Details
 

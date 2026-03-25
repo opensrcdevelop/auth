@@ -90,9 +90,7 @@ public class ThinkAnswerAgent {
             String stepThinkingMsg = step > 0
                     ? "\n<strong>Step " + (step + 1) + "</strong>\n"
                     : "<strong>Step " + (step + 1) + "</strong>\n";
-            if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
-                SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
-            }
+            SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion);
             var parseResult = parseLlmResult(result);

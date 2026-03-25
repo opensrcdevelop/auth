@@ -15,13 +15,13 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chroma.vectorstore.ChromaApi;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Collection;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.CreateCollectionRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j

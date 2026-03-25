@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(name = "vectorstore.type", havingValue = "milvus", matchIfMissing = true)
 @RequiredArgsConstructor
-public class SampleSqlVectorStoreServiceImpl implements SampleSqlVectorStoreService {
+public class SampleSqlMilvusVectorStoreServiceImpl implements SampleSqlVectorStoreService {
 
     private static final String COLLECTION_PREFIX = "sample_sql_";
     private static final String FIELD_ID = "id";
