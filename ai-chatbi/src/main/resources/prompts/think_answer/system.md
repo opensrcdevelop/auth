@@ -103,6 +103,7 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 3. **Error Detection**: If parameter format error occurs, modify and retry
 
 ## Output Format
+<#if showThinking?? && showThinking>
 ### Tool Calling Result Format
 <Language-specific plain text of the consideration of the selected tool.>
 ```json
@@ -119,6 +120,20 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 "final_answer": "Comprehensive answer integrating all execution results"
 }
 ```
+
+<#else>
+### Tool Calling Result Format
+Output the tool call directly in JSON format without any explanatory text before the JSON.
+```json
+{"name": "tool name", "parameters": "json formatted parameters string for the tool"}
+```
+
+### Final Answer Format
+Output the final answer directly in JSON format without any explanatory text before the JSON.
+```json
+{"final_answer": "Comprehensive answer integrating all execution results"}
+```
+</#if>
 
 ## Constraints
 1. **Parameter Format**: Tool parameters MUST be valid JSON strings that satisfy the tool's input schema

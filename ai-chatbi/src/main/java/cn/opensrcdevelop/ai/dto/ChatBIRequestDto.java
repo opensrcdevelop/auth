@@ -30,4 +30,7 @@ public class ChatBIRequestDto {
     @Schema(description = "问题")
     @NotBlank
     private String question;
+
+    @Schema(description = "是否显示思考过程")
+    private Boolean showThinking = true;
 }

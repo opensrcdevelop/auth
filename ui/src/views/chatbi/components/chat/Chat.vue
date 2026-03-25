@@ -69,6 +69,9 @@
           </a-space>
         </div>
         <div>
+          <a-tooltip content="显示思考过程">
+            <a-switch v-model="showThinking" size="small" style="margin-right: 12px;" />
+          </a-tooltip>
           <a-button
             type="primary"
             shape="circle"
@@ -139,8 +142,17 @@ const selectedModel = ref("");
 const greetingText = ref("");
 const activeChatId = ref("");
 
+// 思考过程显示偏好
+const SHOW_THINKING_KEY = 'chatbi_show_thinking';
+const showThinking = ref(true);
+
 const init = () => {
   greetingText.value = greeting();
+  // 从 localStorage 读取思考过程显示偏好
+  const stored = localStorage.getItem(SHOW_THINKING_KEY);
+  if (stored !== null) {
+    showThinking.value = stored === 'true';
+  }
   activeChatId.value = "";
   messages.length = 0;
   // 获取已启用的数据源
@@ -279,6 +291,7 @@ const sendMessage = (input: string) => {
       model: selectedModel.value.split(":")[1],
       dataSourceId: selectedDataSource.value,
       chatId: activeChatId.value,
+      showThinking: showThinking.value,
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
@@ -473,6 +486,19 @@ const stopGenerating = (qId: string = questionId.value) => {
     }
   }
 };
+
+/**
+ * 切换思考过程显示
+ */
+const toggleShowThinking = () => {
+  showThinking.value = !showThinking.value;
+  localStorage.setItem(SHOW_THINKING_KEY, String(showThinking.value));
+};
+
+// 监听 showThinking 变化，同步到 localStorage
+watch(showThinking, (newVal) => {
+  localStorage.setItem(SHOW_THINKING_KEY, String(newVal));
+});
 
 /**
  * 将消息容器滚动到底部
