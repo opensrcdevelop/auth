@@ -25,7 +25,7 @@ public class ChatContext {
 
     private String userQuery;
 
-    private List<Map<String, Object>> relevantTables;
+    private List<String> relevantTableIds;
 
     private String sql;
 

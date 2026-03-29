@@ -21,6 +21,7 @@ import jakarta.validation.ConstraintViolation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -40,6 +41,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Component
@@ -96,7 +98,11 @@ public class ThinkAnswerAgent {
             var parseResult = parseLlmResult(result);
             String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
-            chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
+
+            if (StringUtils.isNotEmpty(thinkingContent)) {
+                chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
+            }
+
             // 保存思考内容到上下文，供下一轮使用
             saveThinkingContent(thinkingContent);
             if (isFinalAnswer) {
@@ -115,6 +121,7 @@ public class ThinkAnswerAgent {
         Prompt prompt = getPrompt(question, showThinking);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
+        AtomicReference<String> lastOutput = new AtomicReference<>("");
 
         CountDownLatch latch = new CountDownLatch(1);
         chatClient.prompt(prompt)
@@ -129,13 +136,18 @@ public class ThinkAnswerAgent {
                     String outputText = chatResponse.getResult().getOutput().getText();
                     if (outputText != null) {
                         fullOutput.append(outputText);
+                        lastOutput.set(outputText);
                     }
+
                     // 检测是否包含 JSON 内容
                     if (containsJsonPattern(outputText)) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
                     if (!hasJsonOutput.get() && showThinking) {
+                        if ("\n".equals(outputText) && lastOutput.get().equals("\n")) {
+                            return;
+                        }
                         SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
                 }, error -> {
@@ -349,8 +361,8 @@ public class ThinkAnswerAgent {
         }
 
         String reason = llmResult.substring(0, startIndex);
-        if (reason.contains("```json")) {
-            reason = reason.replace("```json", "");
+        if (reason.contains("---")) {
+            reason = reason.replace("---", "");
         }
 
         String json = llmResult.substring(startIndex, endIndex + 1);

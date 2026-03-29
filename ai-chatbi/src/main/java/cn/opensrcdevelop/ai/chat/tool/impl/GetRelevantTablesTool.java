@@ -4,14 +4,15 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(GetRelevantTablesTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class GetRelevantTablesTool implements MethodTool {
     public Response execute(@ToolParam(description = "The request to get relevant tables") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
-        chatContext.setRelevantTables(null);
+        chatContext.setRelevantTableIds(null);
 
         String query = request.getQuery();
         if (StringUtils.isEmpty(request.getQuery())) {
@@ -46,9 +47,9 @@ public class GetRelevantTablesTool implements MethodTool {
                 chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
-            List<Map<String, Object>> tables = (List<Map<String, Object>>) result.get("tables");
+            List<String> tables = (List<String>) result.get("tables");
             response.setTables(tables);
-            chatContext.setRelevantTables(tables);
+            chatContext.setRelevantTableIds(tables);
         }
         response.setSuccess(success);
         response.setError((String) result.get("error"));
@@ -71,8 +72,8 @@ public class GetRelevantTablesTool implements MethodTool {
         @ToolParam(description = "The success of get relevant tables")
         private boolean success;
 
-        @ToolParam(description = "The relevant tables of the query")
-        private List<Map<String, Object>> tables;
+        @ToolParam(description = "The relevant table ids of the query")
+        private List<String> tables;
 
         @ToolParam(description = "The error message of get relevant tables")
         private String error;

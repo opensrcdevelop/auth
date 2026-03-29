@@ -1,21 +1,24 @@
 package cn.opensrcdevelop.ai.agent;
 
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
+import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -89,7 +92,7 @@ public class SqlAgent {
      */
     public Map<String, Object> generateSql(ChatClient chatClient,
             String userQuestion,
-            List<Map<String, Object>> relevantTables,
+            List<String> relevantTables,
             String dataSourceId,
             String instruction,
             List<Map<String, String>> sampleSqls) {
@@ -136,7 +139,7 @@ public class SqlAgent {
     public Map<String, Object> fixSql(ChatClient chatClient,
             String sql,
             String error,
-            List<Map<String, Object>> relevantTables,
+            List<String> relevantTables,
             String dataSourceId,
             String instruction) {
         // 1. 获取关联表的 Schema
@@ -166,8 +169,8 @@ public class SqlAgent {
      *            ChatClient
      * @param sql
      *            SQL
-     * @param relevantTables
-     *            相关表
+     * @param relevantTableIds
+     *            相关表ID列表
      * @param queryColumns
      *            查询列
      * @param queryData
@@ -177,14 +180,19 @@ public class SqlAgent {
     public Map<String, Object> checkQueryData(
             ChatClient chatClient,
             String sql,
-            List<Map<String, Object>> relevantTables,
+            List<String> relevantTableIds,
             List<Map<String, Object>> queryColumns,
             List<Map<String, Object>> queryData) {
-        // 1. 获取表的禁止字段
-        for (Map<String, Object> relevantTable : relevantTables) {
-            String tableId = relevantTable.get("table_id").toString();
-            List<String> forbiddenFields = tableService.getTableForbiddenFields(tableId);
-            relevantTable.put("forbidden_fields", forbiddenFields);
+        // 1. 获取表禁止字段信息
+        List<Table> tables = tableService.listByIds(relevantTableIds);
+        Map<String, List<String>> forbiddenFieldsMap = tableService.getTableForbiddenFields(relevantTableIds);
+
+        List<Map<String, Object>> relevantTables = new ArrayList<>();
+        for (Table table : tables) {
+            Map<String, Object> tableInfo = new HashMap<>();
+            tableInfo.put("table_name", table.getTableName());
+            tableInfo.put("forbidden_fields", forbiddenFieldsMap.get(table.getTableId()));
+            relevantTables.add(tableInfo);
         }
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.CHECK_QUERY_DATA)

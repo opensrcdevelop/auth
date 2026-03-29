@@ -17,14 +17,7 @@ Success:
 ```json
 {
   "success": true, 
-  "tables": [
-    {
-      "table_id": "exact_table_id_from_input", 
-      "table_name": "exact_table_name_from_input", 
-      "description": "exact_description_from_input", 
-      "additional_info": "exact_additional_info_from_input"
-    }
-  ]
+  "tables": ["exact_table_id_from_input", "..."]
 }
 ```
 

@@ -4,8 +4,6 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -13,6 +11,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(GenerateSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class GenerateSqlTool implements MethodTool {
         chatContext.setSql(null);
 
         String query = request.getQuery();
-        List<Map<String, Object>> tables = request.getTables();
+        List<String> tables = request.getTables();
         if (StringUtils.isEmpty(query)) {
             query = StringUtils.isNotEmpty(chatContext.getUserQuery())
                     ? chatContext.getUserQuery()
@@ -38,7 +39,7 @@ public class GenerateSqlTool implements MethodTool {
         }
 
         if (CollectionUtils.isEmpty(tables)) {
-            tables = chatContext.getRelevantTables();
+            tables = chatContext.getRelevantTableIds();
         }
 
         Map<String, Object> result = sqlAgent.generateSql(
@@ -73,8 +74,8 @@ public class GenerateSqlTool implements MethodTool {
         @ToolParam(description = "The query to generate SQL", required = false)
         private String query;
 
-        @ToolParam(description = "The tables to generate SQL", required = false)
-        private List<Map<String, Object>> tables;
+        @ToolParam(description = "The table ids to generate SQL", required = false)
+        private List<String> tables;
 
         @ToolParam(description = "The instruction to generate SQL", required = false)
         private String instruction;
