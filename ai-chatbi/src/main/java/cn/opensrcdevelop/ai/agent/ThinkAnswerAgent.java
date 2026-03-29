@@ -144,7 +144,7 @@ public class ThinkAnswerAgent {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
-                    if (!hasJsonOutput.get() && showThinking) {
+                    if (!hasJsonOutput.get() && showThinking && StringUtils.isNotEmpty(outputText)) {
                         if ("\n".equals(outputText) && lastOutput.get().equals("\n")) {
                             return;
                         }

@@ -31,21 +31,21 @@ public class GenerateSqlTool implements MethodTool {
         chatContext.setSql(null);
 
         String query = request.getQuery();
-        List<String> tables = request.getTables();
+        List<String> tableIds = request.getTableIds();
         if (StringUtils.isEmpty(query)) {
             query = StringUtils.isNotEmpty(chatContext.getUserQuery())
                     ? chatContext.getUserQuery()
                     : chatContext.getQuestion();
         }
 
-        if (CollectionUtils.isEmpty(tables)) {
-            tables = chatContext.getRelevantTableIds();
+        if (CollectionUtils.isEmpty(tableIds)) {
+            tableIds = chatContext.getRelevantTableIds();
         }
 
         Map<String, Object> result = sqlAgent.generateSql(
                 chatContext.getChatClient(),
                 query,
-                tables,
+                tableIds,
                 chatContext.getDataSourceId(),
                 request.instruction,
                 chatContext.getSampleSqls());
@@ -75,7 +75,7 @@ public class GenerateSqlTool implements MethodTool {
         private String query;
 
         @ToolParam(description = "The table ids to generate SQL", required = false)
-        private List<String> tables;
+        private List<String> tableIds;
 
         @ToolParam(description = "The instruction to generate SQL", required = false)
         private String instruction;
