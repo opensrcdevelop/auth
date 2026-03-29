@@ -134,7 +134,7 @@ public class ThinkAnswerAgent {
                     ChatContextHolder.setChatContext(chatContext);
                     SecurityContextHolder.setContext(securityContext);
                     String outputText = chatResponse.getResult().getOutput().getText();
-                    if (outputText != null) {
+                    if (StringUtils.isNotEmpty(outputText)) {
                         fullOutput.append(outputText);
                         lastOutput.set(outputText);
                     }
