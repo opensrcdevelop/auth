@@ -1,11 +1,12 @@
 package cn.opensrcdevelop.ai.chat;
 
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {
@@ -56,11 +57,7 @@ public class ChatContext {
 
     private Boolean terminated = false;
 
-    /** 是否显示思考过程 */
-    private Boolean showThinking = true;
-
     /** 临时文件路径（存储超阈值查询结果） */
-    /** 查询结果临时文件路径列表（支持多次 SQL 执行） */
     private List<String> queryResultFilePaths = new ArrayList<>();
 
     public void addQueryResultFilePath(String path) {

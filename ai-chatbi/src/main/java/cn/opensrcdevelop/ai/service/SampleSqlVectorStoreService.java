@@ -1,9 +1,19 @@
 package cn.opensrcdevelop.ai.service;
 
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
+
 import java.util.List;
 
 public interface SampleSqlVectorStoreService {
+
+    String COLLECTION_PREFIX = "sample_sql_";
+    String FIELD_ID = "id";
+    String FIELD_ANSWER_ID = "answer_id";
+    String FIELD_QUESTION = "question";
+    String FIELD_SQL = "sql";
+    String FIELD_DATA_SOURCE_ID = "data_source_id";
+    String FIELD_CREATED_AT = "created_at";
+    String FIELD_QUESTION_VECTOR = "question_vector";
 
     /**
      * 创建 Collection（如果不存在）

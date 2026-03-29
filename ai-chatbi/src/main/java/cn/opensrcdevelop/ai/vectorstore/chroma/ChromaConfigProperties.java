@@ -15,8 +15,6 @@ public class ChromaConfigProperties {
 
     private String databaseName = "default_database";
 
-    private String collectionNamePrefix = "sample_sql_";
-
     private String apiKey;
 
     private String username;

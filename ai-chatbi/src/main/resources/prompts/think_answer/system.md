@@ -103,35 +103,44 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 3. **Error Detection**: If parameter format error occurs, modify and retry
 
 ## Output Format
-<#if showThinking?? && showThinking>
+<#if show_thinking?? && show_thinking>
 ### Tool Calling Result Format
-<Language-specific plain text of the consideration of the selected tool.>
-```json
+The thinking process must be outputted, and Tool call must adhere to the JSON format.
+```
+<Language-specific plain text of the thinking process of the selected tool.>
+---
 {
-"name": "tool name",
-"parameters": "json formatted parameters string for the tool"
+    "name": "tool name",
+    "parameters": "json formatted parameters string for the tool"
 }
 ```
 
 ### Final Answer Format
-<Language-specific plain text of the consideration of the final answer.>
-```json
+The thinking process must be outputted, and final answer must adhere to the JSON format.
+```
+<Language-specific plain text of the thinking process of the final answer.>
+---
 {
-"final_answer": "Comprehensive answer integrating all execution results"
+    "final_answer": "Comprehensive answer integrating all execution results"
 }
 ```
 
 <#else>
 ### Tool Calling Result Format
 Output the tool call directly in JSON format without any explanatory text before the JSON.
-```json
-{"name": "tool name", "parameters": "json formatted parameters string for the tool"}
+```
+{
+    "name": "tool name",
+    "parameters": "json formatted parameters string for the tool"
+}
 ```
 
 ### Final Answer Format
 Output the final answer directly in JSON format without any explanatory text before the JSON.
-```json
-{"final_answer": "Comprehensive answer integrating all execution results"}
+```
+{
+    "final_answer": "Comprehensive answer integrating all execution results"
+}
 ```
 </#if>
 

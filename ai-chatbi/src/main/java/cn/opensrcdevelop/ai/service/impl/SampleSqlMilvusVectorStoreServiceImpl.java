@@ -26,29 +26,21 @@ import io.milvus.v2.service.vector.request.SearchReq;
 import io.milvus.v2.service.vector.request.data.FloatVec;
 import io.milvus.v2.service.vector.response.QueryResp;
 import io.milvus.v2.service.vector.response.SearchResp;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
 @Slf4j
 @Service
 @ConditionalOnProperty(name = "vectorstore.type", havingValue = "milvus", matchIfMissing = true)
 @RequiredArgsConstructor
 public class SampleSqlMilvusVectorStoreServiceImpl implements SampleSqlVectorStoreService {
-
-    private static final String COLLECTION_PREFIX = "sample_sql_";
-    private static final String FIELD_ID = "id";
-    private static final String FIELD_ANSWER_ID = "answer_id";
-    private static final String FIELD_QUESTION = "question";
-    private static final String FIELD_SQL = "sql";
-    private static final String FIELD_DATA_SOURCE_ID = "data_source_id";
-    private static final String FIELD_CREATED_AT = "created_at";
-    private static final String FIELD_QUESTION_VECTOR = "question_vector";
 
     private final MilvusClientV2 milvusClient;
     private final SystemSettingService systemSettingService;

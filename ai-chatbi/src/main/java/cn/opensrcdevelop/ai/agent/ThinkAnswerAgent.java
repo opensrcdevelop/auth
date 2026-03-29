@@ -18,15 +18,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import jakarta.validation.ConstraintViolation;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -42,6 +33,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -50,9 +50,6 @@ public class ThinkAnswerAgent {
     private final PromptTemplate promptTemplate;
     private final List<MethodTool> methodTools;
     private final ChatMessageHistoryService chatMessageHistoryService;
-
-    private static final Pattern JSON_OBJECT_PATTERN = Pattern.compile(
-            "\\{[\\s\\S]*}", Pattern.CASE_INSENSITIVE);
 
     /**
      * 思考并回答用户提问
@@ -69,13 +66,16 @@ public class ThinkAnswerAgent {
      *            示例 SQL（问题-SQL 对）
      * @param maxSteps
      *            最大执行步数
+     * @param showThinking
+     *            是否显示思考过程
      */
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
             String userQuestion,
             List<Map<String, String>> sampleSqls,
-            int maxSteps) {
+            int maxSteps,
+            boolean showThinking) {
         // 将示例 SQL 存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
 
@@ -92,7 +92,7 @@ public class ThinkAnswerAgent {
                     : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
-            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion);
+            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking);
             var parseResult = parseLlmResult(result);
             String thinkingContent = parseResult._1();
             boolean isFinalAnswer = result.contains("final_answer");
@@ -109,10 +109,10 @@ public class ThinkAnswerAgent {
         return Collections.emptyMap();
     }
 
-    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question) {
+    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question, boolean showThinking) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        Prompt prompt = getPrompt(question);
+        Prompt prompt = getPrompt(question, showThinking);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
 
@@ -130,15 +130,13 @@ public class ThinkAnswerAgent {
                     if (outputText != null) {
                         fullOutput.append(outputText);
                     }
-                    // 检测是否包含 JSON 内容（代码块或 JSON 模式）
-                    if (outputText != null && (outputText.contains("```") || containsJsonPattern(outputText))) {
+                    // 检测是否包含 JSON 内容
+                    if (containsJsonPattern(outputText)) {
                         hasJsonOutput.compareAndSet(false, true);
                     }
 
-                    if (!hasJsonOutput.get()) {
-                        if (Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking())) {
-                            SseUtil.sendChatBIThinking(emitter, outputText, false);
-                        }
+                    if (!hasJsonOutput.get() && showThinking) {
+                        SseUtil.sendChatBIThinking(emitter, outputText, false);
                     }
                 }, error -> {
                     log.error("Error in chat response stream", error);
@@ -167,7 +165,7 @@ public class ThinkAnswerAgent {
                 .toList();
     }
 
-    private Prompt getPrompt(String question) {
+    private Prompt getPrompt(String question, boolean showThinking) {
         // 获取会话历史用户消息
         List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
                 ChatContextHolder.getChatContext().getChatId());
@@ -189,7 +187,7 @@ public class ThinkAnswerAgent {
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
-                .param("show_thinking", Boolean.TRUE.equals(ChatContextHolder.getChatContext().getShowThinking()));
+                .param("show_thinking", showThinking);
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
@@ -395,31 +393,25 @@ public class ThinkAnswerAgent {
         if (text == null) {
             return false;
         }
+
         // 排除代码块中的内容
         String[] lines = text.split("\n");
-        boolean inCodeBlock = false;
         for (String line : lines) {
-            // 检查代码块标记
-            if (line.trim().startsWith("```")) {
-                inCodeBlock = !inCodeBlock;
-                continue;
+            if (line.trim().startsWith("---")) {
+                return true;
             }
-            if (inCodeBlock) {
-                continue;
+
+            String trimmed = line.trim();
+
+            if (trimmed.contains("{") || trimmed.contains("}")) {
+                // 可能是 final_answer 或 tool call，视为 JSON
+                return true;
             }
-            // 检测 JSON 模式
-            if (JSON_OBJECT_PATTERN.matcher(line.trim()).find()) {
-                // 排除明显不是 JSON 的情况，如 "{思考内容}"
-                String trimmed = line.trim();
-                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-                    // 可能是 final_answer 或 tool call，视为 JSON
-                    return true;
-                }
-                // 检测 name:, parameters:, final_answer: 等模式
-                if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
-                        || trimmed.contains("\"final_answer\"")) {
-                    return true;
-                }
+
+            // 检测 name:, parameters:, final_answer: 等模式
+            if (trimmed.contains("\"name\"") || trimmed.contains("\"parameters\"")
+                    || trimmed.contains("\"final_answer\"")) {
+                return true;
             }
         }
         return false;
