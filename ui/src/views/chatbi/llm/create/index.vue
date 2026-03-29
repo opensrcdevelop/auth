@@ -61,7 +61,9 @@ export default indexTs;
               <a-input-number
                 v-model="createModelProviderForm.temperature"
                 :min="0"
-                hide-button
+                :max="1"
+                :setp="0.1"
+                :precision="1"
                 placeholder="请输入温度参数"
               />
             </a-form-item>
@@ -71,7 +73,6 @@ export default indexTs;
               <a-input-number
                 v-model="createModelProviderForm.maxTokens"
                 :min="50"
-                hide-button
                 placeholder="请输入最大输出 token 长度"
               />
             </a-form-item>

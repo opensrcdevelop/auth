@@ -30,7 +30,7 @@ const createModelProviderForm = reactive({
   type: undefined,
   baseUrl: undefined,
   apiKey: undefined,
-  temperature: undefined,
+  temperature: 0,
   maxTokens: undefined,
   defaultModel: undefined,
   optionalModels: undefined,

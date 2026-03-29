@@ -252,7 +252,7 @@ const tablePagination = computed(() => {
 const searchForm = reactive({
   dataSourceId: undefined,
   question: undefined,
-  useSimilarity: false,
+  useSimilarity: true,
 });
 
 const embeddingConfigform = reactive({
