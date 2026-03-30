@@ -115,7 +115,8 @@ public class ThinkAnswerAgent {
         return Collections.emptyMap();
     }
 
-    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question, boolean showThinking) {
+    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
+            boolean showThinking) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Prompt prompt = getPrompt(question, showThinking);

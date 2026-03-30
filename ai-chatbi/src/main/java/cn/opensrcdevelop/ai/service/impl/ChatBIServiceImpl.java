@@ -48,6 +48,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -105,6 +106,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             ChatContext chatContext = new ChatContext();
+            chatContext.setId(UUID.randomUUID().toString());
 
             // 注册 SSE 回调
             emitter.onCompletion(() -> {
@@ -135,6 +137,13 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatContext.setQuestion(requestDto.getQuestion());
                 chatContext.setRawQuestion(requestDto.getQuestion());
                 ChatContextHolder.setChatContext(chatContext);
+
+                log.info("ChatBI 对话（{}）开始 -  ChatContextID: {}, ModelProviderID: {}, Model: {}",
+                        finalChatId,
+                        chatContext.getId(),
+                        requestDto.getModelProviderId(),
+                        requestDto.getModel());
+
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
 
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag, requestDto,

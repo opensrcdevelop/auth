@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Data
 public class ChatContext {
 
+    private String id;
+
     private ChatClient chatClient;
 
     private String dataSourceId;
