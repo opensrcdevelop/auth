@@ -11,12 +11,6 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.MetadataMode;
@@ -29,16 +23,14 @@ import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SampleSqlEmbeddingServiceImpl implements SampleSqlEmbeddingService {
-
-    private static final Cache<String, EmbeddingModel> EMBEDDING_MODEL_CACHE = Caffeine.newBuilder()
-            .expireAfterAccess(8, TimeUnit.HOURS)
-            .maximumSize(100)
-            .build();
-
     private final ModelProviderService modelProviderService;
     private final SystemSettingService systemSettingService;
 
@@ -74,28 +66,21 @@ public class SampleSqlEmbeddingServiceImpl implements SampleSqlEmbeddingService 
     }
 
     private synchronized EmbeddingModel getEmbeddingModel(String providerId, String model, Integer dimension) {
-        EmbeddingModel embeddingModel = EMBEDDING_MODEL_CACHE.getIfPresent(providerId);
+        // 获取模型提供商
+        ModelProvider modelProvider = modelProviderService.getOne(Wrappers.<ModelProvider>lambdaQuery()
+                .eq(ModelProvider::getProviderId, providerId)
+                .eq(ModelProvider::getEnabled, true));
 
-        if (Objects.isNull(embeddingModel)) {
-            // 获取模型提供商
-            ModelProvider modelProvider = modelProviderService.getOne(Wrappers.<ModelProvider>lambdaQuery()
-                    .eq(ModelProvider::getProviderId, providerId)
-                    .eq(ModelProvider::getEnabled, true));
-
-            if (modelProvider == null || StringUtils.isEmpty(model) || Objects.isNull(dimension)) {
-                throw new BizException(MessageConstants.AI_SAMPLE_SQL_MSG_1000);
-            }
-
-            ModelProviderType modelProviderType = ModelProviderType.valueOf(modelProvider.getProviderType());
-            embeddingModel = switch (modelProviderType) {
-                case OPENAI -> createOpenAiEmbeddingModel(modelProvider, model, dimension);
-                case OLLAMA -> createOllamaEmbeddingModel(modelProvider, model);
-                default -> throw new UnsupportedOperationException("仅支持 OpenAI 和 Ollama 模型提供商");
-            };
-            EMBEDDING_MODEL_CACHE.put(providerId, embeddingModel);
+        if (modelProvider == null || StringUtils.isEmpty(model) || Objects.isNull(dimension)) {
+            throw new BizException(MessageConstants.AI_SAMPLE_SQL_MSG_1000);
         }
 
-        return embeddingModel;
+        ModelProviderType modelProviderType = ModelProviderType.valueOf(modelProvider.getProviderType());
+        return switch (modelProviderType) {
+            case OPENAI -> createOpenAiEmbeddingModel(modelProvider, model, dimension);
+            case OLLAMA -> createOllamaEmbeddingModel(modelProvider, model);
+            default -> throw new UnsupportedOperationException("仅支持 OpenAI 和 Ollama 模型提供商");
+        };
     }
 
     private EmbeddingModel createOpenAiEmbeddingModel(ModelProvider modelProvider, String embeddingModel,
