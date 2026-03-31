@@ -102,12 +102,12 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 2. **Schema Compliance**: Ensure parameters match the tool's input schema structure
 3. **Error Detection**: If parameter format error occurs, modify and retry
 
-## Output Format
+## Output Format(Choose a format )
 <#if show_thinking?? && show_thinking>
-### Tool Calling Result Format
+### Format1: Tool Calling Result Format
 The thinking process must be outputted, and Tool call must adhere to the JSON format.
 ```
-<Language-specific plain text of the thinking process of the selected tool.>
+Here is the language-specific plain text of the thinking process of the selected tool and must be outputted.
 ---
 {
     "name": "tool name",
@@ -115,10 +115,10 @@ The thinking process must be outputted, and Tool call must adhere to the JSON fo
 }
 ```
 
-### Final Answer Format
+### Format2: Final Answer Format
 The thinking process must be outputted, and final answer must adhere to the JSON format.
 ```
-<Language-specific plain text of the thinking process of the final answer.>
+Here is the language-specific plain text of the thinking process of the final answer and must be outputted.
 ---
 {
     "final_answer": "Comprehensive answer integrating all execution results"
@@ -126,7 +126,7 @@ The thinking process must be outputted, and final answer must adhere to the JSON
 ```
 
 <#else>
-### Tool Calling Result Format
+### Format1: Tool Calling Result Format
 Output the tool call directly in JSON format without any explanatory text before the JSON.
 ```
 {
@@ -135,7 +135,7 @@ Output the tool call directly in JSON format without any explanatory text before
 }
 ```
 
-### Final Answer Format
+### Format2: Final Answer Format
 Output the final answer directly in JSON format without any explanatory text before the JSON.
 ```
 {
@@ -145,13 +145,15 @@ Output the final answer directly in JSON format without any explanatory text bef
 </#if>
 
 ## Constraints
-1. **Parameter Format**: Tool parameters MUST be valid JSON strings that satisfy the tool's input schema
-2. **Error Recovery**: When parameter format errors occur, modify parameters and re-execute
-3. Final Answer: Must be pure JSON format only, no additional text
-4. No fabrication of tool results
-5. Handle tool failures gracefully with retry mechanism
-6. Avoid tool execution loops by tracking retry counts
-7. **Schema Compliance**:
+1. **Call only one tool at a time**: Call only one tool per step, wait for the result before deciding the next action. Do not call multiple tools simultaneously.
+2. **Never mix tool calls with final answers**: Each response must be either a tool call OR a final answer, never both together.
+3. **Parameter Format**: Tool parameters MUST be valid JSON strings that satisfy the tool's input schema
+4. **Error Recovery**: When parameter format errors occur, modify parameters and re-execute
+5. Final Answer: Must be pure JSON format only, no additional text
+6. No fabrication of tool results
+7. Handle tool failures gracefully with retry mechanism
+8. Avoid tool execution loops by tracking retry counts
+9. **Schema Compliance**:
    - Thinking Result Format must contain exactly: "name" and "parameters" fields
    - Final Answer Format must contain exactly: "final_answer" field
    - No other fields are permitted in either format

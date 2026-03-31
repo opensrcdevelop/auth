@@ -1,11 +1,8 @@
 <#if question??>
-
 Based on the following question, consider the execution of the first step.
-
 <#if historical_questions?? && historical_questions?size gt 0>
 ### Historical Questions
 <#list historical_questions as histQuestion>
-
 - ${histQuestion}
 </#list>
 </#if>
@@ -14,26 +11,20 @@ Based on the following question, consider the execution of the first step.
 ### Sample SQL References
 The following are similar questions and their SQL queries for reference:
 <#list sample_sqls as sample>
-
 **Question:** ${sample.question}
-**SQL:**
-```sql
-${sample.sql}
-```
+**SQL:** ${sample.sql}
 </#list>
 </#if>
-
-Question: ${question}
+### Current User Question
+${question}
 
 <#else>
 
 Analyze the below tool execution results and the raw user question to determine the next step.
-
 <#if historical_questions?? && historical_questions?size gt 0>
 ### Historical Questions
 The following are the user's previous questions in this conversation for context:
 <#list historical_questions as histQuestion>
-
 - ${histQuestion}
 </#list>
 </#if>
@@ -42,12 +33,8 @@ The following are the user's previous questions in this conversation for context
 ### Sample SQL References
 The following are similar questions and their SQL queries for reference:
 <#list sample_sqls as sample>
-
 **Question:** ${sample.question}
-**SQL:**
-```sql
-${sample.sql}
-```
+**SQL: ${sample.sql}
 </#list>
 </#if>
 
@@ -70,15 +57,13 @@ Output the final answer when ANY of the following is true:
 
 <#if tool_execution_results?? && tool_execution_results?size gt 0>
 ### Tool Execution Results
-
 <#list tool_execution_results as item>
 <#if item.tool_name??>
 - tool: ${item.tool_name}
-- execute time: ${item.execute_time}
-- result: ${item.result}
+  - execute time: ${item.execute_time}
+  - result: ${item.result}
 </#if>
 </#list>
-
 </#if>
 
 <#if previous_thinking?? && previous_thinking != "">
@@ -88,14 +73,16 @@ Your previous thinking: ${previous_thinking}
 
 ### Raw User Question
 ${raw_question}
-
-### Decision Output
-Based on the above analysis, either:
-- Output the final answer (use Final Answer Format) - Prefer this option when data is sufficient or no more useful data can be obtained
-- Generate a new SQL query (use Tool Calling Result Format with generate_sql) - Only if you believe another query would provide additional useful data
-
 </#if>
 
-### Mandatory Matters
-- The thinking part of the output format cannot contain any Markdown characters('`', '*', '#').
-- Keep your thinking/reasoning concise, maximum 300 characters.
+** Decision Output **
+Based on the above analysis, either:
+- Output the final answer (use Final Answer Format) - When data is sufficient or no more useful data can be obtained
+- Call a tool (use Tool Calling Result Format) - When you need more information to provide a final answer
+
+** Mandatory Matters **
+<#if show_thinking?? && show_thinking>
+- The thinking process must be outputted, and direct output of tool call or final answers is prohibited. Furthermore, after the output of the thinking process is completed, a separator --- must be outputted.
+- The thinking process of the output format cannot contain any Markdown characters('`', '*', '#').
+- Keep your thinking/reasoning process concise, maximum 300 characters.
+</#if>

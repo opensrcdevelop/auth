@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -115,6 +116,7 @@ public class ThinkAnswerAgent {
         return Collections.emptyMap();
     }
 
+    @SuppressWarnings("all")
     private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
             boolean showThinking) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -134,7 +136,13 @@ public class ThinkAnswerAgent {
                 .subscribe(chatResponse -> {
                     ChatContextHolder.setChatContext(chatContext);
                     SecurityContextHolder.setContext(securityContext);
-                    String outputText = chatResponse.getResult().getOutput().getText();
+
+                    Generation generation =  chatResponse.getResult();
+                    if (Objects.isNull(generation)) {
+                        return;
+                    }
+
+                    String outputText = generation.getOutput().getText();
                     if (StringUtils.isNotEmpty(outputText)) {
                         fullOutput.append(outputText);
                         lastOutput.set(outputText);
