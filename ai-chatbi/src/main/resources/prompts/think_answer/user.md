@@ -75,10 +75,18 @@ Your previous thinking: ${previous_thinking}
 ${raw_question}
 </#if>
 
+<#if format_error_feedback?? && format_error_feedback != "">
+### ⚠️ Format Error Feedback (IMPORTANT)
+The previous output did not meet the required format. Please fix the following issues:
+${format_error_feedback}
+
+Please ensure your next output strictly follows the required format.
+</#if>
+
 ** Decision Output **
 Based on the above analysis, either:
-- Output the final answer (use Final Answer Format) - When data is sufficient or no more useful data can be obtained
-- Call a tool (use Tool Calling Result Format) - When you need more information to provide a final answer
+- Output the final answer (use Final Answer Format) - When there are no tools available to call upon and the information you currently have is sufficient to answer the user's question
+- Call a tool (use Tool Calling Result Format) - When you need more information to answer a user's question
 
 ** Mandatory Matters **
 <#if show_thinking?? && show_thinking>

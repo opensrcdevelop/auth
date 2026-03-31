@@ -109,9 +109,12 @@ The thinking process must be outputted, and Tool call must adhere to the JSON fo
 ```
 Here is the language-specific plain text of the thinking process of the selected tool and must be outputted.
 ---
-{
-    "name": "tool name",
-    "parameters": "json formatted parameters string for the tool"
+{   
+    "need_next_step": <true|false>,
+    "tool_call": {
+        "name": "tool name",
+        "parameters": "json formatted parameters string for the tool"
+    }
 }
 ```
 
@@ -121,6 +124,7 @@ The thinking process must be outputted, and final answer must adhere to the JSON
 Here is the language-specific plain text of the thinking process of the final answer and must be outputted.
 ---
 {
+    "need_next_step": false,
     "final_answer": "Comprehensive answer integrating all execution results"
 }
 ```
@@ -129,9 +133,12 @@ Here is the language-specific plain text of the thinking process of the final an
 ### Format1: Tool Calling Result Format
 Output the tool call directly in JSON format without any explanatory text before the JSON.
 ```
-{
-    "name": "tool name",
-    "parameters": "json formatted parameters string for the tool"
+{   
+    "need_next_step": <true|false>,
+    "tool_call": {
+        "name": "tool name",
+        "parameters": "json formatted parameters string for the tool"
+    }
 }
 ```
 
@@ -139,6 +146,7 @@ Output the tool call directly in JSON format without any explanatory text before
 Output the final answer directly in JSON format without any explanatory text before the JSON.
 ```
 {
+    "need_next_step": false,
     "final_answer": "Comprehensive answer integrating all execution results"
 }
 ```

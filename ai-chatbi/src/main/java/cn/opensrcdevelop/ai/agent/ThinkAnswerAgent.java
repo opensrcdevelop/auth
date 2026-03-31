@@ -15,9 +15,8 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.vavr.Tuple;
-import io.vavr.Tuple2;
 import jakarta.validation.ConstraintViolation;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -72,6 +71,7 @@ public class ThinkAnswerAgent {
      * @param showThinking
      *            是否显示思考过程
      */
+    @SuppressWarnings("java:S3776")
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
@@ -82,6 +82,7 @@ public class ThinkAnswerAgent {
         // 将示例 SQL 存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
 
+        String formatErrorFeedback = null;
         int step = 0;
         while (step < maxSteps) {
             if (interruptFlag.get()) {
@@ -95,10 +96,36 @@ public class ThinkAnswerAgent {
                     : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
-            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking);
-            var parseResult = parseLlmResult(result);
-            String thinkingContent = parseResult._1();
-            boolean isFinalAnswer = result.contains("final_answer");
+            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking,
+                    formatErrorFeedback);
+            formatErrorFeedback = null;
+
+            // 验证输出格式
+            var validationResult = validateOutputFormat(result, showThinking);
+            if (!validationResult.isValid()) {
+                log.warn("Output format validation failed: {}, the llm result is: {}", validationResult.getErrorMessage(), result);
+                SseUtil.sendChatBIThinking(emitter, "⚠ The output format of the LLM has encountered an error.", true);
+
+                // 格式验证失败，将错误反馈给下一轮
+                formatErrorFeedback = validationResult.getErrorMessage() + "\n Your output is: \n" + result;
+                step++;
+                continue;
+            }
+
+            // 验证通过，使用验证结果中的 JSON 数据
+            Map<String, Object> jsonMap = validationResult.getJsonMap();
+            String thinkingContent = "";
+
+            if (showThinking) {
+                // 提取思考内容
+                int startIndex = result.indexOf("{");
+                thinkingContent = result.substring(0, startIndex).trim();
+                if (thinkingContent.contains("---")) {
+                    thinkingContent = thinkingContent.replace("---", "").trim();
+                }
+            }
+
+            boolean isFinalAnswer = jsonMap.containsKey("final_answer");
 
             if (StringUtils.isNotEmpty(thinkingContent)) {
                 chatMessageHistoryService.createChatMessageHistory(thinkingContent, ChatContentType.THINKING);
@@ -107,9 +134,9 @@ public class ThinkAnswerAgent {
             // 保存思考内容到上下文，供下一轮使用
             saveThinkingContent(thinkingContent);
             if (isFinalAnswer) {
-                return parseResult._2();
+                return jsonMap;
             } else {
-                executeToolCall(parseResult._2(), emitter);
+                executeToolCall(jsonMap, emitter);
             }
             step++;
         }
@@ -118,10 +145,10 @@ public class ThinkAnswerAgent {
 
     @SuppressWarnings("all")
     private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
-            boolean showThinking) {
+            boolean showThinking, String formatErrorFeedback) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        Prompt prompt = getPrompt(question, showThinking);
+        Prompt prompt = getPrompt(question, showThinking, formatErrorFeedback);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
         AtomicReference<String> lastOutput = new AtomicReference<>("");
@@ -137,7 +164,7 @@ public class ThinkAnswerAgent {
                     ChatContextHolder.setChatContext(chatContext);
                     SecurityContextHolder.setContext(securityContext);
 
-                    Generation generation =  chatResponse.getResult();
+                    Generation generation = chatResponse.getResult();
                     if (Objects.isNull(generation)) {
                         return;
                     }
@@ -186,7 +213,7 @@ public class ThinkAnswerAgent {
                 .toList();
     }
 
-    private Prompt getPrompt(String question, boolean showThinking) {
+    private Prompt getPrompt(String question, boolean showThinking, String formatErrorFeedback) {
         // 获取会话历史用户消息
         List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
                 ChatContextHolder.getChatContext().getChatId());
@@ -197,7 +224,7 @@ public class ThinkAnswerAgent {
         // 获取示例 SQL
         List<Map<String, String>> sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
 
-        var thinkAnswerPrompt = promptTemplate.getTemplates()
+        var thinkAnswerPromptBuilder = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
                 .param("question", question)
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
@@ -208,13 +235,15 @@ public class ThinkAnswerAgent {
                 .param("tool_execution_results", ChatContextHolder.getChatContext().getToolCallResults())
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
-                .param("show_thinking", showThinking);
+                .param("show_thinking", showThinking)
+                .param("format_error_feedback", formatErrorFeedback);
+
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
                 ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build());
         builder.messages(
-                new SystemMessage(thinkAnswerPrompt.buildSystemPrompt(PromptTemplate.THINK_ANSWER)),
-                new UserMessage(thinkAnswerPrompt.buildUserPrompt(PromptTemplate.THINK_ANSWER)));
+                new SystemMessage(thinkAnswerPromptBuilder.buildSystemPrompt(PromptTemplate.THINK_ANSWER)),
+                new UserMessage(thinkAnswerPromptBuilder.buildUserPrompt(PromptTemplate.THINK_ANSWER)));
         return builder.build();
     }
 
@@ -230,8 +259,20 @@ public class ThinkAnswerAgent {
     @SuppressWarnings("all")
     private boolean executeToolCall(Map<String, Object> toolCall, SseEmitter emitter) {
         Map<String, Object> toolCallResult;
-        Object toolNameObj = toolCall.get("name");
-        Object parametersObj = toolCall.get("parameters");
+
+        // 从 tool_call 对象中提取 name 和 parameters
+        Object toolCallObj = toolCall.get("tool_call");
+        if (!(toolCallObj instanceof Map)) {
+            toolCallResult = Map.of(
+                    "error", "Invalid tool_call format. Expected an object with 'name' and 'parameters'.");
+            setToolCallResult(toolCallResult);
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> toolCallMap = (Map<String, Object>) toolCallObj;
+        Object toolNameObj = toolCallMap.get("name");
+        Object parametersObj = toolCallMap.get("parameters");
 
         if (Objects.isNull(toolNameObj)) {
             toolCallResult = Map.of(
@@ -355,51 +396,91 @@ public class ThinkAnswerAgent {
     }
 
     /**
-     * 解析 LLM 结果，提取思考原因和 JSON 内容
+     * 验证 LLM 输出是否符合指定的格式要求
      *
      * @param llmResult
-     *            LLM 原始结果字符串
-     * @return 包含思考原因和 JSON 内容的元组
+     *            LLM 原始输出
+     * @param showThinking
+     *            是否显示思考过程
+     * @return 验证结果，包含是否有效和错误信息
      */
-    private Tuple2<String, Map<String, Object>> parseLlmResult(String llmResult) {
+    @SuppressWarnings({ "unchecked", "java:S3776" })
+    private FormatValidationResult validateOutputFormat(String llmResult, boolean showThinking) {
+        if (StringUtils.isEmpty(llmResult)) {
+            return new FormatValidationResult(false, "LLM output is empty");
+        }
+
+        // 检测是否包含 JSON
         int startIndex = llmResult.indexOf("{");
         int endIndex = llmResult.lastIndexOf("}");
 
         if (startIndex == -1 || endIndex == -1) {
-            return Tuple.of("", Collections.emptyMap());
+            return new FormatValidationResult(false,
+                    "Output does not contain valid JSON. Please output JSON in the required format.");
         }
 
-        String reason = llmResult.substring(0, startIndex);
-        if (reason.contains("---")) {
-            reason = reason.replace("---", "");
+        String jsonContent = llmResult.substring(startIndex, endIndex + 1);
+
+        // 尝试解析 JSON
+        Map<String, Object> jsonMap;
+        try {
+            jsonMap = CommonUtil.nonJdkDeserializeObject(jsonContent,
+                    new TypeReference<Map<String, Object>>() {
+                    });
+        } catch (Exception e) {
+            return new FormatValidationResult(false,
+                    "Invalid JSON format. Please check your JSON syntax: " + e.getMessage());
         }
 
-        String json = llmResult.substring(startIndex, endIndex + 1);
-        Map<String, Object> jsonMap = CommonUtil.nonJdkDeserializeObject(json,
-                new TypeReference<Map<String, Object>>() {
-                });
-
-        // 处理 final_answer 字段值可能是 JSON 字符串的情况
-        if (jsonMap.containsKey("final_answer")) {
-            Object finalAnswerValue = jsonMap.get("final_answer");
-            if (finalAnswerValue instanceof String answerStr &&
-                    answerStr.trim().startsWith("{") && answerStr.trim().endsWith("}")) {
-                try {
-                    Map<String, Object> nestedJson = CommonUtil.nonJdkDeserializeObject(answerStr,
-                            new TypeReference<Map<String, Object>>() {
-                            });
-                    // 将解析后的 JSON 扁平化，把嵌套的内容放到外层
-                    jsonMap.putAll(nestedJson);
-                    jsonMap.remove("final_answer");
-                } catch (Exception e) {
-                    // 解析失败，保持原样
-                    log.debug("Failed to parse nested JSON in final_answer: {}", e.getMessage());
-                }
+        String reason = llmResult.substring(0, startIndex).trim();
+        if (showThinking) {
+            // 验证思考内容格式
+            // 检查是否有分隔符 ---
+            if (!reason.contains("---")) {
+                return new FormatValidationResult(false,
+                        "Thinking content and JSON must be separated by '---'. Please output in format: 'thinking content --- {json}'");
             }
-
+        } else {
+            // 不显示思考过程的格式
+            // 检查是否有思考内容（不应该有）
+            if (StringUtils.isNotEmpty(reason) && !reason.equals("{")) {
+                return new FormatValidationResult(false,
+                        "When show_thinking is false, output should be JSON only without any text before it.");
+            }
         }
 
-        return Tuple.of(reason, jsonMap);
+        // 验证 JSON 格式 - 必须包含 need_next_step
+        if (!jsonMap.containsKey("need_next_step")) {
+            return new FormatValidationResult(false,
+                    "JSON must contain 'need_next_step' field. Required format: { \"need_next_step\": true/false, ... }");
+        }
+
+        Boolean needNextStep = (Boolean) jsonMap.get("need_next_step");
+
+        if (Boolean.TRUE.equals(needNextStep)) {
+            // 需要继续，验证 tool_call 格式
+            if (!jsonMap.containsKey("tool_call")) {
+                return new FormatValidationResult(false,
+                        "When need_next_step is true, JSON must contain 'tool_call' field with 'name' and 'parameters'.");
+            }
+            Object toolCall = jsonMap.get("tool_call");
+            if (!(toolCall instanceof Map)) {
+                return new FormatValidationResult(false, "'tool_call' must be an object.");
+            }
+            Map<String, Object> toolCallMap = (Map<String, Object>) toolCall;
+            if (!toolCallMap.containsKey("name") || !toolCallMap.containsKey("parameters")) {
+                return new FormatValidationResult(false,
+                        "'tool_call' must contain 'name' and 'parameters' fields.");
+            }
+        } else {
+            // 不需要继续，验证 final_answer 格式
+            if (!jsonMap.containsKey("final_answer")) {
+                return new FormatValidationResult(false,
+                        "When need_next_step is false, JSON must contain 'final_answer' field.");
+            }
+        }
+
+        return new FormatValidationResult(true, null, jsonMap);
     }
 
     /**
@@ -436,5 +517,26 @@ public class ThinkAnswerAgent {
             }
         }
         return false;
+    }
+
+    /**
+     * 格式验证结果
+     */
+    @Getter
+    private static class FormatValidationResult {
+        private final boolean valid;
+        private final String errorMessage;
+        private final Map<String, Object> jsonMap;
+
+        public FormatValidationResult(boolean valid, String errorMessage) {
+            this(valid, errorMessage, null);
+        }
+
+        public FormatValidationResult(boolean valid, String errorMessage, Map<String, Object> jsonMap) {
+            this.valid = valid;
+            this.errorMessage = errorMessage;
+            this.jsonMap = jsonMap;
+        }
+
     }
 }
