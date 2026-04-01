@@ -61,6 +61,12 @@ const router = createRouter({
  * 前置路由拦截
  */
 router.beforeEach((to, from, next) => {
+  // 独立入口 chatbi-chat.html 只能访问 /chatbi/chat 页面
+  if (window.location.pathname.includes("chatbi-chat.html") && to.path !== "/chatbi/chat") {
+    router.push("/chatbi/chat");
+    return;
+  }
+
   const visible = to.meta.visible as Function;
   if (visible && !visible()) {
     router.push("/404");

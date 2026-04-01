@@ -11,8 +11,3 @@ app.use(pina);
 app.use(router);
 app.use(ArcoVue);
 app.mount("#app");
-
-// 独立入口只能访问 /chatbi/chat 页面
-if (window.location.pathname.includes("chatbi-chat.html")) {
-  router.push("/chatbi/chat");
-}
