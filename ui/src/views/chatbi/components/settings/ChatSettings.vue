@@ -6,7 +6,7 @@ import {Message} from "@arco-design/web-vue";
 const chatConfig = ref({
   maxSteps: 30,
   language: "简体中文",
-  apiRetryCount: 3,
+  llmApiRetryCount: 3,
 });
 
 const loading = ref(false);
@@ -61,15 +61,11 @@ export default defineComponent({
         />
       </a-form-item>
       <a-form-item label="回答语言">
-        <a-select v-model="chatConfig.language" style="width: 100%">
-          <a-option value="简体中文">简体中文</a-option>
-          <a-option value="English">English</a-option>
-          <a-option value="繁體中文">繁體中文</a-option>
-        </a-select>
+        <a-input v-model="chatConfig.language" style="width: 100%" placeholder="请输入回答语言，如：简体中文、English" />
       </a-form-item>
-      <a-form-item label="API 重试次数">
+      <a-form-item label="LLM API 重试次数">
         <a-input-number
-          v-model="chatConfig.apiRetryCount"
+          v-model="chatConfig.llmApiRetryCount"
           :min="0"
           :max="10"
           style="width: 100%"

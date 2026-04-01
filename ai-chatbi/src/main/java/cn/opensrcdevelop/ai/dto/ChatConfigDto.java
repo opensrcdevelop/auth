@@ -16,6 +16,6 @@ public class ChatConfigDto {
     /** 回答语言 */
     private String language = "简体中文";
 
-    /** API 重试次数 */
-    private Integer apiRetryCount = 3;
+    /** LLM API 重试次数 */
+    private Integer llmApiRetryCount = 3;
 }

@@ -30,8 +30,8 @@ public class RetryConfig {
         try {
             ChatConfigDto config = systemSettingService.getSystemSetting(
                     SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (config != null && config.getApiRetryCount() != null) {
-                retryCount = config.getApiRetryCount();
+            if (config != null && config.getLlmApiRetryCount() != null) {
+                retryCount = config.getLlmApiRetryCount();
             }
         } catch (Exception e) {
             // 使用默认值
