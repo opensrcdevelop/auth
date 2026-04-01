@@ -63,7 +63,7 @@ export default ({ mode }) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, "index.html"),
-          chatbiChat: path.resolve(__dirname, "chatbi-chat.ts"),
+          chatbiChat: path.resolve(__dirname, "chatbi-chat.html"),
         },
       },
     },
