@@ -1,7 +1,7 @@
 import "@/style/index.scss";
 import {createApp} from "vue";
 import App from "@/App.vue";
-import router from "@/router/chatbiChatRouter";
+import router from "@/router";
 import pina from "@/store";
 import ArcoVue from "@arco-design/web-vue";
 import "@arco-design/web-vue/dist/arco.css";
@@ -11,3 +11,8 @@ app.use(pina);
 app.use(router);
 app.use(ArcoVue);
 app.mount("#app");
+
+// 独立入口只能访问 /chatbi/chat 页面
+if (window.location.pathname.includes("chatbi-chat.html")) {
+  router.push("/chatbi/chat");
+}
