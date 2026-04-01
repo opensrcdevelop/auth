@@ -276,14 +276,6 @@ const pageRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "/chatbi/chat",
-    component: () => import("@/views/chatbi/chat/index.vue"),
-    meta: {
-      parent: "/chatbi",
-      title: "对话问答",
-    },
-  },
-  {
     path: "/chatbi/datasource/create",
     component: () => import("@/views/chatbi/datasource/create/index.vue"),
     meta: {

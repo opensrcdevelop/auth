@@ -5,9 +5,8 @@ import cn.opensrcdevelop.common.validation.ValidationGroups;
 import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "模型提供商请求")
 @Data

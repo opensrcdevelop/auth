@@ -72,14 +72,12 @@ public class ThinkAnswerAgent {
      * @param showThinking
      *            是否显示思考过程
      */
-    @SuppressWarnings("java:S3776")
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
             String userQuestion,
             List<Map<String, String>> sampleSqls,
             int maxSteps,
-            int apiTimeout,
             boolean showThinking) {
         // 将示例 SQL 存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
@@ -99,7 +97,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking,
-                    formatErrorFeedback, apiTimeout);
+                    formatErrorFeedback);
             formatErrorFeedback = null;
 
             // 验证输出格式
@@ -148,7 +146,7 @@ public class ThinkAnswerAgent {
 
     @SuppressWarnings("all")
     private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
-            boolean showThinking, String formatErrorFeedback, int apiTimeout) {
+            boolean showThinking, String formatErrorFeedback) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
         Prompt prompt = getPrompt(question, showThinking, formatErrorFeedback);
@@ -197,9 +195,7 @@ public class ThinkAnswerAgent {
                     latch.countDown();
                 }, latch::countDown);
         try {
-            // 使用动态超时时间，默认 5 分钟
-            long timeoutSeconds = apiTimeout > 0 ? apiTimeout : 300;
-            boolean completed = latch.await(timeoutSeconds, TimeUnit.SECONDS);
+            boolean completed = latch.await(5, TimeUnit.MINUTES);
             if (!completed) {
                 log.error("Timed out waiting for chat response stream");
             }

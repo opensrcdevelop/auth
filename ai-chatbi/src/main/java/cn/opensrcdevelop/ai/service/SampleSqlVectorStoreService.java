@@ -1,7 +1,6 @@
 package cn.opensrcdevelop.ai.service;
 
 import cn.opensrcdevelop.ai.dto.SampleSqlDto;
-
 import java.util.List;
 
 public interface SampleSqlVectorStoreService {

@@ -18,7 +18,4 @@ public class ChatConfigDto {
 
     /** API 重试次数 */
     private Integer apiRetryCount = 3;
-
-    /** API 超时时间（秒） */
-    private Integer apiTimeout = 300;
 }

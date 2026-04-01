@@ -261,7 +261,6 @@ public class ChatBIServiceImpl implements ChatBIService {
             chatConfig = new ChatConfigDto();
         }
         int maxSteps = chatConfig.getMaxSteps() != null ? chatConfig.getMaxSteps() : 30;
-        int apiTimeout = chatConfig.getApiTimeout() != null ? chatConfig.getApiTimeout() : 300;
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -272,7 +271,6 @@ public class ChatBIServiceImpl implements ChatBIService {
                 finalQuestion,
                 sampleSqls,
                 maxSteps,
-                apiTimeout,
                 Boolean.TRUE.equals(requestDto.getShowThinking()));
 
         if (interruptFlag.get()) {

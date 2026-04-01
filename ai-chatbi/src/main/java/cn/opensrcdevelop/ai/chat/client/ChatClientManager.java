@@ -12,11 +12,9 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.time.Duration;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -59,18 +57,6 @@ public class ChatClientManager {
      * @return ChatClient
      */
     public synchronized ChatClient getChatClient(String providerId, String model, String chatId) {
-        // 获取对话配置
-        int apiTimeout = 300;
-        try {
-            ChatConfigDto config = systemSettingService.getSystemSetting(
-                    SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (config != null && config.getApiTimeout() != null) {
-                apiTimeout = config.getApiTimeout();
-            }
-        } catch (Exception e) {
-            log.warn("获取对话配置失败，使用默认超时时间", e);
-        }
-
         // 1. 获取模型提供商
         ModelProvider modelProvider = modelProviderService
                 .getOne(Wrappers.<ModelProvider>lambdaQuery()
@@ -83,9 +69,9 @@ public class ChatClientManager {
         // 2. 根据模型提供商类型创建 ChatModel
         ModelProviderType modelProviderType = ModelProviderType.valueOf(modelProvider.getProviderType());
         ChatModel chatModel = switch (modelProviderType) {
-            case OPENAI -> createOpenAiChatModel(modelProvider, model, apiTimeout);
-            case ANTHROPIC -> createAnthropicChatModel(modelProvider, model, apiTimeout);
-            case OLLAMA -> createOllamaChatModel(modelProvider, model, apiTimeout);
+            case OPENAI -> createOpenAiChatModel(modelProvider, model);
+            case ANTHROPIC -> createAnthropicChatModel(modelProvider, model);
+            case OLLAMA -> createOllamaChatModel(modelProvider, model);
         };
 
         // 3. 返回 ChatClient
@@ -99,7 +85,7 @@ public class ChatClientManager {
         return builder.build();
     }
 
-    private ChatModel createOpenAiChatModel(ModelProvider modelProvider, String model, int apiTimeout) {
+    private ChatModel createOpenAiChatModel(ModelProvider modelProvider, String model) {
         return OpenAiChatModel.builder()
                 .openAiApi(OpenAiApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
@@ -115,7 +101,7 @@ public class ChatClientManager {
                 .build();
     }
 
-    private ChatModel createOllamaChatModel(ModelProvider modelProvider, String model, int apiTimeout) {
+    private ChatModel createOllamaChatModel(ModelProvider modelProvider, String model) {
         return OllamaChatModel.builder()
                 .ollamaApi(OllamaApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
@@ -128,7 +114,7 @@ public class ChatClientManager {
                 .build();
     }
 
-    private ChatModel createAnthropicChatModel(ModelProvider modelProvider, String model, int apiTimeout) {
+    private ChatModel createAnthropicChatModel(ModelProvider modelProvider, String model) {
         return AnthropicChatModel.builder()
                 .anthropicApi(AnthropicApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
