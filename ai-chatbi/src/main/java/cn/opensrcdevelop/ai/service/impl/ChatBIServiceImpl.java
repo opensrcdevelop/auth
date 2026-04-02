@@ -9,6 +9,7 @@ import cn.opensrcdevelop.ai.component.HeartbeatManager;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.constants.RedisTopicConstants;
+import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -21,6 +22,7 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
@@ -33,16 +35,6 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,6 +44,15 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @Service
@@ -71,6 +72,7 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
     private final HeartbeatManager heartbeatManager;
     private final QueryResultTempFileManager queryResultTempFileManager;
+    private final SystemSettingService systemSettingService;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
@@ -252,6 +254,14 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
         List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
 
+        // 2.3 获取对话配置
+        ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
+                SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+        if (chatConfig == null) {
+            chatConfig = new ChatConfigDto();
+        }
+        int maxSteps = chatConfig.getMaxSteps() != null ? chatConfig.getMaxSteps() : 30;
+
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
         Map<String, Object> answer = thinkAnswerAgent.thinkAnswer(
@@ -260,7 +270,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatClient,
                 finalQuestion,
                 sampleSqls,
-                30,
+                maxSteps,
                 Boolean.TRUE.equals(requestDto.getShowThinking()));
 
         if (interruptFlag.get()) {

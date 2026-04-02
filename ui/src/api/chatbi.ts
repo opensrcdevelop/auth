@@ -401,3 +401,27 @@ export function updateEmbeddingConfig(data: any) {
     data,
   });
 }
+
+/**
+ * 获取对话配置
+ *
+ * @returns 对话配置
+ */
+export function getChatConfig() {
+  return apiRequest.get({
+    url: "/chatbi/chat/config",
+  });
+}
+
+/**
+ * 更新对话配置
+ *
+ * @param data 对话配置
+ * @returns 响应结果
+ */
+export function updateChatConfig(data: any) {
+  return apiRequest.put({
+    url: "/chatbi/chat/config",
+    data,
+  });
+}

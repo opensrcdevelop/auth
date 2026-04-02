@@ -4,6 +4,8 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -11,9 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(GenerateSqlTool.TOOL_NAME)
 @RequiredArgsConstructor

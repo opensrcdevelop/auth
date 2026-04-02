@@ -8,6 +8,9 @@ import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +21,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor

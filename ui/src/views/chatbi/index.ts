@@ -1,6 +1,7 @@
 import router from "@/router";
 import {defineComponent, onMounted, ref} from "vue";
 import Chat from "./components/chat/Chat.vue";
+import ChatSettings from "./components/settings/ChatSettings.vue";
 import DataSourceManagement from "./components/datasource/DataSourceManagement.vue";
 import {getQueryString} from "@/util/tool";
 import ChatHistory from "./components/chat/ChatHistory.vue";
@@ -9,6 +10,7 @@ import SampleSqlManagement from "./components/sampleSql/SampleSqlManagement.vue"
 
 const activeTab = ref("chat");
 const chatRef = ref();
+const chatSettingsRef = ref();
 const chatHistoryRef = ref();
 const dataSourceManagementRef = ref();
 const llmManagementRef = ref();
@@ -37,6 +39,9 @@ const handleTabInit = (tabKey: string) => {
       chatId.value = "";
       chatRef.value?.init();
       chatHistoryRef.value?.init();
+      break;
+    case "chat_settings":
+      chatSettingsRef.value?.loadData?.() || chatSettingsRef.value?.loadConfig?.() || chatSettingsRef.value?.init?.();
       break;
     case "data_source_management":
       dataSourceManagementRef.value?.init();
@@ -86,6 +91,7 @@ const handleUpdateDataSourceId = (id: string) => {
 export default defineComponent({
   components: {
     Chat,
+    ChatSettings,
     ChatHistory,
     DataSourceManagement,
     LLMManagement,
@@ -101,6 +107,7 @@ export default defineComponent({
       activeTab,
       handleTabChange,
       chatRef,
+      chatSettingsRef,
       chatHistoryRef,
       dataSourceManagementRef,
       chatId,

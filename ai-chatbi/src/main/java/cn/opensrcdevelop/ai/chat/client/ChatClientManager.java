@@ -6,10 +6,13 @@ import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -28,16 +31,17 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ChatClientManager {
+
     private final RetryTemplate retryTemplate;
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
     private final LanguageConstraintAdvisor languageConstraintAdvisor;
     private final TokenCountAdvisor tokenCountAdvisor;
+    private final SystemSettingService systemSettingService;
 
     /**
      * 获取 ChatClient

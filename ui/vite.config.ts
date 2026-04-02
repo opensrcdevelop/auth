@@ -60,6 +60,12 @@ export default ({ mode }) => {
     plugins: [vue(), httpRedirectPlugin()],
     build: {
       outDir: "../auth-server/src/main/resources/ui",
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, "index.html"),
+          chatbiChat: path.resolve(__dirname, "chatbi-chat.html"),
+        },
+      },
     },
     resolve: {
       alias: {

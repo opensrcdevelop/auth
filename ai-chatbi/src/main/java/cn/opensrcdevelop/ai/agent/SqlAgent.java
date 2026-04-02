@@ -7,18 +7,17 @@ import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor

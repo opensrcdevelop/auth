@@ -5,7 +5,6 @@ import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 import java.util.Map;
 

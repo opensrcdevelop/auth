@@ -35,6 +35,9 @@ export default indexTs;
           />
         </div>
       </a-tab-pane>
+      <a-tab-pane key="chat_settings" title="对话管理">
+        <ChatSettings ref="chatSettingsRef" />
+      </a-tab-pane>
       <a-tab-pane key="data_source_management" title="数据源管理">
         <DataSourceManagement ref="dataSourceManagementRef" />
       </a-tab-pane>
