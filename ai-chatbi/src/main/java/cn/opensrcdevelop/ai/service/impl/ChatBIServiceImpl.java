@@ -18,9 +18,11 @@ import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
@@ -35,24 +37,23 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -76,6 +77,9 @@ public class ChatBIServiceImpl implements ChatBIService {
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
+
+    @Value("${ai.chat.default-max-think-steps:30}")
+    private Integer defaultMaxThinkSteps;
 
     /**
      * ChatBI 用户对话
@@ -228,6 +232,37 @@ public class ChatBIServiceImpl implements ChatBIService {
         RedisUtil.publishMessage(RedisTopicConstants.getTopic(requestDto.getChatId()), requestDto);
     }
 
+    /**
+     * 获取对话配置
+     *
+     * @return 对话配置
+     */
+    @Override
+    public ChatConfigDto getChatConfig() {
+        return systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+    }
+
+    /**
+     * 更新对话配置
+     *
+     * @param configDto 对话配置
+     */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI, sysOperation = SysOperationType.UPDATE, success = "更新了 ChatBI 对话配置", fail = "更新 ChatBI 对话配置失败")
+    @Override
+    public void updateChatConfig(ChatConfigDto configDto) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        ChatConfigDto rawChatConfigDto = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+
+        compareObjBuilder.before(rawChatConfigDto);
+        compareObjBuilder.after(configDto);
+
+        systemSettingService.saveSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, configDto);
+
+        AuditContext.addCompareObj(compareObjBuilder.build());
+    }
+
     @SuppressWarnings("all")
     private Tuple2<String, String> processStreamChatBIRequest(SseEmitter emitter,
             AtomicBoolean interruptFlag,
@@ -255,12 +290,16 @@ public class ChatBIServiceImpl implements ChatBIService {
         List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
 
         // 2.3 获取对话配置
-        ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
-                SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-        if (chatConfig == null) {
-            chatConfig = new ChatConfigDto();
+        int maxSteps = defaultMaxThinkSteps;
+        try {
+            ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
+                    SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+            if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0) {
+                maxSteps = chatConfig.getMaxThinkSteps();
+            }
+        } catch (Exception e) {
+            log.error("获取 ChatBI 对话配置失败", e);
         }
-        int maxSteps = chatConfig.getMaxSteps() != null ? chatConfig.getMaxSteps() : 30;
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -356,7 +395,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
 
             if ("markdown".equals(reportType)) {
-                SseUtil.sendChatBIMd(emitter, reportText);
+                SseUtil.sendChatBIMdReport(emitter, reportText);
             }
 
             if ("html".equals(reportType)) {

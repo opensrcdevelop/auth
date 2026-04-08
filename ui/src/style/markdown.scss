@@ -14,7 +14,7 @@
     position: relative;
     margin: 4px 0;
     border-radius: 8px;
-    background: #fff;
+    background: #ffffff;
   }
 
   /** 代码块头部 */
@@ -205,6 +205,14 @@ blockquote {
 
   & > :last-child {
     margin-bottom: 0;
+  }
+
+  /** 水平分隔线 (hr / ---) */
+  hr.md-hr {
+    border: none;
+    height: 1px;
+    background: #dfe2e5;
+    margin: 24px 0;
   }
 }
 

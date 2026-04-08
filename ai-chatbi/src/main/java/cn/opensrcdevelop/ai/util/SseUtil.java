@@ -5,16 +5,19 @@ import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Random;
 
 public class SseUtil {
 
@@ -274,6 +277,26 @@ public class SseUtil {
     }
 
     /**
+     * 发送 ChatBI Markdown 报告
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param mdContent
+     *            Markdown 报告内容
+     */
+    public static void sendChatBIMdReport(SseEmitter emitter, String mdContent) {
+        Try.run(() -> emitter.send(SseEmitter
+                .event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .content(mdContent)
+                        .type(ChatContentType.MD_REPORT)
+                        .build(), MediaType.APPLICATION_JSON)));
+        chatMessageHistoryService.createChatMessageHistory(mdContent, ChatContentType.MD_REPORT);
+    }
+
+    /**
      * 发送 ChatBI 思考消息
      *
      * @param emitter
@@ -320,5 +343,23 @@ public class SseUtil {
      */
     public static void sendHeartbeat(SseEmitter emitter) {
         Try.run(() -> emitter.send(SseEmitter.event().data("")));
+    }
+
+    /**
+     * 发送 ChatBI 工具调用消息
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param toolCallMsg
+     *            思考消息
+     */
+    @SuppressWarnings("java:S3457")
+    public static void sendChatBIToolCall(SseEmitter emitter, String toolCallMsg) {
+        String sendMsg = "\n%s - %s\n".formatted(
+                LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                toolCallMsg);
+
+        sendChatBIThinking(emitter, sendMsg, true);
     }
 }

@@ -3,6 +3,7 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.chat.tool.impl.AnalyzeDataTool;
 import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.chat.tool.impl.ExecutePythonTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
@@ -16,15 +17,6 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.ConstraintViolation;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +34,16 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -67,11 +69,10 @@ public class ThinkAnswerAgent {
      *            示例 SQL（问题-SQL 对）
      * @param maxSteps
      *            最大执行步数
-     * @param apiTimeout
-     *            API 超时时间（秒）
      * @param showThinking
      *            是否显示思考过程
      */
+    @SuppressWarnings("java:S3776")
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
@@ -298,11 +299,7 @@ public class ThinkAnswerAgent {
         boolean isAskUser = false;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
-            String startThinkMsg = "\n%s - 开始执行工具【%s】\n".formatted(
-                    LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName);
-            SseUtil.sendChatBIThinking(emitter, startThinkMsg, true);
+            SseUtil.sendChatBIToolCall(emitter, "开始执行工具【%s】".formatted(toolName));
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -317,7 +314,7 @@ public class ThinkAnswerAgent {
                         executeMethodParamTypes[0]);
 
                 CommonUtil.validateBean(request);
-                if (AskUserTool.TOOL_NAME.equals(toolName)) {
+                if (AskUserTool.TOOL_NAME.equals(toolName) || AnalyzeDataTool.TOOL_NAME.equals(toolName)) {
                     executeMethodResult = executeMethod.invoke(tool, request, emitter);
                 } else {
                     executeMethodResult = executeMethod.invoke(tool, request);
@@ -333,12 +330,7 @@ public class ThinkAnswerAgent {
                     "tool_name", toolName,
                     "execute_time", executeTime,
                     "result", result);
-
-            String endThinkingMsg = "%s - 工具【%s】执行成功\n".formatted(
-                    LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName);
-            SseUtil.sendChatBIThinking(emitter, endThinkingMsg, true);
+            SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行成功".formatted(toolName));
         } catch (Exception ex) {
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
@@ -361,12 +353,7 @@ public class ThinkAnswerAgent {
                     "tool_name", toolName,
                     "execute_time", executeTime,
                     "result", errorMsg);
-
-            String errorThinkingMsg = "%s - 工具【%s】执行失败\n".formatted(
-                    LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
-                    toolName);
-            SseUtil.sendChatBIThinking(emitter, errorThinkingMsg, true);
+            SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行失败".formatted(toolName));
         }
         setToolCallResult(toolCallResult);
         return isAskUser;

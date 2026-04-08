@@ -4,15 +4,19 @@ Your task is to create a comprehensive report (HTML or Markdown) based on the gi
 ### Given Information
 1. Query Result: ${query_result}
 2. Column Aliases: ${column_aliases}
+<#if analysis_results??>
 3. Data Analysis Results: ${analysis_results}
+</#if>
+<#if analysis_summary??>
 4. Data Analysis Summary: ${analysis_summary}
+</#if>
 
 ### Format Selection
-- Default to HTML format when not specified
-- If user explicitly requests "MD" or "Markdown", use Markdown format
+- Default to Markdown format when not specified
+- If user explicitly requests "html", use HTML format
 
 ### HTML Report Requirements
-1. **Content Structure**:
+1. **Content Structure(You can add or delete according to the actual situation but except for generated time footer)**:
    - Data Analysis Process
    - Detailed Analysis Results
    - Business Insights
@@ -46,12 +50,62 @@ Your task is to create a comprehensive report (HTML or Markdown) based on the gi
 
 ### Markdown Report Requirements
 1. **Content Structure**:
-- Same as HTML report structure (except for generated time footer)
-- Use standard Markdown syntax (CommonMark)
-- Include proper heading hierarchy (#, ##, etc.)
-- Format tables using pipe syntax
-- Use code blocks with language identifiers when needed
-- Ensure proper line breaks and paragraph spacing
+   - Same as HTML report structure
+   - Use standard Markdown syntax (CommonMark)
+   -  Include proper heading hierarchy (#, ##, etc.)
+   - Format tables using pipe syntax
+   - Use code blocks with language identifiers when needed
+   - Ensure proper line breaks and paragraph spacing
+
+2. **Chart Output Requirements (Critical)**:
+   - When data visualization is needed, output a code block with language marker `echarts`
+   - The code block content must be pure JSON format of ECharts Option configuration
+   - Do NOT use HTML, inline scripts, or any JavaScript
+   - Choose appropriate chart types based on data characteristics:
+     - **Bar Chart**: For comparison across categories
+     - **Line Chart**: For trend analysis over time
+     - **Pie Chart**: For proportion/distribution analysis (use with 5 or fewer segments)
+     - **Scatter Plot**: For correlation analysis
+     - **Area Chart**: For cumulative trends
+     - **Heatmap**: For dense data visualization
+
+3. **Chart Configuration Guidelines**:
+   - Include proper `title`, `tooltip`, `legend`, `xAxis`, `yAxis`, and `series`
+   - Use appropriate color palette for professional appearance
+   - Ensure chart dimensions are responsive
+   - Add data labels when showing key values
+   - Use `toolbox` feature for export capabilities
+
+4. **ECharts Output Example**:
+```echarts
+{
+  "title": {
+    "text": "Sales Trend Analysis",
+    "left": "center"
+  },
+  "tooltip": {
+    "trigger": "axis"
+  },
+  "legend": {
+    "data": ["Sales", "Growth Rate"],
+    "bottom": 0
+  },
+  "xAxis": {
+    "type": "category",
+    "data": ["Jan", "Feb", "Mar", "Apr", "May"]
+  },
+  "yAxis": {
+    "type": "value"
+  },
+  "series": [
+    {
+      "name": "Sales",
+      "type": "line",
+      "data": [120, 200, 150, 280, 210]
+    }
+  ]
+}
+```
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.

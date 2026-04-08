@@ -7,6 +7,14 @@ import menuRoutes from "./menuRoutes";
 import pageRoutes from "./pageRoutes";
 
 export const routes: RouteRecordRaw[] = [
+  // 独立入口的 ChatBI 对话页面（不使用 layout，全屏布局）
+  {
+    path: "/chatbi/chat",
+    component: () => import("@/views/chatbi/chat/standalone.vue"),
+    meta: {
+      title: "对话问答",
+    },
+  },
   {
     path: "/",
     component: () => import("@/layout/index.vue"),

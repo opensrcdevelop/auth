@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,9 +16,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -26,7 +27,7 @@ public class QueryResultTempFileManager {
     @Value("${chatbi.query-result.threshold:100}")
     private int threshold;
 
-    @Value("${chatbi.query-result.directory:${java.io.tmpdir}/chatbi-query-results}")
+    @Value("${chatbi.query-result.directory}")
     private String directory;
 
     private final ObjectMapper objectMapper;

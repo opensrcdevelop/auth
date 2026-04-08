@@ -1,79 +1,111 @@
-<script lang="ts">
-import {defineComponent, onMounted, ref} from "vue";
+<script setup lang="ts">
+import {onMounted, reactive} from "vue";
 import {getChatConfig, updateChatConfig} from "@/api/chatbi";
-import {Message} from "@arco-design/web-vue";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
 
-const chatConfig = ref({
-  maxSteps: 30,
-  language: "简体中文",
-  llmApiRetryCount: 3,
+const chatConfigForm = reactive({
+  maxThinkSteps: undefined,
+  answerLanguage: undefined,
+  llmApiRetryCount: undefined,
 });
 
-const loading = ref(false);
-
-const loadChatConfig = async () => {
-  try {
-    const res = await getChatConfig();
-    if (res.data) {
-      chatConfig.value = {...chatConfig.value, ...res.data};
-    }
-  } catch (e) {
-    console.error("加载对话配置失败", e);
-  }
+const chatConfigFormRules = {
+  maxThinkSteps: [{ required: true, message: "最大思考步数未填写" }],
+  answerLanguage: [{ required: true, message: "回答语言未填写" }],
+  llmApiRetryCount: [{ required: true, message: "LLM API 重试次数未填写" }],
 };
 
-const handleSave = async () => {
-  loading.value = true;
-  try {
-    await updateChatConfig(chatConfig.value);
-    Message.success("保存成功");
-  } catch (e) {
-    Message.error("保存失败");
-  } finally {
-    loading.value = false;
-  }
+const loadChatConfig = () => {
+  getChatConfig()
+    .then((res: any) => {
+      handleApiSuccess(res, (data: any) => {
+        chatConfigForm.maxThinkSteps = data.maxThinkSteps;
+        chatConfigForm.answerLanguage = data.answerLanguage;
+        chatConfigForm.llmApiRetryCount = data.llmApiRetryCount;
+      });
+    })
+    .catch((err: any) => handleApiError(err, "获取 ChatBI 对话配置"));
 };
 
-export default defineComponent({
-  setup() {
-    onMounted(() => {
-      loadChatConfig();
-    });
+const handleSaveChatConfig = () => {
+  updateChatConfig(chatConfigForm)
+    .then((res: any) => {
+      handleApiSuccess(res, () => {
+        Notification.success("保存成功");
+      });
+    })
+    .catch((err: any) => handleApiError(err, "保存 ChatBI 对话配置"));
+};
 
-    return {
-      chatConfig,
-      loading,
-      handleSave,
-    };
-  },
+onMounted(() => {
+  loadChatConfig();
+});
+
+defineExpose({
+  loadChatConfig,
 });
 </script>
 
 <template>
   <div class="chat-settings">
-    <a-form :model="chatConfig" layout="vertical" :style="{width: '500px'}">
-      <a-form-item label="最大思考步数">
-        <a-input-number
-          v-model="chatConfig.maxSteps"
-          :min="1"
-          :max="100"
-          style="width: 100%"
-        />
-      </a-form-item>
-      <a-form-item label="回答语言">
-        <a-input v-model="chatConfig.language" style="width: 100%" placeholder="请输入回答语言，如：简体中文、English" />
-      </a-form-item>
-      <a-form-item label="LLM API 重试次数">
-        <a-input-number
-          v-model="chatConfig.llmApiRetryCount"
-          :min="0"
-          :max="10"
-          style="width: 100%"
-        />
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" :loading="loading" @click="handleSave">保存</a-button>
+    <div class="section-header">
+      <div class="title">对话配置</div>
+    </div>
+    <a-form
+      :model="chatConfigForm"
+      :rules="chatConfigFormRules"
+      layout="vertical"
+      @submit-success="handleSaveChatConfig"
+    >
+      <a-row :gutter="24">
+        <a-col :span="8">
+          <a-form-item label="最大思考步数" field="maxThinkSteps">
+            <a-input-number
+              placeholder="请输入最大思考步数"
+              v-model="chatConfigForm.maxThinkSteps"
+              :min="30"
+              :step="1"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="回答语言" field="answerLanguage">
+            <a-input
+              v-model="chatConfigForm.answerLanguage"
+              placeholder="请输入回答语言，如：简体中文、English"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label="LLM API 重试次数" field="llmApiRetryCount">
+            <a-input-number
+              placeholder="请输入 LLM API 重试次数"
+              v-model="chatConfigForm.llmApiRetryCount"
+              :min="3"
+            />
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <a-form-item hide-label>
+        <a-button type="primary" html-type="submit">保存</a-button>
       </a-form-item>
     </a-form>
   </div>
 </template>
+
+<style scoped lang="scss">
+.chat-settings {
+  padding: 16px;
+}
+
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-header .title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #1d2129;
+}
+</style>

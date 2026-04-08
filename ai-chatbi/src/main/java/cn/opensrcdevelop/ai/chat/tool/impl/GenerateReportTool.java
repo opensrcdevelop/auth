@@ -5,13 +5,13 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import jakarta.validation.constraints.NotBlank;
-import java.util.Map;
-import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component(GenerateReportTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -25,15 +25,6 @@ public class GenerateReportTool implements MethodTool {
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
-
-        // 1. 未分析数据时，先执行分析数据工具
-        if (Objects.isNull(chatContext.getAnalyzeDataResult())) {
-            response.setSuccess(false);
-            response.setError("Analysis data result is null, please run analyze_data tool first");
-            return response;
-        }
-
-        // 2. 生成分析报告
         chatContext.setQuestion(request.getQuestion());
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
                 chatContext.getChatClient(),

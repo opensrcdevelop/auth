@@ -3,6 +3,8 @@ package cn.opensrcdevelop.ai.chat.client;
 import cn.opensrcdevelop.ai.chat.advisor.LanguageConstraintAdvisor;
 import cn.opensrcdevelop.ai.chat.advisor.TokenCountAdvisor;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
+import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
+import cn.opensrcdevelop.ai.dto.ChatConfigDto;
 import cn.opensrcdevelop.ai.entity.ModelProvider;
 import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
@@ -10,7 +12,6 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,20 +29,26 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.Objects;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ChatClientManager {
 
-    private final RetryTemplate retryTemplate;
     private final ToolCallingManager toolCallingManager;
     private final ModelProviderService modelProviderService;
     private final LanguageConstraintAdvisor languageConstraintAdvisor;
     private final TokenCountAdvisor tokenCountAdvisor;
     private final SystemSettingService systemSettingService;
+
+    @Value("${ai.chat.default-llm-api-retry-count:3}")
+    private Integer defaultLlmApiRetryCount;
 
     /**
      * 获取 ChatClient
@@ -95,7 +102,7 @@ public class ChatClientManager {
                         .maxTokens(modelProvider.getMaxTokens())
                         .build())
                 .toolCallingManager(toolCallingManager)
-                .retryTemplate(retryTemplate)
+                .retryTemplate(getRetryTemplate())
                 .build();
     }
 
@@ -124,7 +131,25 @@ public class ChatClientManager {
                         .maxTokens(modelProvider.getMaxTokens())
                         .build())
                 .toolCallingManager(toolCallingManager)
-                .retryTemplate(retryTemplate)
+                .retryTemplate(getRetryTemplate())
+                .build();
+    }
+
+    private RetryTemplate getRetryTemplate() {
+        Integer retryCount = defaultLlmApiRetryCount;
+
+        try {
+            ChatConfigDto chatConfig = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+            if (Objects.nonNull(chatConfig) && Objects.nonNull(retryCount) && retryCount > 0) {
+                retryCount = chatConfig.getLlmApiRetryCount();
+            }
+        } catch (Exception e) {
+            log.error("获取 ChatBI 对话配置失败", e);
+        }
+
+        return RetryTemplate.builder()
+                .maxAttempts(retryCount)
+                .exponentialBackoff(Duration.ofSeconds(1), 2, Duration.ofMinutes(1))
                 .build();
     }
 }

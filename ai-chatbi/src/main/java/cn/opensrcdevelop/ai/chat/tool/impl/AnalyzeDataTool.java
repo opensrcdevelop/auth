@@ -4,18 +4,12 @@ import cn.opensrcdevelop.ai.agent.AnalyzeAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import jakarta.validation.constraints.NotBlank;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +18,15 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component(AnalyzeDataTool.TOOL_NAME)
@@ -40,7 +43,7 @@ public class AnalyzeDataTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
     @SuppressWarnings({"all"})
-    public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
+    public Response execute(@ToolParam(description = "The request to analyze data") Request request, SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
@@ -63,16 +66,21 @@ public class AnalyzeDataTool implements MethodTool {
             }
 
             // 3. 生成 Python 数据分析代码
+            SseUtil.sendChatBIToolCall(emitter, "开始生成用于分析数据的 Python 代码");
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
                     ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(),
                     request.analyzeDataInstruction);
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
+                SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码失败");
+
                 response.setSuccess(false);
                 response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
                 return response;
             }
+            SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码成功");
 
             // 4. 执行 Python 数据分析代码
+            SseUtil.sendChatBIToolCall(emitter, "开始执行用于分析数据的 Python 代码");
             Tuple3<Boolean, String, String> executeResult = executePythonCodeWithFix(
                     ChatContextHolder.getChatContext().getChatClient(),
                     tempDataFile.getAbsolutePath(),
@@ -81,21 +89,28 @@ public class AnalyzeDataTool implements MethodTool {
                     3,
                     request.fixGeneratePythonCodeInstruction);
             if (!Boolean.TRUE.equals(executeResult._1)) {
+                SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码失败");
+
                 response.setSuccess(false);
                 response.setError("无法执行 Python 代码，原因：%s".formatted(executeResult._2));
                 return response;
             }
+            SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码成功");
 
             // 5. 处理 Python 数据分析代码执行结果
+            SseUtil.sendChatBIToolCall(emitter, "开始分析 Python 代码执行结果和数据");
             Map<String, Object> analyzeResult = analyzeAgent.analyzeData(
                     ChatContextHolder.getChatContext().getChatClient(),
                     executeResult._2,
                     request.analyzeDataInstruction);
             if (!Boolean.TRUE.equals(analyzeResult.get("success"))) {
+                SseUtil.sendChatBIToolCall(emitter, "分析 Python 代码执行结果和数据失败");
+
                 response.setSuccess(false);
                 response.setError("无法分析数据，原因：%s".formatted(analyzeResult.get("error")));
                 return response;
             }
+            SseUtil.sendChatBIToolCall(emitter, "分析 Python 代码执行结果和数据成功");
 
             String summary = (String) analyzeResult.get("summary");
 

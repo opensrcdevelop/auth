@@ -41,7 +41,7 @@ const handleTabInit = (tabKey: string) => {
       chatHistoryRef.value?.init();
       break;
     case "chat_settings":
-      chatSettingsRef.value?.loadData?.() || chatSettingsRef.value?.loadConfig?.() || chatSettingsRef.value?.init?.();
+      chatSettingsRef.value?.loadChatConfig();
       break;
     case "data_source_management":
       dataSourceManagementRef.value?.init();
@@ -117,7 +117,7 @@ export default defineComponent({
       dataSourceId,
       handleUpdateDataSourceId,
       llmManagementRef,
-      sampleSqlManagementRef
+      sampleSqlManagementRef,
     };
   },
 });

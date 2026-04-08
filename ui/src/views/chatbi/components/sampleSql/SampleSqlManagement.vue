@@ -91,23 +91,25 @@
         </a-select>
         <a-input-search
           v-model="searchForm.question"
-          :placeholder="searchForm.useSimilarity ? '输入问题进行相似检索' : '输入问题进行过滤'"
+          :placeholder="
+            searchForm.useSimilarity
+              ? '输入问题进行相似检索'
+              : '输入问题进行过滤'
+          "
           allow-clear
           :style="{ width: '260px' }"
           @search="handleSearch"
           @press-enter="handleSearch"
         />
-        <a-checkbox v-model="searchForm.useSimilarity">
-          相似检索
-        </a-checkbox>
+        <a-checkbox v-model="searchForm.useSimilarity"> 相似检索 </a-checkbox>
       </div>
       <div class="actions">
         <a-space>
-          <a-button type="primary" @click="showAddModal = true">添加示例</a-button>
+          <a-button type="primary" @click="showAddModal = true"
+            >添加示例</a-button
+          >
           <a-dropdown>
-            <a-button>
-              更多
-            </a-button>
+            <a-button> 更多 </a-button>
             <template #content>
               <a-doption @click="syncFromLikes">从 Likes 同步</a-doption>
               <a-doption @click="rebuild">重建索引</a-doption>
@@ -133,7 +135,11 @@
             :title="'问题内容'"
             trigger="click"
             placement="left"
-            :content-style="{ maxWidth: '600px', maxHeight: '400px', overflow: 'auto' }"
+            :content-style="{
+              maxWidth: '600px',
+              maxHeight: '400px',
+              overflow: 'auto',
+            }"
           >
             <template #content>
               <div class="question-content">
@@ -157,7 +163,11 @@
             :title="'SQL 内容'"
             trigger="click"
             placement="left"
-            :content-style="{ maxWidth: '600px', maxHeight: '400px', overflow: 'auto' }"
+            :content-style="{
+              maxWidth: '600px',
+              maxHeight: '400px',
+              overflow: 'auto',
+            }"
           >
             <template #content>
               <div class="sql-content">
@@ -177,17 +187,26 @@
           </a-popover>
         </template>
         <template #score="{ record }">
-          {{ record.score ? record.score.toFixed(2) : '-' }}
+          {{ record.score ? record.score.toFixed(2) : "-" }}
         </template>
         <template #optional="{ record }">
-          <a-button type="text" status="danger" size="small" @click="openDeleteModal(record.id)">
+          <a-button
+            type="text"
+            status="danger"
+            size="small"
+            @click="openDeleteModal(record.id)"
+          >
             删除
           </a-button>
         </template>
       </a-table>
     </div>
 
-    <AddSampleSqlModal v-model:visible="showAddModal" :data-source-list="dataSourceList" @success="loadData" />
+    <AddSampleSqlModal
+      v-model:visible="showAddModal"
+      :data-source-list="dataSourceList"
+      @success="loadData"
+    />
   </div>
 </template>
 
@@ -209,8 +228,18 @@ import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {taskEmitter} from "@/hooks/taskEmitter";
 
 const columns = [
-  { title: "数据源", dataIndex: "dataSourceId", width: 150, slotName: "dataSource" },
-  { title: "问题", dataIndex: "question", ellipsis: true, slotName: "question" },
+  {
+    title: "数据源",
+    dataIndex: "dataSourceId",
+    width: 150,
+    slotName: "dataSource",
+  },
+  {
+    title: "问题",
+    dataIndex: "question",
+    ellipsis: true,
+    slotName: "question",
+  },
   { title: "SQL", dataIndex: "sql", ellipsis: true, slotName: "sql" },
   { title: "相似度", dataIndex: "score", width: 100, slotName: "score" },
   { title: "创建时间", dataIndex: "createdAt", width: 200 },
@@ -321,12 +350,14 @@ const saveConfig = async () => {
   try {
     const res = await updateEmbeddingConfig(embeddingConfigform);
     if (res?.data) {
-      Notification.info("配置已保存，索引重建任务已提交，请前往任务中心查看进度")
+      Notification.info(
+        "配置已保存，索引重建任务已提交，请前往任务中心查看进度",
+      );
     } else {
       Notification.success("保存成功");
     }
   } catch (e) {
-    handleApiError(e, "保存示例 SQL 嵌入配置")
+    handleApiError(e, "保存示例 SQL 嵌入配置");
   }
 };
 
@@ -401,7 +432,10 @@ const copySql = async (content: string) => {
 
 // 监听任务完成事件，刷新列表
 const handleTaskUpdate = (message: any) => {
-  if (message.taskType === "SAMPLE_SQL_SYNC" || message.taskType === "SAMPLE_SQL_REBUILD") {
+  if (
+    message.taskType === "SAMPLE_SQL_SYNC" ||
+    message.taskType === "SAMPLE_SQL_REBUILD"
+  ) {
     if (message.status === "SUCCESS" || message.status === "FAILED") {
       loadData();
     }
@@ -462,16 +496,19 @@ defineExpose({
 .table-container {
   margin-top: 12px;
 }
-.sql-cell, .text-cell {
+.sql-cell,
+.text-cell {
   max-width: 300px;
 }
-.sql-text, .text {
+.sql-text,
+.text {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sql-content pre, .question-content pre {
+.sql-content pre,
+.question-content pre {
   white-space: pre-wrap;
   word-wrap: break-word;
   margin: 0;
