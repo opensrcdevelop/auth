@@ -4,35 +4,33 @@
       <div class="operation-container">
         <a-space>
           <a-dropdown @select="handleSelectFormat">
-            <a-button type="text" size="mini" :disabled="loading">
+            <a-button type="text" size="mini">
               <template #icon>
                 <icon-download />
               </template>
               <template #default>下载</template>
             </a-button>
             <template #content>
-              <a-doption value="pdf">PDF</a-doption>
+              <a-doption value="pdf" :disabled="pdfDownloading">PDF</a-doption>
               <a-doption value="md">Markdown</a-doption>
             </template>
           </a-dropdown>
         </a-space>
       </div>
       <div ref="reportContainerRef" class="content markdown-body">
-        <a-skeleton v-if="loading" animation>
-          <a-skeleton-line :rows="16" />
-        </a-skeleton>
-        <div v-show="!loading" v-html="renderMarkdown(message.content)"></div>
+        <div v-html="renderMarkdown(message.content)" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {nextTick, ref} from "vue";
+import {ref} from "vue";
 import {useMarkdown} from "@/hooks/useMarkdown";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import * as echarts from "echarts";
+import {Notification} from "@arco-design/web-vue";
 
 const props = withDefaults(
   defineProps<{
@@ -43,20 +41,20 @@ const props = withDefaults(
   }
 );
 
-const loading = ref(true);
 const reportContainerRef = ref<HTMLElement | null>(null);
 const {renderMarkdown} = useMarkdown();
 
-nextTick(() => {
-  loading.value = false;
-});
-
+const pdfDownloading = ref(false);
 const downloadAsPdf = async () => {
   const container = reportContainerRef.value;
   if (!container) return;
 
+  const content = props.message?.content || "";
+  const h1Title = extractH1Title(content);
+
+  pdfDownloading.value = true;
   try {
-    // 创建临时容器用于 PDF 生成（完全隐藏）
+    // 创建临时容器用于 PDF 生成
     const tempContainer = container.cloneNode(true) as HTMLElement;
     tempContainer.style.position = "absolute";
     tempContainer.style.left = "-99999px";
@@ -65,30 +63,15 @@ const downloadAsPdf = async () => {
     tempContainer.style.maxHeight = "none";
     tempContainer.style.overflow = "visible";
     tempContainer.style.background = "#ffffff";
-    tempContainer.style.visibility = "hidden";
     tempContainer.style.padding = "20px";
     tempContainer.style.boxSizing = "border-box";
-
-    // 移除不需要的元素
-    const skeleton = tempContainer.querySelector(".arco-skeleton");
-    if (skeleton) skeleton.remove();
-
-    // 为图表容器添加样式
-    const chartContainers = tempContainer.querySelectorAll(".echarts-chart");
-    chartContainers.forEach((el) => {
-      const chartEl = el as HTMLElement;
-      chartEl.style.minHeight = "300px";
-      chartEl.style.margin = "20px 0";
-      chartEl.style.borderRadius = "8px";
-      chartEl.style.border = "1px solid #dfe2e5";
-    });
 
     // 为 hr 分隔线添加样式
     const hrElements = tempContainer.querySelectorAll("hr");
     hrElements.forEach((el) => {
       const hrEl = el as HTMLElement;
       hrEl.style.border = "none";
-      hrEl.style.height = "2px";
+      hrEl.style.height = "3px";
       hrEl.style.backgroundColor = "#dfe2e5";
       hrEl.style.margin = "22px 0";
     });
@@ -104,9 +87,6 @@ const downloadAsPdf = async () => {
     // 等待 DOM 更新
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // 强制显示以便截图
-    tempContainer.style.visibility = "visible";
-
     // 初始化所有图表
     const chartElements = tempContainer.querySelectorAll(".echarts-chart");
 
@@ -117,13 +97,13 @@ const downloadAsPdf = async () => {
       if (!chartConfig) continue;
 
       const option = JSON.parse(decodeURIComponent(chartConfig));
-      const chart = echarts.init(chartEl);
+      let chart = echarts.getInstanceByDom(chartEl);
+      if (!chart) {
+        chart = echarts.init(chartEl);
+      }
       chart.setOption(option);
 
-      // 等待渲染
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // 转换为图片
+      // getDataURL 会自动等待渲染完成
       const imgUrl = chart.getDataURL({
         type: "png",
         pixelRatio: 2,
@@ -138,11 +118,7 @@ const downloadAsPdf = async () => {
 
       chartEl.innerHTML = "";
       chartEl.appendChild(img);
-      chart.dispose();
     }
-
-    // 等待图片渲染
-    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const scale = 2;
 
@@ -162,7 +138,6 @@ const downloadAsPdf = async () => {
 
     // A4 宽度（points）
     const pdfPageWidth = 595;
-    const pdfPageHeight = 842;
 
     // 计算缩放后的高度（保持比例，使用 A4 宽度）
     const scaleToWidth = pdfPageWidth / canvas.width;
@@ -177,10 +152,26 @@ const downloadAsPdf = async () => {
 
     pdf.addImage(imgData, "JPEG", 0, 0, pdfPageWidth, pdfHeight);
 
-    pdf.save(`report_${Date.now()}.pdf`);
+    pdf.save(h1Title ? `${h1Title}.pdf` : `report_${Date.now()}.pdf`);
   } catch (error) {
+    Notification.error("PDF 生成失败，请尝试刷新页面或稍后再试。")
     console.error("PDF 生成失败:", error);
+  } finally {
+    pdfDownloading.value = false;
   }
+};
+
+const extractH1Title = (content: string): string | null => {
+  // 匹配以 # 开头的 H1 标题
+  const match = content.match(/^#\s+(.+)$/m);
+  if (match && match[1]) {
+    // 清理标题：移除特殊字符，只保留有效文件名字符
+    return match[1]
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, "_")
+      .substring(0, 50);
+  }
+  return null;
 };
 
 const downloadAsMarkdown = () => {
@@ -189,7 +180,8 @@ const downloadAsMarkdown = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `report_${Date.now()}.md`;
+  const h1Title = extractH1Title(content);
+  a.download = h1Title ? `${h1Title}.md` : `report_${Date.now()}.md`;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
@@ -227,50 +219,9 @@ const handleSelectFormat = (format: string) => {
     overflow-y: auto;
 
     :deep(.markdown-body) {
-      background: #ffffff;
+      background-color: #fff;
       color: #24292e;
     }
-
-    :deep(.echarts-chart) {
-      width: 100%;
-      min-height: 300px;
-      max-height: 500px;
-      margin: 16px 0;
-      border-radius: 8px;
-      background: #fff;
-      border: 1px solid #dfe2e5;
-    }
-
-    :deep(.md-hr) {
-      border: none;
-      height: 2px;
-      background: #dfe2e5;
-      margin: 22px 0;
-    }
-
-    /* WebKit 浏览器滚动条样式 */
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-      border-radius: 3px;
-    }
-
-    /* 滚动条滑块 */
-    &::-webkit-scrollbar-thumb {
-      background: rgba(144, 147, 153, 0.3);
-      border-radius: 3px;
-
-      &:hover {
-        background: rgba(144, 147, 153, 0.5);
-      }
-    }
-
-    /* Firefox 滚动条样式 */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(144, 147, 153, 0.3) transparent;
   }
 }
 </style>

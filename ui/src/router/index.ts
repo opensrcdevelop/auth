@@ -7,14 +7,6 @@ import menuRoutes from "./menuRoutes";
 import pageRoutes from "./pageRoutes";
 
 export const routes: RouteRecordRaw[] = [
-  // 独立入口的 ChatBI 对话页面（不使用 layout，全屏布局）
-  {
-    path: "/chatbi/chat",
-    component: () => import("@/views/chatbi/chat/standalone.vue"),
-    meta: {
-      title: "对话问答",
-    },
-  },
   {
     path: "/",
     component: () => import("@/layout/index.vue"),
@@ -47,6 +39,13 @@ export const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: "/chatbi/chat",
+    component: () => import("@/views/chatbi/chat/index.vue"),
+    meta: {
+      title: "对话问答",
+    },
+  },
+  {
     path: "/403",
     component: () => import("@/views/403/index.vue"),
   },
@@ -69,12 +68,6 @@ const router = createRouter({
  * 前置路由拦截
  */
 router.beforeEach((to, from, next) => {
-  // 独立入口 chatbi-chat.html 只能访问 /chatbi/chat 页面
-  if (window.location.pathname.includes("chatbi-chat.html") && to.path !== "/chatbi/chat") {
-    router.push("/chatbi/chat");
-    return;
-  }
-
   const visible = to.meta.visible as Function;
   if (visible && !visible()) {
     router.push("/404");

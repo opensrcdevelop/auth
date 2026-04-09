@@ -5,6 +5,7 @@
     "allowSyntheticDefaultImports": true,
     "module": "ESNext",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "types": ["node","vite/client"],
     "baseUrl": "./",
     "paths": {

@@ -4,10 +4,7 @@
       <div class="empty-container" v-if="!messages.length">
         {{ greetingText }}
       </div>
-      <ChatMessage
-        :messages="messages"
-        @send-message="sendMessage"
-      />
+      <ChatMessage :messages="messages" @send-message="sendMessage" />
     </div>
     <!-- 用户回答弹窗 -->
     <AskUserDialog
@@ -51,7 +48,6 @@
               allow-search
               :bordered="false"
               v-model="selectedModel"
-              style="width: 260px;"
             >
               <a-optgroup
                 v-for="item in modelProviderList"
@@ -62,15 +58,20 @@
                   v-for="(model, index) in item.optionalModels"
                   :key="index"
                   :value="`${item.id}:${model.name}`"
-                  >{{ model.name }}</a-option
+                >
+                  {{ model.name }}</a-option
                 >
               </a-optgroup>
             </a-select>
           </a-space>
         </div>
-        <div>
+        <div style="display: flex; align-items: center;">
           <a-tooltip content="显示思考过程">
-            <a-switch v-model="showThinking" size="small" style="margin-right: 12px;" />
+            <a-switch
+              v-model="showThinking"
+              size="small"
+              style="margin-right: 12px"
+            />
           </a-tooltip>
           <a-button
             type="primary"
@@ -116,11 +117,13 @@ const props = withDefaults(
   defineProps<{
     chatId: string;
     dataSourceId: string;
+    height?: string;
   }>(),
   {
     chatId: undefined,
     dataSourceId: undefined,
-  }
+    height: "100%",
+  },
 );
 
 const emits = defineEmits<{
@@ -128,22 +131,22 @@ const emits = defineEmits<{
 }>();
 
 const { abort, fetchStream } = useEventSource();
-const messageContainer = ref(null);
-const messages = reactive([]);
+const messageContainer = ref(null as any);
+const messages = reactive([] as any[]);
 const userInput = ref("");
 const loading = ref(false);
 const questionId = ref("");
 const askUserVisible = ref(false);
-const askUserQuestions = ref([]);
-const dataSourceList = reactive([]);
-const modelProviderList = reactive([]);
+const askUserQuestions = ref([] as any[]);
+const dataSourceList = reactive([] as any[]);
+const modelProviderList = reactive([] as any[]);
 const selectedDataSource = ref("");
 const selectedModel = ref("");
 const greetingText = ref("");
 const activeChatId = ref("");
 
 // 思考过程显示偏好
-const SHOW_THINKING_KEY = 'chatbi_show_thinking';
+const SHOW_THINKING_KEY = "chatbi_show_thinking";
 const showThinking = ref(true);
 
 const init = () => {
@@ -151,7 +154,7 @@ const init = () => {
   // 从 localStorage 读取思考过程显示偏好
   const stored = localStorage.getItem(SHOW_THINKING_KEY);
   if (stored !== null) {
-    showThinking.value = stored === 'true';
+    showThinking.value = stored === "true";
   }
   activeChatId.value = "";
   messages.length = 0;
@@ -204,14 +207,14 @@ watch(
       selectedDataSource.value = "";
       messages.length = 0;
     }
-  }
+  },
 );
 
 watch(
   () => props.dataSourceId,
   (newVal) => {
     selectedDataSource.value = newVal;
-  }
+  },
 );
 
 /**
@@ -299,8 +302,9 @@ const sendMessage = (input: string) => {
       loading.value = false;
       const loadingItem = messages.find(
         (item) =>
-          item.questionId === questionId.value && item.type === "LOADING"
-      );
+          (item as any).questionId === questionId.value &&
+          (item as any).type === "LOADING",
+      ) as any;
       if (loadingItem) {
         loadingItem.loading = false;
         loadingItem.error = true;
@@ -323,7 +327,7 @@ const sendMessage = (input: string) => {
  */
 const resendMessage = (qId: string) => {
   const userQuestion = messages.find(
-    (item) => item.questionId === qId && item.role === "USER"
+    (item) => item.questionId === qId && item.role === "USER",
   );
   sendMessage(userQuestion.content);
 };
@@ -331,7 +335,9 @@ const resendMessage = (qId: string) => {
 /**
  * 提交用户回答
  */
-const handleAskUserSubmit = async (data: { answers: { questionId: string; answer: any }[] }) => {
+const handleAskUserSubmit = async (data: {
+  answers: { questionId: string; answer: any }[];
+}) => {
   askUserVisible.value = false;
   try {
     await handleUserResponse({
@@ -351,7 +357,7 @@ const handleAskUserCancel = async () => {
   try {
     await handleUserResponse({
       chatId: activeChatId.value || props.chatId,
-      answers: []
+      answers: [],
     });
   } catch (error) {
     handleApiError(error, "取消回答失败");
@@ -362,7 +368,7 @@ const handleAskUserCancel = async () => {
 /**
  * 处理消息
  */
-const handleMessage = (message) => {
+const handleMessage = (message: any) => {
   scrollToBottom();
   activeChatId.value = message.chatId;
   // 如果当前对话为全新对话，则更新对话历史
@@ -380,7 +386,7 @@ const handleMessage = (message) => {
     loading.value = false;
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -404,7 +410,7 @@ const handleMessage = (message) => {
   if (message.type === "LOADING") {
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.content = message.content;
@@ -426,7 +432,7 @@ const handleMessage = (message) => {
   if (message.type === "ERROR") {
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -444,7 +450,12 @@ const handleMessage = (message) => {
 
     // 类型相同，合并内容
     if (last.type === message.type) {
-      if (["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(message.type) && message.content) {
+      if (
+        ["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(
+          message.type,
+        ) &&
+        message.content
+      ) {
         last.content += message.content;
       } else if (["ECHARTS", "TABLE"].includes(message.type)) {
         last.content = message.content;
@@ -478,7 +489,7 @@ const stopGenerating = (qId: string = questionId.value) => {
   loading.value = false;
   if (messages.length > 0) {
     const loadingItem = messages.find(
-      (item) => item.questionId === qId && item.type === "LOADING"
+      (item) => item.questionId === qId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -514,7 +525,7 @@ const scrollToBottom = () => {
 
 <style scoped lang="scss">
 .chat-container {
-  height: calc(100vh - 200px);
+  height: v-bind(height);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -545,7 +556,6 @@ const scrollToBottom = () => {
   background-image: url('data:image/svg+xml;utf8,<svg t="1756736588621" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1736" width="200" height="200"><path d="M239.445333 14.961778c-6.940444-19.911111-17.976889-19.911111-24.917333 0l-38.513778 112.753778c-6.656 19.911111-28.672 41.870222-48.924444 48.810666l-112.071111 38.115556c-20.024889 6.997333-20.024889 17.976889 0 24.917333l111.502222 38.684445c19.911111 6.997333 41.984 28.956444 48.924444 48.924444l39.082667 112.981333c6.940444 19.911111 17.976889 19.911111 24.917333 0l37.944889-112.412444c6.656-19.968 28.672-41.927111 48.64-48.924445l114.119111-38.968888c19.911111-6.940444 19.911111-17.92 0-24.860445L327.68 177.095111c-19.911111-6.599111-41.984-28.615111-48.924444-48.526222-0.284444 0.284444-39.367111-113.607111-39.367112-113.607111z" fill="%23fff" p-id="1737"></path><path d="M512 398.222222h56.888889v170.666667H512zM739.555556 398.222222h56.888888v170.666667h-56.888888z" fill="%23fff" p-id="1738"></path></svg>');
   background-repeat: no-repeat;
   background-position: bottom -100px right;
-  background-size: 330px 330px;
   font-size: 28px;
   color: #6b5454;
   text-align: center;

@@ -33,7 +33,9 @@
     font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
     font-size: 14px;
     overflow-y: auto;
-    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    transition:
+      max-height 0.3s ease-out,
+      opacity 0.3s ease-out;
     max-height: 1000px;
     opacity: 1;
   }
@@ -189,31 +191,41 @@
   }
 
   /** 引用块 */
-blockquote {
-  margin: 8px 0;
-  padding: 0 8px;
-  color: #6a737d;
-  border-left: 2px solid #3964fe;
+  blockquote {
+    margin: 8px 0;
+    padding: 0 8px;
+    color: #6a737d;
+    border-left: 2px solid #3964fe;
 
-  p {
-    margin: 0;
-  }
+    p {
+      margin: 0;
+    }
 
-  & > :first-child {
-    margin-top: 0;
-  }
+    & > :first-child {
+      margin-top: 0;
+    }
 
-  & > :last-child {
-    margin-bottom: 0;
+    & > :last-child {
+      margin-bottom: 0;
+    }
   }
 
   /** 水平分隔线 (hr / ---) */
   hr.md-hr {
     border: none;
-    height: 1px;
+    height: 3px;
     background: #dfe2e5;
-    margin: 24px 0;
+    margin: 22px 0;
   }
-}
 
+  /** 图表容器 */
+  .echarts-chart {
+    width: 100%;
+    min-height: 300px;
+    max-height: 500px;
+    margin: 16px 0;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #dfe2e5;
+  }
 }
