@@ -26,16 +26,17 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -159,8 +160,6 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
                 .type(modelProvider.getProviderType())
                 .apiKey(modelProvider.getApiKey())
                 .baseUrl(modelProvider.getBaseUrl())
-                .maxTokens(modelProvider.getMaxTokens())
-                .temperature(modelProvider.getTemperature())
                 .defaultModel(modelProvider.getDefaultModel());
 
         if (StringUtils.isNotEmpty(modelProvider.getOptionalModels())) {
@@ -209,8 +208,6 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
                 .distinct()
                 .collect(Collectors.joining(CommonConstants.COMMA)));
         modelProvider.setDefaultModel(requestDto.getDefaultModel());
-        modelProvider.setTemperature(requestDto.getTemperature());
-        modelProvider.setMaxTokens(requestDto.getMaxTokens());
         modelProvider.setEnabled(true);
 
         // 2. 数据库操作
@@ -248,8 +245,6 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
         updateModelProvider.setProviderName(requestDto.getName());
         updateModelProvider.setBaseUrl(requestDto.getBaseUrl());
         updateModelProvider.setApiKey(requestDto.getApiKey());
-        updateModelProvider.setTemperature(requestDto.getTemperature());
-        updateModelProvider.setMaxTokens(requestDto.getMaxTokens());
         updateModelProvider.setDefaultModel(requestDto.getDefaultModel());
         updateModelProvider.setVersion(rawModelProvider.getVersion());
 

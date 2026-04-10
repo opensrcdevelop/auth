@@ -29,6 +29,14 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
+import org.redisson.api.RLock;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -37,12 +45,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -293,28 +295,34 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         compareObjBuilder.id(dataSourceId);
         compareObjBuilder.before(rawDataSourceConf);
 
-        // 2. 检查是否为系统数据源
-        checkIsSystemDataSource(dataSourceId);
-
-        // 3. 检查数据源名称是否存在
-        checkDataSourceName(requestDto, rawDataSourceConf);
-
-        // 4. 属性设置
+        // 2. 检查是否是更新启用状态
         DataSourceConf updateDataSourceConf = new DataSourceConf();
-        updateDataSourceConf.setDataSourceId(dataSourceId);
-        updateDataSourceConf.setDataSourceName(requestDto.getName());
-        updateDataSourceConf.setDescription(requestDto.getDesc());
-        updateDataSourceConf.setHost(requestDto.getHost());
-        updateDataSourceConf.setPort(requestDto.getPort());
-        updateDataSourceConf.setUsername(requestDto.getUsername());
-        updateDataSourceConf.setPassword(requestDto.getPassword());
-        updateDataSourceConf.setJdbcParams(requestDto.getJdbcParams());
-        CommonUtil.callSetWithCheck(Objects::nonNull, updateDataSourceConf::setEnabled, requestDto::getEnabled);
+        if (Objects.nonNull(requestDto.getEnabled())) {
+            updateDataSourceConf.setDataSourceId(dataSourceId);
+            updateDataSourceConf.setEnabled(requestDto.getEnabled());
+        } else {
+            // 3. 检查是否为系统数据源
+            checkIsSystemDataSource(dataSourceId);
 
-        // 5. 数据库操作
+            // 4. 检查数据源名称是否存在
+            checkDataSourceName(requestDto, rawDataSourceConf);
+
+            // 5. 属性设置
+            updateDataSourceConf.setDataSourceId(dataSourceId);
+            updateDataSourceConf.setDataSourceName(requestDto.getName());
+            updateDataSourceConf.setDescription(requestDto.getDesc());
+            updateDataSourceConf.setHost(requestDto.getHost());
+            updateDataSourceConf.setPort(requestDto.getPort());
+            updateDataSourceConf.setUsername(requestDto.getUsername());
+            updateDataSourceConf.setPassword(requestDto.getPassword());
+            updateDataSourceConf.setJdbcParams(requestDto.getJdbcParams());
+            CommonUtil.callSetWithCheck(Objects::nonNull, updateDataSourceConf::setEnabled, requestDto::getEnabled);
+        }
+
+        // 6. 数据库操作
         super.updateById(updateDataSourceConf);
 
-        // 6. 删除数据源缓存
+        // 7. 删除数据源缓存
         dataSourceManager.removeDataSource(dataSourceId);
 
         compareObjBuilder.after(super.getById(dataSourceId));
@@ -402,7 +410,7 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
     private void checkDataSourceName(DataSourceConfRequestDto requestDto, DataSourceConf rawDataSourceConf) {
         if (Objects.nonNull(rawDataSourceConf)
-                && StringUtils.equals(requestDto.getName(), rawDataSourceConf.getDataSourceName())) {
+                && Strings.CS.equals(requestDto.getName(), rawDataSourceConf.getDataSourceName())) {
             return;
         }
 

@@ -50,6 +50,9 @@ public class ChatClientManager {
     @Value("${ai.chat.default-llm-api-retry-count:3}")
     private Integer defaultLlmApiRetryCount;
 
+    @Value("${ai.chat.default-temperature:0.0}")
+    private Double defaultTemperature;
+
     /**
      * 获取 ChatClient
      *
@@ -71,15 +74,23 @@ public class ChatClientManager {
             throw new BizException(MessageConstants.AI_MODEL_MSG_1000, providerId);
         }
 
-        // 2. 根据模型提供商类型创建 ChatModel
+        // 2. 获取对话配置
+        ChatConfigDto chatConfig = null;
+        try {
+            chatConfig = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+        } catch (Exception e) {
+            log.warn("获取 ChatBI 对话配置失败", e);
+        }
+
+        // 3. 根据模型提供商类型创建 ChatModel
         ModelProviderType modelProviderType = ModelProviderType.valueOf(modelProvider.getProviderType());
         ChatModel chatModel = switch (modelProviderType) {
-            case OPENAI -> createOpenAiChatModel(modelProvider, model);
-            case ANTHROPIC -> createAnthropicChatModel(modelProvider, model);
-            case OLLAMA -> createOllamaChatModel(modelProvider, model);
+            case OPENAI -> createOpenAiChatModel(modelProvider, model, chatConfig);
+            case ANTHROPIC -> createAnthropicChatModel(modelProvider, model, chatConfig);
+            case OLLAMA -> createOllamaChatModel(modelProvider, model, chatConfig);
         };
 
-        // 3. 返回 ChatClient
+        // 4. 返回 ChatClient
         ChatClient.Builder builder = ChatClient.builder(chatModel)
                 .defaultAdvisors(a -> a
                         .param(ChatMemory.CONVERSATION_ID, chatId)
@@ -90,7 +101,12 @@ public class ChatClientManager {
         return builder.build();
     }
 
-    private ChatModel createOpenAiChatModel(ModelProvider modelProvider, String model) {
+    private ChatModel createOpenAiChatModel(ModelProvider modelProvider, String model, ChatConfigDto chatConfig) {
+        Double temperature = defaultTemperature;
+        if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getTemperature())) {
+            temperature = chatConfig.getTemperature();
+        }
+
         return OpenAiChatModel.builder()
                 .openAiApi(OpenAiApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
@@ -98,28 +114,37 @@ public class ChatClientManager {
                         .build())
                 .defaultOptions(OpenAiChatOptions.builder()
                         .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
-                        .temperature(modelProvider.getTemperature())
-                        .maxTokens(modelProvider.getMaxTokens())
+                        .temperature(temperature)
                         .build())
                 .toolCallingManager(toolCallingManager)
-                .retryTemplate(getRetryTemplate())
+                .retryTemplate(getRetryTemplate(chatConfig))
                 .build();
     }
 
-    private ChatModel createOllamaChatModel(ModelProvider modelProvider, String model) {
+    private ChatModel createOllamaChatModel(ModelProvider modelProvider, String model, ChatConfigDto chatConfig) {
+        Double temperature = defaultTemperature;
+        if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getTemperature())) {
+            temperature = chatConfig.getTemperature();
+        }
+
         return OllamaChatModel.builder()
                 .ollamaApi(OllamaApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
                         .build())
                 .defaultOptions(OllamaChatOptions.builder()
                         .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
-                        .temperature(modelProvider.getTemperature())
+                        .temperature(temperature)
                         .build())
                 .toolCallingManager(toolCallingManager)
                 .build();
     }
 
-    private ChatModel createAnthropicChatModel(ModelProvider modelProvider, String model) {
+    private ChatModel createAnthropicChatModel(ModelProvider modelProvider, String model, ChatConfigDto chatConfig) {
+        Double temperature = defaultTemperature;
+        if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getTemperature())) {
+            temperature = chatConfig.getTemperature();
+        }
+
         return AnthropicChatModel.builder()
                 .anthropicApi(AnthropicApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
@@ -127,24 +152,17 @@ public class ChatClientManager {
                         .build())
                 .defaultOptions(AnthropicChatOptions.builder()
                         .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
-                        .temperature(modelProvider.getTemperature())
-                        .maxTokens(modelProvider.getMaxTokens())
+                        .temperature(temperature)
                         .build())
                 .toolCallingManager(toolCallingManager)
-                .retryTemplate(getRetryTemplate())
+                .retryTemplate(getRetryTemplate(chatConfig))
                 .build();
     }
 
-    private RetryTemplate getRetryTemplate() {
+    private RetryTemplate getRetryTemplate(ChatConfigDto chatConfig) {
         Integer retryCount = defaultLlmApiRetryCount;
-
-        try {
-            ChatConfigDto chatConfig = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (Objects.nonNull(chatConfig) && Objects.nonNull(retryCount) && retryCount > 0) {
-                retryCount = chatConfig.getLlmApiRetryCount();
-            }
-        } catch (Exception e) {
-            log.error("获取 ChatBI 对话配置失败", e);
+        if (Objects.nonNull(chatConfig) && Objects.nonNull(retryCount) && retryCount > 0) {
+            retryCount = chatConfig.getLlmApiRetryCount();
         }
 
         return RetryTemplate.builder()

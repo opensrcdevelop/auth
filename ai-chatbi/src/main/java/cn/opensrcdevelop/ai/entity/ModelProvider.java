@@ -6,9 +6,10 @@ import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -44,14 +45,6 @@ public class ModelProvider extends BaseEntity implements Serializable {
     /** 默认模型 */
     @PropertyName("默认模型")
     private String defaultModel;
-
-    /** 模型温度 */
-    @PropertyName("模型温度")
-    private Double temperature;
-
-    /** 模型最大令牌数 */
-    @PropertyName("模型最大令牌数")
-    private Integer maxTokens;
 
     /** 模型是否启用 */
     @PropertyName("模型是否启用")

@@ -42,15 +42,13 @@ const modelProviderInfoForm = reactive({
   type: undefined,
   baseUrl: undefined,
   apiKey: undefined,
-  temperature: undefined,
-  maxTokens: undefined,
   defaultModel: undefined,
 });
 
 /**
  * 可选模型
  */
-const optionalModelList = ref([]);
+const optionalModelList = ref([] as any[]);
 
 /**
  * 获取模型提供商详情
@@ -67,8 +65,6 @@ const handleGetModelProviderDetail = (id: string = modelProviderId.value) => {
         modelProviderInfoForm.type = data.type;
         modelProviderInfoForm.baseUrl = data.baseUrl;
         modelProviderInfoForm.apiKey = data.apiKey;
-        modelProviderInfoForm.temperature = data.temperature;
-        modelProviderInfoForm.maxTokens = data.maxTokens;
         modelProviderInfoForm.defaultModel = data.defaultModel;
 
         optionalModelList.value = data.optionalModels;
@@ -106,7 +102,7 @@ const handleResetModelProviderInfoForm = () => {
 /**
  * 可选模型列表变更
  */
-const handleOptionalModelListChange = (_data) => {
+const handleOptionalModelListChange = (_data: any) => {
   optionalModelList.value = _data;
   handleUpdateOptionalModelList();
 };
@@ -188,7 +184,7 @@ const handleCloseAddOptionalModelModal = () => {
 
 export default defineComponent({
   setup() {
-    const modelProviderId = getQueryString("id");
+    const modelProviderId = getQueryString("id") || "";
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "model_provider_info";

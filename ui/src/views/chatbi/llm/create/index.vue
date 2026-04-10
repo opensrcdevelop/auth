@@ -57,27 +57,6 @@ export default indexTs;
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item field="temperature" label="温度参数">
-              <a-input-number
-                v-model="createModelProviderForm.temperature"
-                :min="0"
-                :max="1"
-                :setp="0.1"
-                :precision="1"
-                placeholder="请输入温度参数"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item field="maxTokens" label="最大输出 token 长度">
-              <a-input-number
-                v-model="createModelProviderForm.maxTokens"
-                :min="50"
-                placeholder="请输入最大输出 token 长度"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
             <a-form-item field="optionalModels" label="可选模型">
               <a-textarea
                 v-model="createModelProviderForm.optionalModels"

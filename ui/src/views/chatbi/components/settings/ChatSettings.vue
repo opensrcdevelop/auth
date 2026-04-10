@@ -8,6 +8,7 @@ const chatConfigForm = reactive({
   maxThinkSteps: undefined,
   answerLanguage: undefined,
   llmApiRetryCount: undefined,
+  temperature: undefined,
 });
 
 const chatConfigFormRules = {
@@ -23,6 +24,7 @@ const loadChatConfig = () => {
         chatConfigForm.maxThinkSteps = data.maxThinkSteps;
         chatConfigForm.answerLanguage = data.answerLanguage;
         chatConfigForm.llmApiRetryCount = data.llmApiRetryCount;
+        chatConfigForm.temperature = data.temperature;
       });
     })
     .catch((err: any) => handleApiError(err, "获取 ChatBI 对话配置"));
@@ -83,6 +85,18 @@ defineExpose({
               placeholder="请输入 LLM API 重试次数"
               v-model="chatConfigForm.llmApiRetryCount"
               :min="3"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item field="temperature" label="温度">
+            <a-input-number
+              v-model="chatConfigForm.temperature"
+              :min="0"
+              :max="1"
+              :setp="0.1"
+              :precision="1"
+              placeholder="请输入温度"
             />
           </a-form-item>
         </a-col>

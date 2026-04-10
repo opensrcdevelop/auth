@@ -4,9 +4,12 @@ import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.*;
-import java.util.List;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.util.List;
 
 @Schema(description = "模型提供商请求")
 @Data
@@ -42,15 +45,6 @@ public class ModelProviderRequestDto {
     @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
     @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String defaultModel;
-
-    @Schema(description = "模型提供商温度")
-    @Min(0)
-    @Max(1)
-    private Double temperature;
-
-    @Schema(description = "模型提供商最大令牌数")
-    @Min(50)
-    private Integer maxTokens;
 
     @Schema(description = "模型提供商是否启用")
     private Boolean enabled;
