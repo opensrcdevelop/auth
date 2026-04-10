@@ -308,6 +308,8 @@ const init = (chatId: string = "") => {
 
 defineExpose({
   init,
+  activeChatId,
+  chatHistoryList,
 });
 </script>
 

@@ -23,14 +23,14 @@ export default indexTs;
         <div class="chat-container">
           <ChatHistory
             ref="chatHistoryRef"
-            height="calc(100vh - 185px)"
+            height="calc(100vh - 198px)"
             @switchChat="handleSwitchChat"
             @addNewChat="handleAddNewChat"
             @updateDataSourceId="handleUpdateDataSourceId"
           />
           <Chat
             ref="chatRef"
-            height="calc(100vh - 185px)"
+            height="calc(100vh - 198px)"
             :chatId="chatId"
             :dataSourceId="dataSourceId"
             @updateChatHistory="handleUpdateChatHistory"

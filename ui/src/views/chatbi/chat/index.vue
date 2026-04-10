@@ -17,12 +17,26 @@ export default indexTs;
       @updateDataSourceId="handleUpdateDataSourceId"
     />
 
-    <Chat
-      ref="chatRef"
-      style="width: 100%;"
-      :chatId="chatId"
-      :dataSourceId="dataSourceId"
-      @updateChatHistory="handleUpdateChatHistory"
-    />
+    <div class="chat-main">
+      <div class="chat-header">
+        <div class="chat-title">{{ currentChatTitle }}</div>
+        <div class="user-info">
+          <div class="username">{{ currentUser.username }}</div>
+          <a-button type="text" shape="circle" size="large" @click="handleLogout">
+            <template #icon>
+              <icon-poweroff />
+            </template>
+          </a-button>
+        </div>
+      </div>
+
+      <Chat
+        ref="chatRef"
+        style="width: 100%;"
+        :chatId="chatId"
+        :dataSourceId="dataSourceId"
+        @updateChatHistory="handleUpdateChatHistory"
+      />
+    </div>
   </div>
 </template>
