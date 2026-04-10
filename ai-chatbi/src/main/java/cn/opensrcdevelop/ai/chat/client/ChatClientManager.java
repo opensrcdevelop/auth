@@ -77,7 +77,8 @@ public class ChatClientManager {
         // 2. 获取对话配置
         ChatConfigDto chatConfig = null;
         try {
-            chatConfig = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+            chatConfig = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG,
+                    ChatConfigDto.class);
         } catch (Exception e) {
             log.warn("获取 ChatBI 对话配置失败", e);
         }

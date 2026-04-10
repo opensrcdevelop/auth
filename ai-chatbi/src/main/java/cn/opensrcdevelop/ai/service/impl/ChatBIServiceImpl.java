@@ -154,6 +154,12 @@ public class ChatBIServiceImpl implements ChatBIService {
 
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag, requestDto,
                         finalChatId);
+
+                if (result._1 == null) {
+                    SseUtil.sendChatBIDone(emitter);
+                    return;
+                }
+
                 if (!interruptFlag.get()) {
                     SseUtil.sendChatBIDone(emitter, result._1, result._2);
                 } else {
@@ -161,9 +167,11 @@ public class ChatBIServiceImpl implements ChatBIService {
                 }
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
+                SseUtil.sendChatBIDone(emitter);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
+                SseUtil.sendChatBIDone(emitter);
             } finally {
                 cleanupTempFiles(chatContext);
                 emitter.complete();
@@ -245,7 +253,8 @@ public class ChatBIServiceImpl implements ChatBIService {
     /**
      * 更新对话配置
      *
-     * @param configDto 对话配置
+     * @param configDto
+     *            对话配置
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI, sysOperation = SysOperationType.UPDATE, success = "更新了 ChatBI 对话配置", fail = "更新 ChatBI 对话配置失败")
     @Override
@@ -253,7 +262,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 审计比较对象
         var compareObjBuilder = CompareObj.builder();
 
-        ChatConfigDto rawChatConfigDto = systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+        ChatConfigDto rawChatConfigDto = systemSettingService
+                .getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
 
         compareObjBuilder.before(rawChatConfigDto);
         compareObjBuilder.after(configDto);
@@ -294,7 +304,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         try {
             ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
                     SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0) {
+            if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getMaxThinkSteps())
+                    && chatConfig.getMaxThinkSteps() > 0) {
                 maxSteps = chatConfig.getMaxThinkSteps();
             }
         } catch (Exception e) {
@@ -336,8 +347,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setQuestionId(requestDto.getQuestionId());
         chatAnswer.setQuestion(finalQuestion);
         chatAnswer.setSql(ChatContextHolder.getChatContext().getSql());
-        chatAnswer.setReqTokens(ChatContextHolder.getChatContext().getReqTokens().get());
-        chatAnswer.setRepTokens(ChatContextHolder.getChatContext().getRepTokens().get());
+        chatAnswer.setInputTokens(ChatContextHolder.getChatContext().getInputTokens().get());
+        chatAnswer.setOutputTokens(ChatContextHolder.getChatContext().getOutputTokens().get());
 
         // 3.1 直接回答
         String answerText = null;

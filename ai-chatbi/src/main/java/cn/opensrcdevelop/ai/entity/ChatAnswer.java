@@ -5,10 +5,11 @@ import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import cn.opensrcdevelop.common.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.annotation.TableField;
-import java.io.Serial;
-import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.io.Serial;
+import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -56,11 +57,11 @@ public class ChatAnswer extends BaseEntity implements Serializable {
     @PropertyName("报表")
     private String report;
 
-    @PropertyName("请求消耗的 token 数")
-    private Integer reqTokens;
+    @PropertyName("输入 token 数")
+    private Integer inputTokens;
 
-    @PropertyName("回复消耗的 token 数")
-    private Integer repTokens;
+    @PropertyName("输出 token 数")
+    private Integer outputTokens;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @PropertyName("用户反馈")

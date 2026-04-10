@@ -99,9 +99,12 @@ public class ThinkAnswerAgent {
 
             String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking,
                     formatErrorFeedback);
-            formatErrorFeedback = null;
+            if (StringUtils.isEmpty(result)) {
+                break;
+            }
 
             // 验证输出格式
+            formatErrorFeedback = null;
             var validationResult = validateOutputFormat(result, showThinking);
             if (!validationResult.isValid()) {
                 log.warn("Output format validation failed: {}, the llm result is: {}",

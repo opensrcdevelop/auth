@@ -43,7 +43,8 @@ public class AnalyzeDataTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
     @SuppressWarnings({"all"})
-    public Response execute(@ToolParam(description = "The request to analyze data") Request request, SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to analyze data") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 

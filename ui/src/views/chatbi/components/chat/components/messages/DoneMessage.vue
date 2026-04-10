@@ -48,6 +48,9 @@
         </a-space>
       </a-space>
       <a-space>
+        <span class="token">输入 token 数: {{ formatTokenCount(message.inputTokens) }}</span>
+        <span class="token">输出 token 数: {{ formatTokenCount(message.outputTokens) }}</span>
+        <a-divider direction="vertical" />
         <span class="time">{{ message.time }}</span>
       </a-space>
     </div>
@@ -71,6 +74,20 @@ const props = withDefaults(
 const emits = defineEmits<{
   (e: "resendMessage", questionId: string): void;
 }>();
+
+const formatTokenCount = (count: number): string => {
+  if (!count) {
+    return "-";
+  }
+
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(2) + "M";
+  }
+  if (count >= 1000) {
+    return (count / 1000).toFixed(2) + "K";
+  }
+  return count.toString();
+};
 
 const handleResendMessage = () => {
   emits("resendMessage", props.message.rewrittenQuestion);
@@ -120,7 +137,7 @@ const handleGetAnsweredSql = (doneMessage: any) => {
   justify-content: space-between;
   align-items: center;
 
-  .time {
+  .time, .token {
     font-size: 12px;
     color: var(--color-text-3);
   }

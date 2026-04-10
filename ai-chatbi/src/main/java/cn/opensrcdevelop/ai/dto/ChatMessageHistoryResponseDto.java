@@ -3,10 +3,11 @@ package cn.opensrcdevelop.ai.dto;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Schema(description = "对话消息历史响应")
 @Builder
@@ -40,6 +41,12 @@ public class ChatMessageHistoryResponseDto {
 
     @Schema(description = "用户反馈")
     private String feedback;
+
+    @Schema(description = "输入 token 数")
+    private Long inputTokens;
+
+    @Schema(description = "输出 token 数")
+    private Long outputTokens;
 
     @Schema(description = "时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)

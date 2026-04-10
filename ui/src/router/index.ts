@@ -42,7 +42,7 @@ export const routes: RouteRecordRaw[] = [
     path: "/chatbi/chat",
     component: () => import("@/views/chatbi/chat/index.vue"),
     meta: {
-      title: "对话问答",
+      title: "ChatBI 对话",
     },
   },
   {

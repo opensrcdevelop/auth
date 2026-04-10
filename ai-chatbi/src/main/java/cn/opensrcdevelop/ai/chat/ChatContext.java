@@ -1,11 +1,12 @@
 package cn.opensrcdevelop.ai.chat;
 
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {
@@ -44,9 +45,9 @@ public class ChatContext {
 
     private String report;
 
-    private AtomicInteger reqTokens = new AtomicInteger(0);
+    private AtomicInteger inputTokens = new AtomicInteger(0);
 
-    private AtomicInteger repTokens = new AtomicInteger(0);
+    private AtomicInteger outputTokens = new AtomicInteger(0);
 
     private List<Map<String, Object>> toolCallResults;
 

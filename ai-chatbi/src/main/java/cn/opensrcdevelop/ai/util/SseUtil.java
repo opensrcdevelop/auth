@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.util;
 
+import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
@@ -165,18 +166,22 @@ public class SseUtil {
      *            回答ID
      */
     public static void sendChatBIDone(SseEmitter emitter, String answerId, String rewrittenQuestion) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContextHolder.getChatContext().getChatId())
-                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .chatId(chatContext.getChatId())
+                        .questionId(chatContext.getQuestionId())
                         .answerId(answerId)
                         .rewrittenQuestion(rewrittenQuestion)
+                        .inputTokens(chatContext.getInputTokens().longValue())
+                        .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion, now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion,
+                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
     /**
@@ -186,16 +191,21 @@ public class SseUtil {
      *            SseEmitter
      */
     public static void sendChatBIDone(SseEmitter emitter) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContextHolder.getChatContext().getChatId())
-                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .chatId(chatContext.getChatId())
+                        .questionId(chatContext.getQuestionId())
+                        .rewrittenQuestion(chatContext.getQuestion())
+                        .inputTokens(chatContext.getInputTokens().longValue())
+                        .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, null, now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, null,
+                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
     /**

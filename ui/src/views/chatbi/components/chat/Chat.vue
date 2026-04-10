@@ -388,7 +388,7 @@ const handleMessage = (message: any) => {
       (item) =>
         item.questionId === message.questionId && item.type === "LOADING",
     );
-    if (loadingItem) {
+    if (loadingItem && message.answerId) {
       loadingItem.loading = false;
       loadingItem.content = "回答完成";
     }
@@ -400,6 +400,8 @@ const handleMessage = (message: any) => {
       answerId: message.answerId,
       actionType: message.actionType,
       rewrittenQuestion: message.rewrittenQuestion,
+      inputTokens: message.inputTokens,
+      outputTokens: message.outputTokens,
       time: message.time,
       feedback: message.feedback,
     });

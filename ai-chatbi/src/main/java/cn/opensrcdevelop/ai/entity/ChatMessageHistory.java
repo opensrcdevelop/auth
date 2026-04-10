@@ -5,8 +5,9 @@ import cn.opensrcdevelop.auth.audit.annotation.PropertyName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.time.LocalDateTime;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 @TableName("t_chat_message_history")
@@ -45,6 +46,14 @@ public class ChatMessageHistory {
     /** 重写后的问题 */
     @PropertyName("重写后的问题")
     private String rewrittenQuestion;
+
+    /** 输入 token 数 */
+    @PropertyName("输入 token 数")
+    private Long inputTokens;
+
+    /** 输出 token 数 */
+    @PropertyName("输出 token 数")
+    private Long outputTokens;
 
     /** 时间 */
     @PropertyName("时间")
