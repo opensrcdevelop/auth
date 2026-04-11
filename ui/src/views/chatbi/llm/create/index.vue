@@ -31,7 +31,10 @@ export default indexTs;
           </a-col>
           <a-col :span="12">
             <a-form-item field="type" label="模型提供商类型">
-              <a-select v-model="createModelProviderForm.type">
+              <a-select
+                v-model="createModelProviderForm.type"
+                placeholder="请选择模型提供商类型"
+              >
                 <a-option
                   v-for="item of modelProviderTypeList"
                   :value="item.value"
@@ -71,6 +74,7 @@ export default indexTs;
           <a-col :span="12">
             <a-form-item field="defaultModel" label="默认模型">
               <a-select
+                placeholder="请选择默认模型"
                 v-model="createModelProviderForm.defaultModel"
                 allow-create
               >

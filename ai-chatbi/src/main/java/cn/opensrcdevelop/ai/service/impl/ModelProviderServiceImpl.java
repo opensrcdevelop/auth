@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -167,14 +168,14 @@ public class ModelProviderServiceImpl extends ServiceImpl<ModelProviderMapper, M
                     CommonUtil.stream(Arrays.asList(modelProvider.getOptionalModels().split(CommonConstants.COMMA)))
                             .map(model -> {
                                 Map<String, Object> tokensMap = chatAnswerService.getMap(Wrappers.<ChatAnswer>query()
-                                        .select("COALESCE(SUM(req_tokens), 0) as req_tokens",
-                                                "COALESCE(SUM(rep_tokens), 0) as rep_tokens")
+                                        .select("COALESCE(SUM(input_tokens), 0) as input_tokens",
+                                                "COALESCE(SUM(output_tokens), 0) as output_tokens")
                                         .eq("model_provider_id", providerId)
                                         .eq("model", model));
                                 return ModelResponseDto.builder()
                                         .name(model)
-                                        .usedReqTokens((Long) tokensMap.get("req_tokens"))
-                                        .usedRepTokens((Long) tokensMap.get("rep_tokens"))
+                                        .usedInputTokens(((BigDecimal) tokensMap.get("input_tokens")).longValue())
+                                        .usedOutputTokens(((BigDecimal) tokensMap.get("output_tokens")).longValue())
                                         .build();
 
                             })
