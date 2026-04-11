@@ -155,15 +155,11 @@ public class ChatBIServiceImpl implements ChatBIService {
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag, requestDto,
                         finalChatId);
 
-                if (result._1 == null) {
-                    SseUtil.sendChatBIDone(emitter);
-                    return;
-                }
-
                 if (!interruptFlag.get()) {
                     SseUtil.sendChatBIDone(emitter, result._1, result._2);
                 } else {
                     chatMessageHistoryService.createChatMessageHistory("回答已取消", ChatContentType.LOADING);
+                    SseUtil.sendChatBIDone(emitter);
                 }
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
@@ -337,6 +333,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);
         }
+
         String answerId = CommonUtil.getUUIDV7String();
         ChatAnswer chatAnswer = new ChatAnswer();
         chatAnswer.setAnswerId(answerId);

@@ -15,6 +15,7 @@
     />
     <div class="input-area">
       <a-textarea
+        ref="inputRef"
         class="no-border-textarea"
         placeholder="请输入您的问题..."
         :auto-size="{
@@ -132,6 +133,7 @@ const emits = defineEmits<{
 
 const { abort, fetchStream } = useEventSource();
 const messageContainer = ref(null as any);
+const inputRef = ref(null as any);
 const messages = reactive([] as any[]);
 const userInput = ref("");
 const loading = ref(false);
@@ -148,6 +150,17 @@ const activeChatId = ref("");
 // 思考过程显示偏好
 const SHOW_THINKING_KEY = "chatbi_show_thinking";
 const showThinking = ref(true);
+
+/**
+ * 聚焦输入框
+ */
+const focusInput = () => {
+  nextTick(() => {
+    if (inputRef.value) {
+      inputRef.value.focus();
+    }
+  });
+};
 
 const init = () => {
   greetingText.value = greeting();
@@ -186,6 +199,9 @@ const init = () => {
     .catch((err: any) => {
       handleApiError(err, "获取模型提供商列表");
     });
+
+  // 聚焦输入框
+  focusInput();
 };
 
 defineExpose({
@@ -199,6 +215,8 @@ watch(
     if (newVal && newVal !== activeChatId.value) {
       activeChatId.value = newVal;
       handleGetChatMessageHistory(newVal);
+      // 聚焦输入框
+      focusInput();
     }
 
     // 开启新对话
@@ -206,6 +224,8 @@ watch(
       activeChatId.value = "";
       selectedDataSource.value = "";
       messages.length = 0;
+      // 聚焦输入框
+      focusInput();
     }
   },
 );

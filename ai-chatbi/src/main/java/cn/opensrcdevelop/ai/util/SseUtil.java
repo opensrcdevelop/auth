@@ -204,7 +204,7 @@ public class SseUtil {
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, null,
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, chatContext.getQuestion(),
                 chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
