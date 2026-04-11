@@ -194,6 +194,7 @@ public class ThinkAnswerAgent {
                 }, error -> {
                     log.error("Error in chat response stream", error);
                     ChatContextHolder.setChatContext(chatContext);
+                    SecurityContextHolder.setContext(securityContext);
                     SseUtil.sendChatBIError(emitter, "模型调用失败，请检查提供商配置和额度");
                     latch.countDown();
                 }, latch::countDown);

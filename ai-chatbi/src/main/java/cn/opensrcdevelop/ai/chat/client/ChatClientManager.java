@@ -29,11 +29,12 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.policy.MaxAttemptsRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.Objects;
 
 @Slf4j
@@ -166,9 +167,7 @@ public class ChatClientManager {
             retryCount = chatConfig.getLlmApiRetryCount();
         }
 
-        return RetryTemplate.builder()
-                .maxAttempts(retryCount)
-                .exponentialBackoff(Duration.ofSeconds(1), 2, Duration.ofMinutes(1))
-                .build();
+        RetryUtils.DEFAULT_RETRY_TEMPLATE.setRetryPolicy(new MaxAttemptsRetryPolicy(retryCount));
+        return RetryUtils.DEFAULT_RETRY_TEMPLATE;
     }
 }
