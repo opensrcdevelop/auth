@@ -401,6 +401,14 @@ public class ThinkAnswerAgent {
             return new FormatValidationResult(false, "LLM output is empty");
         }
 
+        // 移除 JSON 格式中的 ```json 或 ``` 包裹
+        if (llmResult.contains("```json")) {
+            llmResult = llmResult.replace("```json", "");
+        }
+        if (llmResult.contains("```")) {
+            llmResult = llmResult.replace("```", "");
+        }
+
         // 检测是否包含 JSON
         int startIndex = llmResult.indexOf("{");
         int endIndex = llmResult.lastIndexOf("}");
