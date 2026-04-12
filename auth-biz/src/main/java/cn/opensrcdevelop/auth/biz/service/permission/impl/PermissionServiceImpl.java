@@ -291,7 +291,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         PermissionResponseDto permissionResponse = new PermissionResponseDto();
         // 1. 查询数据库
         Permission permission = permissionRepository.getPermission(permissionId);
-        if (permission == null) {
+        if (permission == null || permission.getResource() == null) {
             return permissionResponse;
         }
 
@@ -479,15 +479,15 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 获取可申请的权限树
      *
-     * @param ownedPermissionIds 用户已拥有的权限ID列表（用于标记 alreadyGranted）
+     * @param ownedPermissionIds
+     *            用户已拥有的权限ID列表（用于标记 alreadyGranted）
      * @return 权限树（按资源组 -> 资源 -> 权限 三层结构）
      */
     @Override
     public List<PermissionTreeNodeDto> getAvailablePermissionTree(List<String> ownedPermissionIds) {
         // 1. 查询所有资源组（按 resourceGroupCode 排序）
         List<ResourceGroup> groups = resourceGroupMapper.selectList(
-                Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode)
-        );
+                Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode));
 
         if (CollectionUtils.isEmpty(groups)) {
             return Collections.emptyList();
@@ -496,8 +496,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         // 2. 批量查询所有资源
         List<String> groupIds = groups.stream().map(ResourceGroup::getResourceGroupId).toList();
         List<cn.opensrcdevelop.auth.biz.entity.resource.Resource> allResources = resourceMapper.selectList(
-                Wrappers.<cn.opensrcdevelop.auth.biz.entity.resource.Resource>lambdaQuery().in(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId, groupIds)
-        );
+                Wrappers.<cn.opensrcdevelop.auth.biz.entity.resource.Resource>lambdaQuery()
+                        .in(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId, groupIds));
 
         if (CollectionUtils.isEmpty(allResources)) {
             // 只有资源组没有资源的情况
@@ -512,17 +512,22 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         }
 
         // 3. 批量查询所有权限
-        List<String> resourceIds = allResources.stream().map(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceId).toList();
+        List<String> resourceIds = allResources.stream()
+                .map(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceId).toList();
         List<Permission> allPermissions = baseMapper.selectList(
-                Wrappers.<Permission>lambdaQuery().in(Permission::getResourceId, resourceIds)
-        );
+                Wrappers.<Permission>lambdaQuery().in(Permission::getResourceId, resourceIds));
 
         // 4. 构建已拥有权限 ID 集合用于快速查找
-        Set<String> ownedSet = ownedPermissionIds != null ? new HashSet<>(ownedPermissionIds) : Collections.emptySet();
+        Set<String> ownedSet = ownedPermissionIds != null
+                ? ownedPermissionIds.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toCollection(HashSet::new))
+                : Collections.emptySet();
 
         // 5. 按 resourceGroupId 分组资源
         Map<String, List<cn.opensrcdevelop.auth.biz.entity.resource.Resource>> resourcesByGroup = allResources.stream()
-                .collect(Collectors.groupingBy(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId));
+                .collect(
+                        Collectors.groupingBy(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId));
 
         // 6. 按 resourceId 分组权限
         Map<String, List<Permission>> permissionsByResource = allPermissions.stream()
@@ -535,14 +540,16 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             node.setResourceGroupName(group.getResourceGroupName());
             node.setResourceGroupCode(group.getResourceGroupCode());
 
-            List<cn.opensrcdevelop.auth.biz.entity.resource.Resource> groupResources = resourcesByGroup.getOrDefault(group.getResourceGroupId(), Collections.emptyList());
+            List<cn.opensrcdevelop.auth.biz.entity.resource.Resource> groupResources = resourcesByGroup
+                    .getOrDefault(group.getResourceGroupId(), Collections.emptyList());
             List<PermissionTreeResourceDto> resourceNodes = groupResources.stream().map(resource -> {
                 PermissionTreeResourceDto resourceNode = new PermissionTreeResourceDto();
                 resourceNode.setResourceId(resource.getResourceId());
                 resourceNode.setResourceName(resource.getResourceName());
                 resourceNode.setResourceCode(resource.getResourceCode());
 
-                List<Permission> resourcePermissions = permissionsByResource.getOrDefault(resource.getResourceId(), Collections.emptyList());
+                List<Permission> resourcePermissions = permissionsByResource.getOrDefault(resource.getResourceId(),
+                        Collections.emptyList());
                 List<PermissionTreePermissionDto> permissionNodes = resourcePermissions.stream().map(perm -> {
                     PermissionTreePermissionDto permNode = new PermissionTreePermissionDto();
                     permNode.setPermissionId(perm.getPermissionId());
@@ -626,8 +633,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             return StringUtils.EMPTY;
         }
 
-        List<String> locatorParts = List.of(permission.getResource().getResourceGroup().getResourceGroupCode(),
-                permission.getResource().getResourceCode(), permission.getPermissionCode());
+        var resource = permission.getResource();
+        var resourceGroup = resource != null ? resource.getResourceGroup() : null;
+
+        List<String> locatorParts = List.of(
+                resourceGroup != null ? resourceGroup.getResourceGroupCode() : StringUtils.EMPTY,
+                resource != null ? resource.getResourceCode() : StringUtils.EMPTY,
+                permission.getPermissionCode());
         return CommonUtil.stream(locatorParts).map(x -> {
             if (Objects.isNull(x)) {
                 return StringUtils.EMPTY;
