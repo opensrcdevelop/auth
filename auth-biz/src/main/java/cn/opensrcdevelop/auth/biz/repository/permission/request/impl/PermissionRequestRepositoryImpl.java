@@ -1,6 +1,9 @@
 package cn.opensrcdevelop.auth.biz.repository.permission.request.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
+import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestItemMapper;
 import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
 import cn.opensrcdevelop.common.response.PageData;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Repository;
 public class PermissionRequestRepositoryImpl implements PermissionRequestRepository {
 
     private final PermissionRequestMapper permissionRequestMapper;
+    private final PermissionRequestItemMapper permissionRequestItemMapper;
 
     @Override
     public PermissionRequest getById(String requestId) {
@@ -67,5 +71,35 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         pageData.setSize(iPage.getSize());
         pageData.setList(iPage.getRecords());
         return pageData;
+    }
+
+    @Override
+    public boolean hasActivePendingRequest(String userId, java.util.List<String> permissionIds) {
+        // 步骤 1：查询该用户所有 PENDING 或 AUTO_APPROVED 状态的申请ID
+        LambdaQueryWrapper<PermissionRequest> requestWrapper =
+                new LambdaQueryWrapper<>();
+        requestWrapper.eq(PermissionRequest::getUserId, userId)
+                .in(PermissionRequest::getStatus,
+                        java.util.List.of(
+                                PermissionRequestStatusEnum.PENDING.getCode(),
+                                PermissionRequestStatusEnum.AUTO_APPROVED.getCode()));
+        java.util.List<String> activeRequestIds = permissionRequestMapper.selectList(requestWrapper)
+                .stream()
+                .map(PermissionRequest::getRequestId)
+                .toList();
+
+        if (activeRequestIds.isEmpty()) {
+            return false;
+        }
+
+        // 步骤 2：检查这些申请中是否包含待检查的权限
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper =
+                new LambdaQueryWrapper<>();
+        itemWrapper.in(
+                        PermissionRequestItem::getRequestId,
+                        activeRequestIds)
+                .in(PermissionRequestItem::getPermissionId,
+                        permissionIds);
+        return permissionRequestItemMapper.selectCount(itemWrapper) > 0;
     }
 }

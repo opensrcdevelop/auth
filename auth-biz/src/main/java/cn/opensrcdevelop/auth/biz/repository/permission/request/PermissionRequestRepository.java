@@ -56,4 +56,14 @@ public interface PermissionRequestRepository {
      * @return 分页后的申请记录列表
      */
     PageData<PermissionRequest> findByStatus(String status, int page, int pageSize);
+
+    /**
+     * 检查用户是否对指定权限列表中的任意权限存在 PENDING 或 AUTO_APPROVED 的申请记录
+     * 用于重复申请检测（per D-05）
+     *
+     * @param userId        申请人ID
+     * @param permissionIds 待检查的权限ID列表
+     * @return true 表示存在重复申请
+     */
+    boolean hasActivePendingRequest(String userId, java.util.List<String> permissionIds);
 }

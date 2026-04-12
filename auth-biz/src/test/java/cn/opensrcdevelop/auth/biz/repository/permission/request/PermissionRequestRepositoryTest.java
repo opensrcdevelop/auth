@@ -23,13 +23,16 @@ public class PermissionRequestRepositoryTest {
     @Autowired
     private PermissionRequestMapper permissionRequestMapper;
 
+    @Autowired
+    private PermissionRequestItemMapper permissionRequestItemMapper;
+
     private PermissionRequestRepository repository;
 
     private static final String TEST_TENANT = "master";
 
     @BeforeEach
     void setUp() {
-        repository = new PermissionRequestRepositoryImpl(permissionRequestMapper);
+        repository = new PermissionRequestRepositoryImpl(permissionRequestMapper, permissionRequestItemMapper);
         // 设置租户上下文（per-tenant 模式下由数据源切换实现隔离）
         setTenantContext(TEST_TENANT);
         // 清理测试数据
@@ -114,7 +117,8 @@ public class PermissionRequestRepositoryTest {
         }
 
         // 分页查询
-        cn.opensrcdevelop.common.response.PageData<PermissionRequest> pageData = repository.findByStatus("PENDING", 1, 3);
+        cn.opensrcdevelop.common.response.PageData<PermissionRequest> pageData = repository.findByStatus("PENDING", 1,
+                3);
 
         assertNotNull(pageData);
         assertEquals(5, pageData.getTotal());
