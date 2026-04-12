@@ -29,12 +29,12 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.apache.commons.lang3.StringUtils;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,6 +75,7 @@ public class PermissionController {
 
     @Operation(summary = "校验权限", description = "校验权限")
     @PostMapping("/verify")
+    @Authorize({"allPermPermissions", "verifyPermission"})
     public List<VerifyPermissionResponseDto> verifyPermissions(
             @RequestBody @Valid VerifyPermissionsRequestDto requestDto) {
         return permissionService.verifyPermissions(requestDto);
@@ -149,6 +150,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}/permissions")
+    @Authorize({"allPermPermissions", "listExpPermissions"})
     public List<PermissionResponseDto> expPermissions(@PathVariable @NotBlank String id) {
         return permissionExpService.expPermissions(id);
     }
@@ -291,7 +293,9 @@ public class PermissionController {
             @RequestParam(required = false) String owned) {
         List<String> ownedIds = Collections.emptyList();
         if (StringUtils.isNotEmpty(owned)) {
-            ownedIds = Arrays.asList(owned.split(","));
+            ownedIds = Arrays.asList(owned.split(",")).stream()
+                    .map(String::trim)
+                    .toList();
         }
         return permissionService.getAvailablePermissionTree(ownedIds);
     }
