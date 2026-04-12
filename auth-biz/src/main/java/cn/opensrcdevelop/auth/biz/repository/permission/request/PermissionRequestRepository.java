@@ -9,7 +9,8 @@ public interface PermissionRequestRepository {
     /**
      * 根据申请ID获取申请记录
      *
-     * @param requestId 申请ID
+     * @param requestId
+     *            申请ID
      * @return 申请记录
      */
     PermissionRequest getById(String requestId);
@@ -17,7 +18,8 @@ public interface PermissionRequestRepository {
     /**
      * 根据申请人ID查询申请记录列表
      *
-     * @param userId 申请人ID
+     * @param userId
+     *            申请人ID
      * @return 申请记录列表
      */
     List<PermissionRequest> findByUserId(String userId);
@@ -25,7 +27,8 @@ public interface PermissionRequestRepository {
     /**
      * 根据状态查询申请记录列表（多租户隔离）
      *
-     * @param status 申请状态
+     * @param status
+     *            申请状态
      * @return 申请记录列表
      */
     List<PermissionRequest> findByStatus(String status);
@@ -33,9 +36,12 @@ public interface PermissionRequestRepository {
     /**
      * 根据租户ID分页查询申请记录
      *
-     * @param tenantId 租户ID
-     * @param page 页码
-     * @param pageSize 每页数量
+     * @param tenantId
+     *            租户ID
+     * @param page
+     *            页码
+     * @param pageSize
+     *            每页数量
      * @return 分页后的申请记录列表
      */
     PageData<PermissionRequest> findByTenantId(String tenantId, int page, int pageSize);
@@ -43,10 +49,14 @@ public interface PermissionRequestRepository {
     /**
      * 根据租户ID和状态分页查询申请记录
      *
-     * @param tenantId 租户ID
-     * @param status 申请状态
-     * @param page 页码
-     * @param pageSize 每页数量
+     * @param tenantId
+     *            租户ID
+     * @param status
+     *            申请状态
+     * @param page
+     *            页码
+     * @param pageSize
+     *            每页数量
      * @return 分页后的申请记录列表
      */
     PageData<PermissionRequest> findByTenantIdAndStatus(String tenantId, String status, int page, int pageSize);

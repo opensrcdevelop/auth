@@ -7,8 +7,7 @@ import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.metadata.Page;
-import com.baomidou.mybatisplus.core.metadata.PageRequest;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -24,7 +23,7 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         String tenantId = TenantContextHolder.getTenantContext().getTenantCode();
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionRequest::getRequestId, requestId)
-               .eq(PermissionRequest::getTenantId, tenantId);
+                .eq(PermissionRequest::getTenantId, tenantId);
         return permissionRequestMapper.selectOne(wrapper);
     }
 
@@ -33,8 +32,8 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         String tenantId = TenantContextHolder.getTenantContext().getTenantCode();
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionRequest::getTenantId, tenantId)
-               .eq(PermissionRequest::getUserId, userId)
-               .orderByDesc(PermissionRequest::getRequestTime);
+                .eq(PermissionRequest::getUserId, userId)
+                .orderByDesc(PermissionRequest::getRequestTime);
         return permissionRequestMapper.selectList(wrapper);
     }
 
@@ -43,15 +42,14 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         String tenantId = TenantContextHolder.getTenantContext().getTenantCode();
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionRequest::getTenantId, tenantId)
-               .eq(PermissionRequest::getStatus, status)
-               .orderByDesc(PermissionRequest::getRequestTime);
+                .eq(PermissionRequest::getStatus, status)
+                .orderByDesc(PermissionRequest::getRequestTime);
         return permissionRequestMapper.selectList(wrapper);
     }
 
     @Override
     public PageData<PermissionRequest> findByTenantId(String tenantId, int page, int pageSize) {
-        PageRequest pageRequest = PageRequest.of(page - 1, pageSize);
-        IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(pageRequest, null);
+        Page<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), null);
         PageData<PermissionRequest> pageData = new PageData<>();
         pageData.setTotal(iPage.getTotal());
         pageData.setPages(iPage.getPages());
@@ -63,12 +61,11 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
 
     @Override
     public PageData<PermissionRequest> findByTenantIdAndStatus(String tenantId, String status, int page, int pageSize) {
-        PageRequest pageRequest = PageRequest.of(page - 1, pageSize);
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionRequest::getTenantId, tenantId)
-               .eq(PermissionRequest::getStatus, status)
-               .orderByDesc(PermissionRequest::getRequestTime);
-        IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(pageRequest, wrapper);
+                .eq(PermissionRequest::getStatus, status)
+                .orderByDesc(PermissionRequest::getRequestTime);
+        IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
         PageData<PermissionRequest> pageData = new PageData<>();
         pageData.setTotal(iPage.getTotal());
         pageData.setPages(iPage.getPages());

@@ -1,12 +1,11 @@
 package cn.opensrcdevelop.ai.chat;
 
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {

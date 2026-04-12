@@ -1,21 +1,20 @@
 package cn.opensrcdevelop.auth.biz.repository.permission.request;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.impl.PermissionRequestRepositoryImpl;
 import cn.opensrcdevelop.tenant.support.TenantContext;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
