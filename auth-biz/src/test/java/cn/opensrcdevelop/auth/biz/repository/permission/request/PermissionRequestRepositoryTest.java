@@ -25,12 +25,13 @@ public class PermissionRequestRepositoryTest {
 
     private PermissionRequestRepository repository;
 
-    private static final String TENANT_A = "tenant-a";
-    private static final String TENANT_B = "tenant-b";
+    private static final String TEST_TENANT = "master";
 
     @BeforeEach
     void setUp() {
         repository = new PermissionRequestRepositoryImpl(permissionRequestMapper);
+        // 设置租户上下文（per-tenant 模式下由数据源切换实现隔离）
+        setTenantContext(TEST_TENANT);
         // 清理测试数据
         cleanupTestData();
     }
@@ -42,85 +43,100 @@ public class PermissionRequestRepositoryTest {
         TenantContextHolder.removeTenantContext();
     }
 
-    private void cleanupTestData() {
-        LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(PermissionRequest::getTenantId, TENANT_A, TENANT_B);
-        permissionRequestMapper.delete(wrapper);
-    }
-
     private void setTenantContext(String tenantId) {
         TenantContext context = new TenantContext();
         context.setTenantCode(tenantId);
         TenantContextHolder.setTenantContext(context);
     }
 
+    private void cleanupTestData() {
+        LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PermissionRequest::getUserId, "test-user");
+        permissionRequestMapper.delete(wrapper);
+    }
+
     @Test
-    void testFindByUserId_TenantIsolation() {
-        // 先在 Tenant A 插入数据
-        setTenantContext(TENANT_A);
-        String userId = UUID.randomUUID().toString();
-        insertTestRequest(TENANT_A, userId, "PENDING");
+    void testGetById() {
+        String requestId = UUID.randomUUID().toString().replace("-", "");
+        insertTestRequest(requestId, "test-user", "PENDING");
 
-        // 切换到 Tenant B
-        setTenantContext(TENANT_B);
-        String otherUserId = UUID.randomUUID().toString();
-        insertTestRequest(TENANT_B, otherUserId, "PENDING");
+        PermissionRequest result = repository.getById(requestId);
 
-        // 在 Tenant B 上下文中查询，应该只返回 Tenant B 的数据
-        setTenantContext(TENANT_B);
-        List<PermissionRequest> results = repository.findByUserId(otherUserId);
+        assertNotNull(result);
+        assertEquals(requestId, result.getRequestId());
+        assertEquals("test-user", result.getUserId());
+        assertEquals("PENDING", result.getStatus());
+    }
+
+    @Test
+    void testGetById_NotFound() {
+        PermissionRequest result = repository.getById("non-existent-id");
+        assertNull(result);
+    }
+
+    @Test
+    void testFindByUserId() {
+        String userId = "test-user";
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "PENDING");
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "APPROVED");
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), "other-user", "PENDING");
+
+        List<PermissionRequest> results = repository.findByUserId(userId);
 
         assertNotNull(results);
-        // 验证返回的数据属于 Tenant B
+        assertEquals(2, results.size());
         for (PermissionRequest request : results) {
-            assertEquals(TENANT_B, request.getTenantId());
+            assertEquals(userId, request.getUserId());
         }
     }
 
     @Test
-    void testFindByStatus_TenantIsolation() {
-        // 在 Tenant A 插入待审批数据
-        setTenantContext(TENANT_A);
-        insertTestRequest(TENANT_A, UUID.randomUUID().toString(), "PENDING");
+    void testFindByStatus() {
+        String userId = "test-user";
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "PENDING");
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "PENDING");
+        insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "APPROVED");
 
-        // 在 Tenant B 插入已审批数据
-        setTenantContext(TENANT_B);
-        insertTestRequest(TENANT_B, UUID.randomUUID().toString(), "APPROVED");
-
-        // 在 Tenant A 上下文中查询待审批，应该只返回 Tenant A 的数据
-        setTenantContext(TENANT_A);
         List<PermissionRequest> results = repository.findByStatus("PENDING");
 
         assertNotNull(results);
-        // 验证所有返回的数据都是 Tenant A 且状态为 PENDING
+        assertEquals(2, results.size());
         for (PermissionRequest request : results) {
-            assertEquals(TENANT_A, request.getTenantId());
             assertEquals("PENDING", request.getStatus());
         }
     }
 
     @Test
-    void testGetById_TenantIsolation() {
-        // 在 Tenant A 插入数据
-        setTenantContext(TENANT_A);
+    void testFindByStatus_Pagination() {
+        String userId = "test-user";
+        for (int i = 0; i < 5; i++) {
+            insertTestRequest(UUID.randomUUID().toString().replace("-", ""), userId, "PENDING");
+        }
+
+        // 分页查询
+        cn.opensrcdevelop.common.response.PageData<PermissionRequest> pageData = repository.findByStatus("PENDING", 1, 3);
+
+        assertNotNull(pageData);
+        assertEquals(5, pageData.getTotal());
+        assertEquals(3, pageData.getList().size());
+    }
+
+    @Test
+    void testInsertAndDelete() {
         String requestId = UUID.randomUUID().toString().replace("-", "");
-        insertTestRequestWithId(TENANT_A, requestId, UUID.randomUUID().toString(), "PENDING");
+        insertTestRequest(requestId, "test-user", "PENDING");
 
-        // 在 Tenant B 上下文中查询该 ID，应该返回 null（跨租户隔离）
-        setTenantContext(TENANT_B);
         PermissionRequest result = repository.getById(requestId);
+        assertNotNull(result);
 
-        assertNull(result, "跨租户查询应该返回 null");
+        permissionRequestMapper.deleteById(requestId);
+        result = repository.getById(requestId);
+        assertNull(result);
     }
 
-    private void insertTestRequest(String tenantId, String userId, String status) {
-        insertTestRequestWithId(tenantId, UUID.randomUUID().toString().replace("-", ""), userId, status);
-    }
-
-    private void insertTestRequestWithId(String tenantId, String requestId, String userId, String status) {
+    private void insertTestRequest(String requestId, String userId, String status) {
         PermissionRequest request = new PermissionRequest();
         request.setRequestId(requestId);
-        request.setTenantId(tenantId);
         request.setUserId(userId);
         request.setStatus(status);
         request.setRequestTime(java.time.LocalDateTime.now());

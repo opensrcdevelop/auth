@@ -24,9 +24,6 @@ public class PermissionAutoApprove extends BaseEntity implements Serializable {
     @PropertyName("配置ID")
     private String id;
 
-    @PropertyName("租户ID")
-    private String tenantId;
-
     @PropertyName("权限ID")
     private String permissionId;
 

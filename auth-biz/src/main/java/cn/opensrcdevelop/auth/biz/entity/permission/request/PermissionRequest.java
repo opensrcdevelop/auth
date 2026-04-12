@@ -25,9 +25,6 @@ public class PermissionRequest extends BaseEntity implements Serializable {
     @PropertyName("申请ID")
     private String requestId;
 
-    @PropertyName("租户ID")
-    private String tenantId;
-
     @PropertyName("申请人ID")
     private String userId;
 

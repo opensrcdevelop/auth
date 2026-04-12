@@ -25,7 +25,7 @@ public interface PermissionRequestRepository {
     List<PermissionRequest> findByUserId(String userId);
 
     /**
-     * 根据状态查询申请记录列表（多租户隔离）
+     * 根据状态查询申请记录列表
      *
      * @param status
      *            申请状态
@@ -34,23 +34,19 @@ public interface PermissionRequestRepository {
     List<PermissionRequest> findByStatus(String status);
 
     /**
-     * 根据租户ID分页查询申请记录
+     * 分页查询所有申请记录
      *
-     * @param tenantId
-     *            租户ID
      * @param page
      *            页码
      * @param pageSize
      *            每页数量
      * @return 分页后的申请记录列表
      */
-    PageData<PermissionRequest> findByTenantId(String tenantId, int page, int pageSize);
+    PageData<PermissionRequest> findByTenantId(int page, int pageSize);
 
     /**
-     * 根据租户ID和状态分页查询申请记录
+     * 根据状态分页查询申请记录
      *
-     * @param tenantId
-     *            租户ID
      * @param status
      *            申请状态
      * @param page
@@ -59,5 +55,5 @@ public interface PermissionRequestRepository {
      *            每页数量
      * @return 分页后的申请记录列表
      */
-    PageData<PermissionRequest> findByTenantIdAndStatus(String tenantId, String status, int page, int pageSize);
+    PageData<PermissionRequest> findByStatus(String status, int page, int pageSize);
 }

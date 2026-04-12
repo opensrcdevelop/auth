@@ -6,6 +6,8 @@
  *     2. 创建表【t_permission_request_item】- 权限申请明细表
  *     3. 创建表【t_permission_request_cond】- 权限审批限制条件关联表
  *     4. 创建表【t_permission_auto_approve】- 自动批准配置表
+ *
+ * 注意：本迁移在 per-tenant 数据库执行，不需要 tenant_id 字段
  */
 
 -- ----------------------------
@@ -15,7 +17,6 @@ DROP TABLE IF EXISTS "t_permission_request";
 
 CREATE TABLE "t_permission_request" (
   "request_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "tenant_id" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
   "user_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "reason" varchar(500) COLLATE "pg_catalog"."default",
   "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'PENDING',
@@ -34,7 +35,6 @@ CREATE TABLE "t_permission_request" (
 
 COMMENT ON TABLE "t_permission_request" IS '权限申请表';
 COMMENT ON COLUMN "t_permission_request"."request_id" IS '申请ID（UUID）';
-COMMENT ON COLUMN "t_permission_request"."tenant_id" IS '租户ID';
 COMMENT ON COLUMN "t_permission_request"."user_id" IS '申请人ID';
 COMMENT ON COLUMN "t_permission_request"."reason" IS '申请理由';
 COMMENT ON COLUMN "t_permission_request"."status" IS '申请状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝/AUTO_APPROVED自动批准）';
@@ -120,7 +120,6 @@ DROP TABLE IF EXISTS "t_permission_auto_approve";
 
 CREATE TABLE "t_permission_auto_approve" (
   "id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "tenant_id" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
   "permission_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "enabled" bool NOT NULL DEFAULT true,
   "create_time" timestamp(6),
@@ -134,7 +133,6 @@ CREATE TABLE "t_permission_auto_approve" (
 
 COMMENT ON TABLE "t_permission_auto_approve" IS '自动批准配置表';
 COMMENT ON COLUMN "t_permission_auto_approve"."id" IS '配置ID（UUID）';
-COMMENT ON COLUMN "t_permission_auto_approve"."tenant_id" IS '租户ID';
 COMMENT ON COLUMN "t_permission_auto_approve"."permission_id" IS '权限ID';
 COMMENT ON COLUMN "t_permission_auto_approve"."enabled" IS '是否启用自动批准';
 COMMENT ON COLUMN "t_permission_auto_approve"."create_time" IS '创建时间';
@@ -147,7 +145,6 @@ COMMENT ON COLUMN "t_permission_auto_approve"."deleted" IS '逻辑删除标记';
 -- ----------------------------
 -- 索引：t_permission_request
 -- ----------------------------
-CREATE INDEX "idx_t_permission_request_tenant" ON "t_permission_request" ("tenant_id");
 CREATE INDEX "idx_t_permission_request_user" ON "t_permission_request" ("user_id");
 CREATE INDEX "idx_t_permission_request_status" ON "t_permission_request" ("status");
 
@@ -166,7 +163,6 @@ CREATE INDEX "idx_t_permission_request_cond_item" ON "t_permission_request_cond"
 -- ----------------------------
 -- 索引：t_permission_auto_approve
 -- ----------------------------
-CREATE INDEX "idx_t_permission_auto_approve_tenant" ON "t_permission_auto_approve" ("tenant_id");
 CREATE INDEX "idx_t_permission_auto_approve_permission" ON "t_permission_auto_approve" ("permission_id");
 
 -- ----------------------------
