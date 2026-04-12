@@ -105,7 +105,7 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
     public PageData<PermissionRequest> findByUserIdPaged(String userId, int page, int pageSize) {
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PermissionRequest::getUserId, userId)
-               .orderByDesc(PermissionRequest::getRequestTime);
+                .orderByDesc(PermissionRequest::getRequestTime);
         IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
         PageData<PermissionRequest> pageData = new PageData<>();
         pageData.setTotal(iPage.getTotal());

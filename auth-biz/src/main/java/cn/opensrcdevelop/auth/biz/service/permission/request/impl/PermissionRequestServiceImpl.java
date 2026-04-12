@@ -18,6 +18,7 @@ import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionAutoApproveService;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -117,16 +118,16 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         PageData<PermissionRequest> paged = permissionRequestRepository.findByUserIdPaged(userId, page, size);
 
         List<PermissionRequestListItemDto> dtoList = paged.getList().stream()
-            .map(req -> {
-                PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
-                dto.setRequestId(req.getRequestId());
-                dto.setStatus(req.getStatus());
-                dto.setRequestTime(req.getRequestTime());
-                dto.setReason(req.getReason());
-                dto.setRejectReason(req.getRejectReason());
-                return dto;
-            })
-            .toList();
+                .map(req -> {
+                    PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
+                    dto.setRequestId(req.getRequestId());
+                    dto.setStatus(req.getStatus());
+                    dto.setRequestTime(req.getRequestTime());
+                    dto.setReason(req.getReason());
+                    dto.setRejectReason(req.getRejectReason());
+                    return dto;
+                })
+                .toList();
 
         PageData<PermissionRequestListItemDto> result = new PageData<>();
         result.setTotal(paged.getTotal());
