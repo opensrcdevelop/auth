@@ -7,6 +7,7 @@ import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
@@ -108,5 +109,31 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         response.setAutoApprovedCount(autoApprovedPermIds.size());
         response.setPendingCount(permissionIds.size() - autoApprovedPermIds.size());
         return response;
+    }
+
+    @Override
+    public PageData<PermissionRequestListItemDto> listUserRequests(int page, int size) {
+        String userId = AuthUtil.getCurrentUserId();
+        PageData<PermissionRequest> paged = permissionRequestRepository.findByUserIdPaged(userId, page, size);
+
+        List<PermissionRequestListItemDto> dtoList = paged.getList().stream()
+            .map(req -> {
+                PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
+                dto.setRequestId(req.getRequestId());
+                dto.setStatus(req.getStatus());
+                dto.setRequestTime(req.getRequestTime());
+                dto.setReason(req.getReason());
+                dto.setRejectReason(req.getRejectReason());
+                return dto;
+            })
+            .toList();
+
+        PageData<PermissionRequestListItemDto> result = new PageData<>();
+        result.setTotal(paged.getTotal());
+        result.setPages(paged.getPages());
+        result.setCurrent(paged.getCurrent());
+        result.setSize(paged.getSize());
+        result.setList(dtoList);
+        return result;
     }
 }
