@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.service.permission.request;
 
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestDetailDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
 import cn.opensrcdevelop.common.response.PageData;
@@ -30,4 +31,14 @@ public interface PermissionRequestService {
      * @return 分页的申请记录列表
      */
     PageData<PermissionRequestListItemDto> listUserRequests(int page, int size);
+
+    /**
+     * 获取权限申请详情（包含申请的权限列表）
+     *
+     * @param requestId
+     *            申请ID
+     * @return 申请详情，包含权限明细列表（通过 JOIN t_permission 获取 permissionName 和
+     *         permissionCode）
+     */
+    PermissionRequestDetailDto getRequestDetail(String requestId);
 }

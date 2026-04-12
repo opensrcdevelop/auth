@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.controller.user;
 
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestDetailDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
@@ -10,8 +11,10 @@ import cn.opensrcdevelop.common.response.PageData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,5 +43,11 @@ public class UserCenterPermissionRequestController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "15") int size) {
         return permissionRequestService.listUserRequests(page, size);
+    }
+
+    @Operation(summary = "获取权限申请详情", description = "返回指定申请的详细信息，包括申请的权限列表")
+    @GetMapping("/{id}")
+    public PermissionRequestDetailDto getRequestDetail(@PathVariable @NotBlank String id) {
+        return permissionRequestService.getRequestDetail(id);
     }
 }

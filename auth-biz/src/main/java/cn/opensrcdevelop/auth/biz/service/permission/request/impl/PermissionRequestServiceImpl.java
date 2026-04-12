@@ -7,10 +7,14 @@ import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestDetailDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemDetailDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
+import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestItemMapper;
 import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
@@ -20,6 +24,7 @@ import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestSe
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +41,7 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
     private final PermissionAutoApproveService permissionAutoApproveService;
     private final AuthorizeService authorizeService;
     private final PermissionRequestRepository permissionRequestRepository;
+    private final PermissionMapper permissionMapper;
 
     /**
      * 提交权限申请
@@ -136,5 +142,56 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         result.setSize(paged.getSize());
         result.setList(dtoList);
         return result;
+    }
+
+    @Override
+    public PermissionRequestDetailDto getRequestDetail(String requestId) {
+        // 1. Get request by ID
+        PermissionRequest request = permissionRequestRepository.getById(requestId);
+        if (request == null) {
+            return null;
+        }
+
+        // 2. IDOR protection: verify request belongs to current user (per D-09)
+        String currentUserId = AuthUtil.getCurrentUserId();
+        if (!request.getUserId().equals(currentUserId)) {
+            throw new SecurityException("无权查看此申请详情");
+        }
+
+        // 3. Get request items
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.eq(PermissionRequestItem::getRequestId, requestId);
+        List<PermissionRequestItem> items = permissionRequestItemMapper.selectList(itemWrapper);
+
+        // 4. Enrich items with permission details (per D-05: JOIN t_permission for
+        // permissionName, permissionCode)
+        List<PermissionRequestItemDetailDto> itemDtos = items.stream()
+                .map(item -> {
+                    PermissionRequestItemDetailDto itemDto = new PermissionRequestItemDetailDto();
+                    itemDto.setPermissionId(item.getPermissionId());
+                    itemDto.setAutoApproved(item.getAutoApproved());
+
+                    // Get permission details from t_permission table
+                    Permission permission = permissionMapper.getPermission(item.getPermissionId());
+                    if (permission != null) {
+                        itemDto.setPermissionName(permission.getPermissionName());
+                        itemDto.setPermissionCode(permission.getPermissionCode());
+                    }
+                    return itemDto;
+                })
+                .toList();
+
+        // 5. Build and return detail DTO
+        PermissionRequestDetailDto detail = new PermissionRequestDetailDto();
+        detail.setRequestId(request.getRequestId());
+        detail.setUserId(request.getUserId());
+        detail.setReason(request.getReason());
+        detail.setStatus(request.getStatus());
+        detail.setRequestTime(request.getRequestTime());
+        detail.setApproverId(request.getApproverId());
+        detail.setApproveTime(request.getApproveTime());
+        detail.setRejectReason(request.getRejectReason());
+        detail.setItems(itemDtos);
+        return detail;
     }
 }
