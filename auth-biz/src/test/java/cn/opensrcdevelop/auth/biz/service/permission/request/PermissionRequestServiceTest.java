@@ -130,7 +130,7 @@ class PermissionRequestServiceTest {
         try (MockedStatic<AuthUtil> authUtil = mockStatic(AuthUtil.class)) {
             authUtil.when(AuthUtil::getCurrentUserId).thenReturn("user-001");
 
-            assertThrows(RuntimeException.class, () -> permissionRequestService.submitRequest(dto));
+            assertThrows(IllegalStateException.class, () -> permissionRequestService.submitRequest(dto));
             verify(permissionRequestMapper, never()).insert(any(PermissionRequest.class));
         }
     }
