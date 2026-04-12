@@ -7,7 +7,9 @@ import {handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import router from "@/router";
 import {AUTH_TOKENS} from "@/util/constants";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
 
+const globalVariables = useGlobalVariablesStore();;
 const chatRef = ref();
 const chatHistoryRef = ref();
 const chatId = ref("");
@@ -112,6 +114,7 @@ export default defineComponent({
     });
 
     return {
+      globalVariables,
       chatRef,
       chatHistoryRef,
       chatId,

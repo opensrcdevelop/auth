@@ -9,7 +9,11 @@ export default indexTs;
 </style>
 
 <template>
-  <div class="chat-box">
+  <a-spin
+    class="chat-box"
+    :loading="globalVariables.apiLoading"
+    tip="处理中，请稍候..."
+  >
     <ChatHistory
       ref="chatHistoryRef"
       @switchChat="handleSwitchChat"
@@ -22,8 +26,15 @@ export default indexTs;
         <div class="chat-title">{{ currentChatTitle }}</div>
         <div class="user-info">
           <div class="username">你好，</div>
-          <a-link :hoverable="false" @click="handleToUserHome">{{ currentUser.username }}</a-link>
-          <a-button type="text" shape="circle" size="large" @click="handleLogout">
+          <a-link :hoverable="false" @click="handleToUserHome">{{
+            currentUser.username
+          }}</a-link>
+          <a-button
+            type="text"
+            shape="circle"
+            size="large"
+            @click="handleLogout"
+          >
             <template #icon>
               <icon-poweroff />
             </template>
@@ -33,11 +44,11 @@ export default indexTs;
 
       <Chat
         ref="chatRef"
-        style="width: 100%;"
+        style="width: 100%"
         :chatId="chatId"
         :dataSourceId="dataSourceId"
         @updateChatHistory="handleUpdateChatHistory"
       />
     </div>
-  </div>
+  </a-spin>
 </template>
