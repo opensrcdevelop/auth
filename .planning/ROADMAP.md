@@ -63,8 +63,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — 基础合约层：枚举 + DTO + ResourceType.PERMISSION_REQUEST + PermissionAutoApproveService + Repository.hasActivePendingRequest
-- [ ] 03-02-PLAN.md — 申请提交服务 + 控制器：PermissionRequestServiceImpl (@Transactional + @Audit) + UserCenterPermissionRequestController (POST /user-center/permissions/requests)
+- [x] 03-01-PLAN.md — 基础合约层：枚举 + DTO + ResourceType.PERMISSION_REQUEST + PermissionAutoApproveService + Repository.hasActivePendingRequest
+- [x] 03-02-PLAN.md — 申请提交服务 + 控制器：PermissionRequestServiceImpl (@Transactional + @Audit) + UserCenterPermissionRequestController (POST /user-center/permissions/requests)
 
 ### Phase 4: User Request View APIs
 **Goal**: 用户可以查看自己的申请记录
@@ -76,8 +76,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: 实现 GET /user-center/permissions/requests 列表接口
-- [ ] 04-02: 实现 GET /user-center/permissions/requests/{id} 详情接口
+- [ ] 04-01-PLAN.md — 实现 GET /user-center/permissions/requests 列表接口
+- [ ] 04-02-PLAN.md — 实现 GET /user-center/permissions/requests/{id} 详情接口
 
 ### Phase 5: Admin Pending List API
 **Goal**: 管理员可以查看待审批和全部申请
