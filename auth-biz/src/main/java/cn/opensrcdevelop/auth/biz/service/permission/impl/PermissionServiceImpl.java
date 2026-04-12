@@ -12,15 +12,21 @@ import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionTreeNodeDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionTreePermissionDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionTreeResourceDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
+import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
+import cn.opensrcdevelop.auth.biz.mapper.resource.ResourceMapper;
+import cn.opensrcdevelop.auth.biz.mapper.resource.group.ResourceGroupMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
@@ -71,6 +77,12 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     @Resource
     @Lazy
     private UserGroupService userGroupService;
+
+    @Resource
+    private ResourceGroupMapper resourceGroupMapper;
+
+    @Resource
+    private ResourceMapper resourceMapper;
 
     /**
      * 创建权限
@@ -462,6 +474,90 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                     }
                     return responseBuilder.build();
                 }).toList();
+    }
+
+    /**
+     * 获取可申请的权限树
+     *
+     * @param ownedPermissionIds 用户已拥有的权限ID列表（用于标记 alreadyGranted）
+     * @return 权限树（按资源组 -> 资源 -> 权限 三层结构）
+     */
+    @Override
+    public List<PermissionTreeNodeDto> getAvailablePermissionTree(List<String> ownedPermissionIds) {
+        // 1. 查询所有资源组（按 resourceGroupCode 排序）
+        List<ResourceGroup> groups = resourceGroupMapper.selectList(
+                Wrappers.<ResourceGroup>lambdaQuery().orderByAsc(ResourceGroup::getResourceGroupCode)
+        );
+
+        if (CollectionUtils.isEmpty(groups)) {
+            return Collections.emptyList();
+        }
+
+        // 2. 批量查询所有资源
+        List<String> groupIds = groups.stream().map(ResourceGroup::getResourceGroupId).toList();
+        List<cn.opensrcdevelop.auth.biz.entity.resource.Resource> allResources = resourceMapper.selectList(
+                Wrappers.<cn.opensrcdevelop.auth.biz.entity.resource.Resource>lambdaQuery().in(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId, groupIds)
+        );
+
+        if (CollectionUtils.isEmpty(allResources)) {
+            // 只有资源组没有资源的情况
+            return groups.stream().map(group -> {
+                PermissionTreeNodeDto node = new PermissionTreeNodeDto();
+                node.setResourceGroupId(group.getResourceGroupId());
+                node.setResourceGroupName(group.getResourceGroupName());
+                node.setResourceGroupCode(group.getResourceGroupCode());
+                node.setResources(Collections.emptyList());
+                return node;
+            }).toList();
+        }
+
+        // 3. 批量查询所有权限
+        List<String> resourceIds = allResources.stream().map(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceId).toList();
+        List<Permission> allPermissions = baseMapper.selectList(
+                Wrappers.<Permission>lambdaQuery().in(Permission::getResourceId, resourceIds)
+        );
+
+        // 4. 构建已拥有权限 ID 集合用于快速查找
+        Set<String> ownedSet = ownedPermissionIds != null ? new HashSet<>(ownedPermissionIds) : Collections.emptySet();
+
+        // 5. 按 resourceGroupId 分组资源
+        Map<String, List<cn.opensrcdevelop.auth.biz.entity.resource.Resource>> resourcesByGroup = allResources.stream()
+                .collect(Collectors.groupingBy(cn.opensrcdevelop.auth.biz.entity.resource.Resource::getResourceGroupId));
+
+        // 6. 按 resourceId 分组权限
+        Map<String, List<Permission>> permissionsByResource = allPermissions.stream()
+                .collect(Collectors.groupingBy(Permission::getResourceId));
+
+        // 7. 组装树结构
+        return groups.stream().map(group -> {
+            PermissionTreeNodeDto node = new PermissionTreeNodeDto();
+            node.setResourceGroupId(group.getResourceGroupId());
+            node.setResourceGroupName(group.getResourceGroupName());
+            node.setResourceGroupCode(group.getResourceGroupCode());
+
+            List<cn.opensrcdevelop.auth.biz.entity.resource.Resource> groupResources = resourcesByGroup.getOrDefault(group.getResourceGroupId(), Collections.emptyList());
+            List<PermissionTreeResourceDto> resourceNodes = groupResources.stream().map(resource -> {
+                PermissionTreeResourceDto resourceNode = new PermissionTreeResourceDto();
+                resourceNode.setResourceId(resource.getResourceId());
+                resourceNode.setResourceName(resource.getResourceName());
+                resourceNode.setResourceCode(resource.getResourceCode());
+
+                List<Permission> resourcePermissions = permissionsByResource.getOrDefault(resource.getResourceId(), Collections.emptyList());
+                List<PermissionTreePermissionDto> permissionNodes = resourcePermissions.stream().map(perm -> {
+                    PermissionTreePermissionDto permNode = new PermissionTreePermissionDto();
+                    permNode.setPermissionId(perm.getPermissionId());
+                    permNode.setPermissionName(perm.getPermissionName());
+                    permNode.setPermissionCode(perm.getPermissionCode());
+                    permNode.setPermissionLocator(generatePermissionLocator(perm));
+                    permNode.setAlreadyGranted(ownedSet.contains(perm.getPermissionId()));
+                    return permNode;
+                }).toList();
+                resourceNode.setPermissions(permissionNodes);
+                return resourceNode;
+            }).toList();
+            node.setResources(resourceNodes);
+            return node;
+        }).toList();
     }
 
     private Tuple4<String, String, String, String> getPrincipal(AuthorizeRecord authorizeRecord) {
