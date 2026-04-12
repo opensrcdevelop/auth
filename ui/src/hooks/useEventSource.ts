@@ -21,7 +21,7 @@ export function useEventSource() {
     controller = new AbortController();
     const headers = {
       "Content-Type": "application/json",
-    };
+    } as any;
     const authTokens = localStorage.getItem(AUTH_TOKENS);
     if (authTokens) {
       const token: any = JSON.parse(decodeBase64Str(authTokens));
@@ -43,6 +43,7 @@ export function useEventSource() {
           options.onOpen?.(response);
           return;
         }
+        options.onError?.(response);
         throw new Error(
           `Failed to open stream: ${response.status} ${response.statusText}`
         );

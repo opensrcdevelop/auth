@@ -21,7 +21,8 @@ export default indexTs;
       <div class="chat-header">
         <div class="chat-title">{{ currentChatTitle }}</div>
         <div class="user-info">
-          <div class="username">你好，{{ currentUser.username }}</div>
+          <div class="username">你好，</div>
+          <a-link :hoverable="false" @click="handleToUserHome">{{ currentUser.username }}</a-link>
           <a-button type="text" shape="circle" size="large" @click="handleLogout">
             <template #icon>
               <icon-poweroff />

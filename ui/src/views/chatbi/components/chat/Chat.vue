@@ -66,7 +66,7 @@
             </a-select>
           </a-space>
         </div>
-        <div style="display: flex; align-items: center;">
+        <div style="display: flex; align-items: center">
           <a-tooltip content="显示思考过程">
             <a-switch
               v-model="showThinking"
@@ -328,7 +328,21 @@ const sendMessage = (input: string) => {
       if (loadingItem) {
         loadingItem.loading = false;
         loadingItem.error = true;
-        loadingItem.content = "发生了未知错误";
+
+        if (error instanceof Response) {
+          const status = error.status;
+          if (status === 401) {
+            loadingItem.content = "未登录，请先登录";
+          } else if (status === 403) {
+            loadingItem.content = "无权限访问，请联系管理员";
+          } else if (status === 500) {
+            loadingItem.content = "服务器内部错误";
+          } else {
+            loadingItem.content = "发生了未知错误";
+          }
+        } else {
+          loadingItem.content = "发生了未知错误";
+        }
       }
       abort();
     },

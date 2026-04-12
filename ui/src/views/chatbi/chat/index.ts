@@ -25,7 +25,7 @@ const currentChatTitle = computed(() => {
     return "";
   }
   const chat = chatHistoryRef.value.chatHistoryList.find(
-    (item: any) => item.id === chatId.value
+    (item: any) => item.id === chatId.value,
   );
   return chat?.title || "";
 });
@@ -93,6 +93,12 @@ const handleUpdateDataSourceId = (id: string) => {
   dataSourceId.value = id;
 };
 
+const handleToUserHome = () => {
+  router.push({
+    path: "/user/home",
+  });
+};
+
 export default defineComponent({
   components: {
     Chat,
@@ -117,6 +123,7 @@ export default defineComponent({
       handleLogout,
       currentUser,
       currentChatTitle,
+      handleToUserHome,
     };
   },
 });
