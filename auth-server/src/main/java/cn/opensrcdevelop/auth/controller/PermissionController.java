@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionTreeNodeDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpRequestDto;
@@ -28,7 +29,10 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.apache.commons.lang3.StringUtils;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -276,5 +280,19 @@ public class PermissionController {
     @GetMapping("/me")
     public List<PermissionResponseDto> getCurrentUserPermissions() {
         return permissionService.getCurrentUserPermissions();
+    }
+
+    @Operation(summary = "获取可申请权限树", description = "获取当前用户可申请的权限树（按资源组 -> 资源 -> 权限三层结构），已拥有的权限标记 alreadyGranted=true")
+    @Parameters({
+            @Parameter(name = "owned", description = "已拥有的权限ID列表，逗号分隔，用于标记 alreadyGranted", in = ParameterIn.QUERY, required = false)
+    })
+    @GetMapping("/available-tree")
+    public List<PermissionTreeNodeDto> getAvailablePermissionTree(
+            @RequestParam(required = false) String owned) {
+        List<String> ownedIds = Collections.emptyList();
+        if (StringUtils.isNotEmpty(owned)) {
+            ownedIds = Arrays.asList(owned.split(","));
+        }
+        return permissionService.getAvailablePermissionTree(ownedIds);
     }
 }
