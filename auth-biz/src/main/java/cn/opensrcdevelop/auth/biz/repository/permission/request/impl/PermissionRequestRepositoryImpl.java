@@ -76,8 +76,7 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
     @Override
     public boolean hasActivePendingRequest(String userId, java.util.List<String> permissionIds) {
         // 步骤 1：查询该用户所有 PENDING 或 AUTO_APPROVED 状态的申请ID
-        LambdaQueryWrapper<PermissionRequest> requestWrapper =
-                new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<PermissionRequest> requestWrapper = new LambdaQueryWrapper<>();
         requestWrapper.eq(PermissionRequest::getUserId, userId)
                 .in(PermissionRequest::getStatus,
                         java.util.List.of(
@@ -93,13 +92,27 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         }
 
         // 步骤 2：检查这些申请中是否包含待检查的权限
-        LambdaQueryWrapper<PermissionRequestItem> itemWrapper =
-                new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
         itemWrapper.in(
-                        PermissionRequestItem::getRequestId,
-                        activeRequestIds)
+                PermissionRequestItem::getRequestId,
+                activeRequestIds)
                 .in(PermissionRequestItem::getPermissionId,
                         permissionIds);
         return permissionRequestItemMapper.selectCount(itemWrapper) > 0;
+    }
+
+    @Override
+    public PageData<PermissionRequest> findByUserIdPaged(String userId, int page, int pageSize) {
+        LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PermissionRequest::getUserId, userId)
+               .orderByDesc(PermissionRequest::getRequestTime);
+        IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
+        PageData<PermissionRequest> pageData = new PageData<>();
+        pageData.setTotal(iPage.getTotal());
+        pageData.setPages(iPage.getPages());
+        pageData.setCurrent(iPage.getCurrent());
+        pageData.setSize(iPage.getSize());
+        pageData.setList(iPage.getRecords());
+        return pageData;
     }
 }
