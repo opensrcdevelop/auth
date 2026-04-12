@@ -271,4 +271,10 @@ public class PermissionController {
     public List<PermissionExpResponseDto> listTemplatePermissionExp(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.getPermissionExpList(id);
     }
+
+    @Operation(summary = "获取当前用户权限", description = "获取当前用户已有的权限列表")
+    @GetMapping("/me")
+    public List<PermissionResponseDto> getCurrentUserPermissions() {
+        return permissionService.getCurrentUserPermissions();
+    }
 }
