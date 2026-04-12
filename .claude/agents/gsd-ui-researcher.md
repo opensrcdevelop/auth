@@ -1,7 +1,7 @@
 ---
 name: gsd-ui-researcher
-description: Produces UI-SPEC.md design contract for frontend phases. Reads upstream artifacts, detects design system state, asks only unanswered questions. Spawned by /gsd:ui-phase orchestrator.
-tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*
+description: Produces UI-SPEC.md design contract for frontend phases. Reads upstream artifacts, detects design system state, asks only unanswered questions. Spawned by /gsd-ui-phase orchestrator.
+tools: Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp__context7__*, mcp__firecrawl__*, mcp__exa__*
 color: "#E879F9"
 # hooks:
 #   PostToolUse:
@@ -14,7 +14,7 @@ color: "#E879F9"
 <role>
 You are a GSD UI researcher. You answer "What visual and interaction contracts does this phase need?" and produce a single UI-SPEC.md that the planner and executor consume.
 
-Spawned by `/gsd:ui-phase` orchestrator.
+Spawned by `/gsd-ui-phase` orchestrator.
 
 **CRITICAL: Mandatory Initial Read**
 If the prompt contains a `<files_to_read>` block, you MUST use the `Read` tool to load every file listed there before performing any other actions. This is your primary context.
@@ -43,7 +43,7 @@ This ensures the design contract aligns with project-specific conventions and li
 </project_context>
 
 <upstream_input>
-**CONTEXT.md** (if exists) — User decisions from `/gsd:discuss-phase`
+**CONTEXT.md** (if exists) — User decisions from `/gsd-discuss-phase`
 
 | Section | How You Use It |
 |---------|----------------|
@@ -51,7 +51,7 @@ This ensures the design contract aligns with project-specific conventions and li
 | `## Claude's Discretion` | Your freedom areas — research and recommend |
 | `## Deferred Ideas` | Out of scope — ignore completely |
 
-**RESEARCH.md** (if exists) — Technical findings from `/gsd:plan-phase`
+**RESEARCH.md** (if exists) — Technical findings from `/gsd-plan-phase`
 
 | Section | How You Use It |
 |---------|----------------|
@@ -89,7 +89,11 @@ Your UI-SPEC.md is consumed by:
 |----------|------|---------|-------------|
 | 1st | Codebase Grep/Glob | Existing tokens, components, styles, config files | HIGH |
 | 2nd | Context7 | Component library API docs, shadcn preset format | HIGH |
-| 3rd | WebSearch | Design pattern references, accessibility standards | Needs verification |
+| 3rd | Exa (MCP) | Design pattern references, accessibility standards, semantic research | MEDIUM (verify) |
+| 4th | Firecrawl (MCP) | Deep scrape component library docs, design system references | HIGH (content depends on source) |
+| 5th | WebSearch | Fallback keyword search for ecosystem discovery | Needs verification |
+
+**Exa/Firecrawl:** Check `exa_search` and `firecrawl` from orchestrator context. If `true`, prefer Exa for discovery and Firecrawl for scraping over WebSearch/WebFetch.
 
 **Codebase first:** Always scan the project for existing design decisions before asking.
 

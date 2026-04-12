@@ -6,12 +6,21 @@ Initialize a new project through unified flow: questioning, research (optional),
 Read all files referenced by the invoking prompt's execution_context before starting.
 </required_reading>
 
+<available_agent_types>
+Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+- gsd-project-researcher — Researches project-level technical decisions
+- gsd-research-synthesizer — Synthesizes findings from parallel research agents
+- gsd-roadmapper — Creates phased execution roadmaps
+</available_agent_types>
+
 <auto_mode>
+
 ## Auto Mode Detection
 
 Check if `--auto` flag is present in $ARGUMENTS.
 
 **If auto mode:**
+
 - Skip brownfield mapping offer (assume greenfield)
 - Skip deep questioning (extract context from provided document)
 - Config: YOLO mode is implicit (skip that question), but ask granularity/git/agents FIRST (Step 2a)
@@ -23,7 +32,8 @@ Check if `--auto` flag is present in $ARGUMENTS.
 
 **Document requirement:**
 Auto mode requires an idea document — either:
-- File reference: `/gsd:new-project --auto @prd.md`
+
+- File reference: `/gsd-new-project --auto @prd.md`
 - Pasted/written text in the prompt
 
 If no document content provided, error:
@@ -32,11 +42,12 @@ If no document content provided, error:
 Error: --auto requires an idea document.
 
 Usage:
-  /gsd:new-project --auto @your-idea.md
-  /gsd:new-project --auto [paste or write your idea here]
+  /gsd-new-project --auto @your-idea.md
+  /gsd-new-project --auto [paste or write your idea here]
 
 The document should describe what you want to build.
 ```
+
 </auto_mode>
 
 <process>
@@ -48,13 +59,40 @@ The document should describe what you want to build.
 ```bash
 INIT=$(node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" init new-project)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
+AGENT_SKILLS_RESEARCHER=$(node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-project-researcher 2>/dev/null)
+AGENT_SKILLS_SYNTHESIZER=$(node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-synthesizer 2>/dev/null)
+AGENT_SKILLS_ROADMAPPER=$(node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-roadmapper 2>/dev/null)
 ```
 
 Parse JSON for: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `project_exists`, `has_codebase_map`, `planning_exists`, `has_existing_code`, `has_package_file`, `is_brownfield`, `needs_codebase_map`, `has_git`, `project_path`.
 
-**If `project_exists` is true:** Error — project already initialized. Use `/gsd:progress`.
+**Detect runtime and set instruction file name:**
+
+Derive `RUNTIME` from the invoking prompt's `execution_context` path:
+- Path contains `/.codex/` → `RUNTIME=codex`
+- Path contains `/.gemini/` → `RUNTIME=gemini`
+- Path contains `/.config/opencode/` or `/.opencode/` → `RUNTIME=opencode`
+- Otherwise → `RUNTIME=claude`
+
+If `execution_context` path is not available, fall back to env vars:
+```bash
+if [ -n "$CODEX_HOME" ]; then RUNTIME="codex"
+elif [ -n "$GEMINI_CONFIG_DIR" ]; then RUNTIME="gemini"
+elif [ -n "$OPENCODE_CONFIG_DIR" ] || [ -n "$OPENCODE_CONFIG" ]; then RUNTIME="opencode"
+else RUNTIME="claude"; fi
+```
+
+Set the instruction file variable:
+```bash
+if [ "$RUNTIME" = "codex" ]; then INSTRUCTION_FILE="AGENTS.md"; else INSTRUCTION_FILE="CLAUDE.md"; fi
+```
+
+All subsequent references to the project instruction file use `$INSTRUCTION_FILE`.
+
+**If `project_exists` is true:** Error — project already initialized. Use `/gsd-progress`.
 
 **If `has_git` is false:** Initialize git:
+
 ```bash
 git init
 ```
@@ -66,16 +104,19 @@ git init
 **If `needs_codebase_map` is true** (from init — existing code detected but no codebase map):
 
 Use AskUserQuestion:
+
 - header: "Codebase"
 - question: "I detected existing code in this directory. Would you like to map the codebase first?"
 - options:
-  - "Map codebase first" — Run /gsd:map-codebase to understand existing architecture (Recommended)
+  - "Map codebase first" — Run /gsd-map-codebase to understand existing architecture (Recommended)
   - "Skip mapping" — Proceed with project initialization
 
 **If "Map codebase first":**
+
 ```
-Run `/gsd:map-codebase` first, then return to `/gsd:new-project`
+Run `/gsd-map-codebase` first, then return to `/gsd-new-project`
 ```
+
 Exit command.
 
 **If "Skip mapping" OR `needs_codebase_map` is false:** Continue to Step 3.
@@ -166,23 +207,11 @@ AskUserQuestion([
 ])
 ```
 
-Create `.planning/config.json` with mode set to "yolo":
+Create `.planning/config.json` with all settings (CLI fills in remaining defaults automatically):
 
-```json
-{
-  "mode": "yolo",
-  "granularity": "[selected]",
-  "parallelization": true|false,
-  "commit_docs": true|false,
-  "model_profile": "quality|balanced|budget|inherit",
-  "workflow": {
-    "research": true|false,
-    "plan_check": true|false,
-    "verifier": true|false,
-    "nyquist_validation": depth !== "quick",
-    "auto_advance": true
-  }
-}
+```bash
+mkdir -p .planning
+node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"yolo","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":true|false,"auto_advance":true}}'
 ```
 
 **If commit_docs = No:** Add `.planning/` to `.gitignore`.
@@ -222,11 +251,20 @@ Ask inline (freeform, NOT AskUserQuestion):
 
 Wait for their response. This gives you the context needed to ask intelligent follow-up questions.
 
+**Research-before-questions mode:** Check if `workflow.research_before_questions` is enabled in `.planning/config.json` (or the config from init context). When enabled, before asking follow-up questions about a topic area:
+
+1. Do a brief web search for best practices related to what the user described
+2. Mention key findings naturally as you ask questions (e.g., "Most projects like this use X — is that what you're thinking, or something different?")
+3. This makes questions more informed without changing the conversational flow
+
+When disabled (default), ask questions directly as before.
+
 **Follow the thread:**
 
 Based on what they said, ask follow-up questions that dig into their response. Use AskUserQuestion with options that probe what they mentioned — interpretations, clarifications, concrete examples.
 
 Keep following threads. Each answer opens new threads to explore. Ask about:
+
 - What excited them
 - What problem sparked this
 - What they mean by vague terms
@@ -234,6 +272,7 @@ Keep following threads. Each answer opens new threads to explore. Ask about:
 - What's already decided
 
 Consult `questioning.md` for techniques:
+
 - Challenge vagueness
 - Make abstract concrete
 - Surface assumptions
@@ -333,6 +372,27 @@ Initialize with any decisions made during questioning:
 ```markdown
 ---
 *Last updated: [date] after initialization*
+```
+
+**Evolution section** (include at the end of PROJECT.md, before the footer):
+
+```markdown
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 ```
 
 Do not compress. Capture everything gathered.
@@ -467,29 +527,22 @@ questions: [
 ]
 ```
 
-Create `.planning/config.json` with all settings:
+Create `.planning/config.json` with all settings (CLI fills in remaining defaults automatically):
 
-```json
-{
-  "mode": "yolo|interactive",
-  "granularity": "coarse|standard|fine",
-  "parallelization": true|false,
-  "commit_docs": true|false,
-  "model_profile": "quality|balanced|budget|inherit",
-  "workflow": {
-    "research": true|false,
-    "plan_check": true|false,
-    "verifier": true|false,
-    "nyquist_validation": depth !== "quick"
-  }
-}
+```bash
+mkdir -p .planning
+node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"[yolo|interactive]","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":[false if granularity=coarse, true otherwise]}}'
 ```
 
+**Note:** Run `/gsd-settings` anytime to update model profile, workflow agents, branching strategy, and other preferences.
+
 **If commit_docs = No:**
+
 - Set `commit_docs: false` in config.json
 - Add `.planning/` to `.gitignore` (create if needed)
 
 **If commit_docs = Yes:**
+
 - No additional gitignore entries needed
 
 **Commit config.json:**
@@ -498,7 +551,37 @@ Create `.planning/config.json` with all settings:
 node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" commit "chore: add project config" --files .planning/config.json
 ```
 
-**Note:** Run `/gsd:settings` anytime to update these preferences.
+## 5.1. Sub-Repo Detection
+
+**Detect multi-repo workspace:**
+
+Check for directories with their own `.git` folders (separate repos within the workspace):
+
+```bash
+find . -maxdepth 1 -type d -not -name ".*" -not -name "node_modules" -exec test -d "{}/.git" \; -print
+```
+
+**If sub-repos found:**
+
+Strip the `./` prefix to get directory names (e.g., `./backend` → `backend`).
+
+Use AskUserQuestion:
+
+- header: "Multi-Repo Workspace"
+- question: "I detected separate git repos in this workspace. Which directories contain code that GSD should commit to?"
+- multiSelect: true
+- options: one option per detected directory
+  - "[directory name]" — Separate git repo
+
+**If user selects one or more directories:**
+
+- Set `planning.sub_repos` in config.json to the selected directory names array (e.g., `["backend", "frontend"]`)
+- Auto-set `planning.commit_docs` to `false` (planning docs stay local in multi-repo workspaces)
+- Add `.planning/` to `.gitignore` if not already present
+
+Config changes are saved locally — no commit needed since `commit_docs` is `false` in multi-repo mode.
+
+**If no sub-repos found or user selects none:** Continue with no changes to config.
 
 ## 5.5. Resolve Model Profile
 
@@ -509,6 +592,7 @@ Use models from init: `researcher_model`, `synthesizer_model`, `roadmapper_model
 **If auto mode:** Default to "Research first" without asking.
 
 Use AskUserQuestion:
+
 - header: "Research"
 - question: "Research the domain ecosystem before defining requirements?"
 - options:
@@ -518,6 +602,7 @@ Use AskUserQuestion:
 **If "Research first":**
 
 Display stage banner:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  GSD ► RESEARCHING
@@ -527,6 +612,7 @@ Researching [domain] ecosystem...
 ```
 
 Create research directory:
+
 ```bash
 mkdir -p .planning/research
 ```
@@ -534,10 +620,12 @@ mkdir -p .planning/research
 **Determine milestone context:**
 
 Check if this is greenfield or subsequent milestone:
+
 - If no "Validated" requirements in PROJECT.md → Greenfield (building from scratch)
 - If "Validated" requirements exist → Subsequent milestone (adding to existing app)
 
 Display spawning indicator:
+
 ```
 ◆ Spawning 4 researchers in parallel...
   → Stack research
@@ -567,6 +655,8 @@ What's the standard 2025 stack for [domain]?
 <files_to_read>
 - {project_path} (Project context and goals)
 </files_to_read>
+
+${AGENT_SKILLS_RESEARCHER}
 
 <downstream_consumer>
 Your STACK.md feeds into roadmap creation. Be prescriptive:
@@ -606,6 +696,8 @@ What features do [domain] products have? What's table stakes vs differentiating?
 - {project_path} (Project context)
 </files_to_read>
 
+${AGENT_SKILLS_RESEARCHER}
+
 <downstream_consumer>
 Your FEATURES.md feeds into requirements definition. Categorize clearly:
 - Table stakes (must have or users leave)
@@ -643,6 +735,8 @@ How are [domain] systems typically structured? What are major components?
 <files_to_read>
 - {project_path} (Project context)
 </files_to_read>
+
+${AGENT_SKILLS_RESEARCHER}
 
 <downstream_consumer>
 Your ARCHITECTURE.md informs phase structure in roadmap. Include:
@@ -682,6 +776,8 @@ What do [domain] projects commonly get wrong? Critical mistakes?
 - {project_path} (Project context)
 </files_to_read>
 
+${AGENT_SKILLS_RESEARCHER}
+
 <downstream_consumer>
 Your PITFALLS.md prevents mistakes in roadmap/planning. For each pitfall:
 - Warning signs (how to detect early)
@@ -717,6 +813,8 @@ Synthesize research outputs into SUMMARY.md.
 - .planning/research/PITFALLS.md
 </files_to_read>
 
+${AGENT_SKILLS_SYNTHESIZER}
+
 <output>
 Write to: .planning/research/SUMMARY.md
 Use template: /Users/lee0407/dev/projs/auth/.claude/get-shit-done/templates/research-project/SUMMARY.md
@@ -726,6 +824,7 @@ Commit after writing.
 ```
 
 Display research complete banner and key findings:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  GSD ► RESEARCH COMPLETE ✓
@@ -745,6 +844,7 @@ Files: `.planning/research/`
 ## 7. Define Requirements
 
 Display stage banner:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  GSD ► DEFINING REQUIREMENTS
@@ -754,6 +854,7 @@ Display stage banner:
 **Load context:**
 
 Read PROJECT.md and extract:
+
 - Core value (the ONE thing that must work)
 - Stated constraints (budget, timeline, tech limitations)
 - Any explicit scope boundaries
@@ -761,6 +862,7 @@ Read PROJECT.md and extract:
 **If research exists:** Read research/FEATURES.md and extract feature categories.
 
 **If auto mode:**
+
 - Auto-include all table stakes features (users expect these)
 - Include features explicitly mentioned in provided document
 - Auto-defer differentiators not mentioned in document
@@ -799,6 +901,7 @@ Here are the features for [domain]:
 Ask: "What are the main things users need to be able to do?"
 
 For each capability mentioned:
+
 - Ask clarifying questions to make it specific
 - Probe for related capabilities
 - Group into categories
@@ -817,6 +920,7 @@ For each category, use AskUserQuestion:
   - "None for v1" — Defer entire category
 
 Track responses:
+
 - Selected features → v1 requirements
 - Unselected table stakes → v2 (users expect these)
 - Unselected differentiators → out of scope
@@ -824,6 +928,7 @@ Track responses:
 **Identify gaps:**
 
 Use AskUserQuestion:
+
 - header: "Additions"
 - question: "Any requirements research missed? (Features specific to your vision)"
 - options:
@@ -837,6 +942,7 @@ Cross-check requirements against Core Value from PROJECT.md. If gaps detected, s
 **Generate REQUIREMENTS.md:**
 
 Create `.planning/REQUIREMENTS.md` with:
+
 - v1 Requirements grouped by category (checkboxes, REQ-IDs)
 - v2 Requirements (deferred)
 - Out of Scope (explicit exclusions with reasoning)
@@ -847,12 +953,14 @@ Create `.planning/REQUIREMENTS.md` with:
 **Requirement quality criteria:**
 
 Good requirements are:
+
 - **Specific and testable:** "User can reset password via email link" (not "Handle password reset")
 - **User-centric:** "User can X" (not "System does Y")
 - **Atomic:** One capability per requirement (not "User can login and manage profile")
 - **Independent:** Minimal dependencies on other requirements
 
 Reject vague requirements. Push for specificity:
+
 - "Handle authentication" → "User can log in with email/password and stay logged in across sessions"
 - "Support sharing" → "User can share post via link that opens in recipient's browser"
 
@@ -890,6 +998,7 @@ node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" com
 ## 8. Create Roadmap
 
 Display stage banner:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  GSD ► CREATING ROADMAP
@@ -911,6 +1020,8 @@ Task(prompt="
 - .planning/config.json (Granularity and mode settings)
 </files_to_read>
 
+${AGENT_SKILLS_ROADMAPPER}
+
 </planning_context>
 
 <instructions>
@@ -930,6 +1041,7 @@ Write files first, then return. This ensures artifacts persist even if context i
 **Handle roadmapper return:**
 
 **If `## ROADMAP BLOCKED`:**
+
 - Present blocker information
 - Work with user to resolve
 - Re-spawn when resolved
@@ -979,6 +1091,7 @@ Success criteria:
 **CRITICAL: Ask for approval before committing (interactive mode only):**
 
 Use AskUserQuestion:
+
 - header: "Roadmap"
 - question: "Does this roadmap structure work for you?"
 - options:
@@ -989,8 +1102,10 @@ Use AskUserQuestion:
 **If "Approve":** Continue to commit.
 
 **If "Adjust phases":**
+
 - Get user's adjustment notes
 - Re-spawn roadmapper with revision context:
+
   ```
   Task(prompt="
   <revision>
@@ -1001,20 +1116,31 @@ Use AskUserQuestion:
   - .planning/ROADMAP.md (Current roadmap to revise)
   </files_to_read>
 
+  ${AGENT_SKILLS_ROADMAPPER}
+
   Update the roadmap based on feedback. Edit files in place.
   Return ROADMAP REVISED with changes made.
   </revision>
   ", subagent_type="gsd-roadmapper", model="{roadmapper_model}", description="Revise roadmap")
   ```
+
 - Present revised roadmap
 - Loop until user approves
 
 **If "Review full file":** Display raw `cat .planning/ROADMAP.md`, then re-ask.
 
+**Generate or refresh project instruction file before final commit:**
+
+```bash
+node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" generate-claude-md --output "$INSTRUCTION_FILE"
+```
+
+This ensures new projects get the default GSD workflow-enforcement guidance and current project context in `$INSTRUCTION_FILE`.
+
 **Commit roadmap (after approval or auto mode):**
 
 ```bash
-node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: create roadmap ([N] phases)" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md
+node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: create roadmap ([N] phases)" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md "$INSTRUCTION_FILE"
 ```
 
 ## 9. Done
@@ -1035,6 +1161,7 @@ Present completion summary:
 | Research       | `.planning/research/`       |
 | Requirements   | `.planning/REQUIREMENTS.md` |
 | Roadmap        | `.planning/ROADMAP.md`      |
+| Project guide  | `$INSTRUCTION_FILE`         |
 
 **[N] phases** | **[X] requirements** | Ready to build ✓
 ```
@@ -1047,9 +1174,18 @@ Present completion summary:
 ╚══════════════════════════════════════════╝
 ```
 
-Exit skill and invoke SlashCommand("/gsd:discuss-phase 1 --auto")
+Exit skill and invoke SlashCommand("/gsd-discuss-phase 1 --auto")
 
 **If interactive mode:**
+
+Check if Phase 1 has UI indicators (look for `**UI hint**: yes` in Phase 1 detail section of ROADMAP.md):
+
+```bash
+PHASE1_SECTION=$(node "/Users/lee0407/dev/projs/auth/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase 1 2>/dev/null)
+PHASE1_HAS_UI=$(echo "$PHASE1_SECTION" | grep -qi "UI hint.*yes" && echo "true" || echo "false")
+```
+
+**If Phase 1 has UI (`PHASE1_HAS_UI` is `true`):**
 
 ```
 ───────────────────────────────────────────────────────────────
@@ -1058,14 +1194,36 @@ Exit skill and invoke SlashCommand("/gsd:discuss-phase 1 --auto")
 
 **Phase 1: [Phase Name]** — [Goal from ROADMAP.md]
 
-/gsd:discuss-phase 1 — gather context and clarify approach
+/clear then:
 
-<sub>/clear first → fresh context window</sub>
+/gsd-discuss-phase 1 — gather context and clarify approach
 
 ---
 
 **Also available:**
-- /gsd:plan-phase 1 — skip discussion, plan directly
+- /gsd-ui-phase 1 — generate UI design contract (recommended for frontend phases)
+- /gsd-plan-phase 1 — skip discussion, plan directly
+
+───────────────────────────────────────────────────────────────
+```
+
+**If Phase 1 has no UI:**
+
+```
+───────────────────────────────────────────────────────────────
+
+## ▶ Next Up
+
+**Phase 1: [Phase Name]** — [Goal from ROADMAP.md]
+
+/clear then:
+
+/gsd-discuss-phase 1 — gather context and clarify approach
+
+---
+
+**Also available:**
+- /gsd-plan-phase 1 — skip discussion, plan directly
 
 ───────────────────────────────────────────────────────────────
 ```
@@ -1085,6 +1243,7 @@ Exit skill and invoke SlashCommand("/gsd:discuss-phase 1 --auto")
 - `.planning/REQUIREMENTS.md`
 - `.planning/ROADMAP.md`
 - `.planning/STATE.md`
+- `$INSTRUCTION_FILE` (`AGENTS.md` for Codex, `CLAUDE.md` for all other runtimes)
 
 </output>
 
@@ -1106,7 +1265,8 @@ Exit skill and invoke SlashCommand("/gsd:discuss-phase 1 --auto")
 - [ ] ROADMAP.md created with phases, requirement mappings, success criteria
 - [ ] STATE.md initialized
 - [ ] REQUIREMENTS.md traceability updated
-- [ ] User knows next step is `/gsd:discuss-phase 1`
+- [ ] `$INSTRUCTION_FILE` generated with GSD workflow guidance (AGENTS.md for Codex, CLAUDE.md otherwise)
+- [ ] User knows next step is `/gsd-discuss-phase 1`
 
 **Atomic commits:** Each phase commits its artifacts immediately. If context is lost, artifacts persist.
 
