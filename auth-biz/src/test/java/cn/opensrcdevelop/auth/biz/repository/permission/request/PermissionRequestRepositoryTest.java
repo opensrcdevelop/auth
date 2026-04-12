@@ -3,6 +3,8 @@ package cn.opensrcdevelop.auth.biz.repository.permission.request;
 import static org.junit.jupiter.api.Assertions.*;
 
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestItemMapper;
+import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.impl.PermissionRequestRepositoryImpl;
 import cn.opensrcdevelop.tenant.support.TenantContext;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
