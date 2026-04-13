@@ -106,7 +106,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: 实现 POST /admin/permissions/requests/{id}/approve 批准接口
+- [x] 06-01: 实现 POST /admin/permissions/requests/{id}/approve 批准接口
 - [ ] 06-02: 实现 POST /admin/permissions/requests/{id}/reject 拒绝接口
 - [ ] 06-03: 实现自我审批拦截逻辑
 - [ ] 06-04: 集成 AuthorizeService 写入 t_authorize，添加 @Transactional 和 @CacheEvict
@@ -180,7 +180,7 @@ Plans:
 | 3. User Request Submission | 0/2 | Not started | - |
 | 4. User Request View APIs | 0/2 | Not started | - |
 | 5. Admin Pending List API | 1/1 | In Progress | - |
-| 6. Admin Single Approve/Reject | 0/4 | Not started | - |
+| 6. Admin Single Approve/Reject | 1/2 | In Progress|  |
 | 7. Batch Operations | 0/2 | Not started | - |
 | 8. Auto-Approve Configuration | 0/2 | Not started | - |
 | 9. User Frontend UI | 0/3 | Not started | - |
