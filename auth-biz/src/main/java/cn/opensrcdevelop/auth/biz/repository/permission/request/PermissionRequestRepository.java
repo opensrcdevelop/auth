@@ -80,4 +80,17 @@ public interface PermissionRequestRepository {
      * @return 分页后的申请记录列表
      */
     PageData<PermissionRequest> findByUserIdPaged(String userId, int page, int pageSize);
+
+    /**
+     * 根据状态列表分页查询申请记录（多租户隔离）
+     *
+     * @param statuses
+     *            申请状态列表
+     * @param page
+     *            页码
+     * @param pageSize
+     *            每页数量
+     * @return 分页后的申请记录列表
+     */
+    PageData<PermissionRequest> findByStatuses(List<String> statuses, int page, int pageSize);
 }

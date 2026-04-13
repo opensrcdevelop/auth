@@ -44,7 +44,8 @@ public interface PermissionService extends IService<Permission> {
     /**
      * 获取可申请的权限树
      *
-     * @param ownedPermissionIds 用户已拥有的权限ID列表（用于标记 alreadyGranted）
+     * @param ownedPermissionIds
+     *            用户已拥有的权限ID列表（用于标记 alreadyGranted）
      * @return 权限树（按资源组 -> 资源 -> 权限 三层结构）
      */
     List<PermissionTreeNodeDto> getAvailablePermissionTree(List<String> ownedPermissionIds);

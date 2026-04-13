@@ -76,8 +76,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — 实现 GET /user-center/permissions/requests 列表接口
-- [ ] 04-02-PLAN.md — 实现 GET /user-center/permissions/requests/{id} 详情接口
+- [x] 04-01-PLAN.md — 实现 GET /user-center/permissions/requests 列表接口
+- [x] 04-02-PLAN.md — 实现 GET /user-center/permissions/requests/{id} 详情接口
 
 ### Phase 5: Admin Pending List API
 **Goal**: 管理员可以查看待审批和全部申请
@@ -87,11 +87,10 @@ Plans:
   1. 管理员调用 GET /admin/permissions/requests/pending 返回待审批列表
   2. 管理员调用 GET /admin/permissions/requests/all 返回全部申请 (支持按状态筛选)
   3. 管理员只能看到本租户的申请 (多租户隔离)
-**Plans**: 2 plans
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: 实现 GET /admin/permissions/requests/pending 待审批列表
-- [ ] 05-02: 实现 GET /admin/permissions/requests/all 全部申请
+- [x] 05-01-PLAN.md — 实现 GET /admin/permissions/requests/pending 待审批列表 + GET /admin/permissions/requests/all 全部申请
 
 ### Phase 6: Admin Single Approve/Reject
 **Goal**: 管理员可以批准或拒绝单个申请，权限写入 t_authorize
@@ -180,7 +179,7 @@ Plans:
 | 2. User Permission Query APIs | 2/2 | In Progress | - |
 | 3. User Request Submission | 0/2 | Not started | - |
 | 4. User Request View APIs | 0/2 | Not started | - |
-| 5. Admin Pending List API | 0/2 | Not started | - |
+| 5. Admin Pending List API | 1/1 | In Progress | - |
 | 6. Admin Single Approve/Reject | 0/4 | Not started | - |
 | 7. Batch Operations | 0/2 | Not started | - |
 | 8. Auto-Approve Configuration | 0/2 | Not started | - |

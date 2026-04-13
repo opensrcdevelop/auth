@@ -115,4 +115,19 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         pageData.setList(iPage.getRecords());
         return pageData;
     }
+
+    @Override
+    public PageData<PermissionRequest> findByStatuses(List<String> statuses, int page, int pageSize) {
+        LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(PermissionRequest::getStatus, statuses)
+                .orderByDesc(PermissionRequest::getRequestTime);
+        IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
+        PageData<PermissionRequest> pageData = new PageData<>();
+        pageData.setTotal(iPage.getTotal());
+        pageData.setPages(iPage.getPages());
+        pageData.setCurrent(iPage.getCurrent());
+        pageData.setSize(iPage.getSize());
+        pageData.setList(iPage.getRecords());
+        return pageData;
+    }
 }
