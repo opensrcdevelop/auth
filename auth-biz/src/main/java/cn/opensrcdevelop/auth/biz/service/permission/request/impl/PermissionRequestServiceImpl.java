@@ -19,7 +19,6 @@ import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestIte
 import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
-import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionAutoApproveService;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.response.PageData;

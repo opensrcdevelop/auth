@@ -31,18 +31,6 @@ public class PermissionRequest extends BaseEntity implements Serializable {
     @PropertyName("申请理由")
     private String reason;
 
-    @PropertyName("申请状态")
-    private String status;
-
     @PropertyName("申请时间")
     private LocalDateTime requestTime;
-
-    @PropertyName("审批人ID")
-    private String approverId;
-
-    @PropertyName("审批时间")
-    private LocalDateTime approveTime;
-
-    @PropertyName("拒绝理由")
-    private String rejectReason;
 }

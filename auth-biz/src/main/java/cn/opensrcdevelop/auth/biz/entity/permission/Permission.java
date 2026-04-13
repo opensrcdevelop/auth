@@ -46,6 +46,14 @@ public class Permission extends BaseEntity implements Serializable {
     @PropertyName("资源ID")
     private String resourceId;
 
+    /** 是否允许用户申请 */
+    @PropertyName("是否允许用户申请")
+    private Boolean allowApply;
+
+    /** 申请后是否自动批准 */
+    @PropertyName("申请后是否自动批准")
+    private Boolean autoApprove;
+
     /** 资源 */
     @TableField(exist = false)
     private Resource resource;

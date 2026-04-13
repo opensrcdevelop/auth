@@ -30,9 +30,9 @@ public class PermissionRequestItem extends BaseEntity implements Serializable {
     @PropertyName("权限ID")
     private String permissionId;
 
-    @PropertyName("是否自动批准")
-    private Boolean autoApproved;
+    @PropertyName("审批状态")
+    private String status;
 
-    @PropertyName("限制条件ID列表")
-    private String restrictionIds;
+    @PropertyName("拒绝理由")
+    private String rejectReason;
 }
