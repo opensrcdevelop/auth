@@ -1,7 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.permission.request.impl;
 
 import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.ApproveRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.RejectRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
@@ -9,8 +11,10 @@ import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestAd
 import cn.opensrcdevelop.common.response.PageData;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PermissionRequestAdminServiceImpl implements PermissionRequestAdminService {
@@ -63,5 +67,15 @@ public class PermissionRequestAdminServiceImpl implements PermissionRequestAdmin
         result.setSize(paged.getSize());
         result.setList(dtoList);
         return result;
+    }
+
+    @Override
+    public void approveRequest(String requestId, ApproveRequestDto dto) {
+        log.info("approveRequest called for requestId: {}, dto: {}", requestId, dto);
+    }
+
+    @Override
+    public void rejectRequest(String requestId, RejectRequestDto dto) {
+        log.info("rejectRequest called for requestId: {}, dto: {}", requestId, dto);
     }
 }

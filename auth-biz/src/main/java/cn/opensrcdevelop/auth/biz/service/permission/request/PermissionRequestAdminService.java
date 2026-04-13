@@ -1,6 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.permission.request;
 
+import cn.opensrcdevelop.auth.biz.dto.permission.request.ApproveRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.RejectRequestDto;
 import cn.opensrcdevelop.common.response.PageData;
 
 /**
@@ -31,4 +33,24 @@ public interface PermissionRequestAdminService {
      * @return 分页的申请记录列表
      */
     PageData<PermissionRequestListItemDto> listAllRequests(int page, int size, String status);
+
+    /**
+     * 批准权限申请
+     *
+     * @param requestId
+     *            申请ID
+     * @param dto
+     *            批准请求（含限制条件）
+     */
+    void approveRequest(String requestId, ApproveRequestDto dto);
+
+    /**
+     * 拒绝权限申请
+     *
+     * @param requestId
+     *            申请ID
+     * @param dto
+     *            拒绝请求（含拒绝理由）
+     */
+    void rejectRequest(String requestId, RejectRequestDto dto);
 }
