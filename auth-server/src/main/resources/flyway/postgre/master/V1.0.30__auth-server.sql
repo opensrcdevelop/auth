@@ -5,7 +5,6 @@
  *     1. 创建表【t_permission_request】- 权限申请表
  *     2. 创建表【t_permission_request_item】- 权限申请明细表
  *     3. 表【t_permission】添加 allow_apply、auto_approve 字段
- *     4. 删除表【t_permission_auto_approve】- 已由 t_permission.auto_approve 替代
  */
 
 -- ----------------------------
@@ -72,7 +71,7 @@ COMMENT ON TABLE "t_permission_request_item" IS '权限申请明细表';
 COMMENT ON COLUMN "t_permission_request_item"."item_id" IS '申请明细ID（UUID）';
 COMMENT ON COLUMN "t_permission_request_item"."request_id" IS '关联申请ID';
 COMMENT ON COLUMN "t_permission_request_item"."permission_id" IS '申请的权限ID';
-COMMENT ON COLUMN "t_permission_request_item"."status" IS '审批状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝）';
+COMMENT ON COLUMN "t_permission_request_item"."status" IS '审批状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝/AUTO_APPROVED自动批准）';
 COMMENT ON COLUMN "t_permission_request_item"."reject_reason" IS '拒绝理由（针对单个权限，可选）';
 COMMENT ON COLUMN "t_permission_request_item"."create_time" IS '创建时间';
 COMMENT ON COLUMN "t_permission_request_item"."create_by" IS '创建人';

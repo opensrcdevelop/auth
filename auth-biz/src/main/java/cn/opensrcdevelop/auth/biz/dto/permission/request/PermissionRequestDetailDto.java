@@ -21,20 +21,8 @@ public class PermissionRequestDetailDto {
     @Schema(description = "申请理由")
     private String reason;
 
-    @Schema(description = "状态（PENDING/APPROVED/REJECTED/AUTO_APPROVED）")
-    private String status;
-
     @Schema(description = "申请时间")
     private LocalDateTime requestTime;
-
-    @Schema(description = "审批人ID")
-    private String approverId;
-
-    @Schema(description = "审批时间")
-    private LocalDateTime approveTime;
-
-    @Schema(description = "拒绝理由")
-    private String rejectReason;
 
     @Schema(description = "申请的权限明细列表")
     private List<PermissionRequestItemDetailDto> items;

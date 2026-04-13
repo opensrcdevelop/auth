@@ -3,6 +3,7 @@ package cn.opensrcdevelop.auth.biz.service.permission.request.impl;
 import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
 import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestAdminService;
 import cn.opensrcdevelop.common.response.PageData;
@@ -37,14 +38,20 @@ public class PermissionRequestAdminServiceImpl implements PermissionRequestAdmin
     }
 
     private PageData<PermissionRequestListItemDto> toDtoList(PageData<PermissionRequest> paged) {
+        List<String> requestIds = paged.getList().stream()
+                .map(PermissionRequest::getRequestId)
+                .toList();
+        List<PermissionRequestItem> allItems = permissionRequestRepository.findByRequestIds(requestIds);
+
         List<PermissionRequestListItemDto> dtoList = paged.getList().stream()
                 .map(req -> {
                     PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
                     dto.setRequestId(req.getRequestId());
-                    dto.setStatus(req.getStatus());
                     dto.setRequestTime(req.getRequestTime());
                     dto.setReason(req.getReason());
-                    dto.setRejectReason(req.getRejectReason());
+                    dto.setItemCount((int) allItems.stream()
+                            .filter(i -> i.getRequestId().equals(req.getRequestId()))
+                            .count());
                     return dto;
                 })
                 .toList();

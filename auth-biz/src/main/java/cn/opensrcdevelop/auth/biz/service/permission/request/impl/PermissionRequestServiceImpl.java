@@ -23,7 +23,6 @@ import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestSe
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,6 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
 
     private final PermissionRequestMapper permissionRequestMapper;
     private final PermissionRequestItemMapper permissionRequestItemMapper;
-    private final PermissionAutoApproveService permissionAutoApproveService;
     private final AuthorizeService authorizeService;
     private final PermissionRequestRepository permissionRequestRepository;
     private final PermissionMapper permissionMapper;
@@ -68,30 +66,27 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         List<PermissionRequestItem> items = new ArrayList<>();
         List<String> autoApprovedPermIds = new ArrayList<>();
         for (String permId : permissionIds) {
-            boolean autoApproved = permissionAutoApproveService.isEnabled(permId);
+            Permission permission = permissionMapper.getPermission(permId);
+            boolean autoApproved = permission != null && Boolean.TRUE.equals(permission.getAutoApprove());
+            String itemStatus = autoApproved
+                    ? PermissionRequestStatusEnum.AUTO_APPROVED.getCode()
+                    : PermissionRequestStatusEnum.PENDING.getCode();
             PermissionRequestItem item = new PermissionRequestItem();
             item.setItemId(CommonUtil.getUUIDV7String());
             item.setRequestId(requestId);
             item.setPermissionId(permId);
-            item.setAutoApproved(autoApproved);
+            item.setStatus(itemStatus);
             items.add(item);
             if (autoApproved) {
                 autoApprovedPermIds.add(permId);
             }
         }
 
-        // 3. 确定申请主记录状态：全部自动批准则 AUTO_APPROVED，否则 PENDING
-        boolean allAutoApproved = autoApprovedPermIds.size() == permissionIds.size();
-        String status = allAutoApproved
-                ? PermissionRequestStatusEnum.AUTO_APPROVED.getCode()
-                : PermissionRequestStatusEnum.PENDING.getCode();
-
-        // 4. 插入申请主记录（per D-03：在同一事务内）
+        // 3. 插入申请主记录（per D-03：在同一事务内）
         PermissionRequest request = new PermissionRequest();
         request.setRequestId(requestId);
         request.setUserId(userId);
         request.setReason(dto.getReason());
-        request.setStatus(status);
         request.setRequestTime(now);
         permissionRequestMapper.insert(request);
 
@@ -122,14 +117,20 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         String userId = AuthUtil.getCurrentUserId();
         PageData<PermissionRequest> paged = permissionRequestRepository.findByUserIdPaged(userId, page, size);
 
+        List<String> requestIds = paged.getList().stream()
+                .map(PermissionRequest::getRequestId)
+                .toList();
+        List<PermissionRequestItem> allItems = permissionRequestRepository.findByRequestIds(requestIds);
+
         List<PermissionRequestListItemDto> dtoList = paged.getList().stream()
                 .map(req -> {
                     PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
                     dto.setRequestId(req.getRequestId());
-                    dto.setStatus(req.getStatus());
                     dto.setRequestTime(req.getRequestTime());
                     dto.setReason(req.getReason());
-                    dto.setRejectReason(req.getRejectReason());
+                    dto.setItemCount((int) allItems.stream()
+                            .filter(i -> i.getRequestId().equals(req.getRequestId()))
+                            .count());
                     return dto;
                 })
                 .toList();
@@ -158,9 +159,7 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         }
 
         // 3. Get request items
-        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
-        itemWrapper.eq(PermissionRequestItem::getRequestId, requestId);
-        List<PermissionRequestItem> items = permissionRequestItemMapper.selectList(itemWrapper);
+        List<PermissionRequestItem> items = permissionRequestRepository.findByRequestIds(List.of(requestId));
 
         // 4. Enrich items with permission details (per D-05: JOIN t_permission for
         // permissionName, permissionCode)
@@ -168,7 +167,8 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
                 .map(item -> {
                     PermissionRequestItemDetailDto itemDto = new PermissionRequestItemDetailDto();
                     itemDto.setPermissionId(item.getPermissionId());
-                    itemDto.setAutoApproved(item.getAutoApproved());
+                    itemDto.setStatus(item.getStatus());
+                    itemDto.setRejectReason(item.getRejectReason());
 
                     // Get permission details from t_permission table
                     Permission permission = permissionMapper.getPermission(item.getPermissionId());
@@ -185,11 +185,7 @@ public class PermissionRequestServiceImpl implements PermissionRequestService {
         detail.setRequestId(request.getRequestId());
         detail.setUserId(request.getUserId());
         detail.setReason(request.getReason());
-        detail.setStatus(request.getStatus());
         detail.setRequestTime(request.getRequestTime());
-        detail.setApproverId(request.getApproverId());
-        detail.setApproveTime(request.getApproveTime());
-        detail.setRejectReason(request.getRejectReason());
         detail.setItems(itemDtos);
         return detail;
     }

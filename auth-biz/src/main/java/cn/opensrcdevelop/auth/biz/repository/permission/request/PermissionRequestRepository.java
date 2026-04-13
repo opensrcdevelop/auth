@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.auth.biz.repository.permission.request;
 
 import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
 import cn.opensrcdevelop.common.response.PageData;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface PermissionRequestRepository {
     List<PermissionRequest> findByUserId(String userId);
 
     /**
-     * 根据状态查询申请记录列表
+     * 根据状态查询申请记录列表（状态在申请明细上，需从 item 反查）
      *
      * @param status
      *            申请状态
@@ -45,7 +46,7 @@ public interface PermissionRequestRepository {
     PageData<PermissionRequest> findByTenantId(int page, int pageSize);
 
     /**
-     * 根据状态分页查询申请记录
+     * 根据状态分页查询申请记录（状态在申请明细上，需从 item 反查）
      *
      * @param status
      *            申请状态
@@ -93,4 +94,13 @@ public interface PermissionRequestRepository {
      * @return 分页后的申请记录列表
      */
     PageData<PermissionRequest> findByStatuses(List<String> statuses, int page, int pageSize);
+
+    /**
+     * 根据申请ID列表批量查询申请明细
+     *
+     * @param requestIds
+     *            申请ID列表
+     * @return 申请明细列表
+     */
+    List<PermissionRequestItem> findByRequestIds(List<String> requestIds);
 }

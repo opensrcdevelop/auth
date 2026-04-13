@@ -19,6 +19,9 @@ public class PermissionRequestItemDetailDto {
     @Schema(description = "权限代码")
     private String permissionCode;
 
-    @Schema(description = "是否自动批准")
-    private Boolean autoApproved;
+    @Schema(description = "审批状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝/AUTO_APPROVED自动批准）")
+    private String status;
+
+    @Schema(description = "拒绝理由（针对单个权限）")
+    private String rejectReason;
 }

@@ -38,8 +38,19 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
 
     @Override
     public List<PermissionRequest> findByStatus(String status) {
+        // 状态在 item 上，需要先通过 item 查询出 requestIds，再查 request
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.eq(PermissionRequestItem::getStatus, status);
+        List<PermissionRequestItem> items = permissionRequestItemMapper.selectList(itemWrapper);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+        List<String> requestIds = items.stream()
+                .map(PermissionRequestItem::getRequestId)
+                .distinct()
+                .toList();
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PermissionRequest::getStatus, status)
+        wrapper.in(PermissionRequest::getRequestId, requestIds)
                 .orderByDesc(PermissionRequest::getRequestTime);
         return permissionRequestMapper.selectList(wrapper);
     }
@@ -60,8 +71,25 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
 
     @Override
     public PageData<PermissionRequest> findByStatus(String status, int page, int pageSize) {
+        // 状态在 item 上，需要先通过 item 查询出 requestIds，再查 request
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.eq(PermissionRequestItem::getStatus, status);
+        List<PermissionRequestItem> items = permissionRequestItemMapper.selectList(itemWrapper);
+        if (items.isEmpty()) {
+            PageData<PermissionRequest> emptyPage = new PageData<>();
+            emptyPage.setTotal(0L);
+            emptyPage.setPages(0L);
+            emptyPage.setCurrent((long) page);
+            emptyPage.setSize((long) pageSize);
+            emptyPage.setList(List.of());
+            return emptyPage;
+        }
+        List<String> requestIds = items.stream()
+                .map(PermissionRequestItem::getRequestId)
+                .distinct()
+                .toList();
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PermissionRequest::getStatus, status)
+        wrapper.in(PermissionRequest::getRequestId, requestIds)
                 .orderByDesc(PermissionRequest::getRequestTime);
         IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
         PageData<PermissionRequest> pageData = new PageData<>();
@@ -75,29 +103,26 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
 
     @Override
     public boolean hasActivePendingRequest(String userId, java.util.List<String> permissionIds) {
-        // 步骤 1：查询该用户所有 PENDING 或 AUTO_APPROVED 状态的申请ID
+        // 步骤 1：查询该用户所有申请ID
         LambdaQueryWrapper<PermissionRequest> requestWrapper = new LambdaQueryWrapper<>();
-        requestWrapper.eq(PermissionRequest::getUserId, userId)
-                .in(PermissionRequest::getStatus,
-                        java.util.List.of(
-                                PermissionRequestStatusEnum.PENDING.getCode(),
-                                PermissionRequestStatusEnum.AUTO_APPROVED.getCode()));
-        java.util.List<String> activeRequestIds = permissionRequestMapper.selectList(requestWrapper)
+        requestWrapper.eq(PermissionRequest::getUserId, userId);
+        java.util.List<String> requestIds = permissionRequestMapper.selectList(requestWrapper)
                 .stream()
                 .map(PermissionRequest::getRequestId)
                 .toList();
 
-        if (activeRequestIds.isEmpty()) {
+        if (requestIds.isEmpty()) {
             return false;
         }
 
-        // 步骤 2：检查这些申请中是否包含待检查的权限
+        // 步骤 2：检查这些申请中是否有 PENDING 或 AUTO_APPROVED 状态的指定权限
         LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
-        itemWrapper.in(
-                PermissionRequestItem::getRequestId,
-                activeRequestIds)
-                .in(PermissionRequestItem::getPermissionId,
-                        permissionIds);
+        itemWrapper.in(PermissionRequestItem::getRequestId, requestIds)
+                .in(PermissionRequestItem::getPermissionId, permissionIds)
+                .in(PermissionRequestItem::getStatus,
+                        java.util.List.of(
+                                PermissionRequestStatusEnum.PENDING.getCode(),
+                                PermissionRequestStatusEnum.AUTO_APPROVED.getCode()));
         return permissionRequestItemMapper.selectCount(itemWrapper) > 0;
     }
 
@@ -118,8 +143,26 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
 
     @Override
     public PageData<PermissionRequest> findByStatuses(List<String> statuses, int page, int pageSize) {
+        // 状态在 item 上，需要先通过 item 查询出 requestIds，再查 request
+        LambdaQueryWrapper<PermissionRequestItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.in(PermissionRequestItem::getStatus, statuses);
+        List<PermissionRequestItem> items = permissionRequestItemMapper.selectList(itemWrapper);
+        if (items.isEmpty()) {
+            PageData<PermissionRequest> emptyPage = new PageData<>();
+            emptyPage.setTotal(0L);
+            emptyPage.setPages(0L);
+            emptyPage.setCurrent((long) page);
+            emptyPage.setSize((long) pageSize);
+            emptyPage.setList(List.of());
+            return emptyPage;
+        }
+        List<String> requestIds = items.stream()
+                .map(PermissionRequestItem::getRequestId)
+                .distinct()
+                .toList();
+
         LambdaQueryWrapper<PermissionRequest> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(PermissionRequest::getStatus, statuses)
+        wrapper.in(PermissionRequest::getRequestId, requestIds)
                 .orderByDesc(PermissionRequest::getRequestTime);
         IPage<PermissionRequest> iPage = permissionRequestMapper.selectPage(new Page<>(page, pageSize), wrapper);
         PageData<PermissionRequest> pageData = new PageData<>();
@@ -129,5 +172,15 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
         pageData.setSize(iPage.getSize());
         pageData.setList(iPage.getRecords());
         return pageData;
+    }
+
+    @Override
+    public List<PermissionRequestItem> findByRequestIds(List<String> requestIds) {
+        if (requestIds == null || requestIds.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<PermissionRequestItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(PermissionRequestItem::getRequestId, requestIds);
+        return permissionRequestItemMapper.selectList(wrapper);
     }
 }
