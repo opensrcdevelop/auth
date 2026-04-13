@@ -135,8 +135,52 @@ public class PermissionRequestAdminServiceImpl implements PermissionRequestAdmin
         }
     }
 
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_REQUEST, sysOperation = SysOperationType.UPDATE, success = "拒绝了权限申请（{{ #requestId }}），理由：{{ #dto.rejectReason }}", fail = "拒绝权限申请（{{ #requestId }}）失败")
     @Override
     public void rejectRequest(String requestId, RejectRequestDto dto) {
-        log.info("rejectRequest called for requestId: {}, dto: {}", requestId, dto);
+        // 1. 获取申请记录
+        PermissionRequest request = permissionRequestRepository.getById(requestId);
+        if (request == null) {
+            throw new IllegalArgumentException("申请不存在");
+        }
+
+        // 2. 自我审批检查（per PAPR-07）
+        String currentUserId = AuthUtil.getCurrentUserId();
+        if (request.getUserId().equals(currentUserId)) {
+            throw new SecurityException("不能审批自己的申请");
+        }
+
+        // 3. 获取申请明细，只处理 PENDING 状态的 items
+        List<PermissionRequestItem> items = permissionRequestRepository.findByRequestIds(List.of(requestId));
+        List<PermissionRequestItem> pendingItems = items.stream()
+                .filter(i -> PermissionRequestStatusEnum.PENDING.getCode().equals(i.getStatus()))
+                .toList();
+
+        if (pendingItems.isEmpty()) {
+            return;
+        }
+
+        // 4. 根据 itemIds 筛选要拒绝的项（支持部分拒绝）
+        List<PermissionRequestItem> toReject;
+        if (dto.getItemIds() != null && !dto.getItemIds().isEmpty()) {
+            // 只拒绝指定的 items
+            toReject = pendingItems.stream()
+                    .filter(i -> dto.getItemIds().contains(i.getItemId()))
+                    .toList();
+        } else {
+            // 未指定 itemIds，则拒绝所有 PENDING items
+            toReject = pendingItems;
+        }
+
+        if (toReject.isEmpty()) {
+            return;
+        }
+
+        // 5. 更新明细状态为 REJECTED，设置拒绝理由（per PAPR-04）
+        for (PermissionRequestItem item : toReject) {
+            item.setStatus(PermissionRequestStatusEnum.REJECTED.getCode());
+            item.setRejectReason(dto.getRejectReason());
+            permissionRequestItemMapper.updateById(item);
+        }
     }
 }
