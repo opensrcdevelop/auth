@@ -15,7 +15,7 @@
 - [ ] **Phase 7: Batch Operations** - 批量批准/拒绝
 - [ ] **Phase 8: Auto-Approve Configuration** - 激活 Permission 实体的 allowApply/autoApprove 字段
 - [x] **Phase 9: User Frontend UI** - 用户中心申请界面 (completed 2026-04-14)
-- [ ] **Phase 10: Admin Frontend UI** - 管理员审批控制台
+- [x] **Phase 10: Admin Frontend UI** - 管理员审批控制台 (completed 2026-04-14)
 
 ## Phase Details
 
@@ -185,7 +185,7 @@ Plans:
 | 7. Batch Operations | 0/2 | Not started | - |
 | 8. Auto-Approve Configuration | 0/1 | Not started | - |
 | 9. User Frontend UI | 3/3 | Complete    | 2026-04-14 |
-| 10. Admin Frontend UI | 0/3 | Ready to execute | - |
+| 10. Admin Frontend UI | 3/3 | Complete | 2026-04-14 |
 
 ## Coverage
 
