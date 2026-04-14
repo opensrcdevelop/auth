@@ -14,7 +14,7 @@
 - [ ] **Phase 6: Admin Single Approve/Reject** - 单个申请审批、权限写入、审计
 - [ ] **Phase 7: Batch Operations** - 批量批准/拒绝
 - [ ] **Phase 8: Auto-Approve Configuration** - 激活 Permission 实体的 allowApply/autoApprove 字段
-- [ ] **Phase 9: User Frontend UI** - 用户中心申请界面
+- [x] **Phase 9: User Frontend UI** - 用户中心申请界面 (completed 2026-04-14)
 - [ ] **Phase 10: Admin Frontend UI** - 管理员审批控制台
 
 ## Phase Details
@@ -151,9 +151,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — 实现用户已有权限展示页面
-- [ ] 09-02-PLAN.md — 实现可申请权限树和申请提交页面
-- [ ] 09-03-PLAN.md — 实现用户申请记录列表和详情页面
+- [x] 09-01-PLAN.md — 实现用户已有权限展示页面
+- [x] 09-02-PLAN.md — 实现可申请权限树和申请提交页面
+- [x] 09-03-PLAN.md — 实现用户申请记录列表和详情页面
 
 ### Phase 10: Admin Frontend UI
 **Goal**: 管理员可以在控制台审批申请
@@ -168,9 +168,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 10-01: 实现管理员待审批列表和全部申请页面
-- [ ] 10-02: 实现单个申请审批页面 (批准/拒绝、限制条件选择)
-- [ ] 10-03: 实现批量审批功能
+- [x] 10-01-PLAN.md — 实现管理员待审批列表和全部申请页面
+- [x] 10-02-PLAN.md — 实现单个申请审批页面 (批准/拒绝、限制条件选择)
+- [x] 10-03-PLAN.md — 实现批量审批功能
 
 ## Progress
 
@@ -184,8 +184,8 @@ Plans:
 | 6. Admin Single Approve/Reject | 2/4 | In Progress | - |
 | 7. Batch Operations | 0/2 | Not started | - |
 | 8. Auto-Approve Configuration | 0/1 | Not started | - |
-| 9. User Frontend UI | 0/3 | Not started | - |
-| 10. Admin Frontend UI | 0/3 | Not started | - |
+| 9. User Frontend UI | 3/3 | Complete    | 2026-04-14 |
+| 10. Admin Frontend UI | 0/3 | Ready to execute | - |
 
 ## Coverage
 
