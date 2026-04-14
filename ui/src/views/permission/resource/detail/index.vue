@@ -174,7 +174,7 @@ export default detailTs;
                       />
                     </template>
                   </a-table-column>
-                  <a-table-column title="操作" :width="60>
+                  <a-table-column title="操作" :width="60">
                     <template #cell="{ record }">
                       <a-dropdown>
                         <a-button type="text">
