@@ -208,6 +208,74 @@ const handleRejectCancel = () => {
   rejectModalVisible.value = false;
 };
 
+// 批准其余未选中的待处理项
+const handleApproveRemaining = () => {
+  const remainingIds = detail.value?.items
+    ?.filter((item: any) => item.status === 'PENDING' && !selectedItemIds.value.includes(item.itemId))
+    ?.map((item: any) => item.itemId) ?? [];
+
+  if (remainingIds.length === 0) {
+    Message.warning('没有其余需要批准的权限');
+    return;
+  }
+
+  approveForm.itemIds = remainingIds;
+  approveForm.expressionIds = [];
+  approveForm.priority = undefined;
+  loadExpressionList();
+  approveModalVisible.value = true;
+};
+
+// 拒绝其余未选中的待处理项
+const handleRejectRemaining = () => {
+  const remainingIds = detail.value?.items
+    ?.filter((item: any) => item.status === 'PENDING' && !selectedItemIds.value.includes(item.itemId))
+    ?.map((item: any) => item.itemId) ?? [];
+
+  if (remainingIds.length === 0) {
+    Message.warning('没有其余需要拒绝的权限');
+    return;
+  }
+
+  rejectForm.itemIds = remainingIds;
+  rejectForm.rejectReason = '';
+  rejectModalVisible.value = true;
+};
+
+// 一键批准所有待处理项
+const handleApproveAll = () => {
+  const allPendingIds = detail.value?.items
+    ?.filter((item: any) => item.status === 'PENDING')
+    ?.map((item: any) => item.itemId) ?? [];
+
+  if (allPendingIds.length === 0) {
+    Message.warning('没有待处理的权限');
+    return;
+  }
+
+  approveForm.itemIds = allPendingIds;
+  approveForm.expressionIds = [];
+  approveForm.priority = undefined;
+  loadExpressionList();
+  approveModalVisible.value = true;
+};
+
+// 一键拒绝所有待处理项
+const handleRejectAll = () => {
+  const allPendingIds = detail.value?.items
+    ?.filter((item: any) => item.status === 'PENDING')
+    ?.map((item: any) => item.itemId) ?? [];
+
+  if (allPendingIds.length === 0) {
+    Message.warning('没有待处理的权限');
+    return;
+  }
+
+  rejectForm.itemIds = allPendingIds;
+  rejectForm.rejectReason = '';
+  rejectModalVisible.value = true;
+};
+
 export {
   requestId,
   loading,
@@ -237,4 +305,8 @@ export {
   handleSingleReject,
   handleRejectSubmit,
   handleRejectCancel,
+  handleApproveRemaining,
+  handleRejectRemaining,
+  handleApproveAll,
+  handleRejectAll,
 };

@@ -15,6 +15,7 @@ import {
   rejectForm,
   expressionList,
   hasPendingItems,
+  pendingItemCount,
   allSelected,
   indeterminate,
   STATUS_COLOR_MAP,
@@ -30,6 +31,10 @@ import {
   handleSingleReject,
   handleRejectSubmit,
   handleRejectCancel,
+  handleApproveRemaining,
+  handleRejectRemaining,
+  handleApproveAll,
+  handleRejectAll,
 } from './detail';
 
 onMounted(() => {
@@ -91,22 +96,42 @@ onMounted(() => {
 
         <!-- 批量操作按钮 -->
         <div v-if="hasPendingItems" style="margin-bottom: 12px">
-          <a-space>
-            <a-button
-              type="primary"
-              :disabled="selectedItemIds.length === 0"
-              @click="handleBatchApprove"
-            >
-              批准选中 ({{ selectedItemIds.length }})
-            </a-button>
-            <a-button
-              type="primary"
-              status="danger"
-              :disabled="selectedItemIds.length === 0"
-              @click="handleBatchReject"
-            >
-              拒绝选中 ({{ selectedItemIds.length }})
-            </a-button>
+          <a-space direction="vertical" fill>
+            <a-space>
+              <a-button
+                type="primary"
+                :disabled="selectedItemIds.length === 0"
+                @click="handleBatchApprove"
+              >
+                批准选中 ({{ selectedItemIds.length }})
+              </a-button>
+              <a-button
+                type="primary"
+                status="danger"
+                :disabled="selectedItemIds.length === 0"
+                @click="handleBatchReject"
+              >
+                拒绝选中 ({{ selectedItemIds.length }})
+              </a-button>
+            </a-space>
+            <a-space v-if="selectedItemIds.length > 0 && selectedItemIds.length < pendingItemCount">
+              <a-text type="secondary">
+                还有 {{ pendingItemCount - selectedItemIds.length }} 个待处理
+              </a-text>
+              <a-button
+                size="small"
+                @click="handleApproveRemaining"
+              >
+                批准其余
+              </a-button>
+              <a-button
+                size="small"
+                status="danger"
+                @click="handleRejectRemaining"
+              >
+                拒绝其余
+              </a-button>
+            </a-space>
           </a-space>
         </div>
 
@@ -152,6 +177,18 @@ onMounted(() => {
             </a-table-column>
           </template>
         </a-table>
+
+        <!-- 快速操作按钮 -->
+        <div v-if="hasPendingItems" style="margin-top: 12px; text-align: right">
+          <a-space>
+            <a-button type="text" size="small" @click="handleApproveAll">
+              一键批准全部 ({{ pendingItemCount }})
+            </a-button>
+            <a-button type="text" size="small" status="danger" @click="handleRejectAll">
+              一键拒绝全部 ({{ pendingItemCount }})
+            </a-button>
+          </a-space>
+        </div>
 
         <!-- 审批结果 -->
         <template v-if="detail.approvalInfo">
