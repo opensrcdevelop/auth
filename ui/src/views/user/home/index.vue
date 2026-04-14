@@ -1,5 +1,6 @@
 <script lang="ts">
 import homeTs from "./index";
+import MyPermissions from "./components/MyPermissions.vue";
 
 export default homeTs;
 </script>
@@ -318,6 +319,11 @@ export default homeTs;
                 </a-card>
               </div>
             </a-spin>
+          </a-tab-pane>
+          <a-tab-pane key="my_permissions" title="我的权限">
+            <div class="card">
+              <MyPermissions />
+            </div>
           </a-tab-pane>
         </a-tabs>
       </div>

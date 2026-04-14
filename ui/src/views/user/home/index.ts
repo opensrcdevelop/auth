@@ -58,6 +58,9 @@ const handleTabInit = (tabKey: string) => {
       initPromises.push(handleGetBoundIdentitySource());
       initPromises.push(handleGetWebAuthnCredentials());
       break;
+    case "my_permissions":
+      // MyPermissions 组件自加载，无需额外初始化
+      break;
   }
 
   if (initPromises.length > 0) {
