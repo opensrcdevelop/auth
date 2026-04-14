@@ -1,152 +1,30 @@
 /**
- * 权限申请与审批模块数据库表结构
+ * 变更：
+ *      1. 表【t_resource、t_permission、t_authorize】添加删除数据
  *
- * 变更说明：
- *     1. 创建表【t_permission_request】- 权限申请表
- *     2. 创建表【t_permission_request_item】- 权限申请明细表
- *     3. 创建表【t_permission_request_cond】- 权限审批限制条件关联表
- *     4. 表【t_permission】添加 allow_apply、auto_approve 字段
- *     5. 删除表【t_permission_auto_approve】- 已由 t_permission.auto_approve 替代
  */
 
--- ----------------------------
--- 表【t_permission】添加字段
--- ----------------------------
-ALTER TABLE "t_permission" ADD COLUMN IF NOT EXISTS "allow_apply" bool NOT NULL DEFAULT true;
-ALTER TABLE "t_permission" ADD COLUMN IF NOT EXISTS "auto_approve" bool NOT NULL DEFAULT false;
+DELETE FROM "t_resource" WHERE "resource_id" = '019cfc50-fa16-721c-bea5-e03647a7029f';
+INSERT INTO "t_resource" ("resource_id", "resource_name", "resource_code", "resource_group_id", "api_identifier", "description", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc50-fa16-721c-bea5-e03647a7029f', 'ChatBI 问数-示例 SQL', 'chatBISampleSql', 'c0b4ee30-bf40-4299-9fab-ff32328b047a', '/api/v1/chatbi/sampleSql', NULL, '2026-03-17 23:01:31.287073', 'admin', NULL, NULL, 1, 'f');
 
-COMMENT ON COLUMN "t_permission"."allow_apply" IS '是否允许用户申请';
-COMMENT ON COLUMN "t_permission"."auto_approve" IS '申请后是否自动批准';
-
--- ----------------------------
--- 表结构：t_permission_request（权限申请表）
--- ----------------------------
-DROP TABLE IF EXISTS "t_permission_request";
-
-CREATE TABLE "t_permission_request" (
-  "request_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "user_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "reason" varchar(500) COLLATE "pg_catalog"."default",
-  "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'PENDING',
-  "request_time" timestamp(6) NOT NULL,
-  "approver_id" varchar(32) COLLATE "pg_catalog"."default",
-  "approve_time" timestamp(6),
-  "reject_reason" varchar(500) COLLATE "pg_catalog"."default",
-  "create_time" timestamp(6),
-  "create_by" varchar(255) COLLATE "pg_catalog"."default",
-  "update_time" timestamp(6),
-  "update_by" varchar(255) COLLATE "pg_catalog"."default",
-  "version" int4 DEFAULT 1,
-  "deleted" bool DEFAULT false,
-  PRIMARY KEY ("request_id")
+DELETE FROM "t_permission" WHERE "permission_id" IN (
+    '019d00df-1720-7d60-bfbb-6003fd13088c',
+    '019cfc54-157b-78bc-a421-bb375363d42e',
+    '019cfc53-b449-764d-a796-7a8f96ecf670',
+    '019cfc53-52f7-73a1-9df1-775ae4410076',
+    '019cfc52-d641-7208-a66b-6a173ae9e906',
+    '019cfc52-7daf-78d9-8e1f-788315caf3a8',
+    '019cfc52-5736-7020-90d0-e8600f580d00',
+    '019cfc51-abdf-7051-9173-c35f97b4c3e7'
 );
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019d00df-1720-7d60-bfbb-6003fd13088c', '获取示例 SQL 列表', 'list', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-18 20:15:13.697105', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc54-157b-78bc-a421-bb375363d42e', '更新示例 SQL 嵌入配置', 'updateEmbeddingConfig', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:04:54.907851', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc53-b449-764d-a796-7a8f96ecf670', '获取示例 SQL 嵌入配置', 'getEmbeddingConfig', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:04:30.025582', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc53-52f7-73a1-9df1-775ae4410076', '重新构建示例 SQL 索引', 'rebuildIndex', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:04:05.111423', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc52-d641-7208-a66b-6a173ae9e906', '从 Likes 同步示例 SQL', 'syncFromLikes', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:03:33.185588', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc52-7daf-78d9-8e1f-788315caf3a8', '删除示例 SQL', 'delete', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:03:10.511984', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc52-5736-7020-90d0-e8600f580d00', '添加示例 SQL', 'create', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:03:00.662343', 'admin', NULL, NULL, 1, 'f');
+INSERT INTO "t_permission" ("permission_id", "permission_name", "permission_code", "description", "resource_id", "create_time", "create_by", "update_time", "update_by", "version", "deleted") VALUES ('019cfc51-abdf-7051-9173-c35f97b4c3e7', '所有权限', 'all', NULL, '019cfc50-fa16-721c-bea5-e03647a7029f', '2026-03-17 23:02:16.800232', 'admin', NULL, NULL, 1, 'f');
 
-COMMENT ON TABLE "t_permission_request" IS '权限申请表';
-COMMENT ON COLUMN "t_permission_request"."request_id" IS '申请ID（UUID）';
-COMMENT ON COLUMN "t_permission_request"."user_id" IS '申请人ID';
-COMMENT ON COLUMN "t_permission_request"."reason" IS '申请理由';
-COMMENT ON COLUMN "t_permission_request"."status" IS '申请状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝/AUTO_APPROVED自动批准）';
-COMMENT ON COLUMN "t_permission_request"."request_time" IS '申请时间';
-COMMENT ON COLUMN "t_permission_request"."approver_id" IS '审批人ID';
-COMMENT ON COLUMN "t_permission_request"."approve_time" IS '审批时间';
-COMMENT ON COLUMN "t_permission_request"."reject_reason" IS '拒绝理由';
-COMMENT ON COLUMN "t_permission_request"."create_time" IS '创建时间';
-COMMENT ON COLUMN "t_permission_request"."create_by" IS '创建人';
-COMMENT ON COLUMN "t_permission_request"."update_time" IS '更新时间';
-COMMENT ON COLUMN "t_permission_request"."update_by" IS '更新人';
-COMMENT ON COLUMN "t_permission_request"."version" IS '版本';
-COMMENT ON COLUMN "t_permission_request"."deleted" IS '逻辑删除标记';
-
--- ----------------------------
--- 表结构：t_permission_request_item（权限申请明细表）
--- ----------------------------
-DROP TABLE IF EXISTS "t_permission_request_item";
-
-CREATE TABLE "t_permission_request_item" (
-  "item_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "request_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "permission_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL DEFAULT 'PENDING',
-  "reject_reason" varchar(500) COLLATE "pg_catalog"."default",
-  "create_time" timestamp(6),
-  "create_by" varchar(255) COLLATE "pg_catalog"."default",
-  "update_time" timestamp(6),
-  "update_by" varchar(255) COLLATE "pg_catalog"."default",
-  "version" int4 DEFAULT 1,
-  "deleted" bool DEFAULT false,
-  PRIMARY KEY ("item_id")
-);
-
-COMMENT ON TABLE "t_permission_request_item" IS '权限申请明细表';
-COMMENT ON COLUMN "t_permission_request_item"."item_id" IS '申请明细ID（UUID）';
-COMMENT ON COLUMN "t_permission_request_item"."request_id" IS '关联申请ID';
-COMMENT ON COLUMN "t_permission_request_item"."permission_id" IS '申请的权限ID';
-COMMENT ON COLUMN "t_permission_request_item"."status" IS '审批状态（PENDING待审批/APPROVED已批准/REJECTED已拒绝）';
-COMMENT ON COLUMN "t_permission_request_item"."reject_reason" IS '拒绝理由（针对单个权限）';
-COMMENT ON COLUMN "t_permission_request_item"."create_time" IS '创建时间';
-COMMENT ON COLUMN "t_permission_request_item"."create_by" IS '创建人';
-COMMENT ON COLUMN "t_permission_request_item"."update_time" IS '更新时间';
-COMMENT ON COLUMN "t_permission_request_item"."update_by" IS '更新人';
-COMMENT ON COLUMN "t_permission_request_item"."version" IS '版本';
-COMMENT ON COLUMN "t_permission_request_item"."deleted" IS '逻辑删除标记';
-
--- ----------------------------
--- 表结构：t_permission_request_cond（权限审批限制条件关联表）
--- ----------------------------
-DROP TABLE IF EXISTS "t_permission_request_cond";
-
-CREATE TABLE "t_permission_request_cond" (
-  "cond_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "request_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "item_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "exp_id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
-  "create_time" timestamp(6),
-  "create_by" varchar(255) COLLATE "pg_catalog"."default",
-  "update_time" timestamp(6),
-  "update_by" varchar(255) COLLATE "pg_catalog"."default",
-  "version" int4 DEFAULT 1,
-  "deleted" bool DEFAULT false,
-  PRIMARY KEY ("cond_id")
-);
-
-COMMENT ON TABLE "t_permission_request_cond" IS '权限审批限制条件关联表';
-COMMENT ON COLUMN "t_permission_request_cond"."cond_id" IS '条件ID（UUID）';
-COMMENT ON COLUMN "t_permission_request_cond"."request_id" IS '关联申请ID';
-COMMENT ON COLUMN "t_permission_request_cond"."item_id" IS '关联申请明细ID';
-COMMENT ON COLUMN "t_permission_request_cond"."exp_id" IS '权限表达式ID（引用t_permission_exp）';
-COMMENT ON COLUMN "t_permission_request_cond"."create_time" IS '创建时间';
-COMMENT ON COLUMN "t_permission_request_cond"."create_by" IS '创建人';
-COMMENT ON COLUMN "t_permission_request_cond"."update_time" IS '更新时间';
-COMMENT ON COLUMN "t_permission_request_cond"."update_by" IS '更新人';
-COMMENT ON COLUMN "t_permission_request_cond"."version" IS '版本';
-COMMENT ON COLUMN "t_permission_request_cond"."deleted" IS '逻辑删除标记';
-
--- ----------------------------
--- 删除表：t_permission_auto_approve（已由 t_permission.auto_approve 替代）
--- ----------------------------
-DROP TABLE IF EXISTS "t_permission_auto_approve";
-
--- ----------------------------
--- 索引：t_permission_request
--- ----------------------------
-CREATE INDEX "idx_t_permission_request_user" ON "t_permission_request" ("user_id");
-CREATE INDEX "idx_t_permission_request_status" ON "t_permission_request" ("status");
-
--- ----------------------------
--- 索引：t_permission_request_item
--- ----------------------------
-CREATE INDEX "idx_t_permission_request_item_request" ON "t_permission_request_item" ("request_id");
-CREATE INDEX "idx_t_permission_request_item_permission" ON "t_permission_request_item" ("permission_id");
-
--- ----------------------------
--- 索引：t_permission_request_cond
--- ----------------------------
-CREATE INDEX "idx_t_permission_request_cond_request" ON "t_permission_request_cond" ("request_id");
-CREATE INDEX "idx_t_permission_request_cond_item" ON "t_permission_request_cond" ("item_id");
-
--- ----------------------------
--- 外键约束
--- ----------------------------
-ALTER TABLE "t_permission_request_item" ADD CONSTRAINT "fk_t_permission_request_item_request" FOREIGN KEY ("request_id") REFERENCES "t_permission_request" ("request_id");
-ALTER TABLE "t_permission_request_cond" ADD CONSTRAINT "fk_t_permission_request_cond_request" FOREIGN KEY ("request_id") REFERENCES "t_permission_request" ("request_id");
-ALTER TABLE "t_permission_request_cond" ADD CONSTRAINT "fk_t_permission_request_cond_item" FOREIGN KEY ("item_id") REFERENCES "t_permission_request_item" ("item_id");
+DELETE FROM "t_authorize" WHERE "authorize_id" = '019d00e2-6ca2-7726-b0cd-1af7556a4a83';
+INSERT INTO "t_authorize" ("user_id", "role_id", "user_group_id", "permission_id", "authorize_id", "authorize_time", "priority") VALUES (NULL, 'baec302c-39ac-4e51-9d28-fb8c9c43caa3', NULL, '019cfc51-abdf-7051-9173-c35f97b4c3e7', '019d00e2-6ca2-7726-b0cd-1af7556a4a83', '2026-03-18 20:18:52.193989', 0);
