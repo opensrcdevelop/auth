@@ -303,6 +303,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionCode(permission.getPermissionCode());
         permissionResponse.setPermissionDesc(permission.getDescription());
         permissionResponse.setResourceId(permission.getResource().getResourceId());
+        permissionResponse.setAllowApply(permission.getAllowApply());
+        permissionResponse.setAutoApprove(permission.getAutoApprove());
 
         permissionResponse.setPermissionLocator(generatePermissionLocator(permission));
 

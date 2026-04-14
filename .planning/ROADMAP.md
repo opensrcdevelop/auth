@@ -13,7 +13,7 @@
 - [ ] **Phase 5: Admin Pending List API** - 管理员查看待审批和全部申请
 - [ ] **Phase 6: Admin Single Approve/Reject** - 单个申请审批、权限写入、审计
 - [ ] **Phase 7: Batch Operations** - 批量批准/拒绝
-- [ ] **Phase 8: Auto-Approve Configuration** - 自动批准开关配置
+- [ ] **Phase 8: Auto-Approve Configuration** - 激活 Permission 实体的 allowApply/autoApprove 字段
 - [ ] **Phase 9: User Frontend UI** - 用户中心申请界面
 - [ ] **Phase 10: Admin Frontend UI** - 管理员审批控制台
 
@@ -106,10 +106,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [x] 06-01: 实现 POST /admin/permissions/requests/{id}/approve 批准接口
-- [ ] 06-02: 实现 POST /admin/permissions/requests/{id}/reject 拒绝接口
-- [ ] 06-03: 实现自我审批拦截逻辑
-- [ ] 06-04: 集成 AuthorizeService 写入 t_authorize，添加 @Transactional 和 @CacheEvict
+- [x] 06-01: 创建 DTO 和扩展 Service 接口 (ApproveRequestDto + RejectRequestDto + PermissionRequestAdminService 方法声明)
+- [x] 06-02: 实现 approveRequest 方法 (权限写入 t_authorize + 状态更新)
+- [x] 06-03: 实现 rejectRequest 方法 + 添加 REST 端点 (关闭 Gap 1, 2, 3)
+- [ ] 06-04: 集成缓存清除和事务优化 (如需要)
 
 ### Phase 7: Batch Operations
 **Goal**: 管理员可以批量批准或拒绝多个申请
@@ -127,16 +127,17 @@ Plans:
 
 ### Phase 8: Auto-Approve Configuration
 **Goal**: 管理员可以配置权限的自动批准开关
-**Depends on**: Phase 7
+**Depends on**: Phase 6
 **Requirements**: PAUT-01
 **Success Criteria** (what must be TRUE):
-  1. 管理员调用 PUT /admin/permissions/auto-approve/{permissionId} 开启/关闭自动批准
-  2. 自动批准配置持久化到 t_permission_auto_approve 表
-**Plans**: 2 plans
+  1. PermissionRequestDto 包含 allowApply 和 autoApprove 字段
+  2. createPermission() 和 updatePermission() 方法处理 allowApply 和 autoApprove
+  3. 权限列表页面显示 allowApply 和 autoApprove 开关
+  4. 权限创建表单包含 allowApply 和 autoApprove 开关
+**Plans**: 1 plan
 
 Plans:
-- [ ] 08-01: 实现 PUT /admin/permissions/auto-approve/{permissionId} 配置接口
-- [ ] 08-02: 实现 GET /permissions/exps 获取可用限制条件列表
+- [x] 08-01-PLAN.md — 实现 allowApply/autoApprove 字段支持（后端 DTO/Service + 前端列表/创建表单）
 
 ### Phase 9: User Frontend UI
 **Goal**: 用户可以在用户中心提交申请和查看记录
@@ -180,9 +181,9 @@ Plans:
 | 3. User Request Submission | 0/2 | Not started | - |
 | 4. User Request View APIs | 0/2 | Not started | - |
 | 5. Admin Pending List API | 1/1 | In Progress | - |
-| 6. Admin Single Approve/Reject | 1/2 | In Progress|  |
+| 6. Admin Single Approve/Reject | 2/4 | In Progress | - |
 | 7. Batch Operations | 0/2 | Not started | - |
-| 8. Auto-Approve Configuration | 0/2 | Not started | - |
+| 8. Auto-Approve Configuration | 0/1 | Not started | - |
 | 9. User Frontend UI | 0/3 | Not started | - |
 | 10. Admin Frontend UI | 0/3 | Not started | - |
 

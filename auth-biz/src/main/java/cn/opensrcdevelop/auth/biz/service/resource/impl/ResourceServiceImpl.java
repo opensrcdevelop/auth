@@ -187,6 +187,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
             permissionResponse.setPermissionId(permission.getPermissionId());
             permissionResponse.setPermissionName(permission.getPermissionName());
             permissionResponse.setPermissionCode(permission.getPermissionCode());
+            permissionResponse.setAllowApply(permission.getAllowApply());
+            permissionResponse.setAutoApprove(permission.getAutoApprove());
 
             return permissionResponse;
         }).toList();
