@@ -47,6 +47,18 @@ export default createTs;
             }"
           />
         </a-form-item>
+        <a-form-item field="allowApply" label="允许用户申请">
+          <a-switch v-model="createPermissionForm.allowApply" />
+          <template #labelExtra>
+            开启后，用户可以申请此权限
+          </template>
+        </a-form-item>
+        <a-form-item field="autoApprove" label="申请后自动批准">
+          <a-switch v-model="createPermissionForm.autoApprove" :disabled="!createPermissionForm.allowApply" />
+          <template #labelExtra>
+            开启后，用户申请此权限将自动批准（需要先开启"允许用户申请"）
+          </template>
+        </a-form-item>
         <a-form-item hide-label>
           <a-space>
             <a-button type="primary" html-type="submit">创建</a-button>

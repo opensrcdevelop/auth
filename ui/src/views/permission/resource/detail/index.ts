@@ -1,6 +1,7 @@
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {getResourceDetail, getResourcePermissions, updateResource,} from "@/api/resource";
+import {updatePermission} from "@/api/permission";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {useGlobalVariablesStore} from "@/store/globalVariables";
@@ -235,6 +236,29 @@ const handleDeletePermission = (permission: any) => {
   });
 };
 
+/**
+ * 处理权限字段变更
+ */
+const handlePermissionFieldChange = (permission: any, field: 'allowApply' | 'autoApprove', value: boolean) => {
+  updatePermission({
+    id: permission.permissionId,
+    name: permission.permissionName,
+    code: permission.permissionCode,
+    desc: permission.description,
+    resourceId: permission.resourceId,
+    [field]: value,
+  })
+    .then((result: any) => {
+      handleApiSuccess(result, () => {
+        Notification.success("更新成功");
+        handleGetResourcePermissions(resourceId.value);
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, "更新权限");
+    });
+};
+
 export default defineComponent({
   setup() {
     const resourceId = getQueryString("id");
@@ -271,6 +295,7 @@ export default defineComponent({
       handleResetResourceInfoForm,
       handleToCreatePermission,
       handleDeletePermission,
+      handlePermissionFieldChange,
     };
   },
 });

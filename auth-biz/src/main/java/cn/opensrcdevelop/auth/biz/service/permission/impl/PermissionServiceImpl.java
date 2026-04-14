@@ -111,6 +111,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permission.setDescription(requestDto.getDesc());
         permission.setPermissionId(permissionId);
         permission.setResourceId(requestDto.getResourceId());
+        permission.setAllowApply(Boolean.TRUE.equals(requestDto.getAllowApply()));
+        permission.setAutoApprove(Boolean.TRUE.equals(requestDto.getAutoApprove()));
 
         // 3. 数据库操作
         super.save(permission);
@@ -411,6 +413,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         updatePermission.setPermissionCode(requestDto.getCode());
         updatePermission.setDescription(requestDto.getDesc());
         updatePermission.setVersion(rawPermission.getVersion());
+        updatePermission.setAllowApply(Boolean.TRUE.equals(requestDto.getAllowApply()));
+        updatePermission.setAutoApprove(Boolean.TRUE.equals(requestDto.getAutoApprove()));
 
         // 4. 数据库操作
         super.updateById(updatePermission);

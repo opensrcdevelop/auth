@@ -31,4 +31,10 @@ public class PermissionRequestDto {
     @Schema(description = "描述")
     @NotBlankStr
     private String desc;
+
+    @Schema(description = "是否允许用户申请（默认 false）")
+    private Boolean allowApply = false;
+
+    @Schema(description = "申请后是否自动批准（默认 false）")
+    private Boolean autoApprove = false;
 }
