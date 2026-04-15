@@ -19,6 +19,8 @@ const createPermissionForm = reactive({
   code: undefined,
   desc: undefined,
   resourceId: undefined,
+  allowApply: false,
+  autoApprove: false,
 });
 const createPermissionFormRules = {
   name: [{ required: true, message: "权限名称未填写" }],

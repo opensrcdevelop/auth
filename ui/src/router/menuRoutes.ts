@@ -104,6 +104,22 @@ const menuRoutes: RouteRecordRaw[] = [
           visible: () => true,
         },
       },
+      {
+        path: "/permission/request",
+        component: () => import("@/views/permission/request/index.vue"),
+        meta: {
+          title: "权限申请审批",
+          visible: () => true,
+        },
+      },
+      {
+        path: "/permission/request/detail",
+        component: () => import("@/views/permission/request/detail.vue"),
+        meta: {
+          title: "申请详情",
+          visible: () => false,
+        },
+      },
     ],
   },
   {

@@ -147,6 +147,33 @@ export default detailTs;
                       {{ record.permissionCode }}
                     </template>
                   </a-table-column>
+                  <a-table-column
+                    title="允许申请"
+                    :width="100"
+                    align="center"
+                  >
+                    <template #cell="{ record }">
+                      <a-switch
+                        :model-value="record.allowApply"
+                        size="small"
+                        @change="(val: boolean) => handlePermissionFieldChange(record, 'allowApply', val)"
+                      />
+                    </template>
+                  </a-table-column>
+                  <a-table-column
+                    title="自动批准"
+                    :width="100"
+                    align="center"
+                  >
+                    <template #cell="{ record }">
+                      <a-switch
+                        :model-value="record.autoApprove"
+                        size="small"
+                        :disabled="!record.allowApply"
+                        @change="(val: boolean) => handlePermissionFieldChange(record, 'autoApprove', val)"
+                      />
+                    </template>
+                  </a-table-column>
                   <a-table-column title="操作" :width="60">
                     <template #cell="{ record }">
                       <a-dropdown>

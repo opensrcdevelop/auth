@@ -71,4 +71,10 @@ public class PermissionResponseDto implements Serializable {
 
     @Schema(description = "优先级")
     private Integer priority;
+
+    @Schema(description = "是否允许用户申请")
+    private Boolean allowApply;
+
+    @Schema(description = "申请后是否自动批准")
+    private Boolean autoApprove;
 }

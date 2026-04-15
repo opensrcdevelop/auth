@@ -2,6 +2,7 @@ package cn.opensrcdevelop.ai.chat.advisor;
 
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import java.util.Objects;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -11,8 +12,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 public class TokenCountAdvisor implements BaseAdvisor {

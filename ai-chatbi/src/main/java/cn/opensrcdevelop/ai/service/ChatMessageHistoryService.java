@@ -4,7 +4,6 @@ import cn.opensrcdevelop.ai.dto.ChatMessageHistoryResponseDto;
 import cn.opensrcdevelop.ai.entity.ChatMessageHistory;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.time.LocalDateTime;
 import java.util.List;
 

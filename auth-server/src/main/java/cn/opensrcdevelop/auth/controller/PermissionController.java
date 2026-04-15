@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionTreeNodeDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpRequestDto;
@@ -29,8 +30,11 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,6 +75,7 @@ public class PermissionController {
 
     @Operation(summary = "校验权限", description = "校验权限")
     @PostMapping("/verify")
+    @Authorize({"allPermPermissions", "verifyPermission"})
     public List<VerifyPermissionResponseDto> verifyPermissions(
             @RequestBody @Valid VerifyPermissionsRequestDto requestDto) {
         return permissionService.verifyPermissions(requestDto);
@@ -145,6 +150,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}/permissions")
+    @Authorize({"allPermPermissions", "listExpPermissions"})
     public List<PermissionResponseDto> expPermissions(@PathVariable @NotBlank String id) {
         return permissionExpService.expPermissions(id);
     }
@@ -270,5 +276,27 @@ public class PermissionController {
     @Authorize({"allPermissionExpTemplatePermissions", "getPermissionExpTemplateExps"})
     public List<PermissionExpResponseDto> listTemplatePermissionExp(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.getPermissionExpList(id);
+    }
+
+    @Operation(summary = "获取当前用户权限", description = "获取当前用户已有的权限列表")
+    @GetMapping("/me")
+    public List<PermissionResponseDto> getCurrentUserPermissions() {
+        return permissionService.getCurrentUserPermissions();
+    }
+
+    @Operation(summary = "获取可申请权限树", description = "获取当前用户可申请的权限树（按资源组 -> 资源 -> 权限三层结构），已拥有的权限标记 alreadyGranted=true")
+    @Parameters({
+            @Parameter(name = "owned", description = "已拥有的权限ID列表，逗号分隔，用于标记 alreadyGranted", in = ParameterIn.QUERY, required = false)
+    })
+    @GetMapping("/available-tree")
+    public List<PermissionTreeNodeDto> getAvailablePermissionTree(
+            @RequestParam(required = false) String owned) {
+        List<String> ownedIds = Collections.emptyList();
+        if (StringUtils.isNotEmpty(owned)) {
+            ownedIds = Arrays.asList(owned.split(",")).stream()
+                    .map(String::trim)
+                    .toList();
+        }
+        return permissionService.getAvailablePermissionTree(ownedIds);
     }
 }

@@ -1,5 +1,8 @@
 <script lang="ts">
 import homeTs from "./index";
+import MyPermissions from "./components/MyPermissions.vue";
+import ApplyPermission from "./components/ApplyPermission.vue";
+import RequestRecords from "./components/RequestRecords.vue";
 
 export default homeTs;
 </script>
@@ -318,6 +321,21 @@ export default homeTs;
                 </a-card>
               </div>
             </a-spin>
+          </a-tab-pane>
+          <a-tab-pane key="my_permissions" title="我的权限">
+            <div class="card">
+              <MyPermissions />
+            </div>
+          </a-tab-pane>
+          <a-tab-pane key="apply_permission" title="申请权限">
+            <div class="card">
+              <ApplyPermission />
+            </div>
+          </a-tab-pane>
+          <a-tab-pane key="request_records" title="申请记录">
+            <div class="card">
+              <RequestRecords />
+            </div>
           </a-tab-pane>
         </a-tabs>
       </div>

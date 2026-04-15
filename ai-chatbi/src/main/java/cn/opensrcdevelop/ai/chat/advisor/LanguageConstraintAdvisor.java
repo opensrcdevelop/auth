@@ -3,6 +3,8 @@ package cn.opensrcdevelop.ai.chat.advisor;
 import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
 import cn.opensrcdevelop.ai.dto.ChatConfigDto;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -15,9 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component
