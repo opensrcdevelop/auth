@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.permission.PermissionRequestItemMapper">
+
+    <resultMap id="permissionRequestItemResultMap" type="cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequestItem">
+        <id column="item_id" property="itemId"/>
+        <result column="request_id" property="requestId"/>
+        <result column="permission_id" property="permissionId"/>
+        <result column="status" property="status"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="approver_id" property="approverId"/>
+        <result column="approver_username" property="approverUsername"/>
+        <association property="permission" javaType="cn.opensrcdevelop.auth.biz.entity.permission.Permission">
+            <id column="permission_id" property="permissionId"/>
+            <result column="permission_name" property="permissionName"/>
+            <result column="permission_code" property="permissionCode"/>
+            <association property="resource" javaType="cn.opensrcdevelop.auth.biz.entity.resource.Resource">
+                <id column="resource_id" property="resourceId"/>
+                <result column="resource_name" property="resourceName"/>
+                <result column="resource_code" property="resourceCode"/>
+                <association property="resourceGroup" javaType="cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup">
+                    <id column="resource_group_id" property="resourceGroupId"/>
+                    <result column="resource_group_name" property="resourceGroupName"/>
+                    <result column="resource_group_code" property="resourceGroupCode"/>
+                </association>
+            </association>
+        </association>
+    </resultMap>
+
+    <select id="getPermissionRequestItemsByRequestIdAndUserId" resultMap="permissionRequestItemResultMap">
+        SELECT
+            pri.item_id,
+            pri.request_id,
+            pri.permission_id,
+            pri.status,
+            pri.reject_reason,
+            pri.approver_id,
+            u.username AS approver_username,
+            p.permission_name,
+            p.permission_code,
+            r.resource_id,
+            r.resource_name,
+            r.resource_code,
+            rg.resource_group_id,
+            rg.resource_group_code,
+            rg.resource_group_name
+        FROM
+            t_permission_request_item pri
+            LEFT JOIN t_permission_request pr ON pr.request_id = pri.request_id
+            LEFT JOIN t_user u ON u.user_id = pri.approver_id
+            LEFT JOIN t_permission p ON p.permission_id = pri.permission_id
+            LEFT JOIN t_resource r ON r.resource_id = p.resource_id
+            LEFT JOIN t_resource_group rg ON rg.resource_group_id = r.resource_group_id
+        WHERE
+            pri.deleted = false
+            AND pr.deleted = false
+            AND p.deleted = false
+            AND r.deleted = false
+            AND rg.deleted = false
+            AND pri.request_id = #{requestId}
+        <if test="userId != null and userId != ''">
+            AND pr.user_id = #{userId}
+        </if>
+        ORDER BY rg.resource_group_code, r.resource_code, p.permission_code
+    </select>
+</mapper>

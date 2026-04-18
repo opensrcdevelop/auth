@@ -1,16 +1,17 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel;
 
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 用户导入异步任务执行器
@@ -30,7 +31,7 @@ public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     @Override
     public String getTaskType() {
-        return AsyncTaskType.USER_IMPORT.getCode();
+        return AsyncTaskTypeEnum.USER_IMPORT.getCode();
     }
 
     @Override

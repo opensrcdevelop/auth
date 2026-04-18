@@ -70,7 +70,7 @@ public enum ResourceType {
             "019cfc50-fa16-721c-bea5-e03647a7029f",
             "ChatBI 问数-示例 SQL"),
     PERMISSION_REQUEST(
-            "019f0001-0000-7000-8000-000000000001",
+            "019d9c5e-9cef-7378-945d-d0eb6d2ded7b",
             "权限申请");
 
     private final String id;

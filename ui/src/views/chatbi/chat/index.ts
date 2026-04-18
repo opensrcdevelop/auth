@@ -9,7 +9,7 @@ import router from "@/router";
 import {AUTH_TOKENS} from "@/util/constants";
 import {useGlobalVariablesStore} from "@/store/globalVariables";
 
-const globalVariables = useGlobalVariablesStore();;
+const globalVariables = useGlobalVariablesStore();
 const chatRef = ref();
 const chatHistoryRef = ref();
 const chatId = ref("");

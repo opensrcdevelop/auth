@@ -1,14 +1,14 @@
-import { deleteTenant, getTenantList } from "@/api/tenant";
-import { usePagination } from "@/hooks/usePagination";
+import {deleteTenant, getTenantList} from "@/api/tenant";
+import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {defineComponent, reactive, ref} from "vue";
 
 /** 租户列表 */
-const tenantList = reactive([]);
+const tenantList = reactive([] as any[]);
 const tenantSerachKeyword = ref(null);
-let tenantPagination;
+let tenantPagination: any;
 
 /**
  * 获取租户列表
@@ -89,9 +89,12 @@ const handleDeleteTenant = (tenant: any) => {
 
 export default defineComponent({
   setup() {
-    tenantPagination = usePagination("tenantList", ({ page, size }) => {
-      handleGetTenantList(page, size);
-    });
+    tenantPagination = usePagination(
+      "tenantList",
+      ({ page, size }: { page: number; size: number }) => {
+        handleGetTenantList(page, size);
+      },
+    );
 
     return {
       tenantList,

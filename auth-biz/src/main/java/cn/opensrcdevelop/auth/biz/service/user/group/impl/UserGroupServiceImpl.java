@@ -6,9 +6,9 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
-import cn.opensrcdevelop.auth.biz.constants.ConjunctionType;
+import cn.opensrcdevelop.auth.biz.constants.ConjunctionTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.constants.UserGroupType;
+import cn.opensrcdevelop.auth.biz.constants.UserGroupTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
@@ -41,16 +41,17 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +75,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     @Override
     public void createUserGroup(UserGroupRequestDto requestDto) {
         // 1. 动态用户组参数校验
-        if (UserGroupType.DYNAMIC == requestDto.getType()) {
+        if (UserGroupTypeEnum.DYNAMIC == requestDto.getType()) {
             CommonUtil.validateBean(requestDto, UserGroupRequestDto.DynamicUserGroup.class);
         }
 
@@ -92,7 +93,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         userGroup.setDescription(requestDto.getDesc());
         userGroup.setUserGroupType(requestDto.getType().name());
 
-        if (UserGroupType.DYNAMIC.equals(requestDto.getType())) {
+        if (UserGroupTypeEnum.DYNAMIC.equals(requestDto.getType())) {
             checkDynamicUserGroupConditions(requestDto);
             userGroup.setDynamicConditions(CommonUtil.nonJdkSerializeObject(requestDto.getConditions()));
         }
@@ -157,7 +158,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     public List<UserGroup> getDynamicUserGroups(String userId) {
         // 1. 获取全部用户组
         List<UserGroup> userGroups = super.list(
-                Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupType, UserGroupType.DYNAMIC.name()));
+                Wrappers.<UserGroup>lambdaQuery().eq(UserGroup::getUserGroupType, UserGroupTypeEnum.DYNAMIC.name()));
 
         // 2. 获取各个动态用户组的用户
         List<CompletableFuture<Void>> allFutures = new ArrayList<>();
@@ -219,10 +220,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             userGroupResponse.setId(userGroup.getUserGroupId());
             userGroupResponse.setName(userGroup.getUserGroupName());
             userGroupResponse.setCode(userGroup.getUserGroupCode());
-            userGroupResponse.setType(UserGroupType.valueOf(userGroup.getUserGroupType()));
+            userGroupResponse.setType(UserGroupTypeEnum.valueOf(userGroup.getUserGroupType()));
 
             // 2.1 查询成员数
-            if (UserGroupType.STATIC.name().equals(userGroup.getUserGroupType())) {
+            if (UserGroupTypeEnum.STATIC.name().equals(userGroup.getUserGroupType())) {
                 long cnt = userGroupMappingService.count(Wrappers.<UserGroupMapping>lambdaQuery()
                         .eq(UserGroupMapping::getUserGroupId, userGroup.getUserGroupId()));
                 userGroupResponse.setMemberNum(cnt);
@@ -295,10 +296,10 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         userGroupResponse.setId(userGroup.getUserGroupId());
         userGroupResponse.setName(userGroup.getUserGroupName());
         userGroupResponse.setCode(userGroup.getUserGroupCode());
-        userGroupResponse.setType(UserGroupType.valueOf(userGroup.getUserGroupType()));
+        userGroupResponse.setType(UserGroupTypeEnum.valueOf(userGroup.getUserGroupType()));
         userGroupResponse.setDesc(userGroup.getDescription());
 
-        if (UserGroupType.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
+        if (UserGroupTypeEnum.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
             userGroupResponse.setConditions(CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(),
                     DynamicUserGroupConditionsDto.class));
         }
@@ -331,7 +332,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         // 2. 查询数据库
         List<User> users = new ArrayList<>();
         // 2.1 静态数组组
-        if (UserGroupType.STATIC.name().equals(userGroup.getUserGroupType())) {
+        if (UserGroupTypeEnum.STATIC.name().equals(userGroup.getUserGroupType())) {
             Page<User> pageRequest = new Page<>(page, size);
             userGroupRepository.searchGroupUsers(pageRequest, userGroupId, keyword);
 
@@ -344,7 +345,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         }
 
         // 2.2 动态用户组
-        if (UserGroupType.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
+        if (UserGroupTypeEnum.DYNAMIC.name().equals(userGroup.getUserGroupType())) {
             var conditions = CommonUtil.nonJdkDeserializeObject(userGroup.getDynamicConditions(),
                     DynamicUserGroupConditionsDto.class);
             int offset = (page - 1) * size;
@@ -414,7 +415,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         checkUserGroupCode(requestDto, rawUserGroup);
 
         // 3. 动态用户组参数校验
-        if (UserGroupType.DYNAMIC.name().equals(rawUserGroup.getUserGroupType())) {
+        if (UserGroupTypeEnum.DYNAMIC.name().equals(rawUserGroup.getUserGroupType())) {
             checkDynamicUserGroupConditions(requestDto);
             CommonUtil.validateBean(requestDto, UserGroupRequestDto.DynamicUserGroup.class);
         }
@@ -426,7 +427,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         updateUserGroup.setUserGroupCode(requestDto.getCode());
         updateUserGroup.setDescription(requestDto.getDesc());
         updateUserGroup.setVersion(rawUserGroup.getVersion());
-        if (UserGroupType.DYNAMIC.name().equals(rawUserGroup.getUserGroupType())) {
+        if (UserGroupTypeEnum.DYNAMIC.name().equals(rawUserGroup.getUserGroupType())) {
             updateUserGroup.setDynamicConditions(CommonUtil.nonJdkSerializeObject(requestDto.getConditions()));
         }
 
@@ -578,7 +579,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
         }
 
         if (CollectionUtils.isNotEmpty(conditions.getGroups())) {
-            if (ConjunctionType.OR.equals(conditions.getConjunction())) {
+            if (ConjunctionTypeEnum.OR.equals(conditions.getConjunction())) {
                 for (DynamicUserGroupConditionsDto group : conditions.getGroups()) {
                     queryWrapper.or(q -> editQueryWrapper(q, group));
                 }

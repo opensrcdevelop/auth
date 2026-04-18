@@ -7,7 +7,7 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamType;
+import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamDto;
@@ -25,13 +25,14 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.math.BigDecimal;
-import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -295,7 +296,7 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
 
         // 2. 检查 CHOICE 类型参数
         for (PermissionExpTemplateParamConfigDto paramConfig : paramConfigs) {
-            if (PermissionExpTemplateParamType.CHOICE.equals(paramConfig.getType())) {
+            if (PermissionExpTemplateParamTypeEnum.CHOICE.equals(paramConfig.getType())) {
                 CommonUtil.validateBean(paramConfig, PermissionExpTemplateParamConfigDto.ChoiceType.class);
             } else {
                 CommonUtil.validateBean(paramConfig);
@@ -303,7 +304,7 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         }
     }
 
-    private Object convertParam(PermissionExpTemplateParamType type, Object value) {
+    private Object convertParam(PermissionExpTemplateParamTypeEnum type, Object value) {
         if (Objects.isNull(value)) {
             return null;
         }

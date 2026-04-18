@@ -1,13 +1,14 @@
 package cn.opensrcdevelop.auth.biz.dto.permission.expression.template;
 
-import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamType;
+import cn.opensrcdevelop.auth.biz.constants.PermissionExpTemplateParamTypeEnum;
 import cn.opensrcdevelop.common.validation.constraints.AlphaNum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import lombok.Data;
+
+import java.util.List;
 
 @Schema(description = "权限表达式模版参数配置")
 @Data
@@ -15,7 +16,7 @@ public class PermissionExpTemplateParamConfigDto {
 
     @Schema(description = "类型")
     @NotNull
-    private PermissionExpTemplateParamType type;
+    private PermissionExpTemplateParamTypeEnum type;
 
     @Schema(description = "名称")
     @NotBlank

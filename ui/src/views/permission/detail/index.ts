@@ -1,13 +1,13 @@
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {
-  addAuthorizeCondition,
-  cancelAuthorization,
-  getPermissionDetail,
-  getPermissionExpList,
-  removeAuthorizeCondition,
-  updateAuthorizePriority,
-  updatePermission,
+    addAuthorizeCondition,
+    cancelAuthorization,
+    getPermissionDetail,
+    getPermissionExpList,
+    removeAuthorizeCondition,
+    updateAuthorizePriority,
+    updatePermission,
 } from "@/api/permission";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
@@ -53,7 +53,7 @@ const permissionInfoFormRules = {
   code: [
     { required: true, message: "权限编码未填写" },
     {
-      validator: (value, cb) => {
+      validator: (value: any, cb: any) => {
         if (value && !/^[A-Za-z0-9-\_]+$/.test(value)) {
           cb("只允许包含英文字母、数字、下划线_、横线-");
         } else {
@@ -91,7 +91,7 @@ const handleResetPermissionInfoForm = () => {
 };
 
 /** 授权记录 */
-const authorizeRecords = reactive([]);
+const authorizeRecords = reactive([] as any[]);
 
 /**
  * 获取权限详情
@@ -191,7 +191,10 @@ const handleToRoleDetail = (id: string) => {
 /** 添加限制条件对话框 */
 const addAuthorizeConditionModalVisible = ref(false);
 const addAuthorizeConditionFormRef = ref();
-const addAuthorizeConditionForm = reactive({
+const addAuthorizeConditionForm = reactive<{
+  authorizeIds: any[] | undefined;
+  permissionExpIds: any[] | undefined;
+}>({
   authorizeIds: undefined,
   permissionExpIds: undefined,
 });
@@ -200,7 +203,7 @@ const addAuthorizeConditionFormRules = {
 };
 
 /** 限制条件列表 */
-const authorizeConditionList = reactive([]);
+const authorizeConditionList = reactive([] as any[]);
 const authorizeConditionListPagination = {
   total: 0,
   current: 1,
@@ -229,7 +232,7 @@ const handleCloseAddAuthorizeConditionModal = () => {
  */
 const handleGetAuthorizeConditionList = (
   page: number = 1,
-  size: number = 15
+  size: number = 15,
 ) => {
   getPermissionExpList({
     page,
@@ -300,7 +303,7 @@ const handleAddAuthorizeConditionFormSubmit = () => {
  */
 const handleRemoveAuthorizeCondition = (
   authoruzeRecord: any,
-  permissionExp: any
+  permissionExp: any,
 ) => {
   Modal.confirm({
     title: `确定取消限制条件「${permissionExp.name}」的限制吗？`,
@@ -401,7 +404,7 @@ export default defineComponent({
   setup() {
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "permission_info";
-      const permissionId = getQueryString("id");
+      const permissionId = getQueryString("id") || "";
       handleGetPermissionDetail(permissionId);
     });
 
@@ -437,6 +440,7 @@ export default defineComponent({
       handleRemoveAuthorizeCondition,
       handleCancelAuthorization,
       handleUpdateAuthorizePriority,
+      handleToUserDetail,
     };
   },
 });

@@ -54,9 +54,6 @@ import io.vavr.Tuple2;
 import io.vavr.Tuple4;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -77,6 +74,10 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ReflectionUtils;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -202,7 +203,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq(CommonUtil.extractFieldNameFromGetter(User::getDeleted), false);
         if (CollectionUtils.isNotEmpty(filters)) {
             for (DataFilterDto filter : filters) {
-                AuthUtil.editQuery(queryWrapper, filter, ConjunctionType.AND);
+                AuthUtil.editQuery(queryWrapper, filter, ConjunctionTypeEnum.AND);
             }
         }
 

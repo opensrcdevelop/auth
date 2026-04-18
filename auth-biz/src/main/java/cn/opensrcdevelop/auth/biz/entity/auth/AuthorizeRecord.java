@@ -9,11 +9,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.Data;
 
 /**
  * 授权记录实体
@@ -44,8 +45,18 @@ public class AuthorizeRecord implements Serializable {
     /** 优先级 */
     private Integer priority;
 
+    /** 授权类型 */
+    private String type;
+
+    /** 授权者ID */
+    private String authorizerId;
+
     /** 授权时间 */
     private LocalDateTime authorizeTime;
+
+    /** 授权者用户名 */
+    @TableField(exist = false)
+    private String authorizerUsername;
 
     /** 用户 */
     @TableField(exist = false)

@@ -1,192 +1,290 @@
 package cn.opensrcdevelop.auth.biz.service.permission.request.impl;
 
 import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.biz.constants.AuthorizeTypeEnum;
+import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.PermissionRequestStatusEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestDetailDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemDetailDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestListItemDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
-import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequest;
-import cn.opensrcdevelop.auth.biz.entity.permission.request.PermissionRequestItem;
-import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
-import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestItemMapper;
-import cn.opensrcdevelop.auth.biz.mapper.permission.request.PermissionRequestMapper;
-import cn.opensrcdevelop.auth.biz.repository.permission.request.PermissionRequestRepository;
+import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequestItem;
+import cn.opensrcdevelop.auth.biz.entity.resource.Resource;
+import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionRequestMapper;
+import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
+import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRequestRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
+import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
+import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestItemService;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
-public class PermissionRequestServiceImpl implements PermissionRequestService {
+public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestMapper, PermissionRequest>
+        implements
+            PermissionRequestService {
 
-    private final PermissionRequestMapper permissionRequestMapper;
-    private final PermissionRequestItemMapper permissionRequestItemMapper;
     private final AuthorizeService authorizeService;
     private final PermissionRequestRepository permissionRequestRepository;
-    private final PermissionMapper permissionMapper;
+    private final PermissionService permissionService;
+    private final PermissionRepository permissionRepository;
+    private final PermissionRequestItemService permissionRequestItemService;
 
     /**
      * 提交权限申请
      *
      * @param dto
      *            申请请求
-     * @return 申请结果
      */
-    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.PERMISSION_REQUEST, sysOperation = SysOperationType.CREATE, success = "提交了权限申请（{{ #result.requestId }}）", fail = "提交权限申请失败")
+    @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.PERMISSION_REQUEST, sysOperation = SysOperationType.CREATE, success = "提交了权限申请（{{ @linkGen.toLink(#requestId, T(ResourceType).PERMISSION_REQUEST) }}）, 申请 {{ #count }} 条权限", fail = "提交权限申请失败，申请 {{ #count }} 条权限")
     @Transactional
     @Override
-    public PermissionRequestResponseDto submitRequest(PermissionRequestCreateDto dto) {
+    public void submitRequest(PermissionRequestCreateDto dto) {
         String userId = AuthUtil.getCurrentUserId();
         List<String> permissionIds = dto.getPermissionIds();
+        AuditContext.setSpelVariable("count", permissionIds.size());
 
-        // 1. 重复申请检查（per D-05）
-        if (permissionRequestRepository.hasActivePendingRequest(userId, permissionIds)) {
-            throw new IllegalStateException("您已有待审批或自动批准的相同权限申请，请勿重复提交");
+        // 1. 获取当前用户权限
+        List<String> userPermissionIds = CommonUtil.stream(permissionService.getCurrentUserPermissions())
+                .map(PermissionResponseDto::getPermissionId).toList();
+
+        // 2. 已拥有权限和重复申请检查
+        if (CommonUtil.stream(permissionIds).anyMatch(userPermissionIds::contains) ||
+                permissionRequestRepository.hasActivePendingRequest(userId, permissionIds)) {
+            throw new BizException(MessageConstants.PERMISSION_REQUEST_MSG_1000);
         }
 
+        // 3. 获取可申请的权限
+        List<Permission> allowApplyPermissions = permissionRepository.getAllowApplyPermissions();
+        List<String> allowApplyPermissionIds = CommonUtil.stream(allowApplyPermissions).map(Permission::getPermissionId)
+                .toList();
+        List<String> autoApprovePermissionIds = CommonUtil.stream(allowApplyPermissions)
+                .filter(Permission::getAutoApprove).map(Permission::getPermissionId).toList();
+        // 3.1 移除不可申请的权限
+        List<String> filteredPermissionIds = CommonUtil.stream(permissionIds).filter(allowApplyPermissionIds::contains)
+                .toList();
+        if (CollectionUtils.isEmpty(filteredPermissionIds)) {
+            throw new BizException(MessageConstants.PERMISSION_REQUEST_MSG_1001);
+        }
+
+        // 4. 添加申请记录
         String requestId = CommonUtil.getUUIDV7String();
-        LocalDateTime now = LocalDateTime.now();
+        AuditContext.setSpelVariable("requestId", requestId);
 
-        // 2. 判断每个权限是否自动批准，构建申请明细列表
-        List<PermissionRequestItem> items = new ArrayList<>();
-        List<String> autoApprovedPermIds = new ArrayList<>();
-        for (String permId : permissionIds) {
-            Permission permission = permissionMapper.getPermission(permId);
-            boolean autoApproved = permission != null && Boolean.TRUE.equals(permission.getAutoApprove());
-            String itemStatus = autoApproved
-                    ? PermissionRequestStatusEnum.AUTO_APPROVED.getCode()
-                    : PermissionRequestStatusEnum.PENDING.getCode();
+        PermissionRequest permissionRequest = new PermissionRequest();
+        permissionRequest.setRequestId(requestId);
+        permissionRequest.setRequestTime(LocalDateTime.now());
+        permissionRequest.setUserId(userId);
+        permissionRequest.setReason(dto.getReason());
+        super.save(permissionRequest);
+
+        // 4.1 添加申请子项
+        List<String> autoApprovedPermissionIds = new ArrayList<>();
+        List<PermissionRequestItem> itemList = CommonUtil.stream(filteredPermissionIds).map(id -> {
             PermissionRequestItem item = new PermissionRequestItem();
-            item.setItemId(CommonUtil.getUUIDV7String());
             item.setRequestId(requestId);
-            item.setPermissionId(permId);
-            item.setStatus(itemStatus);
-            items.add(item);
-            if (autoApproved) {
-                autoApprovedPermIds.add(permId);
+            item.setItemId(CommonUtil.getUUIDV7String());
+            item.setPermissionId(id);
+
+            if (autoApprovePermissionIds.contains(id)) {
+                autoApprovedPermissionIds.add(id);
+                item.setStatus(PermissionRequestStatusEnum.AUTO_APPROVED.getCode());
+            } else {
+                item.setStatus(PermissionRequestStatusEnum.PENDING.getCode());
             }
+            return item;
+        }).toList();
+        permissionRequestItemService.saveBatch(itemList);
+
+        // 4. 自动批准的权限添加授权记录
+        if (CollectionUtils.isNotEmpty(autoApprovedPermissionIds)) {
+            AuthorizeRequestDto authorizeRequestDto = new AuthorizeRequestDto();
+            authorizeRequestDto.setUserIds(List.of(userId));
+            authorizeRequestDto.setPriority(0);
+            authorizeRequestDto.setPermissionIds(autoApprovedPermissionIds);
+            authorizeService.authorize(authorizeRequestDto, AuthorizeTypeEnum.AUTO_APPROVE);
         }
-
-        // 3. 插入申请主记录（per D-03：在同一事务内）
-        PermissionRequest request = new PermissionRequest();
-        request.setRequestId(requestId);
-        request.setUserId(userId);
-        request.setReason(dto.getReason());
-        request.setRequestTime(now);
-        permissionRequestMapper.insert(request);
-
-        // 5. 插入申请明细记录（per D-04：批量全部成功或全部回滚）
-        for (PermissionRequestItem item : items) {
-            permissionRequestItemMapper.insert(item);
-        }
-
-        // 6. 自动批准权限写入 t_authorize（per PAUT-03，@CacheEvict 由 AuthorizeService 内部处理）
-        if (!autoApprovedPermIds.isEmpty()) {
-            AuthorizeRequestDto authDto = new AuthorizeRequestDto();
-            authDto.setUserIds(List.of(userId));
-            authDto.setPermissionIds(autoApprovedPermIds);
-            // expressionIds 和 priority 保持 null，Phase 3 不设置限制条件
-            authorizeService.authorize(authDto);
-        }
-
-        // 7. 构建并返回响应
-        PermissionRequestResponseDto response = new PermissionRequestResponseDto();
-        response.setRequestId(requestId);
-        response.setAutoApprovedCount(autoApprovedPermIds.size());
-        response.setPendingCount(permissionIds.size() - autoApprovedPermIds.size());
-        return response;
     }
 
+    /**
+     * 获取用户权限申请列表
+     *
+     * @param userIds
+     *            用户ID列表
+     * @param usernameSearchKeyword
+     *            用户名搜索关键词
+     * @param page
+     *            页码
+     * @param size
+     *            每页数量
+     * @return 权限申请列表分页数据
+     */
     @Override
-    public PageData<PermissionRequestListItemDto> listUserRequests(int page, int size) {
-        String userId = AuthUtil.getCurrentUserId();
-        PageData<PermissionRequest> paged = permissionRequestRepository.findByUserIdPaged(userId, page, size);
+    public PageData<PermissionRequestResponseDto> listRequests(List<String> userIds, String usernameSearchKeyword,
+            int page, int size) {
+        // 1. 分页查询权限申请记录（包含 items）
+        Page<PermissionRequest> pageParam = new Page<>(page, size);
+        permissionRequestRepository.searchPermissionRequests(pageParam, userIds, usernameSearchKeyword);
 
-        List<String> requestIds = paged.getList().stream()
-                .map(PermissionRequest::getRequestId)
-                .toList();
-        List<PermissionRequestItem> allItems = permissionRequestRepository.findByRequestIds(requestIds);
+        // 2. 组装响应数据并计算统计指标
+        List<PermissionRequestResponseDto> dtoList = pageParam.getRecords().stream()
+                .map(request -> {
+                    PermissionRequestResponseDto dto = new PermissionRequestResponseDto();
+                    dto.setRequestId(request.getRequestId());
+                    dto.setUserId(request.getUserId());
+                    dto.setReason(request.getReason());
+                    dto.setRequestTime(request.getRequestTime());
 
-        List<PermissionRequestListItemDto> dtoList = paged.getList().stream()
-                .map(req -> {
-                    PermissionRequestListItemDto dto = new PermissionRequestListItemDto();
-                    dto.setRequestId(req.getRequestId());
-                    dto.setRequestTime(req.getRequestTime());
-                    dto.setReason(req.getReason());
-                    dto.setItemCount((int) allItems.stream()
-                            .filter(i -> i.getRequestId().equals(req.getRequestId()))
-                            .count());
+                    // 2.1 获取该申请的所有明细并计算统计指标
+                    List<PermissionRequestItem> items = request.getItems();
+                    if (CollectionUtils.isNotEmpty(items)) {
+                        dto.setPendingCount(items.stream()
+                                .filter(item -> PermissionRequestStatusEnum.PENDING.getCode().equals(item.getStatus()))
+                                .count());
+                        dto.setApprovedCount(items.stream()
+                                .filter(item -> PermissionRequestStatusEnum.APPROVED.getCode().equals(item.getStatus()))
+                                .count());
+                        dto.setAutoApproveCount(items.stream()
+                                .filter(item -> PermissionRequestStatusEnum.AUTO_APPROVED.getCode()
+                                        .equals(item.getStatus()))
+                                .count());
+                        dto.setRejectedCount(items.stream()
+                                .filter(item -> PermissionRequestStatusEnum.REJECTED.getCode().equals(item.getStatus()))
+                                .count());
+                        dto.setTotalCount((long) items.size());
+                    } else {
+                        dto.setPendingCount(0L);
+                        dto.setApprovedCount(0L);
+                        dto.setAutoApproveCount(0L);
+                        dto.setRejectedCount(0L);
+                        dto.setTotalCount(0L);
+                    }
+
                     return dto;
                 })
                 .toList();
 
-        PageData<PermissionRequestListItemDto> result = new PageData<>();
-        result.setTotal(paged.getTotal());
-        result.setPages(paged.getPages());
-        result.setCurrent(paged.getCurrent());
-        result.setSize(paged.getSize());
-        result.setList(dtoList);
-        return result;
+        // 3. 构建分页响应
+        PageData<PermissionRequestResponseDto> pageData = new PageData<>();
+        pageData.setTotal(pageParam.getTotal());
+        pageData.setPages(pageParam.getPages());
+        pageData.setCurrent(pageParam.getCurrent());
+        pageData.setSize(pageParam.getSize());
+        pageData.setList(dtoList);
+        return pageData;
     }
 
+    /**
+     * 获取权限申请明细列表
+     *
+     * @param userId
+     *            用户ID
+     * @param requestId
+     *            权限申请ID
+     * @return 权限申请明细列表
+     */
     @Override
-    public PermissionRequestDetailDto getRequestDetail(String requestId) {
-        // 1. Get request by ID
-        PermissionRequest request = permissionRequestRepository.getById(requestId);
-        if (request == null) {
-            return null;
-        }
+    public List<PermissionRequestItemResponseDto> listRequestItems(String userId, String requestId) {
+        // 1. 查询权限申请明细
+        List<PermissionRequestItem> items = permissionRequestRepository.getPermissionRequestItems(userId, requestId);
 
-        // 2. IDOR protection: verify request belongs to current user (per D-09)
-        String currentUserId = AuthUtil.getCurrentUserId();
-        if (!request.getUserId().equals(currentUserId)) {
-            throw new SecurityException("无权查看此申请详情");
-        }
-
-        // 3. Get request items
-        List<PermissionRequestItem> items = permissionRequestRepository.findByRequestIds(List.of(requestId));
-
-        // 4. Enrich items with permission details (per D-05: JOIN t_permission for
-        // permissionName, permissionCode)
-        List<PermissionRequestItemDetailDto> itemDtos = items.stream()
+        // 2. 组装响应数据
+        return items.stream()
                 .map(item -> {
-                    PermissionRequestItemDetailDto itemDto = new PermissionRequestItemDetailDto();
-                    itemDto.setPermissionId(item.getPermissionId());
-                    itemDto.setStatus(item.getStatus());
-                    itemDto.setRejectReason(item.getRejectReason());
+                    PermissionRequestItemResponseDto dto = new PermissionRequestItemResponseDto();
+                    dto.setPermissionId(item.getPermissionId());
+                    dto.setStatus(item.getStatus());
+                    dto.setRejectReason(item.getRejectReason());
+                    dto.setApproverUsername(item.getApproverUsername());
 
-                    // Get permission details from t_permission table
-                    Permission permission = permissionMapper.getPermission(item.getPermissionId());
-                    if (permission != null) {
-                        itemDto.setPermissionName(permission.getPermissionName());
-                        itemDto.setPermissionCode(permission.getPermissionCode());
+                    if (Objects.nonNull(item.getPermission())) {
+                        dto.setPermissionName(item.getPermission().getPermissionName());
+                        Resource resource = item.getPermission().getResource();
+                        if (Objects.nonNull(resource)) {
+                            dto.setResourceId(resource.getResourceId());
+                            dto.setResourceName(resource.getResourceName());
+                            if (Objects.nonNull(resource.getResourceGroup())) {
+                                dto.setResourceGroupId(resource.getResourceGroup().getResourceGroupId());
+                                dto.setResourceGroupName(resource.getResourceGroup().getResourceGroupName());
+                            }
+                        }
                     }
-                    return itemDto;
+                    return dto;
                 })
                 .toList();
+    }
 
-        // 5. Build and return detail DTO
-        PermissionRequestDetailDto detail = new PermissionRequestDetailDto();
-        detail.setRequestId(request.getRequestId());
-        detail.setUserId(request.getUserId());
-        detail.setReason(request.getReason());
-        detail.setRequestTime(request.getRequestTime());
-        detail.setItems(itemDtos);
-        return detail;
+    /**
+     * 用户取消权限申请
+     *
+     * @param requestId
+     *            权限申请ID
+     */
+    @Transactional
+    @Override
+    public void cancelRequest(String requestId) {
+        // 1. 获取当前用户 ID
+        String userId = AuthUtil.getCurrentUserId();
+
+        // 2. 检查权限申请是否存在
+        boolean exists = super.exists(Wrappers.<PermissionRequest>lambdaQuery()
+                .eq(PermissionRequest::getUserId, userId)
+                .eq(PermissionRequest::getRequestId, requestId));
+        if (!exists) {
+            throw new BizException(MessageConstants.PERMISSION_REQUEST_MSG_1002);
+        }
+
+        // 3. 检查权限申请状态是否为待处理
+        boolean alreadyApprovedOrRejected = permissionRequestItemService
+                .exists(Wrappers.<PermissionRequestItem>lambdaQuery()
+                        .eq(PermissionRequestItem::getRequestId, requestId)
+                        .in(PermissionRequestItem::getStatus, List.of(PermissionRequestStatusEnum.APPROVED.getCode(),
+                                PermissionRequestStatusEnum.REJECTED.getCode())));
+        if (alreadyApprovedOrRejected) {
+            throw new BizException(MessageConstants.PERMISSION_REQUEST_MSG_1003);
+        }
+
+        // 4. 删除自动批准的授权
+        List<String> autoApprovedPermissionIds = CommonUtil
+                .stream(permissionRequestItemService.list(Wrappers.<PermissionRequestItem>lambdaQuery()
+                        .eq(PermissionRequestItem::getRequestId, requestId)
+                        .eq(PermissionRequestItem::getStatus, PermissionRequestStatusEnum.AUTO_APPROVED.name())))
+                .map(PermissionRequestItem::getPermissionId)
+                .toList();
+        if (CollectionUtils.isNotEmpty(autoApprovedPermissionIds)) {
+            authorizeService.remove(Wrappers.<AuthorizeRecord>lambdaQuery()
+                    .eq(AuthorizeRecord::getUserId, userId)
+                    .eq(AuthorizeRecord::getType, AuthorizeTypeEnum.AUTO_APPROVE.getType())
+                    .in(AuthorizeRecord::getPermissionId, autoApprovedPermissionIds));
+        }
+
+        // 5. 删除权限申请和明细
+        super.removeById(requestId);
+        permissionRequestItemService.remove(Wrappers.<PermissionRequestItem>lambdaQuery()
+                .eq(PermissionRequestItem::getRequestId, requestId));
     }
 }

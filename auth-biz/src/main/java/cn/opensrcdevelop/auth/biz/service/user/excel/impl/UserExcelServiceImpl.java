@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
@@ -19,7 +20,6 @@ import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
@@ -48,12 +48,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import jakarta.annotation.Resource;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -65,6 +59,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -286,7 +287,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 3. 提交异步任务
         String taskId = asyncTaskSchedulerService.submitTask(
-                AsyncTaskType.USER_EXPORT.getCode(),
+                AsyncTaskTypeEnum.USER_EXPORT.getCode(),
                 UserExportAsyncTaskExecutor.TASK_NAME,
                 taskParams,
                 userId);
@@ -322,7 +323,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 4. 提交异步任务
         String taskId = asyncTaskSchedulerService.submitTask(
-                AsyncTaskType.USER_IMPORT.getCode(),
+                AsyncTaskTypeEnum.USER_IMPORT.getCode(),
                 UserImportAsyncTaskExecutor.TASK_NAME,
                 taskParams,
                 userId);

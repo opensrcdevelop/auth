@@ -1,5 +1,6 @@
 <script lang="ts">
 import detailTs from "./index";
+
 export default detailTs;
 </script>
 
@@ -150,27 +151,26 @@ export default detailTs;
                   <a-table-column
                     title="允许申请"
                     :width="100"
-                    align="center"
                   >
                     <template #cell="{ record }">
                       <a-switch
+                        type="round"
                         :model-value="record.allowApply"
                         size="small"
-                        @change="(val: boolean) => handlePermissionFieldChange(record, 'allowApply', val)"
+                        @change="(val) => handlePermissionFieldChange(record, 'allowApply', val)"
                       />
                     </template>
                   </a-table-column>
                   <a-table-column
                     title="自动批准"
                     :width="100"
-                    align="center"
                   >
                     <template #cell="{ record }">
                       <a-switch
+                        type="round"
                         :model-value="record.autoApprove"
                         size="small"
-                        :disabled="!record.allowApply"
-                        @change="(val: boolean) => handlePermissionFieldChange(record, 'autoApprove', val)"
+                        @change="(val) => handlePermissionFieldChange(record, 'autoApprove', val)"
                       />
                     </template>
                   </a-table-column>

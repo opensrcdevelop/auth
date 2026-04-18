@@ -1,9 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.asynctask;
 
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskStatusEnum;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.entity.asynctask.AsyncTask;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskStatus;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.mapper.asynctask.AsyncTaskMapper;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
@@ -13,13 +13,14 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
 import jakarta.annotation.Resource;
-import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 /**
  * 异步任务调度服务
@@ -55,7 +56,7 @@ public class AsyncTaskSchedulerService {
     public String submitTask(String taskType, String taskName, Map<String, Object> taskParams, String userId) {
         try {
             // 1. 检查并行度
-            AsyncTaskType asyncTaskType = AsyncTaskType.fromCode(taskType);
+            AsyncTaskTypeEnum asyncTaskType = AsyncTaskTypeEnum.fromCode(taskType);
             if (asyncTaskType != null) {
                 int maxParallelism = asyncTaskType.getMaxParallelism();
                 long runningCount = asyncTaskService.countRunningTasks(taskType);
@@ -113,7 +114,7 @@ public class AsyncTaskSchedulerService {
 
             // 如果任务未完成（未设置结果），自动标记为成功
             task = asyncTaskMapper.selectById(taskId);
-            if (task != null && AsyncTaskStatus.RUNNING.getCode().equals(task.getStatus())) {
+            if (task != null && AsyncTaskStatusEnum.RUNNING.getCode().equals(task.getStatus())) {
                 asyncTaskService.completeTaskSuccess(taskId, context.getResult(), null, null);
                 // 发送通知
                 task = asyncTaskMapper.selectById(taskId);

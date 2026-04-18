@@ -6,6 +6,7 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.biz.constants.AuthorizeTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
@@ -16,21 +17,23 @@ import cn.opensrcdevelop.auth.biz.mapper.auth.AuthorizeConditionMapper;
 import cn.opensrcdevelop.auth.biz.mapper.auth.AuthorizeMapper;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeConditionService;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,25 +48,31 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param requestDto
      *            授权请求
      */
-    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.CREATE, success = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ "
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.CREATE, success = "授予了用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ "
             +
             "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
             "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
-            "）授予了权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）", fail = "给用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ "
+            "）权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}），授权类型：{{ #authorizeType.displayName }}", fail = "授予用户（{{ @linkGen.toLinks(#requestDto.userIds, T(ResourceType).USER) }}）、用户组（ "
                     +
                     "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
                     "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
-                    "）授予权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）失败")
+                    "）权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）失败，授权类型：{{ #authorizeType.displayName }}")
     @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
-    public void authorize(AuthorizeRequestDto requestDto) {
+    public void authorize(AuthorizeRequestDto requestDto, AuthorizeTypeEnum authorizeType) {
         var userIds = requestDto.getUserIds();
         var userGroupIds = requestDto.getUserGroupIds();
         var roleIds = requestDto.getRoleIds();
         var permissionIds = requestDto.getPermissionIds();
         var expressionIds = requestDto.getExpressionIds();
         Integer priority = requestDto.getPriority();
+
+        String authorizerId = null;
+        if (AuthorizeTypeEnum.ADMINISTRATOR_GRANT.equals(authorizeType)) {
+            authorizerId = AuthUtil.getCurrentUserId();
+        }
+        String finalAuthorizerId = authorizerId;
 
         List<AuthorizeRecord> authorizeRecords = new ArrayList<>();
         var authorizeTime = LocalDateTime.now();
@@ -76,6 +85,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
                 authorizeRecord.setPriority(priority);
+                authorizeRecord.setType(authorizeType.getType());
+                authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
             }));
         }
@@ -89,6 +100,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
                 authorizeRecord.setPriority(priority);
+                authorizeRecord.setType(authorizeType.getType());
+                authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
             }));
         }
@@ -102,6 +115,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setPermissionId(permissionId);
                 authorizeRecord.setAuthorizeTime(authorizeTime);
                 authorizeRecord.setPriority(priority);
+                authorizeRecord.setType(authorizeType.getType());
+                authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
             }));
         }

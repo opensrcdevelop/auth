@@ -3,10 +3,12 @@ package cn.opensrcdevelop.auth.biz.repository.permission;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+
 import java.util.List;
 
 public interface PermissionRepository {
 
+    @SuppressWarnings("all")
     void searchUserPermissions(IPage<AuthorizeRecord> page, String userId, List<String> dynamicUserGroupIds,
             String resourceGroupCode, String resourceGroupNameSearchKeyword, String resourceNameSearchKeyword,
             String permissionNameSearchKeyword, String permissionCodeSearchKeyword);
@@ -23,4 +25,6 @@ public interface PermissionRepository {
     List<AuthorizeRecord> searchExpPermission(String expressionId);
 
     Permission getPermission(String permissionId);
+
+    List<Permission> getAllowApplyPermissions();
 }

@@ -1,14 +1,16 @@
 package cn.opensrcdevelop.auth.biz.service.auth;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthorizeTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import com.baomidou.mybatisplus.extension.service.IService;
+
 import java.util.List;
 
 public interface AuthorizeService extends IService<AuthorizeRecord> {
 
-    void authorize(AuthorizeRequestDto requestDto);
+    void authorize(AuthorizeRequestDto requestDto, AuthorizeTypeEnum authorizeType);
 
     void removeAuthorization(String principalId);
 

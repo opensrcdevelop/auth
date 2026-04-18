@@ -1,11 +1,10 @@
 import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
 import {getResourceDetail, getResourcePermissions, updateResource,} from "@/api/resource";
-import {updatePermission} from "@/api/permission";
+import {deletePermission, updatePermission} from "@/api/permission";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {Modal, Notification} from "@arco-design/web-vue";
 import {useGlobalVariablesStore} from "@/store/globalVariables";
-import {deletePermission} from "@/api/permission";
 import {usePagination} from "@/hooks/usePagination";
 
 /**
@@ -45,7 +44,7 @@ const handleTabInit = (tabKey: string, id: string = resourceId.value) => {
       handleGetResourcePermissions(id);
       break;
   }
-}
+};
 
 const resourceId = ref("");
 const resourceName = ref("");
@@ -72,7 +71,7 @@ const resourceInfoFormRuels = {
   code: [
     { required: true, message: "资源标识未填写" },
     {
-      validator: (value, cb) => {
+      validator: (value: any, cb: any) => {
         if (value && !/^[A-Za-z0-9-\_]+$/.test(value)) {
           cb("只允许包含英文字母、数字、下划线_、横线-");
         } else {
@@ -137,9 +136,9 @@ const handleResetResourceInfoForm = () => {
 };
 
 /** 权限信息  */
-const permissions = reactive([]);
+const permissions = reactive([] as any[]);
 const permissionSearchKeyword = ref(null);
-let permissionsPagination;
+let permissionsPagination: any;
 
 /**
  * 获取资源内权限
@@ -151,7 +150,7 @@ let permissionsPagination;
 const handleGetResourcePermissions = (
   id: string = resourceId.value,
   page: number = 1,
-  size: number = 15
+  size: number = 15,
 ) => {
   getResourcePermissions(id, {
     page,
@@ -166,7 +165,7 @@ const handleGetResourcePermissions = (
         permissionsPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -182,7 +181,7 @@ const handleSearchResourcePermissions = () => {
   handleGetResourcePermissions(
     resourceId.value,
     1,
-    permissionsPagination.pageSize
+    permissionsPagination.pageSize,
   );
 };
 
@@ -239,13 +238,13 @@ const handleDeletePermission = (permission: any) => {
 /**
  * 处理权限字段变更
  */
-const handlePermissionFieldChange = (permission: any, field: 'allowApply' | 'autoApprove', value: boolean) => {
+const handlePermissionFieldChange = (
+  permission: any,
+  field: "allowApply" | "autoApprove",
+  value: any,
+) => {
   updatePermission({
     id: permission.permissionId,
-    name: permission.permissionName,
-    code: permission.permissionCode,
-    desc: permission.description,
-    resourceId: permission.resourceId,
     [field]: value,
   })
     .then((result: any) => {
@@ -261,14 +260,14 @@ const handlePermissionFieldChange = (permission: any, field: 'allowApply' | 'aut
 
 export default defineComponent({
   setup() {
-    const resourceId = getQueryString("id");
+    const resourceId = getQueryString("id") || "";
     permissionsPagination = usePagination(
       `${resourceId}_resourcePermissions`,
-      ({ page, size }) => {
+      ({ page, size }: { page: number; size: number }) => {
         if (getQueryString("active_tab") === "permission_list") {
           handleGetResourcePermissions(resourceId, page, size);
         }
-      }
+      },
     );
 
     onMounted(() => {

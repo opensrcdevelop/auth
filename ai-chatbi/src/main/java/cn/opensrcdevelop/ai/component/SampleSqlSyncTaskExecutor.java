@@ -1,7 +1,7 @@
 package cn.opensrcdevelop.ai.component;
 
 import cn.opensrcdevelop.ai.service.SampleSqlService;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.common.exception.ServerException;
@@ -24,7 +24,7 @@ public class SampleSqlSyncTaskExecutor implements AsyncTaskExecutor {
 
     @Override
     public String getTaskType() {
-        return AsyncTaskType.SAMPLE_SQL_SYNC.getCode();
+        return AsyncTaskTypeEnum.SAMPLE_SQL_SYNC.getCode();
     }
 
     @Override

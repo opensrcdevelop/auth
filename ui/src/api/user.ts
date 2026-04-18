@@ -229,7 +229,7 @@ export function updateMyUserInfo(data: any) {
  * @param to 邮箱
  * @returns 调用结果
  */
-export function sendBindEmailCode(to: string) {
+export function sendBindEmailCode(to: any) {
   return apiRequest.post({
     url: `/code/email/bind/${to}`,
   });

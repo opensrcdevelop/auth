@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.util;
 
-import cn.opensrcdevelop.auth.biz.constants.ConjunctionType;
+import cn.opensrcdevelop.auth.biz.constants.ConjunctionTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
@@ -16,12 +16,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
@@ -37,6 +31,13 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 认证工具
@@ -325,7 +326,8 @@ public class AuthUtil {
      * @param <T>
      *            T
      */
-    public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterDto filter, ConjunctionType conjunction) {
+    public static <T> void editQuery(QueryWrapper<T> queryWrapper, DataFilterDto filter,
+            ConjunctionTypeEnum conjunction) {
         DataFilterEnum filterType = DataFilterEnum.valueOf(filter.getFilterType());
         UserAttrDataTypeEnum dataType = UserAttrDataTypeEnum.valueOf(filter.getDataType());
         // IS_NULL 和 IS_NOT_NULL 不需要值，直接传 null
@@ -343,7 +345,7 @@ public class AuthUtil {
             DataFilterEnum filterType,
             String attrKey, Object value,
             UserAttrDataTypeEnum valueDataType,
-            ConjunctionType conjunction) {
+            ConjunctionTypeEnum conjunction) {
         String sqlSegment = """
                 SELECT
                     1
@@ -357,7 +359,7 @@ public class AuthUtil {
                     AND
                     %s
                 """;
-        if (ConjunctionType.OR == conjunction) {
+        if (ConjunctionTypeEnum.OR == conjunction) {
             queryWrapper.or(q -> q.exists(String.format(sqlSegment,
                     getExistsConditionSqlSegment(filterType, attrKey, value, valueDataType))));
         } else {
@@ -429,7 +431,7 @@ public class AuthUtil {
             DataFilterEnum filterType,
             String attrKey, Object value,
             UserAttrDataTypeEnum valueDataType,
-            ConjunctionType conjunction) {
+            ConjunctionTypeEnum conjunction) {
         String queryKey = "t_user." + com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(attrKey);
         Object queryValue = switch (valueDataType) {
             case DATETIME, DATE -> Timestamp.from(Instant.ofEpochMilli(Long.parseLong(value.toString())));
@@ -438,7 +440,7 @@ public class AuthUtil {
         };
 
         // 构造查询条件
-        boolean isOr = ConjunctionType.OR == conjunction;
+        boolean isOr = ConjunctionTypeEnum.OR == conjunction;
         switch (filterType) {
             case EQ -> {
                 if (isOr) {
