@@ -1,7 +1,7 @@
 <#if question??>
 Based on the following question, consider the execution of the first step.
 <#if historical_questions?? && historical_questions?size gt 0>
-### Historical Questions
+### Historical Questions(Sort in ascending order of time)
 <#list historical_questions as histQuestion>
 - ${histQuestion}
 </#list>

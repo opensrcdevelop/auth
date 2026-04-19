@@ -75,10 +75,14 @@ Do not call if these keywords are not present.
 - Path D (Reporting): get_relevant_tables → generate_sql → execute_sql → (conditional) analyze_data → (conditional) generate_report
 - Path E (Multiple SQL): generate_sql → execute_sql → generate_sql → execute_sql → ... → final_answer
 
+## Recall History QA Tool
+Use `recall_history_qa` to recall previous Q&A pairs when:
+- User references historical questions (e.g., "similar to before", "as discussed earlier")
+- User wants to modify or extend a previous analysis
+- User feedback on a previous answer (e.g., "change the chart from question 2")
+
 ## Ask User Tool
 Use `ask_user` tool when you cannot answer the user's question because you lack necessary information.
-
-### When to Use
 - Missing required filter conditions (e.g., time range, category)
 - User intent is unclear and needs clarification
 - User needs to choose from multiple options

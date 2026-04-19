@@ -37,14 +37,9 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -53,6 +48,13 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -294,7 +296,14 @@ public class ChatBIServiceImpl implements ChatBIService {
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
         List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
 
-        // 2.3 获取对话配置
+        // 2.3 获取会话历史用户消息
+        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
+                ChatContextHolder.getChatContext().getChatId());
+        if (CollectionUtils.isNotEmpty(historicalQuestions)) {
+            historicalQuestions.removeLast();
+        }
+
+        // 2.4 获取对话配置
         int maxSteps = defaultMaxThinkSteps;
         try {
             ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
@@ -315,6 +324,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatClient,
                 finalQuestion,
                 sampleSqls,
+                historicalQuestions,
                 maxSteps,
                 Boolean.TRUE.equals(requestDto.getShowThinking()));
 

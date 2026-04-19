@@ -1,11 +1,12 @@
 package cn.opensrcdevelop.ai.chat;
 
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {
@@ -55,6 +56,9 @@ public class ChatContext {
 
     /** 示例 SQL（问题-SQL 对列表） */
     private List<Map<String, String>> sampleSqls;
+
+    /** 历史问题列表（按时间升序排列） */
+    private List<String> historicalQuestions;
 
     private Boolean terminated = false;
 

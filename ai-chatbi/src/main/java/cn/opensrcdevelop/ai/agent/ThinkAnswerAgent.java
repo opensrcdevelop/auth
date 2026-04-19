@@ -17,15 +17,6 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.ConstraintViolation;
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +34,16 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -66,21 +67,25 @@ public class ThinkAnswerAgent {
      *            用户提问
      * @param sampleSqls
      *            示例 SQL（问题-SQL 对）
+     * @param historicalQuestions
+     *            历史问题
      * @param maxSteps
      *            最大执行步数
      * @param showThinking
      *            是否显示思考过程
      */
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({ "java:S3776", "java:S107" })
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
             String userQuestion,
             List<Map<String, String>> sampleSqls,
+            List<String> historicalQuestions,
             int maxSteps,
             boolean showThinking) {
-        // 将示例 SQL 存储到上下文
+        // 将示例 SQL 和历史问题列表存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
+        ChatContextHolder.getChatContext().setHistoricalQuestions(historicalQuestions);
 
         String formatErrorFeedback = null;
         int step = 0;
@@ -219,8 +224,7 @@ public class ThinkAnswerAgent {
 
     private Prompt getPrompt(String question, boolean showThinking, String formatErrorFeedback) {
         // 获取会话历史用户消息
-        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
-                ChatContextHolder.getChatContext().getChatId());
+        List<String> historicalQuestions = ChatContextHolder.getChatContext().getHistoricalQuestions();
 
         // 获取上一轮的思考内容
         String previousThinking = ChatContextHolder.getChatContext().getPreviousThinking();
