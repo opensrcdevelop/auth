@@ -102,7 +102,6 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
 
         // 4. 添加申请记录
         String requestId = CommonUtil.getUUIDV7String();
-        AuditContext.setSpelVariable("requestId", requestId);
 
         PermissionRequest permissionRequest = new PermissionRequest();
         permissionRequest.setRequestId(requestId);
@@ -138,6 +137,9 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
             authorizeRequestDto.setPermissionIds(autoApprovedPermissionIds);
             authorizeService.authorize(authorizeRequestDto, AuthorizeTypeEnum.AUTO_APPROVE);
         }
+
+        AuditContext.setSpelVariable("requestId", requestId);
+        AuditContext.setSpelVariable("count", permissionIds.size());
     }
 
     /**
