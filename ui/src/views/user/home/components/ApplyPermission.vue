@@ -33,6 +33,7 @@
           <a-tree
             v-model:checked-keys="displayCheckedKeys"
             :data="filteredTreeData"
+            :key="treeRenderKey"
             :checkable="true"
             :checkStrictly="true"
             :show-line="true"
@@ -163,6 +164,8 @@ const searchKeyword = ref("");
 const displayCheckedKeys = ref<string[]>([]);
 // 实际选中的权限ID（只包含权限叶子节点）
 const selectedPermissionIds = ref<string[]>([]);
+// 用于强制触发树组件重渲染的 key
+const treeRenderKey = ref(0);
 
 // 获取节点下所有可选择的权限ID
 const getSelectablePermissionIds = (node: PermissionTreeNode): string[] => {
@@ -478,7 +481,9 @@ const handleSubmit = () => {
         displayCheckedKeys.value = [];
         searchKeyword.value = "";
         reason.value = "";
+        // 重新加载树数据后触发强制重渲染
         handleLoadPermissionTree();
+        treeRenderKey.value++;
         emit("submit-success");
       });
     })
