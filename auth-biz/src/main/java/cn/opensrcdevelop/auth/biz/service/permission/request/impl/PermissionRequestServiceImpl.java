@@ -121,6 +121,7 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
 
             if (autoApprovePermissionIds.contains(id)) {
                 autoApprovedPermissionIds.add(id);
+                item.setApproveTime(LocalDateTime.now());
                 item.setStatus(PermissionRequestStatusEnum.AUTO_APPROVED.getCode());
             } else {
                 item.setStatus(PermissionRequestStatusEnum.PENDING.getCode());
