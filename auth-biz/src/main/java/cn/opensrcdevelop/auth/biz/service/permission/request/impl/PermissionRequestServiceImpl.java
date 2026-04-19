@@ -75,7 +75,6 @@ public class PermissionRequestServiceImpl extends ServiceImpl<PermissionRequestM
     public void submitRequest(PermissionRequestCreateDto dto) {
         String userId = AuthUtil.getCurrentUserId();
         List<String> permissionIds = dto.getPermissionIds();
-        AuditContext.setSpelVariable("count", permissionIds.size());
 
         // 1. 获取当前用户权限
         List<String> userPermissionIds = CommonUtil.stream(permissionService.getCurrentUserPermissions())
