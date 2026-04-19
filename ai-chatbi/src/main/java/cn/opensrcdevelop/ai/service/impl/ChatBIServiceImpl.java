@@ -303,7 +303,9 @@ public class ChatBIServiceImpl implements ChatBIService {
         List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
                 ChatContextHolder.getChatContext().getChatId());
         if (CollectionUtils.isNotEmpty(historicalQuestions)) {
+            historicalQuestions = new ArrayList<>(historicalQuestions);
             historicalQuestions.removeLast();
+            historicalQuestions = CommonUtil.stream(historicalQuestions).distinct().toList();
         }
 
         // 2.4 获取对话配置
