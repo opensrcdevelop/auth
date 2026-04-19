@@ -72,7 +72,7 @@ export default homeTs;
             <ApplyPermission :activeKey="activeTab" />
           </a-tab-pane>
           <a-tab-pane key="request_records" title="申请权限记录">
-            <RequestRecords :activeKey="activeTab" />
+            <RequestRecords :userInfo="userInfo" :activeKey="activeTab" />
           </a-tab-pane>
         </a-tabs>
       </div>

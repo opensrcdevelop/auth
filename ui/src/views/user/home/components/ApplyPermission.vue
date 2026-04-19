@@ -372,12 +372,6 @@ const selectedPermissionDetails = computed(() => {
   return details;
 });
 
-// 根据ID获取权限名称
-const getPermissionNameById = (id: string): string => {
-  const node = findNodeById(treeData.value, id);
-  return node ? node.name : id;
-};
-
 // 移除已选择的权限
 const removeSelectedPermission = (id: string) => {
   selectedPermissionIds.value = selectedPermissionIds.value.filter(

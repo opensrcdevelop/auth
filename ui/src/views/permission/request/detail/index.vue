@@ -136,7 +136,7 @@ export default detailTs;
                   <template #title>
                     <a-checkbox
                       :disabled="!hasPendingItems"
-                      v-model="isAllPendingSelected"
+                      :model-value="isAllPendingSelected"
                       :indeterminate="isSomePendingSelected"
                       @change="handleToggleSelectAllPending"
                     />
