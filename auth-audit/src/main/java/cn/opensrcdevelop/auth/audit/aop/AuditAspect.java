@@ -97,7 +97,7 @@ public class AuditAspect {
     }
 
     private AuditLog buildAuditLog(Audit auditAnnotation, boolean isSuccess, String exMsg,
-                                   ProceedingJoinPoint proceedingJoinPoint) {
+            ProceedingJoinPoint proceedingJoinPoint) {
         // SpEL 表达式解析上下文
         StandardEvaluationContext evaluationContext = getEvaluationContext(proceedingJoinPoint);
 

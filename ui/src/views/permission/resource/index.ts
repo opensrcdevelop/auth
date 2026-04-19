@@ -1,15 +1,15 @@
-import { deleteResource, getResourceList } from "@/api/resource";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {deleteResource, getResourceList} from "@/api/resource";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {defineComponent, reactive, ref} from "vue";
 import router from "@/router";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { usePagination } from "@/hooks/usePagination";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {usePagination} from "@/hooks/usePagination";
 
 /** 资源列表 */
-const resourceList = reactive([]);
+const resourceList = reactive([] as any[]);
 const resourceSearchKeyword = ref(null);
-let resourceListPagination;
+let resourceListPagination: any;
 
 /**
  * 获取资源列表
@@ -31,7 +31,7 @@ const handleGetResourceList = (page: number = 1, size: number = 15) => {
         resourceListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -110,9 +110,12 @@ const handleAuthorize = () => {
 
 export default defineComponent({
   setup() {
-    resourceListPagination = usePagination("resourceList", ({ page, size }) => {
-      handleGetResourceList(page, size);
-    });
+    resourceListPagination = usePagination(
+      "resourceList",
+      ({ page, size }: { page: number; size: number }) => {
+        handleGetResourceList(page, size);
+      },
+    );
 
     return {
       resourceList,

@@ -112,14 +112,6 @@ const menuRoutes: RouteRecordRaw[] = [
           visible: () => true,
         },
       },
-      {
-        path: "/permission/request/detail",
-        component: () => import("@/views/permission/request/detail.vue"),
-        meta: {
-          title: "申请详情",
-          visible: () => false,
-        },
-      },
     ],
   },
   {

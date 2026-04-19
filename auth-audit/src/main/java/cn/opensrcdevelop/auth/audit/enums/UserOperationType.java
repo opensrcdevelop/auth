@@ -2,6 +2,9 @@ package cn.opensrcdevelop.auth.audit.enums;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 用户操作类型（顺序禁止改变）
+ */
 @RequiredArgsConstructor
 public enum UserOperationType {
 
@@ -24,7 +27,9 @@ public enum UserOperationType {
     CHAT_BI_DELETE_HISTORY(
             "ChatBI 删除对话历史"),
     CHAT_BI_UPDATE_HISTORY("ChatBI 更新对话历史"),
-    UNBIND_MFA("解绑 MFA 设备");
+    UNBIND_MFA("解绑 MFA 设备"),
+    REQUEST_PERMISSION("申请权限"),
+    CANCEL_PERMISSION_REQUEST("取消权限申请");
 
     private final String name;
 }

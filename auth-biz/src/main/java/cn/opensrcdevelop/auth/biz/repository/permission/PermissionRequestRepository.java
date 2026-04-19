@@ -10,7 +10,10 @@ public interface PermissionRequestRepository {
 
     boolean hasActivePendingRequest(String userId, List<String> permissionIds);
 
-    void searchPermissionRequests(IPage<PermissionRequest> page, List<String> userIds, String usernameSearchKeyword);
+    void searchPermissionRequests(IPage<PermissionRequest> page, List<String> userIds, String usernameSearchKeyword,
+            Boolean pendingOnly);
 
     List<PermissionRequestItem> getPermissionRequestItems(String userId, String requestId);
+
+    PermissionRequest getById(String requestId);
 }

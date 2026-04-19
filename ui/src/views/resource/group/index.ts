@@ -1,14 +1,14 @@
-import { deleteResourceGroup, getResourceGroupList } from "@/api/resourceGroup";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {deleteResourceGroup, getResourceGroupList} from "@/api/resourceGroup";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { Modal, Notification } from "@arco-design/web-vue";
-import { usePagination } from "@/hooks/usePagination";
+import {Modal, Notification} from "@arco-design/web-vue";
+import {usePagination} from "@/hooks/usePagination";
 
 /** 资源列表 */
-const resourceGroupList = reactive([]);
+const resourceGroupList = reactive([] as any[]);
 const resourceGroupSearchKeyword = ref(null);
-let resourceGroupListPagination;
+let resourceGroupListPagination: any;
 
 /**
  * 获取资源组列表
@@ -30,7 +30,7 @@ const handleGetResourceGroupList = (page: number = 1, size: number = 15) => {
         resourceGroupListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -92,15 +92,15 @@ export default defineComponent({
   setup() {
     resourceGroupListPagination = usePagination(
       "resourceGroupList",
-      ({ page, size }) => {
+      ({ page, size }: { page: number; size: number }) => {
         handleGetResourceGroupList(page, size);
-      }
+      },
     );
 
     onMounted(() => {
       handleGetResourceGroupList(
         resourceGroupListPagination.pagination.current,
-        resourceGroupListPagination.pagination.pageSize
+        resourceGroupListPagination.pagination.pageSize,
       );
     });
 

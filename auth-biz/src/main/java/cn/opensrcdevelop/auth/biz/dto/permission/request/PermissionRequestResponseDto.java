@@ -18,6 +18,9 @@ public class PermissionRequestResponseDto {
     @Schema(description = "申请人ID")
     private String userId;
 
+    @Schema(description = "申请人用户名")
+    private String username;
+
     @Schema(description = "申请理由")
     private String reason;
 

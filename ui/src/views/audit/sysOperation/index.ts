@@ -32,6 +32,7 @@ const resourceTypes = [
   { id: "0f35efeb-3f5a-4e22-84c4-4b4a08b6717c", name: "OIDC Scope" },
   { id: "2d2225a8-5143-4465-ab76-06b101abff8f", name: "密码策略" },
   { id: "75c35dc3-1996-48ab-be27-e4078f86a559", name: "权限" },
+  { id: "019d9c5e-9cef-7378-945d-d0eb6d2ded7b", name: "权限申请" },
   { id: "79a30d3a-0fde-4087-a307-619cc0c56b17", name: "限制条件" },
   { id: "01982839-ae11-75ae-8680-4bb5e0bbe83f", name: "限制条件模板" },
   { id: "edd2a541-f482-45cd-9842-c1ebf43c346c", name: "资源" },
@@ -43,7 +44,10 @@ const resourceTypes = [
   { id: "055a8115-8be2-498e-a6f9-ab8a34f5dd0e", name: "租户" },
   { id: "0199c427-9df0-7fbe-bfe4-de1a8cbebbfa", name: "ChatBI 问数" },
   { id: "0199c923-b73d-73db-a654-76ddd12dd408", name: "ChatBI 问数-数据源" },
-  { id: "0199c926-f7e6-79d2-a864-f234ce930b07", name: "ChatBI 问数-模型提供商" },
+  {
+    id: "0199c926-f7e6-79d2-a864-f234ce930b07",
+    name: "ChatBI 问数-模型提供商",
+  },
   { id: "019cfc50-fa16-721c-bea5-e03647a7029f", name: "ChatBI 问数-示例 SQL" },
 ];
 
@@ -54,7 +58,7 @@ const columns = reactive([
   {
     label: "用户",
     key: "username",
-    value: (data) => data.username,
+    value: (data: any) => data.username,
     visible: true,
     editable: false,
     width: 100,
@@ -150,9 +154,9 @@ const getDayjs = (current: Date) => {
 };
 
 // 系统操作日志
-const sysOperationLogs = reactive([]);
-let sysOperationLogsPagination;
-const searchKeyword = ref(null);
+const sysOperationLogs = reactive([] as any[]);
+let sysOperationLogsPagination: any;
+const searchKeyword = ref<string | null>(null);
 const operationType = ref(null);
 const resourceType = ref(null);
 const dateRange = ref(null);
@@ -164,7 +168,7 @@ const handleGetSysOperationLogs = (page: number = 1, size: number = 15) => {
   const params = {
     page,
     size,
-    keyword: undefined,
+    keyword: undefined as string | undefined,
     type: undefined,
     resourceId: undefined,
     start: undefined,
@@ -197,7 +201,7 @@ const handleGetSysOperationLogs = (page: number = 1, size: number = 15) => {
         sysOperationLogsPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -233,7 +237,7 @@ const handleToResourceDetail = (id: string) => {
 /**
  * 对象变更日志
  */
-const objChanges = reactive([]);
+const objChanges = reactive([] as any[]);
 const objChangesModalVisible = ref(false);
 const handleGetObjChanges = (auditLogId: string) => {
   getObjChanges(auditLogId)
@@ -253,9 +257,9 @@ export default defineComponent({
   setup() {
     sysOperationLogsPagination = usePagination(
       "sysOperationLogs",
-      ({ page, size }) => {
+      ({ page, size }: { page: number; size: number }) => {
         handleGetSysOperationLogs(page, size);
-      }
+      },
     );
 
     return {

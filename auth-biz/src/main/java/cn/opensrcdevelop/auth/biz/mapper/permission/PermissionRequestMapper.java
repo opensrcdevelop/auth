@@ -12,5 +12,8 @@ import java.util.List;
 public interface PermissionRequestMapper extends BaseMapper<PermissionRequest> {
 
     IPage<PermissionRequest> searchPermissionRequests(@Param("page") IPage<PermissionRequest> page,
-            @Param("userIds") List<String> userIds, @Param("usernameSearchKeyword") String usernameSearchKeyword);
+            @Param("userIds") List<String> userIds, @Param("usernameSearchKeyword") String usernameSearchKeyword,
+            @Param("pendingOnly") Boolean pendingOnly);
+
+    PermissionRequest getById(@Param("requestId") String requestId);
 }

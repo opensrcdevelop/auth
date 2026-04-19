@@ -328,7 +328,10 @@ export function getMyPermissions() {
 /**
  * 获取当前用户权限申请列表
  */
-export function getMyPermissionRequests(params: { page: number; size: number }) {
+export function getMyPermissionRequests(params: {
+  page: number;
+  size: number;
+}) {
   return apiRequest.get({
     url: "/permission/request/me",
     params,
@@ -356,5 +359,51 @@ export function getCurrentUserPermissionRequestItems(requestId: string) {
 export function cancelMyPermissionRequest(requestId: string) {
   return apiRequest.delete({
     url: `/permission/request/me/${requestId}`,
+  });
+}
+
+/**
+ * 获取权限申请列表（管理员）
+ */
+export function getPermissionRequestList(params: {
+  page: number;
+  size: number;
+  keyword?: string;
+  pendingOnly?: boolean;
+}) {
+  return apiRequest.get({
+    url: "/permission/request/list",
+    params,
+  });
+}
+
+/**
+ * 批准或拒绝权限申请
+ *
+ * @param data 批准/拒绝表单
+ * @returns 调用结果
+ */
+export function approvePermissionRequest(data: {
+  approve: boolean;
+  requestId: string;
+  itemIds?: string[];
+  expressionIds?: string[];
+  rejectReason?: string;
+}) {
+  return apiRequest.post({
+    url: "/permission/request/approve",
+    data,
+  });
+}
+
+/**
+ * 获取权限申请明细列表（管理员）
+ *
+ * @param id 权限申请ID
+ * @returns 权限申请明细列表
+ */
+export function getPermissionRequestDetail(id: string) {
+  return apiRequest.get({
+    url: `/permission/request/${id}/detail`,
   });
 }

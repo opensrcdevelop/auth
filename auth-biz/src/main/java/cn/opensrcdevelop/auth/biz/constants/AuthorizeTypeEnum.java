@@ -9,6 +9,7 @@ public enum AuthorizeTypeEnum {
 
     SYSTEM_DEFAULT("SYSTEM_DEFAULT", "系统默认"),
     ADMINISTRATOR_GRANT("ADMINISTRATOR_GRANT", "管理员赋予"),
+    ADMINISTRATOR_APPROVE("ADMINISTRATOR_APPROVE", "管理员审批"),
     AUTO_APPROVE("AUTO_APPROVE", "自动审批");
 
     private final String type;

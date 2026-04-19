@@ -22,6 +22,7 @@
         SELECT
             t1.request_id,
             t1.user_id,
+            t3.username,
             t1.request_time,
             t1.reason,
             t2.item_id,
@@ -43,6 +44,27 @@
         <if test="usernameSearchKeyword != null and usernameSearchKeyword != ''">
             AND t3.username LIKE CONCAT( '%', #{usernameSearchKeyword}, '%' )
         </if>
+        <if test="pendingOnly == true">
+            AND EXISTS (
+                SELECT 1 FROM t_permission_request_item sub
+                WHERE sub.request_id = t1.request_id AND sub.status = 'PENDING'
+            )
+        </if>
         ORDER BY t1.request_time DESC
+    </select>
+
+    <select id="getById" resultMap="permissionRequestResultMap">
+        SELECT
+            t1.request_id,
+            t1.user_id,
+            t2.username,
+            t1.request_time,
+            t1.reason
+        FROM
+            t_permission_request t1
+            LEFT JOIN t_user t2 ON t2.user_id = t1.user_id
+        WHERE
+            t1.deleted = false
+            AND t1.request_id = #{requestId}
     </select>
 </mapper>

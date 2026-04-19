@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.biz.service.permission.request;
 
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestApproveRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
@@ -14,9 +15,13 @@ public interface PermissionRequestService extends IService<PermissionRequest> {
     void submitRequest(PermissionRequestCreateDto dto);
 
     PageData<PermissionRequestResponseDto> listRequests(List<String> userId, String usernameSearchKeyword, int page,
-            int size);
+            int size, Boolean pendingOnly);
 
     List<PermissionRequestItemResponseDto> listRequestItems(String userId, String requestId);
 
     void cancelRequest(String requestId);
+
+    void approveRequest(PermissionRequestApproveRequestDto requestDto);
+
+    PermissionRequestResponseDto detail(String requestId);
 }

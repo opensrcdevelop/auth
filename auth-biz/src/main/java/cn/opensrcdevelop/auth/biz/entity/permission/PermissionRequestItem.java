@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -40,6 +41,9 @@ public class PermissionRequestItem extends BaseEntity implements Serializable {
 
     @PropertyName("审批人ID")
     private String approverId;
+
+    @PropertyName("审批时间")
+    private LocalDateTime approveTime;
 
     /** 审批人用户名 */
     @TableField(exist = false)

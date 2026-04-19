@@ -9,6 +9,7 @@
         <result column="status" property="status"/>
         <result column="reject_reason" property="rejectReason"/>
         <result column="approver_id" property="approverId"/>
+        <result column="approve_time" property="approveTime"/>
         <result column="approver_username" property="approverUsername"/>
         <association property="permission" javaType="cn.opensrcdevelop.auth.biz.entity.permission.Permission">
             <id column="permission_id" property="permissionId"/>
@@ -35,6 +36,7 @@
             pri.status,
             pri.reject_reason,
             pri.approver_id,
+            pri.approve_time,
             u.username AS approver_username,
             p.permission_name,
             p.permission_code,

@@ -39,7 +39,8 @@ public class LinkGenerator {
                 LINK_TEMPLATE.formatted("/chatbi/datasource/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.CHAT_BI_MODEL_PROVIDER,
                 LINK_TEMPLATE.formatted("/chatbi/llm/detail", "%s", "%s"));
-        LINK_TEMPLATES.put(ResourceType.PERMISSION_REQUEST, LINK_TEMPLATE.formatted("/permission/request/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.PERMISSION_REQUEST,
+                LINK_TEMPLATE.formatted("/permission/request/detail", "%s", "%s"));
     }
 
     public String toLink(String id, ResourceType resourceType) {

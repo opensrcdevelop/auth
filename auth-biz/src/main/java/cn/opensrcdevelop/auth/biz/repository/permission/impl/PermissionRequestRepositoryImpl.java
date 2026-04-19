@@ -54,11 +54,13 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
      *
      * @param userIds
      *            用户ID列表
+     * @param pendingOnly
+     *            只查看待审批的权限申请
      */
     @Override
     public void searchPermissionRequests(IPage<PermissionRequest> page, List<String> userIds,
-            String usernameSearchKeyword) {
-        permissionRequestMapper.searchPermissionRequests(page, userIds, usernameSearchKeyword);
+            String usernameSearchKeyword, Boolean pendingOnly) {
+        permissionRequestMapper.searchPermissionRequests(page, userIds, usernameSearchKeyword, pendingOnly);
     }
 
     /**
@@ -71,5 +73,17 @@ public class PermissionRequestRepositoryImpl implements PermissionRequestReposit
     @Override
     public List<PermissionRequestItem> getPermissionRequestItems(String userId, String requestId) {
         return permissionRequestItemMapper.getPermissionRequestItemsByRequestIdAndUserId(userId, requestId);
+    }
+
+    /**
+     * 根据ID获取权限申请
+     *
+     * @param requestId
+     *            权限申请ID
+     * @return 权限申请
+     */
+    @Override
+    public PermissionRequest getById(String requestId) {
+        return permissionRequestMapper.getById(requestId);
     }
 }

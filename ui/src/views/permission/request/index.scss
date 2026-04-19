@@ -1,0 +1,37 @@
+.page-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  user-select: none;
+
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d2129;
+    padding-bottom: 8px;
+  }
+
+  .info {
+    font-size: 14px;
+    font-weight: 400;
+    color: #86909c;
+  }
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  ::v-deep(.arco-checkbox-label) {
+    color: #4e5969;
+  }
+}
+
+.table-card {
+  .table-column-username {
+    cursor: pointer;
+    color: #215ae5;
+  }
+}

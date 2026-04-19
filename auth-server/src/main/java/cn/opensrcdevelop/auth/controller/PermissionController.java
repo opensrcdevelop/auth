@@ -11,6 +11,7 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRespons
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestApproveRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
@@ -304,7 +305,7 @@ public class PermissionController {
     @GetMapping("/request/me")
     public PageData<PermissionRequestResponseDto> getCurrentUserPermissionRequests(
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size) {
-        return permissionRequestService.listRequests(List.of(AuthUtil.getCurrentUserId()), null, page, size);
+        return permissionRequestService.listRequests(List.of(AuthUtil.getCurrentUserId()), null, page, size, null);
     }
 
     @Operation(summary = "获取当前用户权限申请明细", description = "获取当前用户权限申请明细")
@@ -312,7 +313,8 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限申请ID", in = ParameterIn.PATH, required = true)
     })
     @GetMapping("/request/me/{id}/items")
-    public List<PermissionRequestItemResponseDto> getCurrentUserPermissionRequestItems(@PathVariable @NotBlank String id) {
+    public List<PermissionRequestItemResponseDto> getCurrentUserPermissionRequestItems(
+            @PathVariable @NotBlank String id) {
         return permissionRequestService.listRequestItems(AuthUtil.getCurrentUserId(), id);
     }
 
@@ -323,5 +325,38 @@ public class PermissionController {
     @DeleteMapping("/request/me/{id}")
     public void cancelPermissionRequest(@PathVariable @NotBlank String id) {
         permissionRequestService.cancelRequest(id);
+    }
+
+    @Operation(summary = "获取权限申请列表", description = "获取权限申请列表")
+    @Parameters({
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "keyword", description = "用户名搜索关键词", in = ParameterIn.QUERY),
+            @Parameter(name = "pendingOnly", description = "只查看待审批的权限申请", in = ParameterIn.QUERY)
+    })
+    @GetMapping("/request/list")
+    @Authorize({"allPermissionRequestPermissions", "getPermissionRequestList"})
+    public PageData<PermissionRequestResponseDto> listRequests(
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean pendingOnly) {
+        return permissionRequestService.listRequests(null, keyword, page, size, pendingOnly);
+    }
+
+    @Operation(summary = "审批权限申请", description = "审批权限申请")
+    @PostMapping("/request/approve")
+    @Authorize({"allPermissionRequestPermissions", "approvePermissionRequest"})
+    public void approvePermissionRequest(@RequestBody @Valid PermissionRequestApproveRequestDto requestDto) {
+        permissionRequestService.approveRequest(requestDto);
+    }
+
+    @Operation(summary = "获取权限申请详情", description = "获取权限申请详情")
+    @Parameters({
+            @Parameter(name = "id", description = "权限申请ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/request/{id}/detail")
+    @Authorize({"allPermissionRequestPermissions", "getPermissionRequestDetail"})
+    public PermissionRequestResponseDto getPermissionRequestDetail(@PathVariable @NotBlank String id) {
+        return permissionRequestService.detail(id);
     }
 }

@@ -1,7 +1,11 @@
 package cn.opensrcdevelop.auth.biz.dto.permission.request;
 
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 /**
  * 权限申请明细响应
@@ -9,6 +13,9 @@ import lombok.Data;
 @Data
 @Schema(description = "权限申请明细响应")
 public class PermissionRequestItemResponseDto {
+
+    @Schema(description = "权限申请明细ID")
+    private String id;
 
     @Schema(description = "权限ID")
     private String permissionId;
@@ -34,6 +41,13 @@ public class PermissionRequestItemResponseDto {
     @Schema(description = "拒绝理由（针对单个权限）")
     private String rejectReason;
 
+    @Schema(description = "审批人ID")
+    private String approverId;
+
     @Schema(description = "审批人用户名")
     private String approverUsername;
+
+    @Schema(description = "审批时间")
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime approveTime;
 }

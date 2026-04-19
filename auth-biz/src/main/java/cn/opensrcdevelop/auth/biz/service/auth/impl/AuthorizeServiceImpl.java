@@ -69,7 +69,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         Integer priority = requestDto.getPriority();
 
         String authorizerId = null;
-        if (AuthorizeTypeEnum.ADMINISTRATOR_GRANT.equals(authorizeType)) {
+        if (AuthorizeTypeEnum.ADMINISTRATOR_GRANT.equals(authorizeType)
+                || AuthorizeTypeEnum.ADMINISTRATOR_APPROVE.equals(authorizeType)) {
             authorizerId = AuthUtil.getCurrentUserId();
         }
         String finalAuthorizerId = authorizerId;
