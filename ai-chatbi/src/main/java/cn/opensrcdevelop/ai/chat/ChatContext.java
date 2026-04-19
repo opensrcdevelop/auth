@@ -65,6 +65,12 @@ public class ChatContext {
     /** 临时文件路径（存储超阈值查询结果） */
     private List<String> queryResultFilePaths = new ArrayList<>();
 
+    /** 连续工具失败计数 */
+    private Integer consecutiveToolFailures = 0;
+
+    /** 上一次执行的工具名称（用于检测同一工具重复失败） */
+    private String lastFailedToolName;
+
     public void addQueryResultFilePath(String path) {
         if (queryResultFilePaths == null) {
             queryResultFilePaths = new ArrayList<>();

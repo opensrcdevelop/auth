@@ -73,8 +73,10 @@ public class ThinkAnswerAgent {
      *            最大执行步数
      * @param showThinking
      *            是否显示思考过程
+     * @param maxConsecutiveToolFailures
+     *            最大连续工具失败次数
      */
-    @SuppressWarnings({ "java:S3776", "java:S107" })
+    @SuppressWarnings({"java:S3776", "java:S107"})
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
@@ -82,12 +84,14 @@ public class ThinkAnswerAgent {
             List<Map<String, String>> sampleSqls,
             List<String> historicalQuestions,
             int maxSteps,
-            boolean showThinking) {
+            boolean showThinking,
+            int maxConsecutiveToolFailures) {
         // 将示例 SQL 和历史问题列表存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
         ChatContextHolder.getChatContext().setHistoricalQuestions(historicalQuestions);
 
         String formatErrorFeedback = null;
+        String consecutiveFailureWarning = null;
         int step = 0;
         while (step < maxSteps) {
             if (interruptFlag.get()) {
@@ -102,7 +106,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking,
-                    formatErrorFeedback);
+                    formatErrorFeedback, consecutiveFailureWarning);
             if (StringUtils.isEmpty(result)) {
                 break;
             }
@@ -146,6 +150,8 @@ public class ThinkAnswerAgent {
                 return jsonMap;
             } else {
                 executeToolCall(jsonMap, emitter);
+                // 更新连续失败警告，供下一轮 LLM 调用使用
+                consecutiveFailureWarning = buildConsecutiveFailureWarning(maxConsecutiveToolFailures);
             }
             step++;
         }
@@ -154,10 +160,10 @@ public class ThinkAnswerAgent {
 
     @SuppressWarnings("all")
     private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
-            boolean showThinking, String formatErrorFeedback) {
+            boolean showThinking, String formatErrorFeedback, String consecutiveFailureWarning) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        Prompt prompt = getPrompt(question, showThinking, formatErrorFeedback);
+        Prompt prompt = getPrompt(question, showThinking, formatErrorFeedback, consecutiveFailureWarning);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
         AtomicReference<String> lastOutput = new AtomicReference<>("");
@@ -222,7 +228,8 @@ public class ThinkAnswerAgent {
                 .toList();
     }
 
-    private Prompt getPrompt(String question, boolean showThinking, String formatErrorFeedback) {
+    private Prompt getPrompt(String question, boolean showThinking, String formatErrorFeedback,
+            String consecutiveFailureWarning) {
         // 获取会话历史用户消息
         List<String> historicalQuestions = ChatContextHolder.getChatContext().getHistoricalQuestions();
 
@@ -244,7 +251,9 @@ public class ThinkAnswerAgent {
                 .param("previous_thinking", previousThinking != null ? previousThinking : "")
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
                 .param("show_thinking", showThinking)
-                .param("format_error_feedback", formatErrorFeedback);
+                .param("format_error_feedback", formatErrorFeedback)
+                .param("consecutive_failure_warning",
+                        consecutiveFailureWarning != null ? consecutiveFailureWarning : "");
 
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
@@ -274,6 +283,7 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Invalid tool_call format. Expected an object with 'name' and 'parameters'.");
             setToolCallResult(toolCallResult);
+            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -286,6 +296,7 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
+            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -294,6 +305,7 @@ public class ThinkAnswerAgent {
                     "error",
                     "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
+            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -302,7 +314,7 @@ public class ThinkAnswerAgent {
 
         String executeTime = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS));
-        boolean isAskUser = false;
+        boolean isSuccess = true;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
             SseUtil.sendChatBIToolCall(emitter, "开始执行工具【%s】".formatted(toolName));
@@ -338,6 +350,7 @@ public class ThinkAnswerAgent {
                     "result", result);
             SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行成功".formatted(toolName));
         } catch (Exception ex) {
+            isSuccess = false;
             log.error("Error executing tool: {}", toolName, ex);
             String errorMsg = "Error: " + ex.getMessage();
             if (Objects.isNull(ex.getMessage()) && Objects.nonNull(ex.getCause())) {
@@ -362,7 +375,8 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行失败".formatted(toolName));
         }
         setToolCallResult(toolCallResult);
-        return isAskUser;
+        updateConsecutiveFailures(toolName, !isSuccess);
+        return isSuccess;
     }
 
     /**
@@ -387,6 +401,55 @@ public class ThinkAnswerAgent {
      */
     private void saveThinkingContent(String thinkingContent) {
         ChatContextHolder.getChatContext().setPreviousThinking(thinkingContent);
+    }
+
+    /**
+     * 更新连续工具失败计数
+     *
+     * @param toolName
+     *            工具名称，如果为 null 表示无效的工具调用
+     * @param isFailed
+     *            是否失败
+     */
+    private void updateConsecutiveFailures(String toolName, boolean isFailed) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
+        if (isFailed) {
+            if (toolName != null && toolName.equals(chatContext.getLastFailedToolName())) {
+                chatContext.setConsecutiveToolFailures(
+                        chatContext.getConsecutiveToolFailures() + 1);
+            } else {
+                chatContext.setConsecutiveToolFailures(1);
+            }
+            chatContext.setLastFailedToolName(toolName);
+        } else {
+            chatContext.setConsecutiveToolFailures(0);
+            chatContext.setLastFailedToolName(null);
+        }
+    }
+
+    /**
+     * 构建连续失败警告信息，当连续失败次数达到阈值时生成警告
+     *
+     * @param maxConsecutiveToolFailures
+     *            最大连续工具失败次数阈值
+     * @return 连续失败警告信息，如果未达到阈值则返回 null
+     */
+    private String buildConsecutiveFailureWarning(int maxConsecutiveToolFailures) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
+        Integer consecutiveFailures = chatContext.getConsecutiveToolFailures();
+        String lastTool = chatContext.getLastFailedToolName();
+
+        if (consecutiveFailures == null || consecutiveFailures < maxConsecutiveToolFailures) {
+            return null;
+        }
+
+        return String.format(
+                "⚠️ WARNING: The tool '%s' has failed %d consecutive times (threshold: %d). "
+                        + "Please reconsider your strategy - verify the tool name is correct, "
+                        + "check the parameters format, and ensure the operation is valid before retrying. "
+                        + "If this tool continues to fail, consider using an alternative approach or "
+                        + "providing a final answer based on available data.",
+                lastTool, consecutiveFailures, maxConsecutiveToolFailures);
     }
 
     /**

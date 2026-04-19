@@ -82,6 +82,9 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Value("${ai.chat.default-max-think-steps:30}")
     private Integer defaultMaxThinkSteps;
 
+    @Value("${ai.chat.default-max-consecutive-tool-failures:3}")
+    private Integer defaultMaxConsecutiveToolFailures;
+
     /**
      * ChatBI 用户对话
      *
@@ -305,12 +308,18 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 2.4 获取对话配置
         int maxSteps = defaultMaxThinkSteps;
+        int maxConsecutiveToolFailures = defaultMaxConsecutiveToolFailures;
         try {
             ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
                     SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getMaxThinkSteps())
-                    && chatConfig.getMaxThinkSteps() > 0) {
-                maxSteps = chatConfig.getMaxThinkSteps();
+            if (Objects.nonNull(chatConfig)) {
+                if (Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0) {
+                    maxSteps = chatConfig.getMaxThinkSteps();
+                }
+                if (Objects.nonNull(chatConfig.getMaxConsecutiveToolFailures())
+                        && chatConfig.getMaxConsecutiveToolFailures() >= 2) {
+                    maxConsecutiveToolFailures = chatConfig.getMaxConsecutiveToolFailures();
+                }
             }
         } catch (Exception e) {
             log.error("获取 ChatBI 对话配置失败", e);
@@ -326,7 +335,8 @@ public class ChatBIServiceImpl implements ChatBIService {
                 sampleSqls,
                 historicalQuestions,
                 maxSteps,
-                Boolean.TRUE.equals(requestDto.getShowThinking()));
+                Boolean.TRUE.equals(requestDto.getShowThinking()),
+                maxConsecutiveToolFailures);
 
         if (interruptFlag.get()) {
             return Tuple.of(null, question);

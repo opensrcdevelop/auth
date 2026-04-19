@@ -127,7 +127,6 @@ public class RecallHistoryQATool implements MethodTool {
             return response;
         }
 
-
         int fromIndex = startIndex - 1;
         int toIndex = endIndex;
 

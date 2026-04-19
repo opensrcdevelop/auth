@@ -83,6 +83,11 @@ ${format_error_feedback}
 Please ensure your next output strictly follows the required format.
 </#if>
 
+<#if consecutive_failure_warning?? && consecutive_failure_warning != "">
+## ⚠️ Consecutive Tool Failure Warning (IMPORTANT)
+${consecutive_failure_warning}
+</#if>
+
 ** Decision Output **
 Based on the above analysis, either:
 - Output the final answer (use Final Answer Format) - When there are no tools available to call upon and the information you currently have is sufficient to answer the user's question
