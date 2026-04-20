@@ -9,14 +9,14 @@ const chatConfigForm = reactive({
   answerLanguage: undefined,
   llmApiRetryCount: undefined,
   temperature: undefined,
-  maxConsecutiveToolFailures: undefined,
+  maxConsecutiveToolCalls: undefined,
 });
 
 const chatConfigFormRules = {
   maxThinkSteps: [{ required: true, message: "最大思考步数未填写" }],
   answerLanguage: [{ required: true, message: "回答语言未填写" }],
   llmApiRetryCount: [{ required: true, message: "LLM API 重试次数未填写" }],
-  maxConsecutiveToolFailures: [{ required: true, message: "最大连续工具失败次数未填写" }],
+  maxConsecutiveToolCalls: [{ required: true, message: "最大连续工具调用次数未填写" }],
 };
 
 const loadChatConfig = () => {
@@ -27,7 +27,7 @@ const loadChatConfig = () => {
         chatConfigForm.answerLanguage = data.answerLanguage;
         chatConfigForm.llmApiRetryCount = data.llmApiRetryCount;
         chatConfigForm.temperature = data.temperature;
-        chatConfigForm.maxConsecutiveToolFailures = data.maxConsecutiveToolFailures;
+        chatConfigForm.maxConsecutiveToolCalls = data.maxConsecutiveToolCalls;
       });
     })
     .catch((err: any) => handleApiError(err, "获取 ChatBI 对话配置"));
@@ -104,10 +104,10 @@ defineExpose({
           </a-form-item>
         </a-col>
         <a-col :span="8">
-          <a-form-item label="最大连续工具失败次数" field="maxConsecutiveToolFailures">
+          <a-form-item label="最大连续工具调用次数" field="maxConsecutiveToolCalls">
             <a-input-number
-              placeholder="请输入最大连续工具失败次数"
-              v-model="chatConfigForm.maxConsecutiveToolFailures"
+              placeholder="请输入最大连续工具调用次数"
+              v-model="chatConfigForm.maxConsecutiveToolCalls"
               :min="2"
               :step="1"
             />

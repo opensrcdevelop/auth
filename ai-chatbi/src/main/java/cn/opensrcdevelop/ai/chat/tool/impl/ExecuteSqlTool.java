@@ -8,9 +8,6 @@ import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +18,10 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -163,12 +164,19 @@ public class ExecuteSqlTool implements MethodTool {
                 if (attempt > maxAttempts) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId,
-                        instruction);
-                if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
+
+                try {
+                    Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables,
+                            dataSourceId,
+                            instruction);
+                    if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
+                        return Tuple.of(false, queryResult, sql, errorMsg);
+                    }
+                    sql = (String) sqlResult.get("sql");
+                } catch (Exception newEx) {
+                    log.error("修复 SQL 失败", newEx);
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                sql = (String) sqlResult.get("sql");
             }
         }
 

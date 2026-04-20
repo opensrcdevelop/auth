@@ -39,8 +39,8 @@ public class ChatConfigDto {
     @Min(1)
     private Long maxTokens;
 
-    @PropertyName("最大连续工具失败次数")
-    @Schema(description = "最大连续工具失败次数，触发思考提示")
+    @PropertyName("最大连续工具调用次数")
+    @Schema(description = "最大连续工具调用次数，触发思考提示")
     @Min(2)
-    private Integer maxConsecutiveToolFailures;
+    private Integer maxConsecutiveToolCalls;
 }

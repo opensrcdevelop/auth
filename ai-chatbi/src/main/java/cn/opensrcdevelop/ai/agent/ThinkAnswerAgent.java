@@ -73,7 +73,7 @@ public class ThinkAnswerAgent {
      *            最大执行步数
      * @param showThinking
      *            是否显示思考过程
-     * @param maxConsecutiveToolFailures
+     * @param maxConsecutiveToolCalls
      *            最大连续工具失败次数
      */
     @SuppressWarnings({"java:S3776", "java:S107"})
@@ -85,7 +85,7 @@ public class ThinkAnswerAgent {
             List<String> historicalQuestions,
             int maxSteps,
             boolean showThinking,
-            int maxConsecutiveToolFailures) {
+            int maxConsecutiveToolCalls) {
         // 将示例 SQL 和历史问题列表存储到上下文
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
         ChatContextHolder.getChatContext().setHistoricalQuestions(historicalQuestions);
@@ -150,8 +150,8 @@ public class ThinkAnswerAgent {
                 return jsonMap;
             } else {
                 executeToolCall(jsonMap, emitter);
-                // 更新连续失败警告，供下一轮 LLM 调用使用
-                consecutiveFailureWarning = buildConsecutiveFailureWarning(maxConsecutiveToolFailures);
+                // 更新连续调用警告，供下一轮 LLM 调用使用
+                consecutiveFailureWarning = buildConsecutiveToolCallsWarning(maxConsecutiveToolCalls);
             }
             step++;
         }
@@ -283,7 +283,6 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Invalid tool_call format. Expected an object with 'name' and 'parameters'.");
             setToolCallResult(toolCallResult);
-            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -296,7 +295,6 @@ public class ThinkAnswerAgent {
             toolCallResult = Map.of(
                     "error", "Tool name cannot be null, please check the tool name in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -305,7 +303,6 @@ public class ThinkAnswerAgent {
                     "error",
                     "Tool parameters cannot be null, please check the tool parameters in the tool call and try again.");
             setToolCallResult(toolCallResult);
-            updateConsecutiveFailures(null, true);
             return false;
         }
 
@@ -375,7 +372,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行失败".formatted(toolName));
         }
         setToolCallResult(toolCallResult);
-        updateConsecutiveFailures(toolName, !isSuccess);
+        updateConsecutiveToolCalls(toolName);
         return isSuccess;
     }
 
@@ -404,52 +401,49 @@ public class ThinkAnswerAgent {
     }
 
     /**
-     * 更新连续工具失败计数
+     * 更新连续工具调用计数
      *
      * @param toolName
-     *            工具名称，如果为 null 表示无效的工具调用
-     * @param isFailed
-     *            是否失败
+     *            工具名称
      */
-    private void updateConsecutiveFailures(String toolName, boolean isFailed) {
+    private void updateConsecutiveToolCalls(String toolName) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
-        if (isFailed) {
-            if (toolName != null && toolName.equals(chatContext.getLastFailedToolName())) {
-                chatContext.setConsecutiveToolFailures(
-                        chatContext.getConsecutiveToolFailures() + 1);
-            } else {
-                chatContext.setConsecutiveToolFailures(1);
-            }
-            chatContext.setLastFailedToolName(toolName);
-        } else {
-            chatContext.setConsecutiveToolFailures(0);
-            chatContext.setLastFailedToolName(null);
+        if (toolName == null) {
+            return;
         }
+        if (toolName.equals(chatContext.getLastFailedToolName())) {
+            // 同一工具连续调用，递增计数
+            chatContext.setConsecutiveToolFailures(
+                    chatContext.getConsecutiveToolFailures() + 1);
+        } else {
+            // 不同工具，重置计数
+            chatContext.setConsecutiveToolFailures(1);
+        }
+        chatContext.setLastFailedToolName(toolName);
     }
 
     /**
-     * 构建连续失败警告信息，当连续失败次数达到阈值时生成警告
+     * 构建连续工具调用警告信息，当连续调用同一工具次数达到阈值时生成警告
      *
-     * @param maxConsecutiveToolFailures
-     *            最大连续工具失败次数阈值
-     * @return 连续失败警告信息，如果未达到阈值则返回 null
+     * @param maxConsecutiveToolCalls
+     *            最大连续工具调用次数阈值
+     * @return 连续工具调用警告信息，如果未达到阈值则返回 null
      */
-    private String buildConsecutiveFailureWarning(int maxConsecutiveToolFailures) {
+    private String buildConsecutiveToolCallsWarning(int maxConsecutiveToolCalls) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
-        Integer consecutiveFailures = chatContext.getConsecutiveToolFailures();
+        Integer consecutiveCalls = chatContext.getConsecutiveToolFailures();
         String lastTool = chatContext.getLastFailedToolName();
 
-        if (consecutiveFailures == null || consecutiveFailures < maxConsecutiveToolFailures) {
+        if (consecutiveCalls == null || consecutiveCalls < maxConsecutiveToolCalls) {
             return null;
         }
 
         return String.format(
-                "⚠️ WARNING: The tool '%s' has failed %d consecutive times (threshold: %d). "
-                        + "Please reconsider your strategy - verify the tool name is correct, "
-                        + "check the parameters format, and ensure the operation is valid before retrying. "
-                        + "If this tool continues to fail, consider using an alternative approach or "
-                        + "providing a final answer based on available data.",
-                lastTool, consecutiveFailures, maxConsecutiveToolFailures);
+                "⚠️ WARNING: The tool '%s' has been called %d consecutive times (threshold: %d). "
+                        + "Please reconsider your strategy - verify if this tool is appropriate for the current task, "
+                        + "check the parameters format, and consider using an alternative approach if needed. "
+                        + "If this tool continues to be called repeatedly, consider providing a final answer based on available data.",
+                lastTool, consecutiveCalls, maxConsecutiveToolCalls);
     }
 
     /**

@@ -82,8 +82,8 @@ public class ChatBIServiceImpl implements ChatBIService {
     @Value("${ai.chat.default-max-think-steps:30}")
     private Integer defaultMaxThinkSteps;
 
-    @Value("${ai.chat.default-max-consecutive-tool-failures:3}")
-    private Integer defaultMaxConsecutiveToolFailures;
+    @Value("${ai.chat.default-max-consecutive-tool-calls:3}")
+    private Integer defaultMaxConsecutiveToolCalls;
 
     /**
      * ChatBI 用户对话
@@ -310,7 +310,7 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 2.4 获取对话配置
         int maxSteps = defaultMaxThinkSteps;
-        int maxConsecutiveToolFailures = defaultMaxConsecutiveToolFailures;
+        int maxConsecutiveToolCalls = defaultMaxConsecutiveToolCalls;
         try {
             ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
                     SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
@@ -318,9 +318,9 @@ public class ChatBIServiceImpl implements ChatBIService {
                 if (Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0) {
                     maxSteps = chatConfig.getMaxThinkSteps();
                 }
-                if (Objects.nonNull(chatConfig.getMaxConsecutiveToolFailures())
-                        && chatConfig.getMaxConsecutiveToolFailures() >= 2) {
-                    maxConsecutiveToolFailures = chatConfig.getMaxConsecutiveToolFailures();
+                if (Objects.nonNull(chatConfig.getMaxConsecutiveToolCalls())
+                        && chatConfig.getMaxConsecutiveToolCalls() >= 2) {
+                    maxConsecutiveToolCalls = chatConfig.getMaxConsecutiveToolCalls();
                 }
             }
         } catch (Exception e) {
@@ -338,7 +338,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                 historicalQuestions,
                 maxSteps,
                 Boolean.TRUE.equals(requestDto.getShowThinking()),
-                maxConsecutiveToolFailures);
+                maxConsecutiveToolCalls);
 
         if (interruptFlag.get()) {
             return Tuple.of(null, question);
