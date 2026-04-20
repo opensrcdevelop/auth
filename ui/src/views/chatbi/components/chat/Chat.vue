@@ -247,6 +247,21 @@ const handleGetChatMessageHistory = (chatId: string) => {
       data.forEach((item: any) => {
         handleMessage(item);
       });
+      // 历史消息加载完成后，标记有 DONE 的 THINKING 消息为折叠
+      // 使用 replace 方式确保响应式更新
+      const updatedMessages = messages.map((msg) => {
+        if (msg.type === "THINKING") {
+          const hasDone = messages.some(
+            (m) => m.type === "DONE" && m.questionId === msg.questionId,
+          );
+          if (hasDone) {
+            return {...msg, done: true};
+          }
+        }
+        return msg;
+      });
+      messages.length = 0;
+      messages.push(...updatedMessages);
     });
   });
 };
@@ -425,6 +440,14 @@ const handleMessage = (message: any) => {
     if (loadingItem && message.answerId) {
       loadingItem.loading = false;
       loadingItem.content = "回答完成";
+    }
+    // 标记对应的 THINKING 消息，自动折叠
+    const thinkingItem = messages.find(
+      (item) =>
+        item.questionId === message.questionId && item.type === "THINKING",
+    );
+    if (thinkingItem) {
+      thinkingItem.done = true;
     }
     messages.push({
       role: "assistant",
