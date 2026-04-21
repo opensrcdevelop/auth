@@ -36,8 +36,12 @@
         </a-space>
       </a-space>
       <a-space>
-        <span class="token">输入 token 数: {{ formatTokenCount(message.inputTokens) }}</span>
-        <span class="token">输出 token 数: {{ formatTokenCount(message.outputTokens) }}</span>
+        <span class="token"
+          >输入 token 数: {{ formatTokenCount(message.inputTokens) }}</span
+        >
+        <span class="token"
+          >输出 token 数: {{ formatTokenCount(message.outputTokens) }}</span
+        >
         <a-divider direction="vertical" />
         <span class="time">{{ message.time }}</span>
       </a-space>
@@ -55,7 +59,7 @@ const props = withDefaults(
   }>(),
   {
     message: {},
-  }
+  },
 );
 
 const emits = defineEmits<{
@@ -105,7 +109,8 @@ const handleVoteAnswer = (doneMessage: any, feedback: string) => {
   justify-content: space-between;
   align-items: center;
 
-  .time, .token {
+  .time,
+  .token {
     font-size: 12px;
     color: var(--color-text-3);
   }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.*;
 
@@ -32,12 +33,21 @@ public class ChartRenderer {
         }
     }
 
-    public Map<String, Object> buildArcoTableConfig(Map<String, Object> config, List<Map<String, Object>> rows,
+    /**
+     * 构建Arco Design表格配置
+     *
+     * @param rows
+     *            查询结果
+     * @param queryColumns
+     *            查询列配置
+     * @return Arco Design表格配置
+     */
+    public Map<String, Object> buildArcoTableConfig(List<Map<String, Object>> rows,
             List<Map<String, Object>> queryColumns) {
         List<Map<String, Object>> arcoColumns = new ArrayList<>();
 
         // 1. 根据 queryColumns 构建列配置
-        if (queryColumns != null && !queryColumns.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(queryColumns)) {
             for (Map<String, Object> col : queryColumns) {
                 String columnName = String.valueOf(col.get("column_name"));
                 String displayName = String.valueOf(col.get("display_name"));
@@ -46,6 +56,8 @@ public class ChartRenderer {
                 column.put("dataIndex", columnName);
                 column.put("align", "left");
                 column.put("sortable", Map.of("sortDirections", List.of("ascend", "descend")));
+                column.put("ellipsis", true);
+                column.put("tooltip", true);
                 arcoColumns.add(column);
             }
         }

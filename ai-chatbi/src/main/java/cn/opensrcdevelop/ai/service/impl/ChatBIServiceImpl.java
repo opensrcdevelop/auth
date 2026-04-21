@@ -400,17 +400,17 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         if (answerText != null) {
             chatAnswer.setAnswer(answerText);
-            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 500);
+            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
         }
 
-        // 3.2 发送数据查询结果（TABLE 消息）
+        // 3.2 发送数据查询结果
         String sql = ChatContextHolder.getChatContext().getSql();
         if (StringUtils.isNotBlank(sql)) {
             List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
             List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
             Map<String, Object> tableMessage = new HashMap<>();
             tableMessage.put("sql", SqlFormatter.standard().format(sql));
-            var tableConfig = ChartRenderer.buildArcoTableConfig(Map.of(), queryData, queryColumns);
+            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, queryColumns);
             tableMessage.putAll(tableConfig);
             SseUtil.sendChatBITable(emitter, tableMessage);
         }
