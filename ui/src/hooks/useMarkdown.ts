@@ -60,6 +60,15 @@ md.renderer.rules.code_inline = (tokens, idx) => {
   ].join("");
 };
 
+// 自定义表格渲染规则 - 包装表格容器支持滚动
+md.renderer.rules.table_open = () => {
+  return '<div class="table-container"><table>';
+};
+
+md.renderer.rules.table_close = () => {
+  return '</table></div>';
+};
+
 export function useMarkdown() {
   const handlerState = MarkdownHandler.getInstance();
 
