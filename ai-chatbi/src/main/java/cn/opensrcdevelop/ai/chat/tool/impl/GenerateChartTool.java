@@ -6,12 +6,13 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import jakarta.validation.constraints.NotBlank;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component(GenerateChartTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -38,7 +39,6 @@ public class GenerateChartTool implements MethodTool {
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
             Map<String, Object> chartConfig = (Map<String, Object>) result.get("config");
-
             try {
                 ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
             } catch (Exception e) {

@@ -32,6 +32,7 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.zaxxer.hikari.pool.HikariPool;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
@@ -402,16 +403,24 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 500);
         }
 
-        // 3.2 图表
+        // 3.2 发送数据查询结果（TABLE 消息）
+        String sql = ChatContextHolder.getChatContext().getSql();
+        if (StringUtils.isNotBlank(sql)) {
+            List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
+            List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
+            Map<String, Object> tableMessage = new HashMap<>();
+            tableMessage.put("sql", SqlFormatter.standard().format(sql));
+            var tableConfig = ChartRenderer.buildArcoTableConfig(Map.of(), queryData, queryColumns);
+            tableMessage.putAll(tableConfig);
+            SseUtil.sendChatBITable(emitter, tableMessage);
+        }
+
+        // 3.3 图表
         Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
         if (MapUtils.isNotEmpty(chartConfig)) {
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
-            var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
-            if ("table".equals(renderResult._1)) {
-                SseUtil.sendChatBITable(emitter, renderResult._2);
-            } else {
-                SseUtil.sendChatBIChart(emitter, renderResult._2);
-            }
+            var renderResult = ChartRenderer.render(chartConfig, null);
+            SseUtil.sendChatBIChart(emitter, renderResult._2);
         }
 
         // 3.3 报告
