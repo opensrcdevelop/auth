@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.chat;
 
+import cn.opensrcdevelop.ai.dto.ChatConfigDto;
 import lombok.Data;
 import org.springframework.ai.chat.client.ChatClient;
 
@@ -70,6 +71,9 @@ public class ChatContext {
 
     /** 上一次执行的工具名称（用于检测同一工具重复失败） */
     private String lastFailedToolName;
+
+    /** 对话配置 */
+    private ChatConfigDto chatConfig;
 
     public void addQueryResultFilePath(String path) {
         if (queryResultFilePaths == null) {

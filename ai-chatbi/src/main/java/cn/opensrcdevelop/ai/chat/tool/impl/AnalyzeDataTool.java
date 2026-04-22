@@ -10,13 +10,6 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import jakarta.validation.constraints.NotBlank;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,8 +17,17 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component(AnalyzeDataTool.TOOL_NAME)
@@ -39,6 +41,9 @@ public class AnalyzeDataTool implements MethodTool {
 
     private final AnalyzeAgent analyzeAgent;
     private final ExecutePythonTool executePythonTool;
+
+    @Value("${chatbi.max-python-execution-retry-count:3}")
+    private Integer defaultMaxPythonExecutionRetryCount;
 
     @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
     @SuppressWarnings({"all"})
@@ -86,8 +91,9 @@ public class AnalyzeDataTool implements MethodTool {
                     tempDataFile.getAbsolutePath(),
                     (String) pythonCodeResult.get("python_code"),
                     (List<String>) pythonCodeResult.get("packages"),
-                    3,
-                    request.fixGeneratePythonCodeInstruction);
+                    getMaxPythonExecutionRetryCount(),
+                    request.fixGeneratePythonCodeInstruction,
+                    emitter);
             if (!Boolean.TRUE.equals(executeResult._1)) {
                 SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码失败");
 
@@ -146,7 +152,8 @@ public class AnalyzeDataTool implements MethodTool {
             String pythonCode,
             List<String> packages,
             int maxAttempts,
-            String instruction) {
+            String instruction,
+            SseEmitter emitter) {
         int attempt = 0;
         String executeOutput = "";
         while (attempt <= maxAttempts) {
@@ -155,20 +162,29 @@ public class AnalyzeDataTool implements MethodTool {
             request.setScript(pythonCode);
             request.setPackages(packages);
 
-            ExecutePythonTool.Response response = executePythonTool.execute(request);
+            ExecutePythonTool.Response response = executePythonTool.execute(request, emitter);
             if (!Boolean.TRUE.equals(response.getSuccess())) {
                 log.error("第 {} 次执行 Python 代码失败", attempt);
-                Map<String, Object> fixResult = analyzeAgent.fixPythonCode(
-                        chatClient,
-                        dataFilePath,
-                        pythonCode,
-                        response.getResult(),
-                        instruction);
-                if (!Boolean.TRUE.equals(fixResult.get("success"))) {
+                SseUtil.sendChatBIToolCall(emitter, "第 %d 次执行 Python 代码失败，尝试修复".formatted(attempt));
+                try {
+                    Map<String, Object> fixResult = analyzeAgent.fixPythonCode(
+                            chatClient,
+                            dataFilePath,
+                            pythonCode,
+                            response.getResult(),
+                            instruction);
+                    if (!Boolean.TRUE.equals(fixResult.get("success"))) {
+                        SseUtil.sendChatBIToolCall(emitter, "修复 Python 代码失败");
+                        return Tuple.of(false, response.getResult(), pythonCode);
+                    }
+                    pythonCode = (String) fixResult.get("fixed_python_code");
+                    packages = (List<String>) fixResult.get("packages");
+                } catch (Exception e) {
+                    log.error("修复 Python 代码失败", e);
+                    SseUtil.sendChatBIToolCall(emitter, "修复 Python 代码失败");
                     return Tuple.of(false, response.getResult(), pythonCode);
                 }
-                pythonCode = (String) fixResult.get("fixed_python_code");
-                packages = (List<String>) fixResult.get("packages");
+                SseUtil.sendChatBIToolCall(emitter, "修复 Python 代码成功");
             } else {
                 executeOutput = response.getResult();
                 break;
@@ -176,6 +192,18 @@ public class AnalyzeDataTool implements MethodTool {
         }
 
         return Tuple.of(true, executeOutput, pythonCode);
+    }
+
+    /**
+     * 获取最大 Python 执行重试次数
+     *
+     * @return 最大 Python 执行重试次数
+     */
+    private int getMaxPythonExecutionRetryCount() {
+        var chatConfig = ChatContextHolder.getChatContext().getChatConfig();
+        return Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getMaxPythonExecutionRetryCount())
+                ? chatConfig.getMaxPythonExecutionRetryCount()
+                : defaultMaxPythonExecutionRetryCount;
     }
 
     @Data

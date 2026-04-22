@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -24,6 +25,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -35,6 +37,9 @@ public class ExecuteSqlTool implements MethodTool {
     private final SqlAgent sqlAgent;
     private final DataSourceManager dataSourceManager;
     private final QueryResultTempFileManager queryResultTempFileManager;
+
+    @Value("${chatbi.max-sql-execution-retry-count:3}")
+    private Integer defaultMaxSqlExecutionRetryCount;
 
     @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
     public Response execute(@ToolParam(description = "The request to execute SQL") Request request,
@@ -55,12 +60,18 @@ public class ExecuteSqlTool implements MethodTool {
 
         chatContext.setQueryData(null);
 
+        var chatConfig = chatContext.getChatConfig();
+        int maxSqlExecutionRetryCount = Objects.nonNull(chatConfig)
+                && Objects.nonNull(chatConfig.getMaxSqlExecutionRetryCount())
+                        ? chatConfig.getMaxSqlExecutionRetryCount()
+                        : defaultMaxSqlExecutionRetryCount;
+
         var result = executeSqlWithFix(
                 chatContext.getChatClient(),
                 chatContext.getSql(),
                 chatContext.getDataSourceId(),
                 chatContext.getRelevantTableIds(),
-                5,
+                maxSqlExecutionRetryCount,
                 request.fixSqlInstruction,
                 emitter);
         Boolean success = result._1;
@@ -171,7 +182,7 @@ public class ExecuteSqlTool implements MethodTool {
                 }
 
                 try {
-                    SseUtil.sendChatBIToolCall(emitter, "第 %s 次执行 SQL 失败，开始修复 SQL".format(String.valueOf(attempt)));
+                    SseUtil.sendChatBIToolCall(emitter, "第 %d 次执行 SQL 失败，开始修复 SQL".formatted(attempt));
                     Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables,
                             dataSourceId,
                             instruction);

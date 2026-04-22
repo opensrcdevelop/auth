@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.agent;
 
+import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.prompt.Prompt;
@@ -7,17 +8,16 @@ import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +26,9 @@ public class SqlAgent {
     private final DataSourceManager dataSourceManager;
     private final TableService tableService;
     private final PromptTemplate promptTemplate;
+
+    @Value("${chatbi.sql-result-limit:1000}")
+    private Integer defaultSqlResultLimit;
 
     /**
      * 从表描述中获取相关表
@@ -98,6 +101,12 @@ public class SqlAgent {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
+        // SQL 结果条数限制
+        var chatConfig = ChatContextHolder.getChatContext().getChatConfig();
+        int sqlResultLimit = Objects.nonNull(chatConfig) && Objects.nonNull(chatConfig.getSqlResultLimit())
+                ? chatConfig.getSqlResultLimit()
+                : defaultSqlResultLimit;
+
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_time",
@@ -106,7 +115,8 @@ public class SqlAgent {
                 .param("question", userQuestion)
                 .param("relevant_tables", schemas)
                 .param("instruction", instruction)
-                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
+                .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
+                .param("sql_result_limit", sqlResultLimit);
 
         // 2. 生成 SQL
         return chatClient.prompt()

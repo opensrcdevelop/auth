@@ -294,7 +294,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
         // 2.1 第一步：重写用户问题
-        rewriteUserQuestion(chatId, question);
+        rewriteUserQuestion(chatId, question, emitter);
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
@@ -310,23 +310,25 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 2.4 获取对话配置
-        int maxSteps = defaultMaxThinkSteps;
-        int maxConsecutiveToolCalls = defaultMaxConsecutiveToolCalls;
+        ChatConfigDto chatConfig = null;
         try {
-            ChatConfigDto chatConfig = systemSettingService.getSystemSetting(
+            chatConfig = systemSettingService.getSystemSetting(
                     SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
-            if (Objects.nonNull(chatConfig)) {
-                if (Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0) {
-                    maxSteps = chatConfig.getMaxThinkSteps();
-                }
-                if (Objects.nonNull(chatConfig.getMaxConsecutiveToolCalls())
-                        && chatConfig.getMaxConsecutiveToolCalls() >= 2) {
-                    maxConsecutiveToolCalls = chatConfig.getMaxConsecutiveToolCalls();
-                }
-            }
         } catch (Exception e) {
             log.error("获取 ChatBI 对话配置失败", e);
         }
+        if (Objects.isNull(chatConfig)) {
+            chatConfig = new ChatConfigDto();
+        }
+        ChatContextHolder.getChatContext().setChatConfig(chatConfig);
+
+        int maxSteps = Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0
+                ? chatConfig.getMaxThinkSteps()
+                : defaultMaxThinkSteps;
+        int maxConsecutiveToolCalls = Objects.nonNull(chatConfig.getMaxConsecutiveToolCalls())
+                && chatConfig.getMaxConsecutiveToolCalls() >= 2
+                        ? chatConfig.getMaxConsecutiveToolCalls()
+                        : defaultMaxConsecutiveToolCalls;
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -479,8 +481,10 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            对话ID
      * @param rawQuestion
      *            原始问题
+     * @param emitter
+     *            SSE 发送器
      */
-    private void rewriteUserQuestion(String chatId, String rawQuestion) {
+    private void rewriteUserQuestion(String chatId, String rawQuestion, SseEmitter emitter) {
         // 检查 ChatContext 中的 question 是否已被重写
         String currentQuestion = ChatContextHolder.getChatContext().getQuestion();
         if (StringUtils.isNotBlank(currentQuestion) && !currentQuestion.equals(rawQuestion)) {
@@ -492,7 +496,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         try {
             RewriteUserQuestionTool.Request request = new RewriteUserQuestionTool.Request();
             request.setInstruction(null);
-            RewriteUserQuestionTool.Response response = rewriteUserQuestionTool.execute(request);
+            RewriteUserQuestionTool.Response response = rewriteUserQuestionTool.execute(request, emitter);
 
             if (Boolean.TRUE.equals(response.getSuccess()) && StringUtils.isNotBlank(response.getRewrittenQuestion())) {
                 String rewrittenQuestion = response.getRewrittenQuestion();
