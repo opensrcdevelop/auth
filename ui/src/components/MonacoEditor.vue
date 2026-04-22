@@ -3,8 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import { useMonacoEditor } from "@/hooks/useMonacoEditor";
-import { computed, onMounted, watch } from "vue";
+import {useMonacoEditor} from "@/hooks/useMonacoEditor";
+import {computed, onMounted, watch} from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -17,9 +17,10 @@ const props = withDefaults(
   {
     width: "100%",
     height: "100%",
+    language: "text",
     editorOption: () => ({}),
     modelValue: "",
-  }
+  },
 );
 
 const emits = defineEmits<{
@@ -30,15 +31,17 @@ const emits = defineEmits<{
 const monacoEditorStyle = computed(() => {
   return {
     width: typeof props.width === "string" ? props.width : props.width + "px",
-    height: typeof props.height === "string" ? props.height : props.height + "px",
-    border: "1px solid var(--color-neutral-2)"
+    height:
+      typeof props.height === "string" ? props.height : props.height + "px",
+    border: "1px solid var(--color-neutral-2)",
   };
 });
 
-const { monacoEditorRef, createEditor, updateVal, updateOptions, getEditor } = useMonacoEditor(props.language);
+const { monacoEditorRef, createEditor, updateVal, updateOptions, getEditor } =
+  useMonacoEditor(props.language);
 
 function updateMonacoVal(val: string) {
-  if (val !== getEditor().getValue()) {
+  if (val !== getEditor()?.getValue()) {
     updateVal(val);
   }
 }
@@ -59,7 +62,7 @@ watch(
   () => props.modelValue,
   () => {
     updateMonacoVal(props.modelValue);
-  }
+  },
 );
 
 defineExpose({ updateOptions });

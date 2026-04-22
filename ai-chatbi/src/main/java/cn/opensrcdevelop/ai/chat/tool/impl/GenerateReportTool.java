@@ -5,12 +5,14 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import jakarta.validation.constraints.NotBlank;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Map;
 
 @Component(GenerateReportTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -21,7 +23,8 @@ public class GenerateReportTool implements MethodTool {
     private final AnalyzeAgent analyzeAgent;
 
     @Tool(name = TOOL_NAME, description = "Generate analysis report for the question")
-    public Response execute(@ToolParam(description = "The request to generate report") Request request) {
+    public Response execute(@ToolParam(description = "The request to generate report") Request request,
+            SseEmitter emitter) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
         chatContext.setQuestion(request.getQuestion());

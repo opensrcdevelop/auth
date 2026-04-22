@@ -6,8 +6,6 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +13,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(ReadQueryResultTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -28,7 +30,8 @@ public class ReadQueryResultTool implements MethodTool {
     @Tool(name = TOOL_NAME, description = "Read query result data from temp file with pagination support. "
             + "Use this tool when the query result is too large and stored in a temp file. "
             + "AI can call this multiple times with different offset and limit to get all data.")
-    public Response execute(@ToolParam(description = "The request to read query result") Request request) {
+    public Response execute(@ToolParam(description = "The request to read query result") Request request,
+            SseEmitter emitter) {
         Response response = new Response();
 
         String tempFilePath = request.getFilePath();

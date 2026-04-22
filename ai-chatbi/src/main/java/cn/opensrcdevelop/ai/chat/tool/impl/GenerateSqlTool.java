@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,8 @@ public class GenerateSqlTool implements MethodTool {
 
     @SuppressWarnings("unchecked")
     @Tool(name = TOOL_NAME, description = "Generate SQL from the query")
-    public Response execute(@ToolParam(description = "The request to generate SQL") Request request) {
+    public Response execute(@ToolParam(description = "The request to generate SQL") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setSql(null);

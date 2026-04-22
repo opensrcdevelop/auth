@@ -369,7 +369,21 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setInputTokens(ChatContextHolder.getChatContext().getInputTokens().get());
         chatAnswer.setOutputTokens(ChatContextHolder.getChatContext().getOutputTokens().get());
 
-        // 3.1 直接回答
+        // 3.1 发送数据查询结果
+        String sql = ChatContextHolder.getChatContext().getSql();
+        if (StringUtils.isNotBlank(sql)) {
+            SseUtil.sendChatBIMd(emitter, "\n> 数据查询：\n\n");
+
+            List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
+            List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
+            Map<String, Object> tableMessage = new HashMap<>();
+            tableMessage.put("sql", SqlFormatter.standard().format(sql));
+            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, queryColumns);
+            tableMessage.putAll(tableConfig);
+            SseUtil.sendChatBITable(emitter, tableMessage);
+        }
+
+        // 3.2 直接回答
         String answerText = null;
         if (answer.containsKey("final_answer")) {
             Object finalAnswerValue = answer.get("final_answer");
@@ -401,18 +415,6 @@ public class ChatBIServiceImpl implements ChatBIService {
         if (answerText != null) {
             chatAnswer.setAnswer(answerText);
             SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
-        }
-
-        // 3.2 发送数据查询结果
-        String sql = ChatContextHolder.getChatContext().getSql();
-        if (StringUtils.isNotBlank(sql)) {
-            List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
-            List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
-            Map<String, Object> tableMessage = new HashMap<>();
-            tableMessage.put("sql", SqlFormatter.standard().format(sql));
-            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, queryColumns);
-            tableMessage.putAll(tableConfig);
-            SseUtil.sendChatBITable(emitter, tableMessage);
         }
 
         // 3.3 图表

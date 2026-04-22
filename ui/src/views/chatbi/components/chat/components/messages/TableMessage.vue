@@ -1,68 +1,65 @@
 <template>
   <div v-if="message.type === 'TABLE'" class="table-container">
-    <a-collapse class="table-collapse" :bordered="false">
-      <a-collapse-item key="table">
-        <template #header>
-          <span class="title">数据查询</span>
-        </template>
-        <div class="view-switch">
-          <a-radio-group v-model="activeView" type="button" size="small">
-            <a-radio value="table">表格视图</a-radio>
-            <a-radio value="sql">SQL 视图</a-radio>
-          </a-radio-group>
-          <div class="view-actions">
-            <a-button
-              v-if="
-                activeView === 'table' &&
-                message.content.data &&
-                message.content.data.length > 0
-              "
-              type="text"
-              size="mini"
-              @click="handleDownloadCsv"
-            >
-              <template #icon>
-                <icon-download />
-              </template>
-              下载 CSV
-            </a-button>
-            <a-button
-              v-if="activeView === 'sql'"
-              type="text"
-              size="mini"
-              @click="handleCopySql"
-            >
-              <template #icon>
-                <icon-copy />
-              </template>
-              复制 SQL
-            </a-button>
-          </div>
-        </div>
-        <a-table
-          v-if="activeView === 'table'"
-          column-resizable
-          stripe
-          :columns="message.content.columns"
-          :data="message.content.data"
-        />
-        <div v-if="activeView === 'sql'" class="sql-editor">
-          <MonacoEditor
-            :model-value="message.content.sql"
-            language="sql"
-            :editor-option="editorOptions"
-            :height="200"
-          />
-        </div>
-      </a-collapse-item>
-    </a-collapse>
+    <div class="view-switch">
+      <a-radio-group v-model="activeView" type="button" size="small">
+        <a-radio value="table">表格视图</a-radio>
+        <a-radio value="sql">SQL 视图</a-radio>
+      </a-radio-group>
+      <div class="view-actions">
+        <a-button
+          v-if="
+            activeView === 'table' &&
+            message.content.data &&
+            message.content.data.length > 0
+          "
+          type="text"
+          size="mini"
+          @click="handleDownloadCsv"
+        >
+          <template #icon>
+            <icon-download />
+          </template>
+          下载 CSV
+        </a-button>
+        <a-button
+          v-if="activeView === 'sql'"
+          type="text"
+          size="mini"
+          @click="handleCopySql"
+        >
+          <template #icon>
+            <icon-copy />
+          </template>
+          复制 SQL
+        </a-button>
+      </div>
+    </div>
+    <div v-if="activeView === 'table'" class="view-container">
+      <a-table
+        column-resizable
+        stripe
+        :columns="message.content.columns"
+        :data="message.content.data"
+        :pagination="{
+          showTotal: true,
+          showJumper: true,
+          pageSize: 5,
+        }"
+      />
+    </div>
+    <div v-if="activeView === 'sql'" class="view-container">
+      <monaco-editor
+        v-model="message.content.sql"
+        language="sql"
+        :editorOption="editorOptions"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {ref} from "vue";
 import {Message} from "@arco-design/web-vue";
-import MonacoEditor from "@/components/MonacoEditor.vue";
 import {copyToClipboard} from "@/util/tool";
 
 const props = withDefaults(
@@ -82,8 +79,9 @@ const editorOptions = {
   scrollBeyondLastLine: false,
   lineNumbers: "on" as const,
   folding: true,
-  fontSize: 12,
+  fontSize: 13,
   automaticLayout: true,
+  contextmenu: false,
 };
 
 const handleCopySql = async () => {
@@ -136,27 +134,13 @@ const handleDownloadCsv = () => {
 
 <style scoped lang="scss">
 .table-container {
+  background-color: #fff;
+  padding: 16px;
   margin-top: 4px;
-
-  .title {
-    color: var(--color-neutral-6);
-  }
-
-  .table-collapse {
-    background-color: #fff;
-
-    :deep(.arco-collapse-item) {
-      background-color: #fff;
-    }
-
-    :deep(.arco-collapse-item-header) {
-      background-color: #fff;
-    }
-
-    :deep(.arco-collapse-item-content) {
-      background-color: #fff;
-    }
-  }
+  margin-bottom: 16px;
+  border-radius: 4px;
+  height: 370px;
+  overflow: auto;
 
   .view-switch {
     display: flex;
@@ -168,6 +152,10 @@ const handleDownloadCsv = () => {
   .view-actions {
     display: flex;
     gap: 8px;
+  }
+
+  .view-container {
+    height: 280px;
   }
 }
 </style>

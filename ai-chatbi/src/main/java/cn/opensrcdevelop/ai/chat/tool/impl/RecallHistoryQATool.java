@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +44,8 @@ public class RecallHistoryQATool implements MethodTool {
             +
             "The index starts from 1 (the first Q&A pair).")
     @SuppressWarnings("java:S3776")
-    public Response execute(@ToolParam(description = "The request to recall history QA pairs") Request request) {
+    public Response execute(@ToolParam(description = "The request to recall history QA pairs") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 

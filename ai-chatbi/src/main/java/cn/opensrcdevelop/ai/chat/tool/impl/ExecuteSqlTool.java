@@ -6,6 +6,7 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
+import cn.opensrcdevelop.ai.util.SseUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import lombok.Data;
@@ -18,6 +19,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +37,8 @@ public class ExecuteSqlTool implements MethodTool {
     private final QueryResultTempFileManager queryResultTempFileManager;
 
     @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
-    public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
+    public Response execute(@ToolParam(description = "The request to execute SQL") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         if (StringUtils.isEmpty(chatContext.getSql())) {
@@ -58,7 +61,8 @@ public class ExecuteSqlTool implements MethodTool {
                 chatContext.getDataSourceId(),
                 chatContext.getRelevantTableIds(),
                 5,
-                request.fixSqlInstruction);
+                request.fixSqlInstruction,
+                emitter);
         Boolean success = result._1;
         if (!Boolean.TRUE.equals(success)) {
             response.setError("Failed to execute SQL: %s, error message: %s".formatted(result._3, result._4()));
@@ -126,7 +130,8 @@ public class ExecuteSqlTool implements MethodTool {
             String dataSourceId,
             List<String> relevantTables,
             int maxAttempts,
-            String instruction) {
+            String instruction,
+            SseEmitter emitter) {
         JdbcTemplate jdbcTemplate = dataSourceManager.getJdbcTemplate(dataSourceId);
         int attempt = 0;
         List<Map<String, Object>> queryResult = new ArrayList<>();
@@ -166,6 +171,7 @@ public class ExecuteSqlTool implements MethodTool {
                 }
 
                 try {
+                    SseUtil.sendChatBIToolCall(emitter, "第 %s 次执行 SQL 失败，开始修复 SQL".format(String.valueOf(attempt)));
                     Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables,
                             dataSourceId,
                             instruction);
@@ -173,8 +179,10 @@ public class ExecuteSqlTool implements MethodTool {
                         return Tuple.of(false, queryResult, sql, errorMsg);
                     }
                     sql = (String) sqlResult.get("sql");
+                    SseUtil.sendChatBIToolCall(emitter, "修复 SQL 成功，继续执行");
                 } catch (Exception newEx) {
                     log.error("修复 SQL 失败", newEx);
+                    SseUtil.sendChatBIToolCall(emitter, "修复 SQL 失败");
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
             }

@@ -3,8 +3,6 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import cn.opensrcdevelop.ai.chat.tool.impl.AnalyzeDataTool;
-import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.chat.tool.impl.ExecutePythonTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
@@ -329,11 +327,7 @@ public class ThinkAnswerAgent {
                         executeMethodParamTypes[0]);
 
                 CommonUtil.validateBean(request);
-                if (AskUserTool.TOOL_NAME.equals(toolName) || AnalyzeDataTool.TOOL_NAME.equals(toolName)) {
-                    executeMethodResult = executeMethod.invoke(tool, request, emitter);
-                } else {
-                    executeMethodResult = executeMethod.invoke(tool, request);
-                }
+                executeMethodResult = executeMethod.invoke(tool, request, emitter);
             } else {
                 executeMethodResult = executeMethod.invoke(tool);
             }

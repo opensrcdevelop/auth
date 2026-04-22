@@ -3,12 +3,6 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import jakarta.validation.constraints.NotBlank;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -17,6 +11,14 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
@@ -42,7 +44,8 @@ public class ExecutePythonTool implements MethodTool {
 
     @Tool(name = ExecutePythonTool.TOOL_NAME, description = "Used to execute Python scripts and return the results of Python script execution")
     @SuppressWarnings({"unused", "java:S3776"})
-    public Response execute(@ToolParam(description = "Request to execute Python script") Request request) {
+    public Response execute(@ToolParam(description = "Request to execute Python script") Request request,
+            SseEmitter emitter) {
         log.info("Execute Python script: {}", CommonUtil.serializeObject(request));
         String venvDir = Path.of(System.getProperty("java.io.tmpdir"), VENV_NAME_PREFIX + System.currentTimeMillis())
                 .toString();

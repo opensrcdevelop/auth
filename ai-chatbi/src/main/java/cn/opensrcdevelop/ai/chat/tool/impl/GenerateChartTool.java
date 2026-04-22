@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -24,7 +25,8 @@ public class GenerateChartTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Used to generate chart based on user question and database query result")
     @SuppressWarnings("unchecked")
-    public Response execute(@ToolParam(description = "The request to generate the chart") Request request) {
+    public Response execute(@ToolParam(description = "The request to generate the chart") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         chatContext.setChartConfig(null);
         Response response = new Response();

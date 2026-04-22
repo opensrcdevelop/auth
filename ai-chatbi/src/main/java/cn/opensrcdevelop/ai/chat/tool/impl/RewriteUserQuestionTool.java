@@ -4,12 +4,14 @@ import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Map;
 
 @Component(RewriteUserQuestionTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -20,7 +22,8 @@ public class RewriteUserQuestionTool implements MethodTool {
     private final ChatAgent chatAgent;
 
     @Tool(name = TOOL_NAME, description = "Used to rewrite user question")
-    public Response execute(@ToolParam(description = "The request to rewrite user question") Request request) {
+    public Response execute(@ToolParam(description = "The request to rewrite user question") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setQuestion(null);

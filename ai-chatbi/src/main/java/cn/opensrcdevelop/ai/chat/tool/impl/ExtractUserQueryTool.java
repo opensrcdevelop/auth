@@ -4,13 +4,15 @@ import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Map;
 
 @Component(ExtractUserQueryTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -21,7 +23,8 @@ public class ExtractUserQueryTool implements MethodTool {
     private final ChatAgent chatAgent;
 
     @Tool(name = TOOL_NAME, description = "Used to extract user query from question")
-    public Response execute(@ToolParam(description = "The request to extract user query") Request request) {
+    public Response execute(@ToolParam(description = "The request to extract user query") Request request,
+            SseEmitter emitter) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setUserQuery(null);
