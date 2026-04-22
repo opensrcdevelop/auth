@@ -23,8 +23,8 @@ public class ChatConfigDto {
     @NotBlankStr
     private String answerLanguage;
 
-    @PropertyName("LLM API 重试次数")
-    @Schema(description = "LLM API 重试次数")
+    @PropertyName("最大 LLM API 重试次数")
+    @Schema(description = "最大 LLM API 重试次数")
     @Min(3)
     private Integer llmApiRetryCount;
 
@@ -45,17 +45,17 @@ public class ChatConfigDto {
     private Integer maxConsecutiveToolCalls;
 
     @PropertyName("SQL 结果条数限制")
-    @Schema(description = "SQL 查询结果条数限制，默认 1000")
+    @Schema(description = "SQL 查询结果条数限制")
     @Min(1)
     private Integer sqlResultLimit;
 
     @PropertyName("最大 SQL 执行重试次数")
-    @Schema(description = "最大 SQL 执行重试次数，默认 3")
+    @Schema(description = "最大 SQL 执行重试次数")
     @Min(1)
     private Integer maxSqlExecutionRetryCount;
 
     @PropertyName("最大 Python 执行重试次数")
-    @Schema(description = "最大 Python 代码执行重试次数，默认 3")
+    @Schema(description = "最大 Python 代码执行重试次数")
     @Min(1)
     private Integer maxPythonExecutionRetryCount;
 }
