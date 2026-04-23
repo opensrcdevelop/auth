@@ -35,20 +35,17 @@ public class SqlAgent {
      *
      * @param chatClient
      *            ChatClient
-     * @param userQuestion
-     *            用户问题
+     * @param queryInstruction
+     *            用户问题和指令
      * @param dataSourceId
      *            数据源ID
-     * @param instruction
-     *            指令
      * @param sampleSqls
      *            示例 SQL（问题-SQL 对列表）
      * @return 相关表
      */
     public Map<String, Object> getRelevantTables(ChatClient chatClient,
-            String userQuestion,
+            String queryInstruction,
             String dataSourceId,
-            String instruction,
             List<Map<String, String>> sampleSqls) {
         // 1. 获取数据源中的表信息
         List<Map<String, Object>> candidateTables = tableService.getTables(dataSourceId);
@@ -59,10 +56,9 @@ public class SqlAgent {
         }
 
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.SELECT_TABLE)
-                .param("question", userQuestion)
+                .param("query_instruction", queryInstruction)
                 .param("table_descriptions",
                         CommonUtil.stream(candidateTables).map(CommonUtil::serializeObject).toList())
-                .param("instruction", instruction)
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls);
 
         // 2. 推测关联表
@@ -80,23 +76,20 @@ public class SqlAgent {
      *
      * @param chatClient
      *            ChatClient
-     * @param userQuestion
-     *            用户问题
+     * @param queryInstruction
+     *            用户问题和指令
      * @param relevantTables
      *            相关表
      * @param dataSourceId
      *            数据源ID
-     * @param instruction
-     *            指令
      * @param sampleSqls
      *            示例 SQL（问题-SQL 对列表）
      * @return SQL
      */
     public Map<String, Object> generateSql(ChatClient chatClient,
-            String userQuestion,
+            String queryInstruction,
             List<String> relevantTables,
             String dataSourceId,
-            String instruction,
             List<Map<String, String>> sampleSqls) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
@@ -112,9 +105,8 @@ public class SqlAgent {
                 .param("current_time",
                         LocalDateTime.now().format(
                                 DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
-                .param("question", userQuestion)
+                .param("query_instruction", queryInstruction)
                 .param("relevant_tables", schemas)
-                .param("instruction", instruction)
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
                 .param("sql_result_limit", sqlResultLimit);
 

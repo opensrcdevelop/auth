@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -23,8 +22,7 @@ public class GenerateReportTool implements MethodTool {
     private final AnalyzeAgent analyzeAgent;
 
     @Tool(name = TOOL_NAME, description = "Generate analysis report for the question")
-    public Response execute(@ToolParam(description = "The request to generate report") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
         chatContext.setQuestion(request.getQuestion());

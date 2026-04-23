@@ -7,11 +7,9 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -26,36 +24,23 @@ public class GenerateSqlTool implements MethodTool {
 
     @SuppressWarnings("unchecked")
     @Tool(name = TOOL_NAME, description = "Generate SQL from the query")
-    public Response execute(@ToolParam(description = "The request to generate SQL") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to generate SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setSql(null);
 
-        String query = request.getQuery();
         List<String> tableIds = request.getTableIds();
-        if (StringUtils.isEmpty(query)) {
-            query = StringUtils.isNotEmpty(chatContext.getUserQuery())
-                    ? chatContext.getUserQuery()
-                    : chatContext.getQuestion();
-        }
-
-        if (CollectionUtils.isEmpty(tableIds)) {
-            tableIds = chatContext.getRelevantTableIds();
-        }
-
         if (CollectionUtils.isEmpty(tableIds)) {
             response.setSuccess(false);
-            response.setError("No table ids found, please provide table ids");
+            response.setError("No table found, please provide the correct table ids");
             return response;
         }
 
         Map<String, Object> result = sqlAgent.generateSql(
                 chatContext.getChatClient(),
-                query,
+                request.getQueryInstruction(),
                 tableIds,
                 chatContext.getDataSourceId(),
-                request.instruction,
                 chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
@@ -80,14 +65,11 @@ public class GenerateSqlTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The query to generate SQL", required = false)
-        private String query;
-
-        @ToolParam(description = "The table ids to generate SQL", required = false)
+        @ToolParam(description = "The table ids to generate SQL")
         private List<String> tableIds;
 
-        @ToolParam(description = "The instruction to generate SQL", required = false)
-        private String instruction;
+        @ToolParam(description = "The query and instruction to generate SQL")
+        private String queryInstruction;
     }
 
     @Data

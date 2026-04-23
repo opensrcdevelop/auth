@@ -3,11 +3,8 @@ Your task is identified which tables are relevant to the query (fact and dimensi
 
 ### Given Information
 Candidate table descriptions:
-
 <#list table_descriptions as item>
-
 - ${item}
-
 </#list>
 
 ### Output Format

@@ -15,12 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component(RecallHistoryQATool.TOOL_NAME)
@@ -44,8 +40,7 @@ public class RecallHistoryQATool implements MethodTool {
             +
             "The index starts from 1 (the first Q&A pair).")
     @SuppressWarnings("java:S3776")
-    public Response execute(@ToolParam(description = "The request to recall history QA pairs") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to recall history QA pairs") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
@@ -60,8 +55,9 @@ public class RecallHistoryQATool implements MethodTool {
                 Wrappers.<ChatMessageHistory>lambdaQuery()
                         .eq(ChatMessageHistory::getChatId, chatId)
                         .eq(ChatMessageHistory::getRole, ChatRole.ASSISTANT.name())
+                        .isNotNull(ChatMessageHistory::getRewrittenQuestion)
                         .isNotNull(ChatMessageHistory::getAnswerId)
-                        .orderByAsc(ChatMessageHistory::getCreateTime));
+                        .orderByDesc(ChatMessageHistory::getCreateTime));
 
         if (assistantMessages.isEmpty()) {
             response.setSuccess(true);
@@ -98,11 +94,9 @@ public class RecallHistoryQATool implements MethodTool {
                 continue;
             }
 
-            String question = StringUtils.isNotBlank(assistantMsg.getRewrittenQuestion())
-                    ? assistantMsg.getRewrittenQuestion()
-                    : chatAnswer.getQuestion();
+            String question = assistantMsg.getRewrittenQuestion();
 
-            qaPairs.add(new QAItem(question, assistantMsg.getContent(), chatAnswer));
+            qaPairs.add(new QAItem(question, chatAnswer.getAnswer(), chatAnswer));
         }
 
         if (qaPairs.isEmpty()) {
@@ -111,6 +105,11 @@ public class RecallHistoryQATool implements MethodTool {
             response.setTotal(0);
             return response;
         }
+
+        // 降序查询时，需要反转列表使回数从 1（最老）开始
+        List<QAItem> reversedQaPairs = new ArrayList<>(qaPairs);
+        Collections.reverse(reversedQaPairs);
+        qaPairs = reversedQaPairs;
 
         int startIndex = request.getStartIndex();
         int endIndex = request.getEndIndex();
@@ -140,7 +139,7 @@ public class RecallHistoryQATool implements MethodTool {
         for (int i = fromIndex; i < toIndex; i++) {
             QAItem qaItem = qaPairs.get(i);
             Map<String, Object> item = qaItem.toMap(includeSql, includeReport, includeChartConfig);
-            item.put("index", i + 1);
+            item.put("turn", i + 1);
             resultItems.add(item);
         }
 
@@ -163,7 +162,7 @@ public class RecallHistoryQATool implements MethodTool {
         public Map<String, Object> toMap(boolean includeSql, boolean includeReport, boolean includeChartConfig) {
             Map<String, Object> map = new HashMap<>();
             map.put("question", question);
-            map.put("answer", answer);
+            map.put("answer", chatAnswer.getAnswer());
 
             if (includeSql) {
                 map.put("sql", chatAnswer.getSql());

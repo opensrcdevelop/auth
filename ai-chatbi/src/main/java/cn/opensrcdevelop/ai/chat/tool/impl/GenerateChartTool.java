@@ -8,10 +8,11 @@ import cn.opensrcdevelop.ai.util.ChartRenderer;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -25,11 +26,16 @@ public class GenerateChartTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Used to generate chart based on user question and database query result")
     @SuppressWarnings("unchecked")
-    public Response execute(@ToolParam(description = "The request to generate the chart") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to generate the chart") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         chatContext.setChartConfig(null);
         Response response = new Response();
+
+        if (StringUtils.isEmpty(chatContext.getSql()) || CollectionUtils.isEmpty(chatContext.getQueryData())) {
+            response.setSuccess(false);
+            response.setError("No SQL Query Result Found, please generate a query first and run it.");
+            return response;
+        }
 
         Map<String, Object> result = chartAgent.generateChart(
                 chatContext.getChatClient(),

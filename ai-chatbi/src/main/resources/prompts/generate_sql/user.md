@@ -1,16 +1,10 @@
-### User Inputs
-1. Question: ${question}
-2. Current Time: ${current_time}
+### Current Time
+${current_time}
 
-<#if instruction??>
-
-### Instruction
-${instruction}
-
-</#if>
+### Query And Instruction
+${query_instruction}
 
 <#if sample_sqls?? && sample_sqls?size gt 0>
-
 ### Sample SQL References
 The following are similar questions and their SQL queries for reference:
 <#list sample_sqls as sample>
@@ -20,5 +14,4 @@ The following are similar questions and their SQL queries for reference:
 ${sample.sql}
 ```
 </#list>
-
 </#if>

@@ -42,9 +42,9 @@ public class ExecuteSqlTool implements MethodTool {
     private Integer defaultMaxSqlExecutionRetryCount;
 
     @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
-    public Response execute(@ToolParam(description = "The request to execute SQL") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
+        SseEmitter emitter = chatContext.getEmitter();
         Response response = new Response();
         if (StringUtils.isEmpty(chatContext.getSql())) {
             response.setSuccess(false);

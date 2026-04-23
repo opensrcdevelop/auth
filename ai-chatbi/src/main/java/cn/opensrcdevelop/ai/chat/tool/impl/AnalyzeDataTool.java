@@ -47,9 +47,9 @@ public class AnalyzeDataTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
     @SuppressWarnings({"all"})
-    public Response execute(@ToolParam(description = "The request to analyze data") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
+        SseEmitter emitter = chatContext.getEmitter();
         Response response = new Response();
 
         chatContext.setAnalyzeDataSummary(null);
@@ -162,7 +162,7 @@ public class AnalyzeDataTool implements MethodTool {
             request.setScript(pythonCode);
             request.setPackages(packages);
 
-            ExecutePythonTool.Response response = executePythonTool.execute(request, emitter);
+            ExecutePythonTool.Response response = executePythonTool.execute(request);
             if (!Boolean.TRUE.equals(response.getSuccess())) {
                 log.error("第 {} 次执行 Python 代码失败", attempt);
                 SseUtil.sendChatBIToolCall(emitter, "第 %d 次执行 Python 代码失败，尝试修复".formatted(attempt));

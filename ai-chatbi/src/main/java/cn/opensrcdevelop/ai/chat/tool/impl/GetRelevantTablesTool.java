@@ -6,11 +6,9 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -30,22 +28,15 @@ public class GetRelevantTablesTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Get the relevant tables for the question")
     @SuppressWarnings("unchecked")
-    public Response execute(@ToolParam(description = "The request to get relevant tables") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to get relevant tables") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setRelevantTableIds(null);
 
-        String query = request.getQuery();
-        if (StringUtils.isEmpty(request.getQuery())) {
-            query = chatContext.getUserQuery();
-        }
-
         Map<String, Object> result = sqlAgent.getRelevantTables(
                 chatContext.getChatClient(),
-                query,
+                request.getQueryInstruction(),
                 chatContext.getDataSourceId(),
-                request.instruction,
                 chatContext.getSampleSqls());
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(success)) {
@@ -61,11 +52,8 @@ public class GetRelevantTablesTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The query to get relevant tables", required = false)
-        private String query;
-
-        @ToolParam(description = "The instruction to get relevant tables", required = false)
-        private String instruction;
+        @ToolParam(description = "The query and instruction to get relevant tables")
+        private String queryInstruction;
     }
 
     @Data

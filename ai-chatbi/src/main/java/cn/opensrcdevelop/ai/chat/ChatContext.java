@@ -1,8 +1,10 @@
 package cn.opensrcdevelop.ai.chat;
 
 import cn.opensrcdevelop.ai.dto.ChatConfigDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,9 @@ public class ChatContext {
     private String id;
 
     private ChatClient chatClient;
+
+    @JsonIgnore
+    private SseEmitter emitter;
 
     private String dataSourceId;
 

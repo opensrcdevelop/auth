@@ -16,13 +16,13 @@ The following are similar questions and their SQL queries for reference:
 </#list>
 </#if>
 ### Current User Question
-${question}
+${raw_question}
 
 <#else>
 
 Analyze the below tool execution results and the raw user question to determine the next step.
 <#if historical_questions?? && historical_questions?size gt 0>
-### Historical Questions
+### Historical Questions(Sort in ascending order of time)
 The following are the user's previous questions in this conversation for context:
 <#list historical_questions as histQuestion>
 - ${histQuestion}
@@ -37,12 +37,6 @@ The following are similar questions and their SQL queries for reference:
 **SQL: ${sample.sql}
 </#list>
 </#if>
-
-### Multiple SQL Execution Support
-You can generate and execute multiple SQL queries in a single conversation. If more data is needed to answer the user's question:
-1. Generate a new SQL query based on the current data analysis needs
-2. Execute the SQL to get additional data
-3. Use the new data along with previous results to form a complete answer
 
 ### Decision Criteria
 1. **Output Final Answer**: If you have gathered enough data to answer the question, OR if no more useful data can be obtained, output the final answer.
@@ -71,7 +65,7 @@ Output the final answer when ANY of the following is true:
 Your previous thinking: ${previous_thinking}
 </#if>
 
-### Raw User Question
+### Current User Question
 ${raw_question}
 </#if>
 

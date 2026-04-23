@@ -11,7 +11,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -44,8 +43,7 @@ public class ExecutePythonTool implements MethodTool {
 
     @Tool(name = ExecutePythonTool.TOOL_NAME, description = "Used to execute Python scripts and return the results of Python script execution")
     @SuppressWarnings({"unused", "java:S3776"})
-    public Response execute(@ToolParam(description = "Request to execute Python script") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "Request to execute Python script") Request request) {
         log.info("Execute Python script: {}", CommonUtil.serializeObject(request));
         String venvDir = Path.of(System.getProperty("java.io.tmpdir"), VENV_NAME_PREFIX + System.currentTimeMillis())
                 .toString();

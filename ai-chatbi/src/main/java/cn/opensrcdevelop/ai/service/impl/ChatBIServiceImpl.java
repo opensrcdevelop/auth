@@ -142,6 +142,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             });
 
             try {
+                chatContext.setEmitter(emitter);
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
                 chatContext.setDataSourceId(requestDto.getDataSourceId());
@@ -161,7 +162,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                         finalChatId);
 
                 if (!interruptFlag.get()) {
-                    SseUtil.sendChatBIDone(emitter, result._1, result._2);
+                    SseUtil.sendChatBIDone(emitter, result._1);
                 } else {
                     chatMessageHistoryService.createChatMessageHistory("回答已取消", ChatContentType.LOADING);
                     SseUtil.sendChatBIDone(emitter);
@@ -294,7 +295,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         ChatContextHolder.getChatContext().setChatClient(chatClient);
 
         // 2.1 第一步：重写用户问题
-        rewriteUserQuestion(chatId, question, emitter);
+        rewriteUserQuestion(chatId, question);
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
@@ -336,7 +337,6 @@ public class ChatBIServiceImpl implements ChatBIService {
                 emitter,
                 interruptFlag,
                 chatClient,
-                finalQuestion,
                 sampleSqls,
                 historicalQuestions,
                 maxSteps,
@@ -423,7 +423,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
         if (MapUtils.isNotEmpty(chartConfig)) {
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
-            var renderResult = ChartRenderer.render(chartConfig, null);
+            var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
             SseUtil.sendChatBIChart(emitter, renderResult._2);
         }
 
@@ -481,10 +481,8 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            对话ID
      * @param rawQuestion
      *            原始问题
-     * @param emitter
-     *            SSE 发送器
      */
-    private void rewriteUserQuestion(String chatId, String rawQuestion, SseEmitter emitter) {
+    private void rewriteUserQuestion(String chatId, String rawQuestion) {
         // 检查 ChatContext 中的 question 是否已被重写
         String currentQuestion = ChatContextHolder.getChatContext().getQuestion();
         if (StringUtils.isNotBlank(currentQuestion) && !currentQuestion.equals(rawQuestion)) {
@@ -496,7 +494,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         try {
             RewriteUserQuestionTool.Request request = new RewriteUserQuestionTool.Request();
             request.setInstruction(null);
-            RewriteUserQuestionTool.Response response = rewriteUserQuestionTool.execute(request, emitter);
+            RewriteUserQuestionTool.Response response = rewriteUserQuestionTool.execute(request);
 
             if (Boolean.TRUE.equals(response.getSuccess()) && StringUtils.isNotBlank(response.getRewrittenQuestion())) {
                 String rewrittenQuestion = response.getRewrittenQuestion();

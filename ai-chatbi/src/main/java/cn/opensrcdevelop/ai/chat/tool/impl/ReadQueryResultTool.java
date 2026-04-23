@@ -13,7 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -30,8 +29,7 @@ public class ReadQueryResultTool implements MethodTool {
     @Tool(name = TOOL_NAME, description = "Read query result data from temp file with pagination support. "
             + "Use this tool when the query result is too large and stored in a temp file. "
             + "AI can call this multiple times with different offset and limit to get all data.")
-    public Response execute(@ToolParam(description = "The request to read query result") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to read query result") Request request) {
         Response response = new Response();
 
         String tempFilePath = request.getFilePath();

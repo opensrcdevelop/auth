@@ -61,8 +61,6 @@ public class ThinkAnswerAgent {
      *            中断标志
      * @param chatClient
      *            ChatClient
-     * @param userQuestion
-     *            用户提问
      * @param sampleSqls
      *            示例 SQL（问题-SQL 对）
      * @param historicalQuestions
@@ -78,7 +76,6 @@ public class ThinkAnswerAgent {
     public Map<String, Object> thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
             ChatClient chatClient,
-            String userQuestion,
             List<Map<String, String>> sampleSqls,
             List<String> historicalQuestions,
             int maxSteps,
@@ -103,7 +100,7 @@ public class ThinkAnswerAgent {
                     : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
-            String result = callLlm(emitter, interruptFlag, chatClient, step > 0 ? null : userQuestion, showThinking,
+            String result = callLlm(emitter, interruptFlag, chatClient, showThinking,
                     formatErrorFeedback, consecutiveFailureWarning);
             if (StringUtils.isEmpty(result)) {
                 break;
@@ -157,11 +154,11 @@ public class ThinkAnswerAgent {
     }
 
     @SuppressWarnings("all")
-    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient, String question,
+    private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient,
             boolean showThinking, String formatErrorFeedback, String consecutiveFailureWarning) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        Prompt prompt = getPrompt(question, showThinking, formatErrorFeedback, consecutiveFailureWarning);
+        Prompt prompt = getPrompt(showThinking, formatErrorFeedback, consecutiveFailureWarning);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
         AtomicReference<String> lastOutput = new AtomicReference<>("");
@@ -226,7 +223,7 @@ public class ThinkAnswerAgent {
                 .toList();
     }
 
-    private Prompt getPrompt(String question, boolean showThinking, String formatErrorFeedback,
+    private Prompt getPrompt(boolean showThinking, String formatErrorFeedback,
             String consecutiveFailureWarning) {
         // 获取会话历史用户消息
         List<String> historicalQuestions = ChatContextHolder.getChatContext().getHistoricalQuestions();
@@ -239,7 +236,6 @@ public class ThinkAnswerAgent {
 
         var thinkAnswerPromptBuilder = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
-                .param("question", question)
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
                 .param("historical_questions", CollectionUtils.isEmpty(historicalQuestions)
                         ? new ArrayList<>()
@@ -312,7 +308,7 @@ public class ThinkAnswerAgent {
         boolean isSuccess = true;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
-            SseUtil.sendChatBIToolCall(emitter, "开始执行工具【%s】".formatted(toolName));
+            SseUtil.sendChatBIToolCall(emitter, "开始执行工具【%s】，参数：%s".formatted(toolName, truncateString(parameters, 100)));
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -327,7 +323,7 @@ public class ThinkAnswerAgent {
                         executeMethodParamTypes[0]);
 
                 CommonUtil.validateBean(request);
-                executeMethodResult = executeMethod.invoke(tool, request, emitter);
+                executeMethodResult = executeMethod.invoke(tool, request);
             } else {
                 executeMethodResult = executeMethod.invoke(tool);
             }
@@ -339,7 +335,7 @@ public class ThinkAnswerAgent {
                     "tool_name", toolName,
                     "execute_time", executeTime,
                     "result", result);
-            SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行成功".formatted(toolName));
+            SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行成功，结果：%s".formatted(toolName, truncateString(result, 100)));
         } catch (Exception ex) {
             isSuccess = false;
             log.error("Error executing tool: {}", toolName, ex);
@@ -570,6 +566,25 @@ public class ThinkAnswerAgent {
             }
         }
         return false;
+    }
+
+    /**
+     * 截断字符串，超过 maxLength 时在末尾添加 ...
+     *
+     * @param str 待截断的字符串
+     * @param maxLength 截断的最大长度
+     * @return 截断后的字符串
+     */
+    private String truncateString(String str, int maxLength) {
+        if (StringUtils.isBlank(str)) {
+            return str;
+        }
+
+        if (str.length() <= maxLength) {
+            return str;
+        }
+
+        return str.substring(0, maxLength) + "...";
     }
 
     /**

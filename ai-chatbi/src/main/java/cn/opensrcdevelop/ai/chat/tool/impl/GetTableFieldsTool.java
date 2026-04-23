@@ -10,7 +10,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -24,8 +23,7 @@ public class GetTableFieldsTool implements MethodTool {
     private final TableService tableService;
 
     @Tool(name = TOOL_NAME, description = "Get the field definitions of a specific table")
-    public Response execute(@ToolParam(description = "The request to get table fields") Request request,
-            SseEmitter emitter) {
+    public Response execute(@ToolParam(description = "The request to get table fields") Request request) {
         Response response = new Response();
 
         List<String> tableIds = request.getTableIds();
@@ -54,7 +52,7 @@ public class GetTableFieldsTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The table ids to get fields for", required = true)
+        @ToolParam(description = "The table ids to get fields for")
         @NotEmpty
         private List<@NotBlank String> tableIds;
     }
