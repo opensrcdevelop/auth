@@ -41,11 +41,13 @@ jobs:
           echo "========================================="
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            echo 'get old image...'
+            OLD_IMAGE=\$(docker inspect --format='{{.Config.Image}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
             echo 'stop and remove old container...'
             docker stop ${{ inputs.containerName }} 2>/dev/null || true
             docker rm ${{ inputs.containerName }} 2>/dev/null || true
             echo 'remove old image...'
-            docker rmi \$(docker images -q ${{ inputs.registry }}:${{ inputs.imageTag }}) 2>/dev/null || true
+            if [ -n \"\$OLD_IMAGE\" ]; then docker rmi \$OLD_IMAGE 2>/dev/null || true; fi
             echo 'cleanup done'
           "
 
@@ -120,7 +122,7 @@ jobs:
             DEFAULT_CONSOLE_URL='${{ vars.DOCKER_DEPLOY_DEFAULT_CONSOLE_URL }}' \
             LOGIN_PAGE_URL='${{ vars.DOCKER_DEPLOY_LOGIN_PAGE_URL }}' \
             DB_BASE_URL='${{ vars.DOCKER_DEPLOY_DB_BASE_URL }}' \
-            DB_USERNAME='${{ vars.DOCKER_DEPLOY_DB_USERNAME }}' \
+            DB_USERNAME='${{ secrets.DOCKER_DEPLOY_DB_USERNAME }}' \
             DB_PASSWORD='${{ secrets.DOCKER_DEPLOY_DB_PASSWORD }}' \
             DB_PREFIX='${{ vars.DOCKER_DEPLOY_DB_PREFIX }}' \
             DEFAULT_TENANT='${{ vars.DOCKER_DEPLOY_DEFAULT_TENANT }}' \
@@ -142,7 +144,5 @@ jobs:
       - name: Verify Container Status
         run: |
           echo "verify container status..."
-
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
-            docker ps -a | grep ${{ inputs.containerName }}
-          "
+          RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'docker ps -a | grep ${{ inputs.containerName }}')
+          if [ -n "$RESULT" ]; then echo "Container is running"; else echo "Container is not running"; fi
