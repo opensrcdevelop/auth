@@ -19,7 +19,7 @@ on:
         description: 'container name'
         type: string
         required: true
-        default: auth-server
+        default: auth_server
 
 jobs:
   deploy-to-remote:
@@ -30,6 +30,7 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.DOCKER_DEPLOY_SSH_PK }}
+          known_hosts: ""
 
       - name: Add Host to Known Hosts
         run: |
