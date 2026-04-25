@@ -22,7 +22,9 @@ RUN apt-get update && \
 COPY ./build/libs/auth-server-*.jar /app/app.jar
 COPY ./elastic-apm/elastic-apm-agent-*.jar /app/elastic-apm/elastic-apm-agent.jar
 
-RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app && \
+    mkdir -p /app/logs && \
+    chown -R appuser:appgroup /app/logs
 
 ENV LANG C.UTF-8
 ENV TZ=Asia/Shanghai
