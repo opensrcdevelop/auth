@@ -62,6 +62,13 @@ jobs:
             echo 'done'
           "
 
+      - name: Debug Variables
+        run: |
+          echo "DEBUG: DOCKER_DEPLOY_APP_PORT=${{ secrets.DOCKER_DEPLOY_APP_PORT }}"
+          echo "DEBUG: DOCKER_PLOY_REDIS_HOST=${{ vars.DOCKER_PLOY_REDIS_HOST }}"
+          echo "DEBUG: DOCKER_PLOY_REDIS_PORT=${{ vars.DOCKER_PLOY_REDIS_PORT }}"
+          echo "DEBUG: DOCKER_PLOY_DEFAULT_ISSUER=${{ vars.DOCKER_PLOY_DEFAULT_ISSUER }}"
+
       - name: Start New Container
         run: |
           FULL_IMAGE="${{ inputs.registry }}:${{ inputs.imageTag }}"
@@ -109,32 +116,32 @@ jobs:
           # Deploy and execute script on remote
           ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} \
             "echo '$SCRIPT_B64' | base64 -d > /tmp/start_container.sh && \
-            DOCKER_PORT=${{ secrets.DOCKER_DEPLOY_APP_PORT }} \
-            REDIS_HOST=${{ vars.DOCKER_PLOY_REDIS_HOST }} \
-            REDIS_PORT=${{ vars.DOCKER_PLOY_REDIS_PORT }} \
-            REDIS_PASSWORD=${{ secrets.DOCKER_PLOY_REDIS_PASSWORD }} \
-            API_DOC_ENABLED=${{ vars.DOCKER_PLOY_API_DOC_ENABLED }} \
-            SWAGGER_UI_ENABLED=${{ vars.DOCKER_PLOY_SWAGGER_UI_ENABLED }} \
-            AUTH_SERVER_CONSOLE_CLIENT_ID=${{ vars.DOCKER_PLOY_AUTH_SERVER_CONSOLE_CLIENT_ID }} \
-            DEFAULT_ISSUER=${{ vars.DOCKER_PLOY_DEFAULT_ISSUER }} \
-            DEFAULT_CONSOLE_URL=${{ vars.DOCKER_PLOY_DEFAULT_CONSOLE_URL }} \
-            LOGIN_PAGE_URL=${{ vars.DOCKER_PLOY_LOGIN_PAGE_URL }} \
-            DB_BASE_URL=${{ vars.DOCKER_PLOY_DB_BASE_URL }} \
-            DB_USERNAME=${{ vars.DOCKER_PLOY_DB_USERNAME }} \
-            DB_PASSWORD=${{ secrets.DOCKER_PLOY_DB_PASSWORD }} \
-            DB_PREFIX=${{ vars.DOCKER_PLOY_DB_PREFIX }} \
-            DEFAULT_TENANT=${{ vars.DOCKER_PLOY_DEFAULT_TENANT }} \
-            ASYNC_TASK_STORAGE_TYPE=${{ vars.DOCKER_PLOY_ASYNC_TASK_STORAGE_TYPE }} \
-            S3_ENDPOINT=${{ vars.DOCKER_PLOY_S3_ENDPOINT }} \
-            S3_ACCESS_KEY=${{ secrets.DOCKER_PLOY_S3_ACCESS_KEY }} \
-            S3_SECRET_KEY=${{ secrets.DOCKER_PLOY_S3_SECRET_KEY }} \
-            S3_BUCKET=${{ vars.DOCKER_PLOY_S3_BUCKET }} \
-            S3_PATH_STYLE_ACCESS=${{ vars.DOCKER_PLOY_S3_PATH_STYLE_ACCESS }} \
-            JAVA_OPTS=${{ vars.DOCKER_PLOY_JAVA_OPTS }} \
-            JWS256=${{ secrets.DOCKER_PLOY_JWS256 }} \
-            PYTHON_EXEC_LIMIT_ENABLED=${{ vars.DOCKER_PLOY_PYTHON_EXEC_LIMIT_ENABLED }} \
-            CHROMA_HOST=${{ vars.DOCKER_PLOY_CHROMA_HOST }} \
-            FULL_IMAGE=${FULL_IMAGE} \
+            DOCKER_PORT='${{ secrets.DOCKER_DEPLOY_APP_PORT }}' \
+            REDIS_HOST='${{ vars.DOCKER_PLOY_REDIS_HOST }}' \
+            REDIS_PORT='${{ vars.DOCKER_PLOY_REDIS_PORT }}' \
+            REDIS_PASSWORD='${{ secrets.DOCKER_PLOY_REDIS_PASSWORD }}' \
+            API_DOC_ENABLED='${{ vars.DOCKER_PLOY_API_DOC_ENABLED }}' \
+            SWAGGER_UI_ENABLED='${{ vars.DOCKER_PLOY_SWAGGER_UI_ENABLED }}' \
+            AUTH_SERVER_CONSOLE_CLIENT_ID='${{ vars.DOCKER_PLOY_AUTH_SERVER_CONSOLE_CLIENT_ID }}' \
+            DEFAULT_ISSUER='${{ vars.DOCKER_PLOY_DEFAULT_ISSUER }}' \
+            DEFAULT_CONSOLE_URL='${{ vars.DOCKER_PLOY_DEFAULT_CONSOLE_URL }}' \
+            LOGIN_PAGE_URL='${{ vars.DOCKER_PLOY_LOGIN_PAGE_URL }}' \
+            DB_BASE_URL='${{ vars.DOCKER_PLOY_DB_BASE_URL }}' \
+            DB_USERNAME='${{ vars.DOCKER_PLOY_DB_USERNAME }}' \
+            DB_PASSWORD='${{ secrets.DOCKER_PLOY_DB_PASSWORD }}' \
+            DB_PREFIX='${{ vars.DOCKER_PLOY_DB_PREFIX }}' \
+            DEFAULT_TENANT='${{ vars.DOCKER_PLOY_DEFAULT_TENANT }}' \
+            ASYNC_TASK_STORAGE_TYPE='${{ vars.DOCKER_PLOY_ASYNC_TASK_STORAGE_TYPE }}' \
+            S3_ENDPOINT='${{ vars.DOCKER_PLOY_S3_ENDPOINT }}' \
+            S3_ACCESS_KEY='${{ secrets.DOCKER_PLOY_S3_ACCESS_KEY }}' \
+            S3_SECRET_KEY='${{ secrets.DOCKER_PLOY_S3_SECRET_KEY }}' \
+            S3_BUCKET='${{ vars.DOCKER_PLOY_S3_BUCKET }}' \
+            S3_PATH_STYLE_ACCESS='${{ vars.DOCKER_PLOY_S3_PATH_STYLE_ACCESS }}' \
+            JAVA_OPTS='${{ vars.DOCKER_PLOY_JAVA_OPTS }}' \
+            JWS256='${{ secrets.DOCKER_PLOY_JWS256 }}' \
+            PYTHON_EXEC_LIMIT_ENABLED='${{ vars.DOCKER_PLOY_PYTHON_EXEC_LIMIT_ENABLED }}' \
+            CHROMA_HOST='${{ vars.DOCKER_PLOY_CHROMA_HOST }}' \
+            FULL_IMAGE='${FULL_IMAGE}' \
             bash /tmp/start_container.sh"
 
           echo 'container started'
