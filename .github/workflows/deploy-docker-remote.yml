@@ -34,40 +34,6 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.DOCKER_DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Backup Container Config
-        id: backup
-        run: |
-          echo "backup container config..."
-
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
-            if docker ps -a | grep -q ${{ inputs.containerName }}; then
-              PORTS=\$(docker inspect --format='{{range .HostConfig.PortBindings}}{{.HostIp}}:{{.HostPort}}->{{.ContainerPort}}/{{.Protocol}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
-              ENVS=\$(docker inspect --format='{{range .Config.Env}}{{.}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
-              VOLUMES=\$(docker inspect --format='{{range .Mounts}}{{.Source}}:{{.Destination}}:{{.Mode}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
-              NETWORK=\$(docker inspect --format='{{.HostConfig.NetworkMode}}' ${{ inputs.containerName }} 2>/dev/null || echo 'bridge')
-              RESTART=\$(docker inspect --format='{{.HostConfig.RestartPolicy.Name}}' ${{ inputs.containerName }} 2>/dev/null || echo 'always')
-
-              echo \"PORTS=\${PORTS}\" > /tmp/config_${{ inputs.containerName }}.txt
-              echo \"ENVS=\${ENVS}\" >> /tmp/config_${{ inputs.containerName }}.txt
-              echo \"VOLUMES=\${VOLUMES}\" >> /tmp/config_${{ inputs.containerName }}.txt
-              echo \"NETWORK=\${NETWORK}\" >> /tmp/config_${{ inputs.containerName }}.txt
-              echo \"RESTART=\${RESTART}\" >> /tmp/config_${{ inputs.containerName }}.txt
-            else
-              echo 'PORTS=' > /tmp/config_${{ inputs.containerName }}.txt
-              echo 'ENVS=' >> /tmp/config_${{ inputs.containerName }}.txt
-              echo 'VOLUMES=' >> /tmp/config_${{ inputs.containerName }}.txt
-              echo 'NETWORK=bridge' >> /tmp/config_${{ inputs.containerName }}.txt
-              echo 'RESTART=always' >> /tmp/config_${{ inputs.containerName }}.txt
-            fi
-          "
-
-          # 设置 GitHub Actions 输出
-          echo "PORTS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^PORTS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "ENVS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^ENVS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "VOLUMES=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^VOLUMES=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "NETWORK=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^NETWORK=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "RESTART=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^RESTART=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-
       - name: Cleanup Old Container And Image
         run: |
           echo "========================================="
@@ -96,51 +62,49 @@ jobs:
             echo 'done'
           "
 
-      - name: Start New Container With Original Config
+      - name: Start New Container
         run: |
           FULL_IMAGE="${{ inputs.registry }}:${{ inputs.imageTag }}"
-          PORTS="${{ steps.backup.outputs.PORTS }}"
-          ENVS="${{ steps.backup.outputs.ENVS }}"
-          VOLUMES="${{ steps.backup.outputs.VOLUMES }}"
-          NETWORK="${{ steps.backup.outputs.NETWORK }}"
-          RESTART="${{ steps.backup.outputs.RESTART }}"
+          PORT="${{ secrets.DOCKER_DEPLOY_APP_PORT }}"
 
           echo "========================================="
-          echo "start new container with original config"
+          echo "start new container"
           echo "container: ${{ inputs.containerName }}"
           echo "image: ${FULL_IMAGE}"
           echo "========================================="
 
-          # 构建 docker run 命令
-          CMD="docker run -d --name ${{ inputs.containerName }}"
-
-          # 添加端口映射
-          for PORT in ${PORTS}; do
-            CMD="\$CMD -p \$PORT"
-          done
-
-          # 添加环境变量
-          for ENV in ${ENVS}; do
-            CMD="\$CMD -e \$ENV"
-          done
-
-          # 添加卷挂载
-          for VOLUME in ${VOLUMES}; do
-            CMD="\$CMD -v \$VOLUME"
-          done
-
-          # 添加网络模式
-          if [ -n "\$NETWORK" ] && [ "\$NETWORK" != "bridge" ]; then
-            CMD="\$CMD --network \$NETWORK"
-          fi
-
-          # 添加重启策略
-          CMD="\$CMD --restart \$RESTART"
-
-          # 添加镜像
-          CMD="\$CMD \${FULL_IMAGE}"
-
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "\$CMD"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            docker run -d --name ${{ inputs.containerName }} \
+              -p \${PORT}:8080 \
+              -e REDIS_HOST=${{ vars.DOCKER_PLOY_REDIS_HOST }} \
+              -e REDIS_PORT=${{ vars.DOCKER_PLOY_REDIS_PORT }} \
+              -e REDIS_PASSWORD=${{ secrets.DOCKER_PLOY_REDIS_PASSWORD }} \
+              -e API_DOC_ENABLED=${{ vars.DOCKER_PLOY_API_DOC_ENABLED }} \
+              -e SWAGGER_UI_ENABLED=${{ vars.DOCKER_PLOY_SWAGGER_UI_ENABLED }} \
+              -e AUTH_SERVER_CONSOLE_CLIENT_ID=${{ vars.DOCKER_PLOY_AUTH_SERVER_CONSOLE_CLIENT_ID }} \
+              -e DEFAULT_ISSUER=${{ vars.DOCKER_PLOY_DEFAULT_ISSUER }} \
+              -e DEFAULT_CONSOLE_URL=${{ vars.DOCKER_PLOY_DEFAULT_CONSOLE_URL }} \
+              -e LOGIN_PAGE_URL=${{ vars.DOCKER_PLOY_LOGIN_PAGE_URL }} \
+              -e DB_BASE_URL=${{ vars.DOCKER_PLOY_DB_BASE_URL }} \
+              -e DB_USERNAME=${{ vars.DOCKER_PLOY_DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DOCKER_PLOY_DB_PASSWORD }} \
+              -e DB_PREFIX=${{ vars.DOCKER_PLOY_DB_PREFIX }} \
+              -e DEFAULT_TENANT=${{ vars.DOCKER_PLOY_DEFAULT_TENANT }} \
+              -e ASYNC_TASK_STORAGE_TYPE=${{ vars.DOCKER_PLOY_ASYNC_TASK_STORAGE_TYPE }} \
+              -e S3_ENDPOINT=${{ vars.DOCKER_PLOY_S3_ENDPOINT }} \
+              -e S3_ACCESS_KEY=${{ secrets.DOCKER_PLOY_S3_ACCESS_KEY }} \
+              -e S3_SECRET_KEY=${{ secrets.DOCKER_PLOY_S3_SECRET_KEY }} \
+              -e S3_BUCKET=${{ vars.DOCKER_PLOY_S3_BUCKET }} \
+              -e S3_PATH_STYLE_ACCESS=${{ vars.DOCKER_PLOY_S3_PATH_STYLE_ACCESS }} \
+              -e JAVA_OPTS=${{ vars.DOCKER_PLOY_JAVA_OPTS }} \
+              -e JWS256=${{ secrets.DOCKER_PLOY_JWS256 }} \
+              -e PYTHON_EXEC_LIMIT_ENABLED=${{ vars.DOCKER_PLOY_PYTHON_EXEC_LIMIT_ENABLED }} \
+              -e CHROMA_HOST=${{ vars.DOCKER_PLOY_CHROMA_HOST }} \
+              -v auth_server_log_volume:/app/logs \
+              --network auth_server_network \
+              --restart always \
+              \${FULL_IMAGE}
+          "
 
           echo 'container started'
 
