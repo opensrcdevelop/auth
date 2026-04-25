@@ -10,6 +10,7 @@ on:
       registry:
         description: 'select registry'
         type: choice
+        default: "registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server"
         required: true
         options:
           - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
