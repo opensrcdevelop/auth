@@ -39,7 +39,7 @@ jobs:
         run: |
           echo "backup container config..."
 
-          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
             if docker ps -a | grep -q ${{ inputs.containerName }}; then
               PORTS=\$(docker inspect --format='{{range .HostConfig.PortBindings}}{{.HostIp}}:{{.HostPort}}->{{.ContainerPort}}/{{.Protocol}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
               ENVS=\$(docker inspect --format='{{range .Config.Env}}{{.}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
@@ -62,11 +62,11 @@ jobs:
           "
 
           # 设置 GitHub Actions 输出
-          echo "PORTS=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^PORTS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "ENVS=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^ENVS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "VOLUMES=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^VOLUMES=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "NETWORK=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^NETWORK=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
-          echo "RESTART=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^RESTART=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "PORTS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^PORTS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "ENVS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^ENVS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "VOLUMES=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^VOLUMES=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "NETWORK=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^NETWORK=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "RESTART=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^RESTART=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
 
       - name: Cleanup Old Container And Image
         run: |
@@ -74,7 +74,7 @@ jobs:
           echo "cleanup old container and image"
           echo "========================================="
 
-          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
             echo 'stop and remove old container...'
             docker stop ${{ inputs.containerName }} 2>/dev/null || true
             docker rm ${{ inputs.containerName }} 2>/dev/null || true
@@ -90,7 +90,7 @@ jobs:
           echo "docker pull ${FULL_IMAGE}"
           echo "========================================="
 
-          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
             echo 'docker pull...'
             docker pull ${FULL_IMAGE}
             echo 'done'
@@ -140,7 +140,7 @@ jobs:
           # 添加镜像
           CMD="\$CMD \${FULL_IMAGE}"
 
-          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "\$CMD"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "\$CMD"
 
           echo 'container started'
 
@@ -148,6 +148,6 @@ jobs:
         run: |
           echo "verify container status..."
 
-          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DOCKER_DEPLOY_HOST }} "
             docker ps -a | grep ${{ inputs.containerName }}
           "
