@@ -100,13 +100,13 @@ import {Modal, Notification} from "@arco-design/web-vue";
 import {reactive, ref} from "vue";
 
 /** 模型提供商列表 */
-const modelProviderList = reactive([]);
+const modelProviderList = reactive([] as any[]);
 const modelProviderSearchKeyword = ref(null);
 let modelProviderListPagination = usePagination(
   "modelProviderList",
-  ({ page, size }) => {
+  ({ page, size }: { page: number; size: number }) => {
     handleGetModelProviderList(page, size);
-  }
+  },
 );
 
 /**
@@ -126,7 +126,7 @@ const handleGetModelProviderList = (page: number = 1, size: number = 15) => {
         modelProviderListPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -208,7 +208,7 @@ const handleDeleteModelProvider = (modelProvider: any) => {
 const init = () => {
   handleGetModelProviderList(
     modelProviderListPagination.pagination.current,
-    modelProviderListPagination.pagination.pageSize
+    modelProviderListPagination.pagination.pageSize,
   );
 };
 

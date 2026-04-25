@@ -1,18 +1,18 @@
 package cn.opensrcdevelop.ai.chat.tool.impl;
 
-import cn.opensrcdevelop.ai.chat.ChatContext;
-import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.service.TableService;
-import java.util.List;
-import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component(GetTableFieldsTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -24,20 +24,18 @@ public class GetTableFieldsTool implements MethodTool {
 
     @Tool(name = TOOL_NAME, description = "Get the field definitions of a specific table")
     public Response execute(@ToolParam(description = "The request to get table fields") Request request) {
-        ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
 
-        String tableId = request.getTableId();
-        if (StringUtils.isEmpty(tableId)) {
-            response.setSuccess(false);
-            response.setError("Table ID is required");
-            return response;
+        List<String> tableIds = request.getTableIds();
+        List<Map<String, Object>> fields = tableService.getTableSchemas(tableIds);
+        for (Map<String, Object> schema : fields) {
+            schema.remove("description");
+            schema.remove("additional_info");
         }
 
-        List<Map<String, Object>> fields = tableService.getTableFields(tableId);
         if (CollectionUtils.isEmpty(fields)) {
             response.setSuccess(false);
-            response.setError("No fields found for table: " + tableId);
+            response.setError("No fields found for tables: " + tableIds);
             return response;
         }
 
@@ -54,8 +52,9 @@ public class GetTableFieldsTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The table ID to get fields for", required = true)
-        private String tableId;
+        @ToolParam(description = "The table ids to get fields for")
+        @NotEmpty
+        private List<@NotBlank String> tableIds;
     }
 
     @Data
@@ -64,7 +63,7 @@ public class GetTableFieldsTool implements MethodTool {
         @ToolParam(description = "The success of get table fields")
         private boolean success;
 
-        @ToolParam(description = "The field definitions of the table")
+        @ToolParam(description = "The field definitions of the tables")
         private List<Map<String, Object>> fields;
 
         @ToolParam(description = "The error message if get table fields failed")

@@ -4,6 +4,7 @@ import cn.opensrcdevelop.common.validation.ValidationGroups;
 import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Schema(description = "创建 / 更新权限请求")
@@ -31,4 +32,12 @@ public class PermissionRequestDto {
     @Schema(description = "描述")
     @NotBlankStr
     private String desc;
+
+    @Schema(description = "是否允许用户申请")
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
+    private Boolean allowApply;
+
+    @Schema(description = "申请后是否自动批准")
+    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
+    private Boolean autoApprove;
 }

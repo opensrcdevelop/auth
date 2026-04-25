@@ -8,19 +8,7 @@
           </template>
           <template #default>重新生成</template>
         </a-button>
-        <a-button
-          type="text"
-          size="mini"
-          v-if="message.answerId"
-          @click="handleGetAnsweredSql(message)"
-        >
-          <template #icon>
-            <icon-copy />
-          </template>
-          <template #default>复制 SQL</template>
-        </a-button>
-        <a-divider v-if="message.answerId" direction="vertical" />
-        <a-space v-if="message.answerId">
+        <a-space>
           <a-tooltip content="喜欢" position="bottom" mini>
             <a-button
               size="mini"
@@ -48,6 +36,13 @@
         </a-space>
       </a-space>
       <a-space>
+        <span class="token"
+          >输入 token 数: {{ formatTokenCount(message.inputTokens) }}</span
+        >
+        <span class="token"
+          >输出 token 数: {{ formatTokenCount(message.outputTokens) }}</span
+        >
+        <a-divider direction="vertical" />
         <span class="time">{{ message.time }}</span>
       </a-space>
     </div>
@@ -55,9 +50,8 @@
 </template>
 
 <script setup lang="ts">
-import {getAnsweredSql, voteAnswer} from "@/api/chatbi";
-import {copyToClipboard, handleApiError, handleApiSuccess} from "@/util/tool";
-import {Message} from "@arco-design/web-vue";
+import {voteAnswer} from "@/api/chatbi";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
 
 const props = withDefaults(
   defineProps<{
@@ -65,12 +59,26 @@ const props = withDefaults(
   }>(),
   {
     message: {},
-  }
+  },
 );
 
 const emits = defineEmits<{
   (e: "resendMessage", questionId: string): void;
 }>();
+
+const formatTokenCount = (count: number): string => {
+  if (!count) {
+    return "-";
+  }
+
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(2) + "M";
+  }
+  if (count >= 1000) {
+    return (count / 1000).toFixed(2) + "K";
+  }
+  return count.toString();
+};
 
 const handleResendMessage = () => {
   emits("resendMessage", props.message.rewrittenQuestion);
@@ -92,25 +100,6 @@ const handleVoteAnswer = (doneMessage: any, feedback: string) => {
       handleApiError(err, "反馈图表");
     });
 };
-
-const handleGetAnsweredSql = (doneMessage: any) => {
-  getAnsweredSql(doneMessage.answerId).then((result: any) => {
-    handleApiSuccess(result, async (data: any) => {
-      if (data.sql) {
-        const result = await copyToClipboard(data.sql);
-        if (result) {
-          Message.success("复制成功");
-        } else {
-          Message.error("复制失败");
-        }
-      } else {
-        Message.warning("该回答没有生成 SQL");
-      }
-    });
-  }).catch((err: any) => {
-    handleApiError(err, "获取回答的 SQL")
-  })
-};
 </script>
 
 <style scoped lang="scss">
@@ -120,7 +109,8 @@ const handleGetAnsweredSql = (doneMessage: any) => {
   justify-content: space-between;
   align-items: center;
 
-  .time {
+  .time,
+  .token {
     font-size: 12px;
     color: var(--color-text-3);
   }

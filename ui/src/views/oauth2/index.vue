@@ -55,7 +55,7 @@ if (code) {
         localStorage.removeItem(STATE);
         localStorage.removeItem(CODE_VERIFIER);
 
-        const redirectPath = localStorage.getItem(REDIRECT_PATH);
+        const redirectPath = localStorage.getItem(REDIRECT_PATH) || undefined;
         const redirectQuery = localStorage.getItem(REDIRECT_QUERY);
         // 跳转到目标路径
         if (localStorage.getItem(REDIRECT_PATH)) {

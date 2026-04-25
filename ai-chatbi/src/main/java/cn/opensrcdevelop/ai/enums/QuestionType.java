@@ -1,0 +1,16 @@
+package cn.opensrcdevelop.ai.enums;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum QuestionType {
+
+    TEXT("TEXT", "文本输入"),
+    SELECT("SELECT", "单选"),
+    MULTI_SELECT("MULTI_SELECT", "多选");
+
+    private final String code;
+    private final String description;
+}

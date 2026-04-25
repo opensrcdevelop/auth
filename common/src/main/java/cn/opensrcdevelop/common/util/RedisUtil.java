@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.redisson.api.RLock;
+import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.listener.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.Assert;
 
@@ -158,5 +160,57 @@ public class RedisUtil {
      */
     public static RLock getLock(String key) {
         return redissonClient.getLock(key);
+    }
+
+    /**
+     * 发布消息到指定的主题
+     *
+     * @param topic
+     *            主题
+     * @param message
+     *            消息
+     */
+    public static void publishMessage(String topic, Object message) {
+        redissonClient.getTopic(topic).publish(message);
+    }
+
+    /**
+     * 订阅指定主题的消息
+     *
+     * @param topic
+     *            主题
+     * @param clazz
+     *            消息类型
+     * @param listener
+     *            消息监听器
+     * @return 监听器ID
+     * @param <T>
+     *            消息类型
+     */
+    public static <T> int subscribeMessage(String topic, Class<T> clazz, MessageListener<T> listener) {
+        RTopic rTopic = redissonClient.getTopic(topic);
+        return rTopic.addListener(clazz, listener);
+    }
+
+    /**
+     * 移除指定主题的消息监听器
+     *
+     * @param topic
+     *            主题
+     * @param listenerId
+     *            监听器ID
+     */
+    public static void removeListener(String topic, int listenerId) {
+        redissonClient.getTopic(topic).removeListener(listenerId);
+    }
+
+    /**
+     * 移除指定主题的所有消息监听器
+     *
+     * @param topic
+     *            主题
+     */
+    public static void removeAllListeners(String topic) {
+        redissonClient.getTopic(topic).removeAllListeners();
     }
 }

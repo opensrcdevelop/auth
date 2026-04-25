@@ -40,4 +40,5 @@ public class CommonConstants {
     public static final String PROP_DEFAULT_ISSUER = "auth.server.default-issuer";
     public static final String REQ_HEADER_X_TENANT_CODE = "X-Tenant-Code";
     public static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String CONSOLE_CLIENT_NAME = "auth-server-console";
 }

@@ -36,7 +36,6 @@ public class AnalyzeAgent {
         // 1. 生成 Python 代码
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_PYTHON_CODE)
                 .param("data_file_path", dataFilePath)
-                .param("question", ChatContextHolder.getChatContext().getQuestion())
                 .param("sample_data",
                         CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData().getFirst()))
                 .param("column_aliases",
@@ -146,6 +145,8 @@ public class AnalyzeAgent {
                 .param("data_file_path", dataFilePath)
                 .param("sample_data",
                         CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData().getFirst()))
+                .param("column_aliases",
+                        CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryColumns()))
                 .param("python_code", pythonCode)
                 .param("error_output", pythonExecutionOutput)
                 .param("instruction", instruction);

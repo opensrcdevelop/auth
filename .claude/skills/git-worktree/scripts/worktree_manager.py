@@ -469,6 +469,24 @@ def main():
                     b_idx = args.index("--branch")
                     description = " ".join(args[:b_idx])
 
+        # 如果没有提供 --branch 参数，提示 AI 需要生成分支名称
+        if not branch_name:
+            print("错误：请提供分支名称（--branch 参数）")
+            print()
+            print("请根据任务描述生成分支名称，格式：<type>/<description>")
+            print("例如：")
+            print("  /git-worktree init \"添加用户 Excel 导入导出功能\" --branch \"feature/user-excel-import-export\"")
+            print("  /git-worktree init \"修复登录问题\" --branch \"bugfix/login-issue\"")
+            print()
+            print("分支类型前缀：")
+            print("  feature - 新功能")
+            print("  bugfix  - Bug 修复")
+            print("  refactor - 重构优化")
+            print("  docs    - 文档更新")
+            print("  test    - 测试相关")
+            print("  chore   - 配置构建")
+            return
+
         result = cmd_init_with_iterm(description, branch_name)
         if result:
             worktree_path, branch_name_result, desc = result

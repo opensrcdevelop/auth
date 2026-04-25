@@ -19,7 +19,7 @@ export const TASK_STATUS_OPTIONS: { label: string; value: TaskStatus }[] = [
 /**
  * 任务类型
  */
-export type TaskType = "USER_IMPORT" | "USER_EXPORT";
+export type TaskType = "USER_IMPORT" | "USER_EXPORT" | "SAMPLE_SQL_SYNC" | "SAMPLE_SQL_REBUILD";
 
 /**
  * 任务类型配置（由数据驱动）
@@ -27,6 +27,8 @@ export type TaskType = "USER_IMPORT" | "USER_EXPORT";
 export const TASK_TYPE_CONFIG: Record<TaskType, { label: string; value: TaskType }> = {
   USER_IMPORT: { label: "用户导入", value: "USER_IMPORT" },
   USER_EXPORT: { label: "用户导出", value: "USER_EXPORT" },
+  SAMPLE_SQL_SYNC: { label: "示例 SQL 同步", value: "SAMPLE_SQL_SYNC" },
+  SAMPLE_SQL_REBUILD: { label: "示例 SQL 重建索引", value: "SAMPLE_SQL_REBUILD" },
 };
 
 /**

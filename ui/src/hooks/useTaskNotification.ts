@@ -2,7 +2,7 @@ import {onMounted, onUnmounted, ref} from "vue";
 import {Client} from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import {Notification} from "@arco-design/web-vue";
-import {getOAuthIssuer} from "@/util/tool";
+import {getOAuthIssuer, getSubDomain} from "@/util/tool";
 import {taskEmitter} from "./taskEmitter";
 import {AUTH_TOKENS} from "@/util/constants";
 
@@ -73,7 +73,14 @@ export const useTaskNotification = (onMessage?: (message: TaskNotificationMessag
           }
         }
 
-        stompClient?.subscribe(`/queue/user/${userId}/tasks`, (message) => {
+        // 获取租户编码（空字符串表示默认租户）
+        const tenantCode = getSubDomain();
+        const destination = tenantCode
+            ? `/queue/${tenantCode}/user/${userId}/tasks`
+            : `/queue/user/${userId}/tasks`;
+
+        // 订阅用户任务通知队列
+        stompClient?.subscribe(destination, (message) => {
           try {
             const body: TaskNotificationMessage = JSON.parse(message.body);
 

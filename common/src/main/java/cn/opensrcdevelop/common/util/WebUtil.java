@@ -16,10 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
@@ -345,5 +342,24 @@ public class WebUtil {
     private static String concatIpRegion(String[] ipRegionParts) {
         return Stream.of(ipRegionParts).filter(ipRegionPart -> !"0".equals(ipRegionPart))
                 .collect(Collectors.joining("-"));
+    }
+
+    /**
+     * 生成 Content-Disposition 头，支持中文文件名（RFC 5987 编码）
+     *
+     * @param filename
+     *            文件名
+     * @return 编码后的 Content-Disposition 头值
+     */
+    public static String encodeContentDisposition(String filename) {
+        String encodedFilename;
+        try {
+            encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+        } catch (Exception e) {
+            log.warn("文件名编码失败: {}", filename, e);
+            encodedFilename = filename;
+        }
+        return "attachment; filename*=UTF-8''" + encodedFilename;
     }
 }

@@ -1,7 +1,7 @@
 ---
 name: tasks-planning
-version: "2.8.0"
-description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes hooks for task initialization validation and session management (externalized to separate scripts).
+version: "2.9.0"
+description: Implements Manus-style file-based planning for complex tasks with task-session tracking. Creates task_plan.md, findings.md, and progress.md. Uses tasks.json to track task-session relationships across sessions. Includes hooks for task initialization validation and session management (externalized to separate scripts). Plan requires user approval before execution.
 user-invocable: true
 allowed-tools:
   - Read
@@ -12,6 +12,7 @@ allowed-tools:
   - Grep
   - WebFetch
   - WebSearch
+  - AskUserQuestion
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|Bash"
@@ -84,7 +85,39 @@ Use the **AskUserQuestion** tool to present pending tasks and options.
 ### Step 5: Create Plan
 Never start a task without task_plan.md. Non-negotiable.
 
-### Step 4: Complete Task
+### Step 6: User Approval (REQUIRED)
+After creating the plan, you MUST get user approval before executing:
+
+1. **Open plan file with Typora**: Use Bash to open the plan file
+   ```bash
+   open -a Typora ".claude/tmp/tasks/YYYY-MM-DD/<task-id>/task_plan.md"
+   ```
+
+2. **Ask user to review**: Use AskUserQuestion to request approval
+   ```json
+   {
+     "questions": [
+       {
+         "question": "Please review the plan above. Add your comments in the document. Should we proceed with this plan?",
+         "header": "Plan Review",
+         "options": [
+           {"label": "Approved - Proceed", "description": "Plan is good, start execution"},
+           {"label": "Needs Changes", "description": "I have comments, please update the plan"}
+         ],
+         "multiSelect": false
+       }
+     ]
+   }
+   ```
+
+3. **If user selects "Needs Changes"**:
+   - Read the updated plan file to see user's comments
+   - Modify the plan accordingly
+   - Repeat step 6 (open Typora again for user to review)
+
+4. **Only proceed to execution after user approval**
+
+### Step 7: Complete Task
 
 When all phases are complete:
 ```bash

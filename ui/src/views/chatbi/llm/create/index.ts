@@ -30,8 +30,6 @@ const createModelProviderForm = reactive({
   type: undefined,
   baseUrl: undefined,
   apiKey: undefined,
-  temperature: undefined,
-  maxTokens: undefined,
   defaultModel: undefined,
   optionalModels: undefined,
 });
@@ -40,7 +38,7 @@ const createModelProviderForm = reactive({
  * 可选模型
  */
 const selectableModels = computed(() => {
-  return createModelProviderForm.optionalModels
+  return (createModelProviderForm.optionalModels as any)
     ?.split("\n")
     .filter((item: string) => item !== "");
 });
@@ -57,7 +55,7 @@ const handleCreateModelProviderFormSubmit = (formData: any) => {
     temperature: formData.temperature,
     maxTokens: formData.maxTokens,
     defaultModel: formData.defaultModel,
-    optionalModels: createModelProviderForm.optionalModels
+    optionalModels: (createModelProviderForm.optionalModels as any)
       ?.split("\n")
       .filter((item: string) => item !== ""),
   })

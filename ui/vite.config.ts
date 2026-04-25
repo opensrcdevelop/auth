@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import {defineConfig, loadEnv} from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 import fs from "fs";
@@ -60,6 +60,11 @@ export default ({ mode }) => {
     plugins: [vue(), httpRedirectPlugin()],
     build: {
       outDir: "../auth-server/src/main/resources/ui",
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, "index.html"),
+        },
+      },
     },
     resolve: {
       alias: {

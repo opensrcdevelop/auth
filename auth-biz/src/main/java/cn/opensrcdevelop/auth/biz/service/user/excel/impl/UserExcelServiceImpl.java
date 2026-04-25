@@ -5,6 +5,7 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.constants.DataFilterEnum;
 import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
 import cn.opensrcdevelop.auth.biz.constants.UserAttrDataTypeEnum;
@@ -19,7 +20,6 @@ import cn.opensrcdevelop.auth.biz.entity.role.RoleMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.attr.UserAttrMapping;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroupMapping;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.auth.biz.service.role.RoleMappingService;
@@ -47,12 +47,14 @@ import com.alibaba.excel.EasyExcelFactory;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,8 +82,11 @@ public class UserExcelServiceImpl implements UserExcelService {
     private final ExcelTemplateGenerator templateGenerator;
     private final UserExcelExporter userExcelExporter;
     private final MailService mailService;
-    private final AsyncTaskSchedulerService asyncTaskSchedulerService;
     private final StorageService storageService;
+
+    @Resource
+    @Lazy
+    private AsyncTaskSchedulerService asyncTaskSchedulerService;
 
     private static final String EMAIL_ADDRESS_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private static final String PHONE_NUMBER_REGEX = "^1[3-9]\\d{9}$";
@@ -282,7 +287,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 3. 提交异步任务
         String taskId = asyncTaskSchedulerService.submitTask(
-                AsyncTaskType.USER_EXPORT.getCode(),
+                AsyncTaskTypeEnum.USER_EXPORT.getCode(),
                 UserExportAsyncTaskExecutor.TASK_NAME,
                 taskParams,
                 userId);
@@ -318,7 +323,7 @@ public class UserExcelServiceImpl implements UserExcelService {
 
         // 4. 提交异步任务
         String taskId = asyncTaskSchedulerService.submitTask(
-                AsyncTaskType.USER_IMPORT.getCode(),
+                AsyncTaskTypeEnum.USER_IMPORT.getCode(),
                 UserImportAsyncTaskExecutor.TASK_NAME,
                 taskParams,
                 userId);

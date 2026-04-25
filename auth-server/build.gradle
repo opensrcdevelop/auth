@@ -53,7 +53,7 @@ tasks.register('createSslCertificate') {
                     "-storepass", "changeit",
                     "-keypass", "changeit",
                     "-dname", "CN=auth.local.opensrcdevelop.cn,OU=Development,O=OpenSrcDevelop,L=Beijing,C=CN",
-                    "-ext", "SAN=DNS:auth.local.opensrcdevelop.cn,IP:127.0.0.1"
+                    "-ext", "SAN=DNS:auth.local.opensrcdevelop.cn,DNS:*.auth.local.opensrcdevelop.cn,IP:127.0.0.1"
                 ]
 
                 println "Generating PKCS12 keystore..."

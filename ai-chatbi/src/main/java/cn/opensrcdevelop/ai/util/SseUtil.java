@@ -1,18 +1,24 @@
 package cn.opensrcdevelop.ai.util;
 
+import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
+import cn.opensrcdevelop.ai.chat.tool.impl.AskUserTool;
 import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Random;
 
 public class SseUtil {
 
@@ -158,20 +164,26 @@ public class SseUtil {
      *            SseEmitter
      * @param answerId
      *            回答ID
+     * @param rewrittenQuestion
+     *            重写后的问题
      */
     public static void sendChatBIDone(SseEmitter emitter, String answerId, String rewrittenQuestion) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContextHolder.getChatContext().getChatId())
-                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .chatId(chatContext.getChatId())
+                        .questionId(chatContext.getQuestionId())
                         .answerId(answerId)
                         .rewrittenQuestion(rewrittenQuestion)
+                        .inputTokens(chatContext.getInputTokens().longValue())
+                        .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion, now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion,
+                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
     /**
@@ -181,16 +193,21 @@ public class SseUtil {
      *            SseEmitter
      */
     public static void sendChatBIDone(SseEmitter emitter) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
                 .event()
                 .data(ChatBIResponseDto.builder()
-                        .chatId(ChatContextHolder.getChatContext().getChatId())
-                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .chatId(chatContext.getChatId())
+                        .questionId(chatContext.getQuestionId())
+                        .rewrittenQuestion(chatContext.getQuestion())
+                        .inputTokens(chatContext.getInputTokens().longValue())
+                        .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, null, now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, chatContext.getQuestion(),
+                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
     /**
@@ -272,6 +289,26 @@ public class SseUtil {
     }
 
     /**
+     * 发送 ChatBI Markdown 报告
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param mdContent
+     *            Markdown 报告内容
+     */
+    public static void sendChatBIMdReport(SseEmitter emitter, String mdContent) {
+        Try.run(() -> emitter.send(SseEmitter
+                .event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .content(mdContent)
+                        .type(ChatContentType.MD_REPORT)
+                        .build(), MediaType.APPLICATION_JSON)));
+        chatMessageHistoryService.createChatMessageHistory(mdContent, ChatContentType.MD_REPORT);
+    }
+
+    /**
      * 发送 ChatBI 思考消息
      *
      * @param emitter
@@ -290,5 +327,51 @@ public class SseUtil {
         if (saveMessage) {
             chatMessageHistoryService.createChatMessageHistory(thinkingMsg, ChatContentType.THINKING);
         }
+    }
+
+    /**
+     * 发送向用户提问的消息
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param questions
+     *            问题列表
+     */
+    public static void sendChatBIAskUser(SseEmitter emitter, List<AskUserTool.Question> questions) {
+        Try.run(() -> emitter.send(SseEmitter.event()
+                .data(ChatBIResponseDto.builder()
+                        .chatId(ChatContextHolder.getChatContext().getChatId())
+                        .questionId(ChatContextHolder.getChatContext().getQuestionId())
+                        .content(questions)
+                        .type(ChatContentType.ASK_USER)
+                        .build(), MediaType.APPLICATION_JSON)));
+    }
+
+    /**
+     * 发送 SSE 心跳（空消息）
+     *
+     * @param emitter
+     *            SseEmitter
+     */
+    public static void sendHeartbeat(SseEmitter emitter) {
+        Try.run(() -> emitter.send(SseEmitter.event().data("")));
+    }
+
+    /**
+     * 发送 ChatBI 工具调用消息
+     *
+     * @param emitter
+     *            SseEmitter
+     * @param toolCallMsg
+     *            思考消息
+     */
+    @SuppressWarnings("java:S3457")
+    public static void sendChatBIToolCall(SseEmitter emitter, String toolCallMsg) {
+        String sendMsg = "\n%s - %s\n".formatted(
+                LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)),
+                toolCallMsg);
+
+        sendChatBIThinking(emitter, sendMsg, true);
     }
 }

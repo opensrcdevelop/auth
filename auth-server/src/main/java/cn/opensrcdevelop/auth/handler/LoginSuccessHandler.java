@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -117,12 +118,15 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
         responseDto.setConsoleAccess(Boolean.TRUE.equals(user.getConsoleAccess()));
 
         // 5. 检查密码强度
-        boolean checkRes = passwordPolicyService.checkLoginPasswordStrength(user.getUserId(),
-                request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY));
-        if (!checkRes) {
-            responseDto.setNeedChangePwd(true);
-            responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
-            setChangePwdSessionFlag(request);
+        String password = request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY);
+        if (StringUtils.isNotEmpty(password)) {
+            boolean checkRes = passwordPolicyService.checkLoginPasswordStrength(user.getUserId(),
+                    request.getParameter(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_FORM_PASSWORD_KEY));
+            if (!checkRes) {
+                responseDto.setNeedChangePwd(true);
+                responseDto.setChangePwdType(CHANGE_PWD_TYPE_1);
+                setChangePwdSessionFlag(request);
+            }
         }
 
         // 6. 记住我

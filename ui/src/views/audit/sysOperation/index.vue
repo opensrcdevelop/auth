@@ -88,7 +88,7 @@ export default indexTs;
       <a-range-picker
         position="br"
         value-format="YYYY-MM-DD HH:mm:ss"
-        :disabledDate="(current) => getDayjs(current).isAfter(new Date())"
+        :disabledDate="(current: any) => getDayjs(current).isAfter(new Date())"
         :shortcuts="[
           {
             label: '近 7 天',
@@ -158,7 +158,7 @@ export default indexTs;
                 <span v-else-if="column.key === 'type'">
                   {{
                     operationTypes.find(
-                      (item) => item.value === record[column.key]
+                      (item) => item.value === record[column.key],
                     )?.label
                   }}
                 </span>
@@ -265,7 +265,7 @@ export default indexTs;
       :mask="false"
       :width="680"
       :modal-style="{
-        border: '1px solid var(--color-neutral-3)'
+        border: '1px solid var(--color-neutral-3)',
       }"
       @cancel="objChangesModalVisible = false"
     >

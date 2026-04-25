@@ -4,13 +4,18 @@
       <div class="empty-container" v-if="!messages.length">
         {{ greetingText }}
       </div>
-      <ChatMessage
-        :messages="messages"
-        @send-message="sendMessage"
-      />
+      <ChatMessage :messages="messages" @send-message="sendMessage" />
     </div>
+    <!-- 用户回答弹窗 -->
+    <AskUserDialog
+      :visible="askUserVisible"
+      :questions="askUserQuestions"
+      @submit="handleAskUserSubmit"
+      @cancel="handleAskUserCancel"
+    />
     <div class="input-area">
       <a-textarea
+        ref="inputRef"
         class="no-border-textarea"
         placeholder="请输入您的问题..."
         :auto-size="{
@@ -44,7 +49,6 @@
               allow-search
               :bordered="false"
               v-model="selectedModel"
-              style="width: 260px;"
             >
               <a-optgroup
                 v-for="item in modelProviderList"
@@ -55,13 +59,21 @@
                   v-for="(model, index) in item.optionalModels"
                   :key="index"
                   :value="`${item.id}:${model.name}`"
-                  >{{ model.name }}</a-option
+                >
+                  {{ model.name }}</a-option
                 >
               </a-optgroup>
             </a-select>
           </a-space>
         </div>
-        <div>
+        <div style="display: flex; align-items: center">
+          <a-tooltip content="显示思考过程">
+            <a-switch
+              v-model="showThinking"
+              size="small"
+              style="margin-right: 12px"
+            />
+          </a-tooltip>
           <a-button
             type="primary"
             shape="circle"
@@ -92,19 +104,27 @@
 import {useEventSource} from "@/hooks/useEventSource";
 import {nextTick, reactive, ref, watch} from "vue";
 import {generateRandomString, handleApiError, handleApiSuccess,} from "@/util/tool";
-import {getEnabledDataSourceConf, getEnabledModelProvider, getUserChatMessageHistory,} from "@/api/chatbi";
+import {
+  getEnabledDataSourceConf,
+  getEnabledModelProvider,
+  getUserChatMessageHistory,
+  handleUserResponse,
+} from "@/api/chatbi";
 import {Message} from "@arco-design/web-vue";
 import ChatMessage from "./components/ChatMessage.vue";
+import AskUserDialog from "./components/AskUserDialog.vue";
 
 const props = withDefaults(
   defineProps<{
     chatId: string;
     dataSourceId: string;
+    height?: string;
   }>(),
   {
     chatId: undefined,
     dataSourceId: undefined,
-  }
+    height: "100%",
+  },
 );
 
 const emits = defineEmits<{
@@ -112,20 +132,43 @@ const emits = defineEmits<{
 }>();
 
 const { abort, fetchStream } = useEventSource();
-const messageContainer = ref(null);
-const messages = reactive([]);
+const messageContainer = ref(null as any);
+const inputRef = ref(null as any);
+const messages = reactive([] as any[]);
 const userInput = ref("");
 const loading = ref(false);
 const questionId = ref("");
-const dataSourceList = reactive([]);
-const modelProviderList = reactive([]);
+const askUserVisible = ref(false);
+const askUserQuestions = ref([] as any[]);
+const dataSourceList = reactive([] as any[]);
+const modelProviderList = reactive([] as any[]);
 const selectedDataSource = ref("");
 const selectedModel = ref("");
 const greetingText = ref("");
 const activeChatId = ref("");
 
+// 思考过程显示偏好
+const SHOW_THINKING_KEY = "chatbi_show_thinking";
+const showThinking = ref(true);
+
+/**
+ * 聚焦输入框
+ */
+const focusInput = () => {
+  nextTick(() => {
+    if (inputRef.value) {
+      inputRef.value.focus();
+    }
+  });
+};
+
 const init = () => {
   greetingText.value = greeting();
+  // 从 localStorage 读取思考过程显示偏好
+  const stored = localStorage.getItem(SHOW_THINKING_KEY);
+  if (stored !== null) {
+    showThinking.value = stored === "true";
+  }
   activeChatId.value = "";
   messages.length = 0;
   // 获取已启用的数据源
@@ -156,6 +199,9 @@ const init = () => {
     .catch((err: any) => {
       handleApiError(err, "获取模型提供商列表");
     });
+
+  // 聚焦输入框
+  focusInput();
 };
 
 defineExpose({
@@ -169,6 +215,8 @@ watch(
     if (newVal && newVal !== activeChatId.value) {
       activeChatId.value = newVal;
       handleGetChatMessageHistory(newVal);
+      // 聚焦输入框
+      focusInput();
     }
 
     // 开启新对话
@@ -176,15 +224,17 @@ watch(
       activeChatId.value = "";
       selectedDataSource.value = "";
       messages.length = 0;
+      // 聚焦输入框
+      focusInput();
     }
-  }
+  },
 );
 
 watch(
   () => props.dataSourceId,
   (newVal) => {
     selectedDataSource.value = newVal;
-  }
+  },
 );
 
 /**
@@ -197,6 +247,21 @@ const handleGetChatMessageHistory = (chatId: string) => {
       data.forEach((item: any) => {
         handleMessage(item);
       });
+      // 历史消息加载完成后，标记有 DONE 的 THINKING 消息为折叠
+      // 使用 replace 方式确保响应式更新
+      const updatedMessages = messages.map((msg) => {
+        if (msg.type === "THINKING") {
+          const hasDone = messages.some(
+            (m) => m.type === "DONE" && m.questionId === msg.questionId,
+          );
+          if (hasDone) {
+            return {...msg, done: true};
+          }
+        }
+        return msg;
+      });
+      messages.length = 0;
+      messages.push(...updatedMessages);
     });
   });
 };
@@ -264,6 +329,7 @@ const sendMessage = (input: string) => {
       model: selectedModel.value.split(":")[1],
       dataSourceId: selectedDataSource.value,
       chatId: activeChatId.value,
+      showThinking: showThinking.value,
     },
     onMessage: (message) => handleMessage(message),
     onError: (error) => {
@@ -271,12 +337,27 @@ const sendMessage = (input: string) => {
       loading.value = false;
       const loadingItem = messages.find(
         (item) =>
-          item.questionId === questionId.value && item.type === "LOADING"
-      );
+          (item as any).questionId === questionId.value &&
+          (item as any).type === "LOADING",
+      ) as any;
       if (loadingItem) {
         loadingItem.loading = false;
         loadingItem.error = true;
-        loadingItem.content = "发生了未知错误";
+
+        if (error instanceof Response) {
+          const status = error.status;
+          if (status === 401) {
+            loadingItem.content = "未登录，请先登录";
+          } else if (status === 403) {
+            loadingItem.content = "无权限访问，请联系管理员";
+          } else if (status === 500) {
+            loadingItem.content = "服务器内部错误";
+          } else {
+            loadingItem.content = "发生了未知错误";
+          }
+        } else {
+          loadingItem.content = "发生了未知错误";
+        }
       }
       abort();
     },
@@ -295,15 +376,48 @@ const sendMessage = (input: string) => {
  */
 const resendMessage = (qId: string) => {
   const userQuestion = messages.find(
-    (item) => item.questionId === qId && item.role === "USER"
+    (item) => item.questionId === qId && item.role === "USER",
   );
   sendMessage(userQuestion.content);
 };
 
 /**
+ * 提交用户回答
+ */
+const handleAskUserSubmit = async (data: {
+  answers: { questionId: string; answer: any }[];
+}) => {
+  askUserVisible.value = false;
+  try {
+    await handleUserResponse({
+      chatId: activeChatId.value || props.chatId,
+      answers: data.answers,
+    });
+  } catch (error) {
+    handleApiError(error, "提交回答失败");
+  }
+};
+
+/**
+ * 取消用户回答
+ */
+const handleAskUserCancel = async () => {
+  askUserVisible.value = false;
+  try {
+    await handleUserResponse({
+      chatId: activeChatId.value || props.chatId,
+      answers: [],
+    });
+  } catch (error) {
+    handleApiError(error, "取消回答失败");
+  }
+  askUserQuestions.value = [];
+};
+
+/**
  * 处理消息
  */
-const handleMessage = (message) => {
+const handleMessage = (message: any) => {
   scrollToBottom();
   activeChatId.value = message.chatId;
   // 如果当前对话为全新对话，则更新对话历史
@@ -321,11 +435,19 @@ const handleMessage = (message) => {
     loading.value = false;
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
-    if (loadingItem) {
+    if (loadingItem && message.answerId) {
       loadingItem.loading = false;
       loadingItem.content = "回答完成";
+    }
+    // 标记对应的 THINKING 消息，自动折叠
+    const thinkingItem = messages.find(
+      (item) =>
+        item.questionId === message.questionId && item.type === "THINKING",
+    );
+    if (thinkingItem) {
+      thinkingItem.done = true;
     }
     messages.push({
       role: "assistant",
@@ -335,6 +457,8 @@ const handleMessage = (message) => {
       answerId: message.answerId,
       actionType: message.actionType,
       rewrittenQuestion: message.rewrittenQuestion,
+      inputTokens: message.inputTokens,
+      outputTokens: message.outputTokens,
       time: message.time,
       feedback: message.feedback,
     });
@@ -345,7 +469,7 @@ const handleMessage = (message) => {
   if (message.type === "LOADING") {
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.content = message.content;
@@ -355,10 +479,19 @@ const handleMessage = (message) => {
     return;
   }
 
+  // 处理向用户提问
+  if (message.type === "ASK_USER") {
+    askUserQuestions.value = message.content || [];
+
+    console.log("askUserQuestions", askUserQuestions.value);
+    askUserVisible.value = true;
+    return;
+  }
+
   if (message.type === "ERROR") {
     const loadingItem = messages.find(
       (item) =>
-        item.questionId === message.questionId && item.type === "LOADING"
+        item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -376,7 +509,12 @@ const handleMessage = (message) => {
 
     // 类型相同，合并内容
     if (last.type === message.type) {
-      if (["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(message.type) && message.content) {
+      if (
+        ["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(
+          message.type,
+        ) &&
+        message.content
+      ) {
         last.content += message.content;
       } else if (["ECHARTS", "TABLE"].includes(message.type)) {
         last.content = message.content;
@@ -410,7 +548,7 @@ const stopGenerating = (qId: string = questionId.value) => {
   loading.value = false;
   if (messages.length > 0) {
     const loadingItem = messages.find(
-      (item) => item.questionId === qId && item.type === "LOADING"
+      (item) => item.questionId === qId && item.type === "LOADING",
     );
     if (loadingItem) {
       loadingItem.loading = false;
@@ -418,6 +556,19 @@ const stopGenerating = (qId: string = questionId.value) => {
     }
   }
 };
+
+/**
+ * 切换思考过程显示
+ */
+const toggleShowThinking = () => {
+  showThinking.value = !showThinking.value;
+  localStorage.setItem(SHOW_THINKING_KEY, String(showThinking.value));
+};
+
+// 监听 showThinking 变化，同步到 localStorage
+watch(showThinking, (newVal) => {
+  localStorage.setItem(SHOW_THINKING_KEY, String(newVal));
+});
 
 /**
  * 将消息容器滚动到底部
@@ -433,7 +584,7 @@ const scrollToBottom = () => {
 
 <style scoped lang="scss">
 .chat-container {
-  height: calc(100vh - 200px);
+  height: v-bind(height);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -464,7 +615,6 @@ const scrollToBottom = () => {
   background-image: url('data:image/svg+xml;utf8,<svg t="1756736588621" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1736" width="200" height="200"><path d="M239.445333 14.961778c-6.940444-19.911111-17.976889-19.911111-24.917333 0l-38.513778 112.753778c-6.656 19.911111-28.672 41.870222-48.924444 48.810666l-112.071111 38.115556c-20.024889 6.997333-20.024889 17.976889 0 24.917333l111.502222 38.684445c19.911111 6.997333 41.984 28.956444 48.924444 48.924444l39.082667 112.981333c6.940444 19.911111 17.976889 19.911111 24.917333 0l37.944889-112.412444c6.656-19.968 28.672-41.927111 48.64-48.924445l114.119111-38.968888c19.911111-6.940444 19.911111-17.92 0-24.860445L327.68 177.095111c-19.911111-6.599111-41.984-28.615111-48.924444-48.526222-0.284444 0.284444-39.367111-113.607111-39.367112-113.607111z" fill="%23fff" p-id="1737"></path><path d="M512 398.222222h56.888889v170.666667H512zM739.555556 398.222222h56.888888v170.666667h-56.888888z" fill="%23fff" p-id="1738"></path></svg>');
   background-repeat: no-repeat;
   background-position: bottom -100px right;
-  background-size: 330px 330px;
   font-size: 28px;
   color: #6b5454;
   text-align: center;

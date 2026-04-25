@@ -44,7 +44,11 @@ export default indexTs;
               </a-col>
               <a-col :span="12">
                 <a-form-item field="type" label="模型提供商类型">
-                  <a-select v-model="modelProviderInfoForm.type" disabled>
+                  <a-select
+                    placeholder="请选择模型提供商类型"
+                    v-model="modelProviderInfoForm.type"
+                    disabled
+                  >
                     <a-option
                       v-for="item of modelProviderTypeList"
                       :value="item.value"
@@ -70,28 +74,11 @@ export default indexTs;
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item field="temperature" label="温度参数">
-                  <a-input-number
-                    v-model="modelProviderInfoForm.temperature"
-                    :min="0"
-                    hide-button
-                    placeholder="请输入温度参数"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item field="maxTokens" label="最大输出 token 长度">
-                  <a-input-number
-                    v-model="modelProviderInfoForm.maxTokens"
-                    :min="50"
-                    hide-button
-                    placeholder="请输入最大输出 token 长度"
-                  />
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
                 <a-form-item field="defaultModel" label="默认模型">
-                  <a-select v-model="modelProviderInfoForm.defaultModel">
+                  <a-select
+                    placeholder="请选择默认模型"
+                    v-model="modelProviderInfoForm.defaultModel"
+                  >
                     <a-option
                       v-for="item of optionalModelList"
                       :value="item.name"
@@ -138,12 +125,12 @@ export default indexTs;
               </a-table-column>
               <a-table-column title="已使用输入 token 数">
                 <template #cell="{ record }">
-                  <span>{{ record.usedReqTokens.toLocaleString() }}</span>
+                  <span>{{ record.usedInputTokens?.toLocaleString() }}</span>
                 </template>
               </a-table-column>
               <a-table-column title="已使用输出 token 数">
                 <template #cell="{ record }">
-                  <span>{{ record.usedRepTokens.toLocaleString() }}</span>
+                  <span>{{ record.usedOutputTokens?.toLocaleString() }}</span>
                 </template>
               </a-table-column>
               <a-table-column title="操作" :width="80">

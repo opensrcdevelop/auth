@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.auth.config;
 
+import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.auth.filter.TenantContextFilter;
 import cn.opensrcdevelop.auth.interceptor.OAuth2ContextInterceptor;
@@ -37,7 +38,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         OAuth2ContextInterceptor oAuth2ContextInterceptor = new OAuth2ContextInterceptor();
         TraceUserInterceptor traceUserInterceptor = new TraceUserInterceptor();
         OpenApiInterceptor openApiInterceptor = new OpenApiInterceptor(
-                SpringContextUtil.getBean(SystemSettingService.class));
+                SpringContextUtil.getBean(SystemSettingService.class),
+                SpringContextUtil.getBean(ClientService.class));
 
         registry.addInterceptor(restResponseInterceptor)
                 .addPathPatterns("/**")

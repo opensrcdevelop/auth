@@ -25,6 +25,8 @@ Your task is to fix the given Python code according to the error information and
    - Fix only the problematic parts of the code
    - Ensure code remains stateless and follows best practices
    - Maintain the required analysis methods and output format
+   - **Stdout Output Format**: All analysis results MUST be printed to stdout using print() in "指标: 值 单位" format, one result per line
+   - **STRICTLY PROHIBIT FILE WRITING**: DO NOT use open() with write mode, pandas file export methods (to_csv, to_excel, to_json, to_sql), csv.writer, json.dump, pickle.dump or any file serialization
 
 3. **Code Quality**:
    - Ensure fixed code is syntactically correct

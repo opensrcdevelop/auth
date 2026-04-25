@@ -1,11 +1,9 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.auth.biz.constants.AuthorizeTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.DebugPermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRequestDto;
@@ -13,10 +11,16 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpRespons
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamConfigDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestApproveRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestCreateDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestItemResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestResponseDto;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
+import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -29,10 +33,11 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "API-Permission", description = "接口-权限管理")
 @RestController
@@ -45,6 +50,7 @@ public class PermissionController {
     private final AuthorizeService authorizeService;
     private final PermissionExpService permissionExpService;
     private final PermissionExpTemplateService permissionExpTemplateService;
+    private final PermissionRequestService permissionRequestService;
 
     @Operation(summary = "创建权限", description = "创建权限")
     @PostMapping
@@ -58,7 +64,7 @@ public class PermissionController {
     @PostMapping("/authorize")
     @Authorize({"allPermPermissions", "authorizePermission"})
     public void authorize(@RequestBody @Valid AuthorizeRequestDto requestDto) {
-        authorizeService.authorize(requestDto);
+        authorizeService.authorize(requestDto, AuthorizeTypeEnum.ADMINISTRATOR_GRANT);
     }
 
     @Operation(summary = "创建权限表达式", description = "创建权限表达式")
@@ -145,6 +151,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}/permissions")
+    @Authorize({"allPermPermissions", "listExpPermissions"})
     public List<PermissionResponseDto> expPermissions(@PathVariable @NotBlank String id) {
         return permissionExpService.expPermissions(id);
     }
@@ -270,5 +277,86 @@ public class PermissionController {
     @Authorize({"allPermissionExpTemplatePermissions", "getPermissionExpTemplateExps"})
     public List<PermissionExpResponseDto> listTemplatePermissionExp(@PathVariable @NotBlank String id) {
         return permissionExpTemplateService.getPermissionExpList(id);
+    }
+
+    @Operation(summary = "获取当前用户权限", description = "获取当前用户已有的权限列表")
+    @GetMapping("/me")
+    public List<PermissionResponseDto> getCurrentUserPermissions() {
+        return permissionService.getCurrentUserPermissions();
+    }
+
+    @Operation(summary = "获取可申请权限树", description = "获取当前用户可申请的权限树")
+    @GetMapping("/available-tree")
+    public List<PermissionTreeNodeResponseDto> getAvailablePermissionTree() {
+        return permissionService.getAvailablePermissionTree();
+    }
+
+    @Operation(summary = "提交权限申请", description = "提交权限申请")
+    @PostMapping("/request")
+    public void submitPermissionRequest(@RequestBody @Valid PermissionRequestCreateDto requestDto) {
+        permissionRequestService.submitRequest(requestDto);
+    }
+
+    @Operation(summary = "获取当前用户权限申请列表", description = "获取当前用户权限申请列表")
+    @Parameters({
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+    })
+    @GetMapping("/request/me")
+    public PageData<PermissionRequestResponseDto> getCurrentUserPermissionRequests(
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size) {
+        return permissionRequestService.listRequests(List.of(AuthUtil.getCurrentUserId()), null, page, size, null);
+    }
+
+    @Operation(summary = "获取当前用户权限申请明细", description = "获取当前用户权限申请明细")
+    @Parameters({
+            @Parameter(name = "id", description = "权限申请ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/request/me/{id}/items")
+    public List<PermissionRequestItemResponseDto> getCurrentUserPermissionRequestItems(
+            @PathVariable @NotBlank String id) {
+        return permissionRequestService.listRequestItems(AuthUtil.getCurrentUserId(), id);
+    }
+
+    @Operation(summary = "取消权限申请", description = "取消权限申请")
+    @Parameters({
+            @Parameter(name = "id", description = "权限申请ID", in = ParameterIn.PATH, required = true)
+    })
+    @DeleteMapping("/request/me/{id}")
+    public void cancelPermissionRequest(@PathVariable @NotBlank String id) {
+        permissionRequestService.cancelRequest(id);
+    }
+
+    @Operation(summary = "获取权限申请列表", description = "获取权限申请列表")
+    @Parameters({
+            @Parameter(name = "page", description = "页数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "size", description = "条数", in = ParameterIn.QUERY, required = true),
+            @Parameter(name = "keyword", description = "用户名搜索关键词", in = ParameterIn.QUERY),
+            @Parameter(name = "pendingOnly", description = "只查看待审批的权限申请", in = ParameterIn.QUERY)
+    })
+    @GetMapping("/request/list")
+    @Authorize({"allPermissionRequestPermissions", "getPermissionRequestList"})
+    public PageData<PermissionRequestResponseDto> listRequests(
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean pendingOnly) {
+        return permissionRequestService.listRequests(null, keyword, page, size, pendingOnly);
+    }
+
+    @Operation(summary = "审批权限申请", description = "审批权限申请")
+    @PostMapping("/request/approve")
+    @Authorize({"allPermissionRequestPermissions", "approvePermissionRequest"})
+    public void approvePermissionRequest(@RequestBody @Valid PermissionRequestApproveRequestDto requestDto) {
+        permissionRequestService.approveRequest(requestDto);
+    }
+
+    @Operation(summary = "获取权限申请详情", description = "获取权限申请详情")
+    @Parameters({
+            @Parameter(name = "id", description = "权限申请ID", in = ParameterIn.PATH, required = true)
+    })
+    @GetMapping("/request/{id}/detail")
+    @Authorize({"allPermissionRequestPermissions", "getPermissionRequestDetail"})
+    public PermissionRequestResponseDto getPermissionRequestDetail(@PathVariable @NotBlank String id) {
+        return permissionRequestService.detail(id);
     }
 }

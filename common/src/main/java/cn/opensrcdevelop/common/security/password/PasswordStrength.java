@@ -1,7 +1,11 @@
 package cn.opensrcdevelop.common.security.password;
 
 public enum PasswordStrength {
-    NONE, LOW, MEDIUM, HIGH, CUSTOM;
+    NONE,
+    LOW,
+    MEDIUM,
+    HIGH,
+    CUSTOM;
 
     public static PasswordStrength fromOrdinal(int ordinal) {
         for (PasswordStrength strength : PasswordStrength.values()) {

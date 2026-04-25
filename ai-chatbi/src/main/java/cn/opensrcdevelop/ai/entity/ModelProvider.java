@@ -45,14 +45,6 @@ public class ModelProvider extends BaseEntity implements Serializable {
     @PropertyName("默认模型")
     private String defaultModel;
 
-    /** 模型温度 */
-    @PropertyName("模型温度")
-    private Double temperature;
-
-    /** 模型最大令牌数 */
-    @PropertyName("模型最大令牌数")
-    private Integer maxTokens;
-
     /** 模型是否启用 */
     @PropertyName("模型是否启用")
     private Boolean enabled;

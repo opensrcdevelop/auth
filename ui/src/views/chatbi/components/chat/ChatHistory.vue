@@ -1,4 +1,10 @@
 <template>
+  <!-- 遮罩层：点击可折叠 -->
+  <div
+    v-if="isOverlay && !isCollapsed"
+    class="chat-history-overlay"
+    @click="toggleCollapse"
+  />
   <div
     class="chat-history-container"
     :class="{
@@ -137,8 +143,17 @@ import {onMounted, onUnmounted, reactive, ref} from "vue";
 const emits = defineEmits<{
   (e: "switchChat", chatId: string): void;
   (e: "addNewChat"): void;
-  (e: "updateDataSourceId", dataSourceId: string);
+  (e: "updateDataSourceId", dataSourceId: string): any;
 }>();
+
+withDefaults(
+  defineProps<{
+    height?: string;
+  }>(),
+  {
+    height: '100%',
+  }
+);
 
 const isCollapsed = ref(false);
 const isOverlay = ref(false);
@@ -169,7 +184,7 @@ const toggleCollapse = () => {
  * 对话历史记录
  */
 const searchKeyword = ref("");
-const chatHistoryList = reactive([]);
+const chatHistoryList = reactive([] as any[]);
 const handleGetChatHistoryList = () => {
   getUserChatHistory(searchKeyword.value)
     .then((result: any) => {
@@ -258,7 +273,7 @@ const updateTitleForm = reactive({
 const updateTitleFormRules = {
   title: [
     {
-      validator: (value, cb) => {
+      validator: (value: any, cb: any) => {
         if (!value || value.trim().length === 0) {
           cb("对话标题不能为空");
         } else {
@@ -269,7 +284,7 @@ const updateTitleFormRules = {
   ],
 };
 const handleUpdateTitleFormSubmit = () => {
-  updateTitleFormRef.value.validate((errors) => {
+  updateTitleFormRef.value.validate((errors: any) => {
     if (!errors) {
       updateChatHistoryTitle(updateTitleForm)
         .then((result: any) => {
@@ -293,10 +308,21 @@ const init = (chatId: string = "") => {
 
 defineExpose({
   init,
+  activeChatId,
+  chatHistoryList,
 });
 </script>
 
 <style scoped lang="scss">
+.chat-history-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
 .chat-history-container {
   background-color: #f7f8fa;
   margin-right: 16px;
@@ -304,7 +330,7 @@ defineExpose({
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
-  height: calc(100vh - 200px);
+  height: v-bind(height);
 
   &.collapsed {
     width: 44px;

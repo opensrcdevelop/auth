@@ -1,0 +1,154 @@
+name: Deploy Docker Image To Remote Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: 'docker image tag'
+        type: string
+        required: true
+      registry:
+        description: 'select registry'
+        type: choice
+        required: true
+        options:
+          - ccr.ccs.tencentyun.com/opensrcdevelop/auth-server
+          - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server
+          - registry.cn-hangzhou.aliyuncs.com/opensrcdevelop/auth-server-quickstart
+      containerName:
+        description: 'container name'
+        type: string
+        required: true
+        default: auth-server
+
+jobs:
+  deploy-to-remote:
+    name: Deploy To Remote Host
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.DOCKER_DEPLOY_SSH_PK }}
+
+      - name: Add Host to Known Hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.DOCKER_DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Backup Container Config
+        id: backup
+        run: |
+          echo "backup container config..."
+
+          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            if docker ps -a | grep -q ${{ inputs.containerName }}; then
+              PORTS=\$(docker inspect --format='{{range .HostConfig.PortBindings}}{{.HostIp}}:{{.HostPort}}->{{.ContainerPort}}/{{.Protocol}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
+              ENVS=\$(docker inspect --format='{{range .Config.Env}}{{.}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
+              VOLUMES=\$(docker inspect --format='{{range .Mounts}}{{.Source}}:{{.Destination}}:{{.Mode}} {{end}}' ${{ inputs.containerName }} 2>/dev/null || echo '')
+              NETWORK=\$(docker inspect --format='{{.HostConfig.NetworkMode}}' ${{ inputs.containerName }} 2>/dev/null || echo 'bridge')
+              RESTART=\$(docker inspect --format='{{.HostConfig.RestartPolicy.Name}}' ${{ inputs.containerName }} 2>/dev/null || echo 'always')
+
+              echo \"PORTS=\${PORTS}\" > /tmp/config_${{ inputs.containerName }}.txt
+              echo \"ENVS=\${ENVS}\" >> /tmp/config_${{ inputs.containerName }}.txt
+              echo \"VOLUMES=\${VOLUMES}\" >> /tmp/config_${{ inputs.containerName }}.txt
+              echo \"NETWORK=\${NETWORK}\" >> /tmp/config_${{ inputs.containerName }}.txt
+              echo \"RESTART=\${RESTART}\" >> /tmp/config_${{ inputs.containerName }}.txt
+            else
+              echo 'PORTS=' > /tmp/config_${{ inputs.containerName }}.txt
+              echo 'ENVS=' >> /tmp/config_${{ inputs.containerName }}.txt
+              echo 'VOLUMES=' >> /tmp/config_${{ inputs.containerName }}.txt
+              echo 'NETWORK=bridge' >> /tmp/config_${{ inputs.containerName }}.txt
+              echo 'RESTART=always' >> /tmp/config_${{ inputs.containerName }}.txt
+            fi
+          "
+
+          # 设置 GitHub Actions 输出
+          echo "PORTS=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^PORTS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "ENVS=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^ENVS=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "VOLUMES=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^VOLUMES=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "NETWORK=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^NETWORK=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+          echo "RESTART=$(ssh ${{ secrets.DOCKER_DEPLOY_HOST }} 'cat /tmp/config_${{ inputs.containerName }}.txt' | grep '^RESTART=' | cut -d= -f2-)" >> $GITHUB_OUTPUT
+
+      - name: Cleanup Old Container And Image
+        run: |
+          echo "========================================="
+          echo "cleanup old container and image"
+          echo "========================================="
+
+          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            echo 'stop and remove old container...'
+            docker stop ${{ inputs.containerName }} 2>/dev/null || true
+            docker rm ${{ inputs.containerName }} 2>/dev/null || true
+            echo 'remove old image...'
+            docker rmi \$(docker images -q ${{ inputs.registry }}:${{ inputs.imageTag }}) 2>/dev/null || true
+            echo 'cleanup done'
+          "
+
+      - name: Execute Docker Pull On Remote Host
+        run: |
+          FULL_IMAGE="${{ inputs.registry }}:${{ inputs.imageTag }}"
+          echo "========================================="
+          echo "docker pull ${FULL_IMAGE}"
+          echo "========================================="
+
+          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            echo 'docker pull...'
+            docker pull ${FULL_IMAGE}
+            echo 'done'
+          "
+
+      - name: Start New Container With Original Config
+        run: |
+          FULL_IMAGE="${{ inputs.registry }}:${{ inputs.imageTag }}"
+          PORTS="${{ steps.backup.outputs.PORTS }}"
+          ENVS="${{ steps.backup.outputs.ENVS }}"
+          VOLUMES="${{ steps.backup.outputs.VOLUMES }}"
+          NETWORK="${{ steps.backup.outputs.NETWORK }}"
+          RESTART="${{ steps.backup.outputs.RESTART }}"
+
+          echo "========================================="
+          echo "start new container with original config"
+          echo "container: ${{ inputs.containerName }}"
+          echo "image: ${FULL_IMAGE}"
+          echo "========================================="
+
+          # 构建 docker run 命令
+          CMD="docker run -d --name ${{ inputs.containerName }}"
+
+          # 添加端口映射
+          for PORT in ${PORTS}; do
+            CMD="\$CMD -p \$PORT"
+          done
+
+          # 添加环境变量
+          for ENV in ${ENVS}; do
+            CMD="\$CMD -e \$ENV"
+          done
+
+          # 添加卷挂载
+          for VOLUME in ${VOLUMES}; do
+            CMD="\$CMD -v \$VOLUME"
+          done
+
+          # 添加网络模式
+          if [ -n "\$NETWORK" ] && [ "\$NETWORK" != "bridge" ]; then
+            CMD="\$CMD --network \$NETWORK"
+          fi
+
+          # 添加重启策略
+          CMD="\$CMD --restart \$RESTART"
+
+          # 添加镜像
+          CMD="\$CMD \${FULL_IMAGE}"
+
+          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "\$CMD"
+
+          echo 'container started'
+
+      - name: Verify Container Status
+        run: |
+          echo "verify container status..."
+
+          ssh ${{ secrets.DOCKER_DEPLOY_HOST }} "
+            docker ps -a | grep ${{ inputs.containerName }}
+          "

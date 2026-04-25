@@ -23,17 +23,22 @@ export default indexTs;
         <div class="chat-container">
           <ChatHistory
             ref="chatHistoryRef"
+            height="calc(100vh - 198px)"
             @switchChat="handleSwitchChat"
             @addNewChat="handleAddNewChat"
             @updateDataSourceId="handleUpdateDataSourceId"
           />
           <Chat
             ref="chatRef"
+            height="calc(100vh - 198px)"
             :chatId="chatId"
             :dataSourceId="dataSourceId"
             @updateChatHistory="handleUpdateChatHistory"
           />
         </div>
+      </a-tab-pane>
+      <a-tab-pane key="chat_settings" title="对话管理">
+        <ChatSettings ref="chatSettingsRef" />
       </a-tab-pane>
       <a-tab-pane key="data_source_management" title="数据源管理">
         <DataSourceManagement ref="dataSourceManagementRef" />
@@ -41,6 +46,9 @@ export default indexTs;
       <a-tab-pane key="llm_management" title="LLM 管理">
         <LLMManagement ref="llmManagementRef" />
       </a-tab-pane>
+      <a-tab-pane key="sample_sql_management" title="示例 SQL 管理">
+        <SampleSqlManagement ref="sampleSqlManagementRef" />
+      </a-tab-pane>
     </a-tabs>
-  </div>
+  </div> 
 </template>

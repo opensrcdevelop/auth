@@ -1,5 +1,5 @@
 import {checkTenant} from "@/api/tenant";
-import {AUTH_TOKENS, OAUTH_ISSUER, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
+import {AUTH_TOKENS, OAUTH_ISSUER, REDIRECT_PATH, REDIRECT_QUERY, TENANT_CODE, TENANT_NAME,} from "@/util/constants";
 import {getSubDomain} from "@/util/tool";
 import {Notification} from "@arco-design/web-vue";
 import {createRouter, createWebHistory, RouteRecordRaw} from "vue-router";
@@ -36,6 +36,13 @@ export const routes: RouteRecordRaw[] = [
     component: () => import("@/views/user/home/index.vue"),
     meta: {
       title: "个人中心",
+    },
+  },
+  {
+    path: "/chatbi/chat",
+    component: () => import("@/views/chatbi/chat/index.vue"),
+    meta: {
+      title: "ChatBI 对话",
     },
   },
   {
@@ -80,6 +87,10 @@ router.beforeEach((to, from, next) => {
       ) {
         next();
       } else {
+        localStorage.setItem(REDIRECT_PATH, to.path);
+         if (to.query) {
+          localStorage.setItem(REDIRECT_QUERY, JSON.stringify(to.query));
+        }
         router.push("/oauth2/redirect");
       }
     } else {

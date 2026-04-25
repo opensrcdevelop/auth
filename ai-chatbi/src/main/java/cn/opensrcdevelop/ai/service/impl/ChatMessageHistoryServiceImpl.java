@@ -12,14 +12,15 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +59,10 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      *
      * @param chatContentType
      *            消息类型
+     * @param inputTokens
+     *            输入 token 数
+     * @param outputTokens
+     *            输出 token 数
      * @param rewrittenQuestion
      *            重写后的问题
      * @param time
@@ -65,7 +70,7 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      */
     @Override
     public void createChatMessageHistory(ChatContentType chatContentType, String rewrittenQuestion,
-            LocalDateTime time) {
+            Long inputTokens, Long outputTokens, LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
@@ -76,6 +81,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setType(chatContentType.name());
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
+        chatMessageHistory.setInputTokens(inputTokens);
+        chatMessageHistory.setOutputTokens(outputTokens);
         chatMessageHistory.setTime(time);
 
         asyncSaveChatMessageHistory(chatMessageHistory);
@@ -90,11 +97,16 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      *            回答ID
      * @param rewrittenQuestion
      *            重写后的问题
+     * @param inputTokens
+     *            输入 token 数
+     * @param outputTokens
+     *            输出 token 数
      * @param time
      *            时间
      */
     @Override
     public void createChatMessageHistory(ChatContentType chatContentType, String answerId, String rewrittenQuestion,
+            Long inputTokens, Long outputTokens,
             LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
@@ -107,6 +119,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setRole(ChatRole.ASSISTANT.name());
         chatMessageHistory.setAnswerId(answerId);
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
+        chatMessageHistory.setInputTokens(inputTokens);
+        chatMessageHistory.setOutputTokens(outputTokens);
         chatMessageHistory.setTime(time);
 
         asyncSaveChatMessageHistory(chatMessageHistory);
@@ -159,6 +173,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                     .role(chatMessageHistory.getRole())
                     .type(chatMessageHistory.getType())
                     .rewrittenQuestion(chatMessageHistory.getRewrittenQuestion())
+                    .inputTokens(chatMessageHistory.getInputTokens())
+                    .outputTokens(chatMessageHistory.getOutputTokens())
                     .time(chatMessageHistory.getTime())
                     .answerId(chatMessageHistory.getAnswerId());
 
@@ -198,7 +214,6 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         return CommonUtil.stream(chatMessageHistoryList).map(ChatMessageHistory::getContent)
                 .filter(StringUtils::isNotBlank)
                 .map(StringUtils::trim)
-                .distinct()
                 .toList();
     }
 
@@ -214,20 +229,6 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         super.remove(Wrappers.<ChatMessageHistory>lambdaQuery()
                 .eq(ChatMessageHistory::getChatId, chatId)
                 .eq(ChatMessageHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName()));
-    }
-
-    /**
-     * 获取会话用户消息数量
-     *
-     * @param chatId
-     *            对话ID
-     * @return 用户消息数量
-     */
-    @Override
-    public int countUserMessages(String chatId) {
-        return Math.toIntExact(super.count(Wrappers.<ChatMessageHistory>lambdaQuery()
-                .eq(ChatMessageHistory::getChatId, chatId)
-                .eq(ChatMessageHistory::getRole, ChatRole.USER.name())));
     }
 
     private void asyncSaveChatMessageHistory(ChatMessageHistory chatMessageHistory) {

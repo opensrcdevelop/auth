@@ -1,10 +1,8 @@
 import {
   downloadUserTemplate,
-  exportUsers,
   exportUsersAsync,
   getUserAttrs,
   getUserList,
-  importUsers,
   importUsersAsync,
   removeUser,
   searchUser,
@@ -570,14 +568,8 @@ const handleExport = async (exportAll: boolean) => {
     const userIds = exportAll
       ? undefined
       : userList.map((u: any) => u.userId).filter(Boolean);
-    // 异步导出，返回 taskId
-    const res = await exportUsersAsync(filters, exportAll, userIds);
-    Notification.info({
-      content: "任务已提交，请在任务中心查看进度",
-      duration: 3000,
-    });
-    // 可选：跳转到任务中心
-    // router.push("/task/list");
+    await exportUsersAsync(filters, exportAll, userIds);
+    Notification.info("任务已提交，请在任务中心查看进度");
   } catch (err) {
     handleApiError(err, "导出");
   }
@@ -598,12 +590,7 @@ const handleFileChange = async (event: Event) => {
     try {
       // 异步导入，返回 taskId
       await importUsersAsync(file);
-      Notification.info({
-        content: "任务已提交，请在任务中心查看进度",
-        duration: 3000,
-      });
-      // 可选：跳转到任务中心
-      // router.push("/task/list");
+      Notification.info("任务已提交，请在任务中心查看进度");
     } catch (err) {
       handleApiError(err, "导入用户数据");
     }

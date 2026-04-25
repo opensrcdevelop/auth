@@ -46,6 +46,14 @@ public class ChatMessageHistory {
     @PropertyName("重写后的问题")
     private String rewrittenQuestion;
 
+    /** 输入 token 数 */
+    @PropertyName("输入 token 数")
+    private Long inputTokens;
+
+    /** 输出 token 数 */
+    @PropertyName("输出 token 数")
+    private Long outputTokens;
+
     /** 时间 */
     @PropertyName("时间")
     private LocalDateTime time;

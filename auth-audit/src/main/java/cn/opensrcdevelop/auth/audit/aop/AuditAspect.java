@@ -11,9 +11,6 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -33,6 +30,11 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeLocator;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -70,18 +72,21 @@ public class AuditAspect {
             throw ex;
         } finally {
             try {
-                AuditEvent auditEvent = null;
-                // 构建审计日志
-                AuditLog auditLog = buildAuditLog(auditAnnotation, isSuccess, exMsg, joinPoint);
-                auditEvent = new AuditEvent(auditLog, null);
+                // 检查是否是 API 调用
+                if (Objects.nonNull(RequestContextHolder.getRequestAttributes())) {
+                    AuditEvent auditEvent = null;
+                    // 构建审计日志
+                    AuditLog auditLog = buildAuditLog(auditAnnotation, isSuccess, exMsg, joinPoint);
+                    auditEvent = new AuditEvent(auditLog, null);
 
-                // 构建对象变化日志
-                if (isSuccess) {
-                    auditEvent = new AuditEvent(auditLog, buildObjChangeLogs());
+                    // 构建对象变化日志
+                    if (isSuccess) {
+                        auditEvent = new AuditEvent(auditLog, buildObjChangeLogs());
+                    }
+
+                    // 发布审计事件
+                    SpringContextUtil.publishEvent(auditEvent);
                 }
-
-                // 发布审计事件
-                SpringContextUtil.publishEvent(auditEvent);
             } catch (Exception e) {
                 log.error("审计日志记录失败", e);
             } finally {

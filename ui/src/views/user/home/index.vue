@@ -9,7 +9,11 @@ export default homeTs;
 </style>
 
 <template>
-  <div class="user-center-container">
+  <a-spin
+    class="user-center-container"
+    :loading="globalVariables.apiLoading"
+    tip="处理中，请稍候..."
+  >
     <div class="header">
       <div class="left">
         <div class="logo">
@@ -46,283 +50,34 @@ export default homeTs;
     <div class="main">
       <div class="tabs-container">
         <a-tabs
+          style="height: 100%"
           position="left"
           :active-key="activeTab"
           @change="handleTabChange"
         >
           <a-tab-pane key="user_info" title="个人信息">
-            <div class="card">
-              <a-spin
-                :loading="loading"
-                style="width: 100%"
-                tip="处理中，请稍后..."
-              >
-                <a-card title="个人信息">
-                  <template #extra>
-                    <a-button type="text" @click="handleUpdateMyUserInfo">
-                      <template #icon>
-                        <icon-save />
-                      </template>
-                      保存
-                    </a-button>
-                  </template>
-                  <a-form :model="userAttrs" layout="vertical">
-                    <a-row :gutter="24">
-                      <a-col
-                        :span="12"
-                        v-for="attr in userAttrs"
-                        :key="attr.key"
-                      >
-                        <a-form-item :label="attr.name">
-                          <a-input-number
-                            v-if="attr.dataType === 'NUMBER'"
-                            hide-button
-                            v-model="userInfo[attr.key]"
-                            :allowClear="attr.userEditable"
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请输入${attr.name}`"
-                          />
-                          <a-input
-                            v-if="attr.dataType === 'STRING'"
-                            v-model="userInfo[attr.key]"
-                            :allowClear="attr.userEditable"
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请输入${attr.name}`"
-                          />
-                          <a-select
-                            v-if="attr.dataType === 'BOOLEAN'"
-                            v-model="userInfo[attr.key]"
-                            :allowClear="attr.userEditable"
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请选择${attr.name}`"
-                          >
-                            <a-option :value="true">是</a-option>
-                            <a-option :value="false">否</a-option>
-                          </a-select>
-                          <a-date-picker
-                            style="width: 100%"
-                            v-if="attr.dataType === 'DATETIME'"
-                            show-time
-                            value-format="timestamp"
-                            v-model="userInfo[attr.key]"
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请选择${attr.name}`"
-                          />
-                          <a-date-picker
-                            style="width: 100%"
-                            v-if="attr.dataType === 'DATE'"
-                            value-format="timestamp"
-                            v-model="userInfo[attr.key]"
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请选择${attr.name}`"
-                          />
-                          <a-select
-                            v-if="attr.dataType === 'DICT' && !attr.cascadeDict"
-                            v-model="userInfo[attr.key]"
-                            allow-clear
-                            allow-search
-                            :disabled="!attr.userEditable"
-                            :placeholder="`请选择${attr.name}`"
-                          >
-                            <a-option
-                              :value="dictData.id"
-                              v-for="dictData in allDictDatas[attr.key]"
-                              :key="dictData.id"
-                              >{{ dictData.label }}</a-option
-                            >
-                          </a-select>
-                          <a-cascader
-                            v-if="attr.dataType === 'DICT' && attr.cascadeDict"
-                            v-model="userInfo[attr.key]"
-                            :placeholder="`请选择${attr.name}`"
-                            expand-trigger="hover"
-                            :options="allDictDatas[attr.key]"
-                            :field-names="{ value: 'id', label: 'label' }"
-                            allow-clear
-                            allow-search
-                          />
-                        </a-form-item>
-                      </a-col>
-                    </a-row>
-                  </a-form>
-                </a-card>
-              </a-spin>
-            </div>
+            <MyUserInfo
+              :userInfo="userInfo"
+              :activeKey="activeTab"
+              @userInfoUpdated="handleUserInfoUpdated"
+            />
           </a-tab-pane>
           <a-tab-pane key="account_binding" title="账号绑定">
-            <a-spin
-              :loading="loading"
-              style="width: 100%"
-              tip="处理中，请稍后..."
-            >
-              <div class="card">
-                <a-card title="手机号和邮箱">
-                  <div class="binding-card">
-                    <div class="icon-container">
-                      <div class="icon">
-                        <icon-email />
-                      </div>
-                      <span>邮箱</span>
-                      <span
-                        v-if="userInfo['emailAddress']"
-                        style="color: #396aff; margin-left: 8px"
-                        >{{ userInfo["emailAddress"] }}</span
-                      >
-                    </div>
-                    <div class="status-container">
-                      <div class="binding" v-if="!userInfo['emailAddress']">
-                        <a-button type="text" @click="handleOpenBindEmailModal">
-                          <template #icon>
-                            <icon-font type="icon-binding" />
-                          </template>
-                          绑定
-                        </a-button>
-                      </div>
-                      <div class="unbind" v-else>
-                        <a-button
-                          type="text"
-                          status="warning"
-                          @click="handleOpenUnbindEmailModal"
-                        >
-                          <template #icon>
-                            <icon-font type="icon-unbind" />
-                          </template>
-                          解除绑定
-                        </a-button>
-                      </div>
-                    </div>
-                  </div>
-                </a-card>
-              </div>
-              <div class="card" v-if="boundIdentitySource.length > 0">
-                <a-card title="第三方账号">
-                  <div
-                    class="binding-card"
-                    v-for="identitySource in boundIdentitySource"
-                    :key="identitySource.id"
-                  >
-                    <div class="icon-container">
-                      <div class="icon">
-                        <img
-                          class="identity-source-logo"
-                          :src="identitySource.logo"
-                          :draggable="false"
-                        />
-                      </div>
-                      <div class="name-container">
-                        <span>{{ identitySource.name }}</span>
-                        <span
-                          class="username"
-                          v-if="identitySource.bindUsername"
-                          >用户名：{{ identitySource.bindUsername }}</span
-                        >
-                      </div>
-                    </div>
-                    <div class="status-container">
-                      <div class="binding" v-if="!identitySource.isBind">
-                        <a-button
-                          type="text"
-                          @click="handleBindUser(identitySource)"
-                        >
-                          <template #icon>
-                            <icon-font type="icon-binding" />
-                          </template>
-                          绑定
-                        </a-button>
-                      </div>
-                      <div class="unbind" v-else>
-                        <a-button
-                          type="text"
-                          status="warning"
-                          @click="handleUnbindUser(identitySource)"
-                        >
-                          <template #icon>
-                            <icon-font type="icon-unbind" />
-                          </template>
-                          解除绑定
-                        </a-button>
-                      </div>
-                    </div>
-                  </div>
-                </a-card>
-              </div>
-              <!-- WebAuthn/Passkey 凭证管理 -->
-              <div class="card">
-                <a-card title="Passkey 凭证">
-                  <template #extra>
-                    <a-button
-                      type="text"
-                      @click="handleAddWebAuthnCredential"
-                      :loading="addingWebAuthnCredential"
-                    >
-                      <template #icon>
-                        <icon-plus />
-                      </template>
-                      添加凭证
-                    </a-button>
-                  </template>
-                  <a-table
-                    :data="webAuthnCredentials"
-                    :bordered="false"
-                    :pagination="false"
-                  >
-                    <template #columns>
-                      <a-table-column title="凭证 ID" ellipsis tooltip>
-                        <template #cell="{ record }">
-                          {{ record.id }}
-                        </template>
-                      </a-table-column>
-                      <a-table-column title="设备类型">
-                        <template #cell="{ record }">
-                          <a-tag
-                            v-if="record.deviceType === 'platform'"
-                            color="arcoblue"
-                          >
-                            平台设备
-                          </a-tag>
-                          <a-tag
-                            v-else-if="record.deviceType === 'cross-platform'"
-                            color="green"
-                          >
-                            跨平台设备
-                          </a-tag>
-                          <a-tag v-else>{{ record.deviceType }}</a-tag>
-                        </template>
-                      </a-table-column>
-                      <a-table-column title="创建时间">
-                        <template #cell="{ record }">
-                          {{ record.createdAt ? record.createdAt : "-" }}
-                        </template>
-                      </a-table-column>
-                      <a-table-column title="最后使用">
-                        <template #cell="{ record }">
-                          {{ record.lastUsedAt ? record.lastUsedAt : "-" }}
-                        </template>
-                      </a-table-column>
-                      <a-table-column title="操作" :width="80">
-                        <template #cell="{ record }">
-                          <a-popconfirm
-                            type="warning"
-                            content="确定删除此凭证吗？删除后无法使用该设备进行认证。"
-                            :ok-button-props="{ status: 'danger' }"
-                            @ok="handleDeleteWebAuthnCredential(record)"
-                          >
-                            <a-button status="danger" size="small">
-                              删除
-                            </a-button>
-                          </a-popconfirm>
-                        </template>
-                      </a-table-column>
-                    </template>
-                  </a-table>
-                </a-card>
-              </div>
-            </a-spin>
+            <AccountBinding :userInfo="userInfo" :activeKey="activeTab" />
+          </a-tab-pane>
+          <a-tab-pane key="my_permissions" title="我的权限">
+            <MyPermissions :activeKey="activeTab" />
+          </a-tab-pane>
+          <a-tab-pane key="apply_permission" title="申请权限">
+            <ApplyPermission :activeKey="activeTab" />
+          </a-tab-pane>
+          <a-tab-pane key="request_records" title="申请权限记录">
+            <RequestRecords :userInfo="userInfo" :activeKey="activeTab" />
           </a-tab-pane>
         </a-tabs>
       </div>
     </div>
-  </div>
+  </a-spin>
 
   <!-- 修改密码对话框 -->
   <a-modal
@@ -372,44 +127,6 @@ export default homeTs;
             >
           </a-space>
         </div>
-      </a-form-item>
-    </a-form>
-  </a-modal>
-
-  <!-- 绑定 / 解绑邮箱对话框 -->
-  <a-modal
-    :visible="bindOrUnbindEmailModalVisible"
-    @cancel="handleCoseBindOrUnbindEmailModal"
-    @ok="handleBindOrUnbindEmailFormSubmit"
-    :ok-loading="bindOrUnbindEmailFormSubmitLoading"
-  >
-    <template #title>{{ isBinding ? "绑定邮箱" : "解绑邮箱" }}</template>
-    <a-form
-      :model="bindOrUnbindEmailForm"
-      :rules="bindOrUnbindEmailFormRules"
-      ref="bindOrUnbindEmailFormRef"
-      layout="vertical"
-    >
-      <a-form-item field="email" label="邮箱">
-        <a-input
-          v-model="bindOrUnbindEmailForm.email"
-          :readonly="!isBinding"
-          placeholder="请输入邮箱"
-        />
-      </a-form-item>
-      <a-form-item field="code" label="验证码">
-        <a-input-group style="width: 100%">
-          <a-input
-            v-model="bindOrUnbindEmailForm.code"
-            placeholder="请输入验证码"
-          />
-          <a-button
-            type="primary"
-            :disabled="sendEmailCodeDisable"
-            @click="handleSendEmailCode"
-            >{{ sendEmailCodeBtnText }}</a-button
-          >
-        </a-input-group>
       </a-form-item>
     </a-form>
   </a-modal>

@@ -4,12 +4,11 @@ import cn.opensrcdevelop.ai.agent.SqlAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
+import cn.opensrcdevelop.ai.util.SseUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +17,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Component(ExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -30,10 +36,15 @@ public class ExecuteSqlTool implements MethodTool {
 
     private final SqlAgent sqlAgent;
     private final DataSourceManager dataSourceManager;
+    private final QueryResultTempFileManager queryResultTempFileManager;
+
+    @Value("${chatbi.max-sql-execution-retry-count:3}")
+    private Integer defaultMaxSqlExecutionRetryCount;
 
     @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
     public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
+        SseEmitter emitter = chatContext.getEmitter();
         Response response = new Response();
         if (StringUtils.isEmpty(chatContext.getSql())) {
             response.setSuccess(false);
@@ -49,20 +60,42 @@ public class ExecuteSqlTool implements MethodTool {
 
         chatContext.setQueryData(null);
 
+        var chatConfig = chatContext.getChatConfig();
+        int maxSqlExecutionRetryCount = Objects.nonNull(chatConfig)
+                && Objects.nonNull(chatConfig.getMaxSqlExecutionRetryCount())
+                        ? chatConfig.getMaxSqlExecutionRetryCount()
+                        : defaultMaxSqlExecutionRetryCount;
+
         var result = executeSqlWithFix(
                 chatContext.getChatClient(),
                 chatContext.getSql(),
                 chatContext.getDataSourceId(),
-                chatContext.getRelevantTables(),
-                5,
-                request.fixSqlInstruction);
+                chatContext.getRelevantTableIds(),
+                maxSqlExecutionRetryCount,
+                request.fixSqlInstruction,
+                emitter);
         Boolean success = result._1;
         if (!Boolean.TRUE.equals(success)) {
             response.setError("Failed to execute SQL: %s, error message: %s".formatted(result._3, result._4()));
         } else {
-            response.setQueryData(result._2);
-            chatContext.setQueryData(result._2);
+            List<Map<String, Object>> queryData = result._2;
+            chatContext.setQueryData(queryData);
             chatContext.setSql(result._3);
+
+            // 检查数据条数是否超过阈值，超过则写入临时文件
+            String tempFilePath = queryResultTempFileManager.writeQueryDataToTempFile(queryData,
+                    chatContext.getChatId());
+            if (tempFilePath != null) {
+                // 超过阈值，数据写入临时文件
+                chatContext.addQueryResultFilePath(tempFilePath);
+                response.setTempFilePath(tempFilePath);
+                response.setRecordCount(queryData.size());
+                response.setQueryData(null);
+                log.info("查询结果 {} 条已写入临时文件: {}", queryData.size(), tempFilePath);
+            } else {
+                // 未超过阈值，直接返回数据
+                response.setQueryData(queryData);
+            }
         }
 
         response.setSuccess(success);
@@ -94,15 +127,22 @@ public class ExecuteSqlTool implements MethodTool {
 
         @ToolParam(description = "The error message if the execute sql failed")
         private String error;
+
+        @ToolParam(description = "The temp file path if the query result exceeds threshold")
+        private String tempFilePath;
+
+        @ToolParam(description = "The total record count if the query result exceeds threshold")
+        private Integer recordCount;
     }
 
     @SuppressWarnings("all")
     private Tuple4<Boolean, List<Map<String, Object>>, String, String> executeSqlWithFix(ChatClient chatClient,
             String sql,
             String dataSourceId,
-            List<Map<String, Object>> relevantTables,
+            List<String> relevantTables,
             int maxAttempts,
-            String instruction) {
+            String instruction,
+            SseEmitter emitter) {
         JdbcTemplate jdbcTemplate = dataSourceManager.getJdbcTemplate(dataSourceId);
         int attempt = 0;
         List<Map<String, Object>> queryResult = new ArrayList<>();
@@ -140,12 +180,22 @@ public class ExecuteSqlTool implements MethodTool {
                 if (attempt > maxAttempts) {
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables, dataSourceId,
-                        instruction);
-                if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
+
+                try {
+                    SseUtil.sendChatBIToolCall(emitter, "第 %d 次执行 SQL 失败，开始修复 SQL".formatted(attempt));
+                    Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables,
+                            dataSourceId,
+                            instruction);
+                    if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
+                        return Tuple.of(false, queryResult, sql, errorMsg);
+                    }
+                    sql = (String) sqlResult.get("sql");
+                    SseUtil.sendChatBIToolCall(emitter, "修复 SQL 成功，继续执行");
+                } catch (Exception newEx) {
+                    log.error("修复 SQL 失败", newEx);
+                    SseUtil.sendChatBIToolCall(emitter, "修复 SQL 失败");
                     return Tuple.of(false, queryResult, sql, errorMsg);
                 }
-                sql = (String) sqlResult.get("sql");
             }
         }
 

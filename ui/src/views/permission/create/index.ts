@@ -1,9 +1,9 @@
-import { defineComponent, onMounted, reactive, ref } from "vue";
+import {defineComponent, onMounted, reactive, ref} from "vue";
 import router from "@/router";
-import { useGlobalVariablesStore } from "@/store/globalVariables";
-import { createPermission } from "@/api/permission";
-import { handleApiError, handleApiSuccess } from "@/util/tool";
-import { Notification } from "@arco-design/web-vue";
+import {useGlobalVariablesStore} from "@/store/globalVariables";
+import {createPermission} from "@/api/permission";
+import {handleApiError, handleApiSuccess} from "@/util/tool";
+import {Notification} from "@arco-design/web-vue";
 
 /**
  * 返回上一级
@@ -14,18 +14,27 @@ const handleBack = () => {
 
 /** 创建权限表单 */
 const createPermissionFormRef = ref();
-const createPermissionForm = reactive({
+const createPermissionForm = reactive<{
+  name?: string | undefined;
+  code?: string | undefined;
+  desc?: string | undefined;
+  resourceId?: string | undefined;
+  allowApply?: boolean | undefined;
+  autoApprove?: boolean | undefined;
+}>({
   name: undefined,
   code: undefined,
   desc: undefined,
   resourceId: undefined,
+  allowApply: true,
+  autoApprove: false,
 });
 const createPermissionFormRules = {
   name: [{ required: true, message: "权限名称未填写" }],
   code: [
     { required: true, message: "权限标识未填写" },
     {
-      validator: (value, cb) => {
+      validator: (value: any, cb: any) => {
         if (value && !/^[A-Za-z0-9-\_]+$/.test(value)) {
           cb("只允许包含英文字母、数字、下划线_、横线-");
         } else {
@@ -34,6 +43,8 @@ const createPermissionFormRules = {
       },
     },
   ],
+  allowApply: [{ required: true, message: "允许用户申请未选择" }],
+  autoApprove: [{ required: true, message: "申请后自动批准未选择" }],
 };
 
 /**

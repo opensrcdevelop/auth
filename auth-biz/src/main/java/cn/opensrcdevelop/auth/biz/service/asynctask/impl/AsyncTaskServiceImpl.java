@@ -1,8 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.asynctask.impl;
 
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskStatusEnum;
 import cn.opensrcdevelop.auth.biz.dto.asynctask.AsyncTaskResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.asynctask.AsyncTask;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskStatus;
 import cn.opensrcdevelop.auth.biz.mapper.asynctask.AsyncTaskMapper;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskService;
 import cn.opensrcdevelop.common.response.PageData;
@@ -40,7 +40,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
         task.setTaskName(taskName);
         task.setTaskParams(taskParams);
         task.setUserId(userId);
-        task.setStatus(AsyncTaskStatus.PENDING.getCode());
+        task.setStatus(AsyncTaskStatusEnum.PENDING.getCode());
         task.setProgress(0);
 
         asyncTaskMapper.insert(task);
@@ -52,7 +52,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
 
     @Override
     public void startTask(String taskId) {
-        updateTaskStatus(taskId, AsyncTaskStatus.RUNNING.getCode());
+        updateTaskStatus(taskId, AsyncTaskStatusEnum.RUNNING.getCode());
 
         AsyncTask task = asyncTaskMapper.selectById(taskId);
         if (task != null) {
@@ -70,7 +70,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
             return;
         }
 
-        task.setStatus(AsyncTaskStatus.SUCCESS.getCode());
+        task.setStatus(AsyncTaskStatusEnum.SUCCESS.getCode());
         task.setTaskResult(taskResult);
         task.setResultFilePath(resultFilePath);
         task.setResultFileName(resultFileName);
@@ -94,7 +94,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
             return;
         }
 
-        task.setStatus(AsyncTaskStatus.FAILED.getCode());
+        task.setStatus(AsyncTaskStatusEnum.FAILED.getCode());
         task.setErrorMessage(errorMessage);
         task.setEndTime(LocalDateTime.now());
 
@@ -119,7 +119,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
 
     @Override
     public void cancelTask(String taskId) {
-        updateTaskStatus(taskId, AsyncTaskStatus.CANCELLED.getCode());
+        updateTaskStatus(taskId, AsyncTaskStatusEnum.CANCELLED.getCode());
 
         log.info("任务已取消: taskId={}", taskId);
     }
@@ -217,7 +217,7 @@ public class AsyncTaskServiceImpl implements AsyncTaskService {
     public long countRunningTasks(String taskType) {
         LambdaQueryWrapper<AsyncTask> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AsyncTask::getTaskType, taskType)
-                .eq(AsyncTask::getStatus, AsyncTaskStatus.RUNNING.getCode());
+                .eq(AsyncTask::getStatus, AsyncTaskStatusEnum.RUNNING.getCode());
         return asyncTaskMapper.selectCount(wrapper);
     }
 }

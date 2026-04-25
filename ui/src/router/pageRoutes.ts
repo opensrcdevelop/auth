@@ -299,6 +299,14 @@ const pageRoutes: RouteRecordRaw[] = [
       title: "创建模型提供商",
     },
   },
+  {
+    path: "/permission/request/detail",
+    component: () => import("@/views/permission/request/detail/index.vue"),
+    meta: {
+      parent: "/permission/request",
+      title: "权限申请详情",
+    },
+  },
 ];
 
 export default pageRoutes;

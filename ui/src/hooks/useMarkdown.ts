@@ -1,8 +1,9 @@
 import hljs from "highlight.js";
 import MarkdownIt from "markdown-it";
-import {onMounted, onUnmounted} from "vue";
+import {nextTick, onMounted, onUnmounted} from "vue";
 import MarkdownHandler from "./md/MarkdownHandler";
 import {copyToClipboard} from "@/util/tool";
+import * as echarts from "echarts";
 
 const md = new MarkdownIt({
   html: true,
@@ -45,6 +46,11 @@ const md = new MarkdownIt({
   },
 });
 
+// 自定义 hr 渲染规则
+md.renderer.rules.hr = (tokens, idx) => {
+  return '<hr class="md-hr">';
+};
+
 md.renderer.rules.code_inline = (tokens, idx) => {
   const token = tokens[idx];
   return [
@@ -52,6 +58,15 @@ md.renderer.rules.code_inline = (tokens, idx) => {
     `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`,
     `</div>`,
   ].join("");
+};
+
+// 自定义表格渲染规则 - 包装表格容器支持滚动
+md.renderer.rules.table_open = () => {
+  return '<div class="table-container"><table>';
+};
+
+md.renderer.rules.table_close = () => {
+  return '</table></div>';
 };
 
 export function useMarkdown() {
@@ -141,10 +156,48 @@ export function useMarkdown() {
   });
 
   const renderMarkdown = (content: string): string => {
-    const rendered = md.render(content, {
+    // 提取并处理 echarts 代码块
+    const processedContent = content.replace(/```echarts\n([\s\S]*?)```/g, (match, jsonStr) => {
+      try {
+        const chartId = `echarts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return `<div class="echarts-chart" data-chart-id="${chartId}" data-chart-config="${encodeURIComponent(jsonStr.trim())}"></div>`;
+      } catch (e) {
+        console.error("解析 echarts 配置失败:", e);
+        return match;
+      }
+    });
+
+    const rendered = md.render(processedContent, {
       breaks: true,
       gfm: true
     });
+
+    // 延迟初始化 echarts 图表
+    nextTick(() => {
+      setTimeout(() => {
+        document.querySelectorAll(".echarts-chart").forEach((el) => {
+          const chartEl = el as HTMLElement;
+          const chartConfig = chartEl.dataset.chartConfig;
+          if (chartConfig && !chartEl.dataset.chartInitialized) {
+            try {
+              const option = JSON.parse(decodeURIComponent(chartConfig));
+              const chart = echarts.init(chartEl);
+              chart.setOption(option);
+              chartEl.dataset.chartInitialized = "true";
+
+              // 响应式调整
+              const resizeObserver = new ResizeObserver(() => {
+                chart.resize();
+              });
+              resizeObserver.observe(chartEl);
+            } catch (e) {
+              console.error("初始化 echarts 图表失败:", e);
+            }
+          }
+        });
+      }, 100);
+    });
+
     return `<div class="markdown-body">${rendered}</div>`;
   };
 

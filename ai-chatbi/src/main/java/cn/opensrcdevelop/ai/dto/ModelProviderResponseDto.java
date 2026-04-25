@@ -33,12 +33,6 @@ public class ModelProviderResponseDto {
     @Schema(description = "模型提供商默认模型")
     private String defaultModel;
 
-    @Schema(description = "模型提供商温度")
-    private Double temperature;
-
-    @Schema(description = "模型提供商最大令牌数")
-    private Integer maxTokens;
-
     @Schema(description = "模型提供商是否启用")
     private Boolean enabled;
 }

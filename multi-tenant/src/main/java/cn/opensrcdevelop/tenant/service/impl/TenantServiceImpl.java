@@ -10,11 +10,14 @@ import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
+import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.constants.MessageConstants;
 import cn.opensrcdevelop.tenant.dto.CheckTenantResponseDto;
 import cn.opensrcdevelop.tenant.dto.TenantRequestDto;
 import cn.opensrcdevelop.tenant.dto.TenantResponseDto;
 import cn.opensrcdevelop.tenant.entity.Tenant;
+import cn.opensrcdevelop.tenant.event.RemoveTenantEvent;
 import cn.opensrcdevelop.tenant.mapper.TenantMapper;
 import cn.opensrcdevelop.tenant.service.TenantService;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
@@ -23,18 +26,22 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> implements TenantService {
+
+    private static final String TENANT_LOCK_PREFIX = "lock:tenant:create:";
 
     /**
      * 创建租户
@@ -46,23 +53,44 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     @Transactional
     @Override
     public void createTenant(TenantRequestDto requestDto) {
-        // 1. 检查租户标识是否存在
-        checkTenantCode(requestDto);
+        String lockKey = TENANT_LOCK_PREFIX + requestDto.getCode();
+        if (RedisUtil.getLock(lockKey).isLocked()) {
+            throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
+        }
 
-        // 1. 创建租户数据库
-        TenantHelper.createTenantDatabase(requestDto.getCode());
+        RLock lock = RedisUtil.getLock(lockKey);
+        try {
+            if (!lock.tryLock()) {
+                throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
+            }
 
-        // 2. 数据库操作
-        String tenantId = CommonUtil.getUUIDV7String();
-        AuditContext.setSpelVariable("tenantId", tenantId);
+            // 1. 检查租户标识是否存在
+            checkTenantCode(requestDto);
 
-        Tenant tenant = new Tenant();
-        tenant.setTenantId(tenantId);
-        tenant.setTenantCode(requestDto.getCode());
-        tenant.setTenantName(requestDto.getName());
-        tenant.setDescription(requestDto.getDesc());
-        CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEnabled, requestDto::getEnabled);
-        super.save(tenant);
+            // 2. 检查时间有效性
+            checkEffectiveTime(requestDto);
+
+            // 3. 创建租户数据库
+            TenantHelper.createTenantDatabase(requestDto.getCode());
+
+            // 4. 数据库操作
+            String tenantId = CommonUtil.getUUIDV7String();
+            AuditContext.setSpelVariable("tenantId", tenantId);
+
+            Tenant tenant = new Tenant();
+            tenant.setTenantId(tenantId);
+            tenant.setTenantCode(requestDto.getCode());
+            tenant.setTenantName(requestDto.getName());
+            tenant.setDescription(requestDto.getDesc());
+            CommonUtil.callSetWithCheck(Objects::nonNull, tenant::setEnabled, requestDto::getEnabled);
+            tenant.setEffectiveTime(requestDto.getEffectiveTime());
+            tenant.setExpirationTime(requestDto.getExpirationTime());
+            super.save(tenant);
+        } finally {
+            if (lock.isLocked()) {
+                lock.unlock();
+            }
+        }
     }
 
     /**
@@ -76,7 +104,28 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
     public Tuple2<Boolean, Tenant> exists(String tenantCode) {
         Tenant tenant = super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, tenantCode)
                 .and(o -> o.eq(Tenant::getEnabled, Boolean.TRUE)));
-        return Objects.isNull(tenant) ? Tuple.of(false, null) : Tuple.of(true, tenant);
+        if (Objects.isNull(tenant) || !isTenantEffective(tenant)) {
+            return Tuple.of(false, null);
+        }
+        return Tuple.of(true, tenant);
+    }
+
+    /**
+     * 检查租户是否在有效期内
+     *
+     * @param tenant
+     *            租户
+     * @return 是否有效
+     */
+    private boolean isTenantEffective(Tenant tenant) {
+        LocalDateTime now = LocalDateTime.now();
+        // 检查生效时间
+        if (Objects.nonNull(tenant.getEffectiveTime()) && now.isBefore(tenant.getEffectiveTime())) {
+            return false;
+        }
+
+        // 检查失效时间
+        return !Objects.nonNull(tenant.getExpirationTime()) || !now.isAfter(tenant.getExpirationTime());
     }
 
     /**
@@ -110,6 +159,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
             tenantResponse.setId(tenant.getTenantId());
             tenantResponse.setName(tenant.getTenantName());
             tenantResponse.setCode(tenant.getTenantCode());
+            tenantResponse.setEffectiveTime(tenant.getEffectiveTime());
+            tenantResponse.setExpirationTime(tenant.getExpirationTime());
 
             return tenantResponse;
         }).toList();
@@ -142,15 +193,22 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         if (Objects.isNull(rawTenant)) {
             return;
         }
+
+        // 2. 检查时间有效性
+        checkEffectiveTime(requestDto);
+
         compareObjBuilder.id(tenantId);
         compareObjBuilder.before(rawTenant);
 
-        // 2. 属性设置
+        // 3. 属性设置
         Tenant updateTenant = new Tenant();
         updateTenant.setTenantId(requestDto.getId());
         updateTenant.setTenantName(requestDto.getName());
         updateTenant.setDescription(requestDto.getDesc());
         CommonUtil.callSetWithCheck(Objects::nonNull, updateTenant::setEnabled, requestDto::getEnabled);
+        // 支持将时间字段设置为 null
+        updateTenant.setEffectiveTime(requestDto.getEffectiveTime());
+        updateTenant.setExpirationTime(requestDto.getExpirationTime());
         updateTenant.setVersion(rawTenant.getVersion());
 
         // 3. 数据据操作
@@ -191,6 +249,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         tenantResponse.setCode(tenantCode);
         tenantResponse.setDesc(tenant.getDescription());
         tenantResponse.setEnabled(tenant.getEnabled());
+        tenantResponse.setEffectiveTime(tenant.getEffectiveTime());
+        tenantResponse.setExpirationTime(tenant.getExpirationTime());
         tenantResponse.setIssuer(TenantHelper.getTenantIssuer(tenantCode));
         tenantResponse.setConsoleUrl(TenantHelper.getTenantConsoleUrl(tenantCode));
         tenantResponse.setCreateTime(tenant.getCreateTime());
@@ -218,6 +278,8 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
 
         // 3. 数据库操作
         super.removeById(tenantId);
+
+        SpringContextUtil.publishEvent(new RemoveTenantEvent(tenant));
     }
 
     /**
@@ -249,6 +311,25 @@ public class TenantServiceImpl extends ServiceImpl<TenantMapper, Tenant> impleme
         if (Objects.nonNull(
                 super.getOne(Wrappers.<Tenant>lambdaQuery().eq(Tenant::getTenantCode, requestDto.getCode())))) {
             throw new BizException(MessageConstants.TENANT_MSG_1001, requestDto.getCode());
+        }
+    }
+
+    /**
+     * 检查时间有效性：生效时间必须早于失效时间
+     *
+     * @param requestDto
+     *            请求
+     */
+    private void checkEffectiveTime(TenantRequestDto requestDto) {
+        LocalDateTime effectiveTime = requestDto.getEffectiveTime();
+        LocalDateTime expirationTime = requestDto.getExpirationTime();
+        // 如果两者都为空，或者只有生效时间，或者只有失效时间，都认为是合法的
+        if (Objects.isNull(effectiveTime) || Objects.isNull(expirationTime)) {
+            return;
+        }
+        // 生效时间必须早于失效时间
+        if (effectiveTime.isAfter(expirationTime)) {
+            throw new BizException(MessageConstants.TENANT_MSG_1002);
         }
     }
 }

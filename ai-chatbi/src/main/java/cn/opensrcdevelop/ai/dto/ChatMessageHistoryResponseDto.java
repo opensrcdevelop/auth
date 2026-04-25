@@ -41,6 +41,12 @@ public class ChatMessageHistoryResponseDto {
     @Schema(description = "用户反馈")
     private String feedback;
 
+    @Schema(description = "输入 token 数")
+    private Long inputTokens;
+
+    @Schema(description = "输出 token 数")
+    private Long outputTokens;
+
     @Schema(description = "时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime time;

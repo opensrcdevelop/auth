@@ -1,15 +1,25 @@
 package cn.opensrcdevelop.ai.chat;
 
+import cn.opensrcdevelop.ai.dto.ChatConfigDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
 
 @Data
 public class ChatContext {
 
+    private String id;
+
     private ChatClient chatClient;
+
+    @JsonIgnore
+    private SseEmitter emitter;
 
     private String dataSourceId;
 
@@ -23,7 +33,7 @@ public class ChatContext {
 
     private String userQuery;
 
-    private List<Map<String, Object>> relevantTables;
+    private List<String> relevantTableIds;
 
     private String sql;
 
@@ -41,9 +51,9 @@ public class ChatContext {
 
     private String report;
 
-    private AtomicInteger reqTokens = new AtomicInteger(0);
+    private AtomicInteger inputTokens = new AtomicInteger(0);
 
-    private AtomicInteger repTokens = new AtomicInteger(0);
+    private AtomicInteger outputTokens = new AtomicInteger(0);
 
     private List<Map<String, Object>> toolCallResults;
 
@@ -53,5 +63,33 @@ public class ChatContext {
     /** 示例 SQL（问题-SQL 对列表） */
     private List<Map<String, String>> sampleSqls;
 
+    /** 历史问题列表（按时间升序排列） */
+    private List<String> historicalQuestions;
+
     private Boolean terminated = false;
+
+    /** 临时文件路径（存储超阈值查询结果） */
+    private List<String> queryResultFilePaths = new ArrayList<>();
+
+    /** 连续工具失败计数 */
+    private Integer consecutiveToolFailures = 0;
+
+    /** 上一次执行的工具名称（用于检测同一工具重复失败） */
+    private String lastFailedToolName;
+
+    /** 对话配置 */
+    private ChatConfigDto chatConfig;
+
+    public void addQueryResultFilePath(String path) {
+        if (queryResultFilePaths == null) {
+            queryResultFilePaths = new ArrayList<>();
+        }
+        queryResultFilePaths.add(path);
+    }
+
+    public void clearQueryResultFilePaths() {
+        if (queryResultFilePaths != null) {
+            queryResultFilePaths.clear();
+        }
+    }
 }

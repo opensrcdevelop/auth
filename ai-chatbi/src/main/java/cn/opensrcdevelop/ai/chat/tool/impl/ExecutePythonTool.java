@@ -2,19 +2,22 @@ package cn.opensrcdevelop.ai.chat.tool.impl;
 
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Component(ExecutePythonTool.TOOL_NAME)
 @Slf4j
@@ -28,6 +31,16 @@ public class ExecutePythonTool implements MethodTool {
     private static final String VENV_NAME_PREFIX = "ai_chat_venv_";
     private static final int DEFAULT_TIMEOUT_MINUTES = 3;
 
+    // 资源限制 - 仅保留文件写入和内存限制
+    @Value("${python.exec.limit.enabled:true}")
+    private boolean ulimitEnabled;
+
+    @Value("${python.exec.limit.file-write-enabled:false}")
+    private boolean fileWriteEnabled;
+
+    @Value("${python.exec.limit.memory-mb:256}")
+    private int pythonMaxMemoryMb;
+
     @Tool(name = ExecutePythonTool.TOOL_NAME, description = "Used to execute Python scripts and return the results of Python script execution")
     @SuppressWarnings({"unused", "java:S3776"})
     public Response execute(@ToolParam(description = "Request to execute Python script") Request request) {
@@ -36,6 +49,7 @@ public class ExecutePythonTool implements MethodTool {
                 .toString();
         Response response = new Response();
         File tempScriptFile = null;
+        String wrapperPath = null;
         Process process = null;
 
         try (
@@ -66,9 +80,46 @@ public class ExecutePythonTool implements MethodTool {
                 writer.write(request.getScript());
             }
 
-            // 4. 使用虚拟环境执行 Python 脚本
-            process = Runtime.getRuntime()
-                    .exec(new String[]{Path.of(venvDir, "bin", "python").toString(), tempScriptFile.getAbsolutePath()});
+            // 4. 使用虚拟环境执行 Python 脚本（带资源限制）
+            String pythonPath = Path.of(venvDir, "bin", "python").toString();
+
+            // 创建内存限制包装脚本
+            String wrapperScript = String.format("""
+                    import resource
+                    import sys
+                    max_memory = %d * 1024 * 1024
+                    try:
+                        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+                        if hard == resource.RLIM_INFINITY:
+                            hard = max_memory
+                        if soft > max_memory:
+                            resource.setrlimit(resource.RLIMIT_AS, (max_memory, hard))
+                    except ValueError:
+                        pass  # 无法设置限制时忽略
+                    exec(open('%s').read())
+                    """, pythonMaxMemoryMb, tempScriptFile.getAbsolutePath());
+
+            wrapperPath = tempScriptFile.getAbsolutePath() + "_wrapper.py";
+            try (FileWriter writer = new FileWriter(wrapperPath)) {
+                writer.write(wrapperScript);
+            }
+
+            if (ulimitEnabled) {
+                // 文件写入限制: 0 = 禁止写文件, 2048 = 1MB (块=512字节)
+                int fileLimit = fileWriteEnabled ? 2048 : 0;
+                String[] cmd = {
+                        "sh", "-c",
+                        String.format(
+                                "ulimit -f %d && exec %s %s",
+                                fileLimit,
+                                pythonPath, wrapperPath)
+                };
+                process = Runtime.getRuntime().exec(cmd);
+            } else {
+                // 不带资源限制
+                process = Runtime.getRuntime()
+                        .exec(new String[]{pythonPath, tempScriptFile.getAbsolutePath()});
+            }
 
             // 5. 读取标准输出
             try (
@@ -129,6 +180,9 @@ public class ExecutePythonTool implements MethodTool {
                 FileUtils.deleteDirectory(new File(venvDir));
                 if (tempScriptFile != null) {
                     Files.deleteIfExists(tempScriptFile.toPath());
+                    if (wrapperPath != null) {
+                        Files.deleteIfExists(Path.of(wrapperPath));
+                    }
                 }
             } catch (IOException e) {
                 log.error("delete temp python script error", e);
@@ -198,7 +252,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Package installation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 
@@ -256,7 +309,6 @@ public class ExecutePythonTool implements MethodTool {
             response.setResult("Virtual environment creation error: " + ex.getMessage());
         }
 
-        response.setSuccess(true);
         return response;
     }
 
@@ -264,10 +316,11 @@ public class ExecutePythonTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "Python script")
+        @NotBlank
         private String script;
 
-        @ToolParam(description = "Python script execution required packages")
-        private List<String> packages;
+        @ToolParam(description = "Python script execution required packages", required = false)
+        private List<@NotBlank String> packages;
     }
 
     @Data

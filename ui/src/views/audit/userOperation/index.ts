@@ -1,4 +1,4 @@
-import {getObjChanges, getUserOperationLogs,} from "@/api/auditLog";
+import {getObjChanges, getUserOperationLogs} from "@/api/auditLog";
 import {usePagination} from "@/hooks/usePagination";
 import router from "@/router";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
@@ -19,11 +19,13 @@ const operationTypes = [
   { value: 8, label: "解绑第三方账号" },
   { value: 9, label: "绑定 MFA 设备" },
   { value: 10, label: "重置密码" },
-  { value: 11, label: "ChatBI 对话"},
-  { value: 12, label: "ChatBI 问答反馈"},
-  { value: 13, label: "ChatBI 删除对话历史"},
-  { value: 14, label: "ChatBI 更新对话历史"},
+  { value: 11, label: "ChatBI 对话" },
+  { value: 12, label: "ChatBI 问答反馈" },
+  { value: 13, label: "ChatBI 删除对话历史" },
+  { value: 14, label: "ChatBI 更新对话历史" },
   { value: 15, label: "解绑 MFA 设备" },
+  { value: 16, label: "申请权限" },
+  { value: 17, label: "取消权限申请" },
 ];
 
 /**
@@ -33,7 +35,7 @@ const columns = reactive([
   {
     label: "用户",
     key: "username",
-    value: (data) => data.username,
+    value: (data: any) => data.username,
     visible: true,
     editable: false,
     width: 100,
@@ -121,9 +123,9 @@ const getDayjs = (current: Date) => {
 };
 
 // 用户操作日志
-const userOperationLogs = reactive([]);
-let userOperationLogsPagination;
-const searchKeyword = ref(null);
+const userOperationLogs = reactive([] as any[]);
+let userOperationLogsPagination: any;
+const searchKeyword = ref<any>(null);
 const operationType = ref(null);
 const dateRange = ref(null);
 
@@ -134,7 +136,7 @@ const handleGetUserOperationLogs = (page: number = 1, size: number = 15) => {
   const params = {
     page,
     size,
-    keyword: undefined,
+    keyword: undefined as any,
     type: undefined,
     start: undefined,
     end: undefined,
@@ -162,7 +164,7 @@ const handleGetUserOperationLogs = (page: number = 1, size: number = 15) => {
         userOperationLogsPagination.updatePagination(
           data.current,
           data.total,
-          data.size
+          data.size,
         );
       });
     })
@@ -186,7 +188,7 @@ const handleToUserDetail = (id: string) => {
 /**
  * 对象变更日志
  */
-const objChanges = reactive([]);
+const objChanges = reactive([] as any[]);
 const objChangesModalVisible = ref(false);
 const handleGetObjChanges = (auditLogId: string) => {
   getObjChanges(auditLogId)
@@ -206,9 +208,9 @@ export default defineComponent({
   setup() {
     userOperationLogsPagination = usePagination(
       "userOperationLogs",
-      ({ page, size }) => {
+      ({ page, size }: { page: number; size: number }) => {
         handleGetUserOperationLogs(page, size);
-      }
+      },
     );
 
     return {

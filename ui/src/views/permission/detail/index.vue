@@ -149,6 +149,32 @@ export default detailTs;
                     </template>
                   </a-table-column>
                   <a-table-column
+                    title="授权类型"
+                    :sortable="{
+                      sortDirections: ['ascend', 'descend'],
+                    }"
+                  >
+                    <template #cell="{ record }">
+                      {{ record.authorizeType ? record.authorizeType : "-" }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column
+                    title="授权人"
+                    :sortable="{
+                      sortDirections: ['ascend', 'descend'],
+                    }"
+                  >
+                    <template #cell="{ record }">
+                      <span
+                        v-if="record.authorizerUsername"
+                        class="table-column-name"
+                        @click="handleToUserDetail(record.authorizerId)"
+                        >{{ record.authorizerUsername }}</span
+                      >
+                      <span v-else>-</span>
+                    </template>
+                  </a-table-column>
+                  <a-table-column
                     title="授权时间"
                     :width="180"
                     :sortable="{

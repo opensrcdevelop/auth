@@ -1,8 +1,9 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel;
 
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.user.DataFilterDto;
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -22,6 +23,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@AsyncTaskExecutorAnno(taskType = "USER_EXPORT")
 public class UserExportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     public static final String TASK_NAME = "用户数据导出";
@@ -34,7 +36,7 @@ public class UserExportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     @Override
     public String getTaskType() {
-        return AsyncTaskType.USER_EXPORT.getCode();
+        return AsyncTaskTypeEnum.USER_EXPORT.getCode();
     }
 
     @Override

@@ -1,13 +1,14 @@
 package cn.opensrcdevelop.ai.util;
 
 import cn.opensrcdevelop.common.exception.ServerException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
-import java.util.*;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.collections4.CollectionUtils;
+
+import java.util.*;
 
 @UtilityClass
 public class ChartRenderer {
@@ -26,59 +27,45 @@ public class ChartRenderer {
     public Tuple2<String, Object> render(Map<String, Object> config, List<Map<String, Object>> dataRows) {
         try {
             JsonNode cfg = MAPPER.valueToTree(config);
-            String displayType = cfg.path("displayType").asText("chart");
-
-            if ("table".equalsIgnoreCase(displayType)) {
-                return Tuple.of("table", buildArcoTableConfig(cfg, dataRows));
-            } else {
-                return Tuple.of("chart", buildEchartsOption(cfg, dataRows));
-            }
+            return Tuple.of("chart", buildEchartsOption(cfg, dataRows));
         } catch (Exception e) {
             throw new ServerException("渲染图表失败", e);
         }
     }
 
-    private Map<String, Object> buildArcoTableConfig(JsonNode cfg, List<Map<String, Object>> rows) {
-        JsonNode columnsNode = cfg.path("fieldMapping").path("columns");
-        String titleText = cfg.path("meta").path("title").asText("");
-        String description = cfg.path("meta").path("description").asText("");
-
-        // 1. 标题
-        Map<String, Object> title = Map.of(
-                "text", titleText,
-                "description", description);
-
-        // 无数据
-        if (!columnsNode.isArray() || columnsNode.isEmpty() || rows.isEmpty()) {
-            return Map.of(
-                    "columns", List.of(),
-                    "data", List.of(),
-                    "title", title);
-        }
-
-        // 2. 列配置
-        List<Map<String, Object>> columns = MAPPER.convertValue(columnsNode, new TypeReference<>() {
-        });
+    /**
+     * 构建Arco Design表格配置
+     *
+     * @param rows
+     *            查询结果
+     * @param queryColumns
+     *            查询列配置
+     * @return Arco Design表格配置
+     */
+    public Map<String, Object> buildArcoTableConfig(List<Map<String, Object>> rows,
+            List<Map<String, Object>> queryColumns) {
         List<Map<String, Object>> arcoColumns = new ArrayList<>();
-        for (Map<String, Object> col : columns) {
-            Map<String, Object> column = new HashMap<>();
-            // 2.1 列标题
-            column.put("title", col.get("title"));
-            // 2.2 列信息的标识
-            column.put("dataIndex", col.get("key"));
-            // 2.3 对齐方式
-            column.put("align", "left");
-            // 2.4 排序
-            column.put("sortable", Map.of(
-                    "sortDirections", List.of("ascend", "descend")));
-            arcoColumns.add(column);
+
+        // 1. 根据 queryColumns 构建列配置
+        if (CollectionUtils.isNotEmpty(queryColumns)) {
+            for (Map<String, Object> col : queryColumns) {
+                String columnName = String.valueOf(col.get("column_name"));
+                String displayName = String.valueOf(col.get("display_name"));
+                Map<String, Object> column = new HashMap<>();
+                column.put("title", displayName);
+                column.put("dataIndex", columnName);
+                column.put("align", "left");
+                column.put("sortable", Map.of("sortDirections", List.of("ascend", "descend")));
+                column.put("ellipsis", true);
+                column.put("tooltip", true);
+                arcoColumns.add(column);
+            }
         }
 
-        // 3. 表格配置
+        // 2. 表格配置
         Map<String, Object> tableConfig = new HashMap<>();
         tableConfig.put("columns", arcoColumns);
-        tableConfig.put("data", rows);
-        tableConfig.put("title", title);
+        tableConfig.put("data", rows != null ? rows : List.of());
 
         return tableConfig;
     }

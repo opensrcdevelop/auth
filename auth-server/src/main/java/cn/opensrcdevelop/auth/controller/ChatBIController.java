@@ -1,7 +1,12 @@
 package cn.opensrcdevelop.auth.controller;
 
+import cn.opensrcdevelop.ai.component.SampleSqlRebuildTaskExecutor;
+import cn.opensrcdevelop.ai.component.SampleSqlSyncTaskExecutor;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
+import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.auth.client.authorize.annoation.Authorize;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.response.PageData;
@@ -13,12 +18,15 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.Collections;
+import java.util.List;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
 @RestController
@@ -35,6 +43,8 @@ public class ChatBIController {
     private final ChatHistoryService chatHistoryService;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatAnswerService chatAnswerService;
+    private final SampleSqlService sampleSqlService;
+    private final AsyncTaskSchedulerService asyncTaskSchedulerService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -264,5 +274,125 @@ public class ChatBIController {
     @Authorize({"allChatBIPermissions", "getAnsweredSql"})
     public ChatAnswerResponseDto getAnsweredSql(@PathVariable @NotBlank String id) {
         return chatAnswerService.getAnsweredSql(id);
+    }
+
+    @Operation(summary = "处理用户对问题的回答", description = "处理用户对问题的回答")
+    @PostMapping(path = "/chat/answerAskUserQuestion")
+    @Authorize({"allChatBIPermissions", "chat"})
+    public void answerAskUserQuestion(@RequestBody @Validated UserAnswerRequestDto requestDto) {
+        chatBIService.answerAskUserQuestion(requestDto);
+    }
+
+    @Operation(summary = "获取示例 SQL 列表", description = "获取示例 SQL 列表")
+    @Parameters({
+            @Parameter(name = "dataSourceId", description = "数据源ID", in = ParameterIn.QUERY),
+            @Parameter(name = "question", description = "问题", in = ParameterIn.QUERY),
+            @Parameter(name = "searchType", description = "查询类型：simple-简单查询，similarity-相似检索", in = ParameterIn.QUERY),
+            @Parameter(name = "current", description = "当前页", in = ParameterIn.QUERY),
+            @Parameter(name = "size", description = "每页大小", in = ParameterIn.QUERY)
+    })
+    @GetMapping("/sampleSql/list")
+    @Authorize({"allChatBISampleSqlPermissions", "getSampleSqlList"})
+    public PageData<SampleSqlDto> listSampleSql(
+            @RequestParam(required = false) String dataSourceId,
+            @RequestParam(required = false) String question,
+            @RequestParam(required = false, defaultValue = "simple") String searchType,
+            @RequestParam(defaultValue = "1") Long current,
+            @RequestParam(defaultValue = "15") Long size) {
+        long offset = (current - 1) * size;
+        if ("similarity".equals(searchType) && StringUtils.isNotEmpty(question)) {
+            List<SampleSqlDto> list = sampleSqlService.search(dataSourceId, question, null);
+            PageData<SampleSqlDto> pageData = new PageData<>();
+            pageData.setList(list);
+            pageData.setTotal((long) list.size());
+            pageData.setCurrent(1L);
+            pageData.setSize((long) list.size());
+            pageData.setPages(1L);
+            return pageData;
+        }
+        int pageSize = size.intValue();
+        List<SampleSqlDto> list = sampleSqlService.list(dataSourceId, question, offset, pageSize);
+        long total = sampleSqlService.count(dataSourceId, question);
+        PageData<SampleSqlDto> pageData = new PageData<>();
+        pageData.setList(list);
+        pageData.setTotal(total);
+        pageData.setCurrent(current);
+        pageData.setSize(size);
+        pageData.setPages(total % pageSize == 0 ? total / pageSize : total / pageSize + 1);
+        return pageData;
+    }
+
+    @Operation(summary = "添加示例 SQL", description = "添加示例 SQL")
+    @PostMapping("/sampleSql")
+    @Authorize({"allChatBISampleSqlPermissions", "createSampleSql"})
+    public void addSampleSql(@RequestBody @Validated SampleSqlRequestDto request) {
+        sampleSqlService.add(request);
+    }
+
+    @Operation(summary = "删除示例 SQL", description = "删除示例 SQL")
+    @DeleteMapping("/sampleSql/{id}")
+    @Authorize({"allChatBISampleSqlPermissions", "deleteSampleSql"})
+    public void deleteSampleSql(@PathVariable String id) {
+        sampleSqlService.delete(id);
+    }
+
+    @Operation(summary = "从 Likes 同步示例 SQL", description = "从 Likes 同步示例 SQL 到向量存储")
+    @PostMapping("/sampleSql/syncFromLikes")
+    @Authorize({"allChatBISampleSqlPermissions", "syncFromLikes"})
+    public String syncFromLikes() {
+        return asyncTaskSchedulerService.submitTask(
+                AsyncTaskTypeEnum.SAMPLE_SQL_SYNC.getCode(),
+                SampleSqlSyncTaskExecutor.TASK_NAME,
+                Collections.emptyMap(),
+                AuthUtil.getCurrentUserId());
+    }
+
+    @Operation(summary = "重新构建示例 SQL 索引", description = "重新构建示例 SQL 索引")
+    @PostMapping("/sampleSql/rebuildIndex")
+    @Authorize({"allChatBISampleSqlPermissions", "rebuildIndex"})
+    public String rebuildIndex() {
+        return asyncTaskSchedulerService.submitTask(
+                AsyncTaskTypeEnum.SAMPLE_SQL_REBUILD.getCode(),
+                SampleSqlRebuildTaskExecutor.TASK_NAME,
+                Collections.emptyMap(),
+                AuthUtil.getCurrentUserId());
+    }
+
+    @Operation(summary = "获取示例 SQL 嵌入配置", description = "获取示例 SQL 嵌入模型配置")
+    @GetMapping("/sampleSql/embedding/config")
+    @Authorize({"allChatBISampleSqlPermissions", "getEmbeddingConfig"})
+    public SampleSqlEmbeddingConfigDto getEmbeddingConfig() {
+        return sampleSqlService.getEmbeddingConfig();
+    }
+
+    @Operation(summary = "更新示例 SQL 嵌入配置", description = "更新示例 SQL 嵌入模型配置")
+    @PutMapping("/sampleSql/embedding/config")
+    @Authorize({"allChatBISampleSqlPermissions", "updateEmbeddingConfig"})
+    public String updateEmbeddingConfig(@RequestBody @Validated SampleSqlEmbeddingConfigDto config) {
+        boolean needRebuild = sampleSqlService.needRebuildIndex(config);
+        sampleSqlService.updateEmbeddingConfig(config);
+
+        if (needRebuild) {
+            return asyncTaskSchedulerService.submitTask(
+                    AsyncTaskTypeEnum.SAMPLE_SQL_REBUILD.getCode(),
+                    SampleSqlRebuildTaskExecutor.TASK_NAME,
+                    Collections.emptyMap(),
+                    AuthUtil.getCurrentUserId());
+        }
+        return "";
+    }
+
+    @Operation(summary = "获取对话配置", description = "获取 ChatBI 对话配置")
+    @GetMapping("/chat/config")
+    @Authorize({"allChatBIPermissions", "getChatConfig"})
+    public ChatConfigDto getChatConfig() {
+        return chatBIService.getChatConfig();
+    }
+
+    @Operation(summary = "更新对话配置", description = "更新 ChatBI 对话配置")
+    @PutMapping("/chat/config")
+    @Authorize({"allChatBIPermissions", "updateChatConfig"})
+    public void updateChatConfig(@RequestBody @Validated ChatConfigDto config) {
+        chatBIService.updateChatConfig(config);
     }
 }

@@ -56,11 +56,11 @@ public class ChatAnswer extends BaseEntity implements Serializable {
     @PropertyName("报表")
     private String report;
 
-    @PropertyName("请求消耗的 token 数")
-    private Integer reqTokens;
+    @PropertyName("输入 token 数")
+    private Integer inputTokens;
 
-    @PropertyName("回复消耗的 token 数")
-    private Integer repTokens;
+    @PropertyName("输出 token 数")
+    private Integer outputTokens;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @PropertyName("用户反馈")

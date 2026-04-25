@@ -1,6 +1,8 @@
 package cn.opensrcdevelop.ai.service;
 
 import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
+import cn.opensrcdevelop.ai.dto.ChatConfigDto;
+import cn.opensrcdevelop.ai.dto.UserAnswerRequestDto;
 import cn.opensrcdevelop.ai.dto.VoteAnswerRequestDto;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -9,4 +11,10 @@ public interface ChatBIService {
     SseEmitter streamChatBI(ChatBIRequestDto requestDto);
 
     void voteAnswer(VoteAnswerRequestDto requestDto);
+
+    void answerAskUserQuestion(UserAnswerRequestDto request);
+
+    ChatConfigDto getChatConfig();
+
+    void updateChatConfig(ChatConfigDto configDto);
 }

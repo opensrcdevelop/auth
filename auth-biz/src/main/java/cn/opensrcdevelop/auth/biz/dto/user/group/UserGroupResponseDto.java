@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.dto.user.group;
 
-import cn.opensrcdevelop.auth.biz.constants.UserGroupType;
+import cn.opensrcdevelop.auth.biz.constants.UserGroupTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -24,7 +24,7 @@ public class UserGroupResponseDto {
     private Long memberNum;
 
     @Schema(description = "用户组类型")
-    private UserGroupType type;
+    private UserGroupTypeEnum type;
 
     @Schema(description = "动态用户组条件")
     private DynamicUserGroupConditionsDto conditions;

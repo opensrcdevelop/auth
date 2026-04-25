@@ -20,12 +20,6 @@ import freemarker.template.TemplateExceptionHandler;
 import io.vavr.control.Try;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ReflectionUtils;
-
 import java.io.*;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.InvocationTargetException;
@@ -43,6 +37,11 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.ReflectionUtils;
 
 @SuppressWarnings("unused")
 public class CommonUtil {

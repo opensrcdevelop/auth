@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.opensrcdevelop.auth.biz.mapper.permission.PermissionRequestMapper">
+
+    <resultMap id="permissionRequestResultMap" type="cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest">
+        <id column="request_id" property="requestId"/>
+        <result column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="reason" property="reason"/>
+        <result column="request_time" property="requestTime"/>
+        <collection property="items" ofType="cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequestItem">
+            <id column="item_id" property="itemId"/>
+            <result column="request_id" property="requestId"/>
+            <result column="permission_id" property="permissionId"/>
+            <result column="status" property="status"/>
+            <result column="reject_reason" property="rejectReason"/>
+            <result column="approver_id" property="approverId"/>
+        </collection>
+    </resultMap>
+
+    <select id="searchPermissionRequests" resultMap="permissionRequestResultMap">
+        SELECT
+            t1.request_id,
+            t1.user_id,
+            t3.username,
+            t1.request_time,
+            t1.reason,
+            t2.item_id,
+            t2.permission_id,
+            t2.status,
+            t2.approver_id
+        FROM
+            t_permission_request t1
+            LEFT JOIN t_user t3 ON t3.user_id = t1.user_id
+            LEFT JOIN t_permission_request_item t2 ON t2.request_id = t1.request_id
+        WHERE
+            t1.deleted = false
+        <if test="userIds != null and userIds.size() > 0">
+            AND t1.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="usernameSearchKeyword != null and usernameSearchKeyword != ''">
+            AND t3.username LIKE CONCAT( '%', #{usernameSearchKeyword}, '%' )
+        </if>
+        <if test="pendingOnly == true">
+            AND EXISTS (
+                SELECT 1 FROM t_permission_request_item sub
+                WHERE sub.request_id = t1.request_id AND sub.status = 'PENDING'
+            )
+        </if>
+        ORDER BY t1.request_time DESC
+    </select>
+
+    <select id="getById" resultMap="permissionRequestResultMap">
+        SELECT
+            t1.request_id,
+            t1.user_id,
+            t2.username,
+            t1.request_time,
+            t1.reason
+        FROM
+            t_permission_request t1
+            LEFT JOIN t_user t2 ON t2.user_id = t1.user_id
+        WHERE
+            t1.deleted = false
+            AND t1.request_id = #{requestId}
+    </select>
+</mapper>

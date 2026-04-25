@@ -31,6 +31,15 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
@@ -40,14 +49,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -196,13 +197,15 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
         JwtSecretRotationConfigDto jwtSecretRotationConfig = getJwtSecretRotationConfig();
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
         RLock lock = RedisUtil.getLock(LOCK_KEY_JWK + tenantCode);
+
+        JwtSecretInfoDto jwtSecretInfo;
         try {
             lock.lock();
             // 2. 删除 JWK 缓存
             RedisUtil.delete(AuthConstants.JWK_REDIS_KEY + tenantCode);
 
             // 3. 生成新的 JWK
-            JwtSecretInfoDto jwtSecretInfo = getJwtSecretInfo();
+            jwtSecretInfo = getJwtSecretInfo();
             LocalDateTime createTime = LocalDateTime.now();
             String kid = CommonUtil.getBase64StringKey(18);
             jwtSecretInfo.setKid(kid);
@@ -220,17 +223,17 @@ public class SystemSettingServiceImpl extends ServiceImpl<SystemSettingMapper, S
                     .keyID(kid)
                     .build();
             RedisUtil.set(AuthConstants.JWK_REDIS_KEY + tenantCode, new JWKSet(rsaKey).toString(false));
-
-            // 4. 重新添加轮换密钥任务
-            // 4.1 取消已有的轮换密钥任务
-            String taskName = RotateJwtSecretApplicationRunner.ROTATE_JWT_SECRET_TASK_NAME_PREFIX + tenantCode;
-            scheduledTaskService.cancelTask(taskName);
-            // 4.2 添加新的轮换密钥任务
-            scheduledTaskService.addTaskAtFixedTime(taskName, () -> rotateJwtSecret(tenantCode),
-                    jwtSecretInfo.getExpireTime());
         } finally {
             lock.unlock();
         }
+
+        // 4. 重新添加轮换密钥任务
+        // 4.1 取消已有的轮换密钥任务
+        String taskName = RotateJwtSecretApplicationRunner.ROTATE_JWT_SECRET_TASK_NAME_PREFIX + tenantCode;
+        scheduledTaskService.cancelTask(taskName);
+        // 4.2 添加新的轮换密钥任务
+        scheduledTaskService.addTaskAtFixedTime(taskName, () -> rotateJwtSecret(tenantCode),
+                jwtSecretInfo.getExpireTime());
     }
 
     /**

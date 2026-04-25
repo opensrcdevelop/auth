@@ -1,3 +1,8 @@
+:deep(.arco-tabs-content) {
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 .user-center-container {
   width: 100vw;
   min-height: 100vh;
@@ -73,61 +78,6 @@
       width: 1200px;
       padding: 24px;
       overflow-y: auto;
-
-      .card {
-        width: 100%;
-      }
-
-      .card:not(:first-child) {
-        margin-top: 24px;
-      }
-
-      .binding-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        height: 440x;
-        margin-bottom: 16px;
-
-        .icon-container {
-          display: flex;
-          align-items: center;
-          font-size: 16px;
-
-          .icon {
-            height: 36px;
-            width: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #eff2f6;
-            font-size: 20px;
-            margin-right: 8px;
-
-            .identity-source-logo {
-              width: 36px;
-              height: 36px;
-            }
-          }
-        }
-
-        .name-container {
-          display: flex;
-          flex-direction: column;
-
-          .username {
-            margin-top: 4px;
-            color: #86909c;
-            font-size: 14px;
-          }
-        }
-      }
-
-      .binding-card:last-child {
-        margin-bottom: 0;
-      }
     }
   }
 }

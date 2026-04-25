@@ -1,53 +1,61 @@
 package cn.opensrcdevelop.ai.service.impl;
 
-import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.agent.ThinkAnswerAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.client.ChatClientManager;
 import cn.opensrcdevelop.ai.chat.tool.impl.RewriteUserQuestionTool;
+import cn.opensrcdevelop.ai.component.HeartbeatManager;
+import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
-import cn.opensrcdevelop.ai.dto.ChatBIRequestDto;
-import cn.opensrcdevelop.ai.dto.ChatBIResponseDto;
-import cn.opensrcdevelop.ai.dto.SampleSqlDto;
-import cn.opensrcdevelop.ai.dto.VoteAnswerRequestDto;
+import cn.opensrcdevelop.ai.constants.RedisTopicConstants;
+import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
+import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
+import cn.opensrcdevelop.ai.enums.Feedback;
 import cn.opensrcdevelop.ai.service.*;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.compare.CompareObj;
 import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
+import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.zaxxer.hikari.pool.HikariPool;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -61,13 +69,22 @@ public class ChatBIServiceImpl implements ChatBIService {
     private final ChatClientManager chatClientManager;
     private final DataSourceConfService dataSourceConfService;
     private final ThinkAnswerAgent thinkAnswerAgent;
-    private final ChatAgent chatAgent;
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatHistoryService chatHistoryService;
+    private final SampleSqlService sampleSqlService;
     private final RewriteUserQuestionTool rewriteUserQuestionTool;
+    private final HeartbeatManager heartbeatManager;
+    private final QueryResultTempFileManager queryResultTempFileManager;
+    private final SystemSettingService systemSettingService;
 
     @Resource(name = ExecutorConstants.EXECUTOR_IO_DENSE)
     private Executor executor;
+
+    @Value("${ai.chat.default-max-think-steps:30}")
+    private Integer defaultMaxThinkSteps;
+
+    @Value("${ai.chat.default-max-consecutive-tool-calls:3}")
+    private Integer defaultMaxConsecutiveToolCalls;
 
     /**
      * ChatBI 用户对话
@@ -82,6 +99,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         SseEmitter emitter = new SseEmitter(CHAT_TIMEOUT);
         AtomicBoolean interruptFlag = new AtomicBoolean(false);
         SecurityContext securityContext = SecurityContextHolder.getContext();
+
+        ScheduledFuture<?> heartbeatFuture = heartbeatManager.startHeartbeat(emitter);
 
         if (isRequestInvalid(emitter, requestDto)) {
             return emitter;
@@ -98,39 +117,91 @@ public class ChatBIServiceImpl implements ChatBIService {
         executor.execute(() -> {
             SecurityContextHolder.setContext(securityContext);
             ChatContext chatContext = new ChatContext();
+            chatContext.setId(UUID.randomUUID().toString());
+
+            // 注册 SSE 回调
+            emitter.onCompletion(() -> {
+                log.info("ChatBI 对话（{}）中断/结束", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
+            emitter.onTimeout(() -> {
+                log.info("ChatBI 对话（{}）超时", finalChatId);
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
+            emitter.onError(e -> {
+                log.info("ChatBI 对话（{}）异常: {}", finalChatId, e.getMessage());
+                interruptFlag.set(true);
+                heartbeatManager.stopHeartbeat(heartbeatFuture);
+                cleanupTempFiles(chatContext);
+            });
+
             try {
+                chatContext.setEmitter(emitter);
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
                 chatContext.setDataSourceId(requestDto.getDataSourceId());
                 chatContext.setQuestion(requestDto.getQuestion());
                 chatContext.setRawQuestion(requestDto.getQuestion());
                 ChatContextHolder.setChatContext(chatContext);
+
+                log.info("ChatBI 对话（{}）开始 -  ChatContextID: {}, ModelProviderID: {}, Model: {}",
+                        finalChatId,
+                        chatContext.getId(),
+                        requestDto.getModelProviderId(),
+                        requestDto.getModel());
+
                 chatMessageHistoryService.createUserChatMessageHistory(requestDto.getQuestion());
 
                 Tuple2<String, String> result = processStreamChatBIRequest(emitter, interruptFlag, requestDto,
                         finalChatId);
+
                 if (!interruptFlag.get()) {
                     SseUtil.sendChatBIDone(emitter, result._1, result._2);
                 } else {
                     chatMessageHistoryService.createChatMessageHistory("回答已取消", ChatContentType.LOADING);
+                    SseUtil.sendChatBIDone(emitter);
                 }
             } catch (HikariPool.PoolInitializationException ex) {
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_DATASOURCE_MSG_1003));
+                SseUtil.sendChatBIDone(emitter);
             } catch (Exception ex) {
                 log.error(ex.getMessage(), ex);
                 SseUtil.sendChatBIError(emitter, messageUtil.getMsg(MessageConstants.AI_CHAT_MSG_1000));
+                SseUtil.sendChatBIDone(emitter);
             } finally {
+                cleanupTempFiles(chatContext);
                 emitter.complete();
                 ChatContextHolder.removeChatContext(finalChatId);
             }
         });
 
-        emitter.onCompletion(() -> {
-            log.info("ChatBI 对话（{}）中断/结束", finalChatId);
-            interruptFlag.set(true);
-        });
-
         return emitter;
+    }
+
+    /**
+     * 清理会话的所有临时文件
+     */
+    private void cleanupTempFiles(ChatContext chatContext) {
+        if (chatContext == null) {
+            return;
+        }
+        List<String> paths = chatContext.getQueryResultFilePaths();
+        if (paths != null && !paths.isEmpty()) {
+            for (String path : paths) {
+                try {
+                    queryResultTempFileManager.deleteTempFile(path);
+                } catch (Exception e) {
+                    log.warn("清理临时文件失败: {}", path, e);
+                }
+            }
+            chatContext.clearQueryResultFilePaths();
+        }
     }
 
     /**
@@ -147,6 +218,61 @@ public class ChatBIServiceImpl implements ChatBIService {
                 .eq(ChatAnswer::getAnswerId, requestDto.getAnswerId())
                 .set(ChatAnswer::getFeedback,
                         requestDto.getFeedback() == null ? null : requestDto.getFeedback().name()));
+
+        // 2. 同步向量库
+        try {
+            if (requestDto.getFeedback() == Feedback.LIKE) {
+                sampleSqlService.addToVectorStore(requestDto.getAnswerId());
+            } else if (requestDto.getFeedback() == Feedback.DISLIKE) {
+                sampleSqlService.removeFromVectorStore(requestDto.getAnswerId());
+            }
+        } catch (Exception e) {
+            log.error("同步向量库失败，不影响投票结果", e);
+        }
+    }
+
+    /**
+     * 回答 AI 对用户的提问
+     *
+     * @param requestDto
+     *            回答 AI 对用户的提问请求
+     */
+    @Override
+    public void answerAskUserQuestion(UserAnswerRequestDto requestDto) {
+        RedisUtil.publishMessage(RedisTopicConstants.getTopic(requestDto.getChatId()), requestDto);
+    }
+
+    /**
+     * 获取对话配置
+     *
+     * @return 对话配置
+     */
+    @Override
+    public ChatConfigDto getChatConfig() {
+        return systemSettingService.getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+    }
+
+    /**
+     * 更新对话配置
+     *
+     * @param configDto
+     *            对话配置
+     */
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI, sysOperation = SysOperationType.UPDATE, success = "更新了 ChatBI 对话配置", fail = "更新 ChatBI 对话配置失败")
+    @Override
+    public void updateChatConfig(ChatConfigDto configDto) {
+        // 审计比较对象
+        var compareObjBuilder = CompareObj.builder();
+
+        ChatConfigDto rawChatConfigDto = systemSettingService
+                .getSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+
+        compareObjBuilder.before(rawChatConfigDto);
+        compareObjBuilder.after(configDto);
+
+        systemSettingService.saveSystemSetting(SystemSettingConstants.CHATBI_CHAT_CONFIG, configDto);
+
+        AuditContext.addCompareObj(compareObjBuilder.build());
     }
 
     @SuppressWarnings("all")
@@ -173,7 +299,37 @@ public class ChatBIServiceImpl implements ChatBIService {
         String finalQuestion = ChatContextHolder.getChatContext().getQuestion();
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
-        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion, chatClient);
+        List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
+
+        // 2.3 获取会话历史用户消息
+        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
+                ChatContextHolder.getChatContext().getChatId());
+        if (CollectionUtils.isNotEmpty(historicalQuestions)) {
+            historicalQuestions = new ArrayList<>(historicalQuestions);
+            historicalQuestions.removeLast();
+            historicalQuestions = CommonUtil.stream(historicalQuestions).distinct().toList();
+        }
+
+        // 2.4 获取对话配置
+        ChatConfigDto chatConfig = null;
+        try {
+            chatConfig = systemSettingService.getSystemSetting(
+                    SystemSettingConstants.CHATBI_CHAT_CONFIG, ChatConfigDto.class);
+        } catch (Exception e) {
+            log.error("获取 ChatBI 对话配置失败", e);
+        }
+        if (Objects.isNull(chatConfig)) {
+            chatConfig = new ChatConfigDto();
+        }
+        ChatContextHolder.getChatContext().setChatConfig(chatConfig);
+
+        int maxSteps = Objects.nonNull(chatConfig.getMaxThinkSteps()) && chatConfig.getMaxThinkSteps() > 0
+                ? chatConfig.getMaxThinkSteps()
+                : defaultMaxThinkSteps;
+        int maxConsecutiveToolCalls = Objects.nonNull(chatConfig.getMaxConsecutiveToolCalls())
+                && chatConfig.getMaxConsecutiveToolCalls() >= 2
+                        ? chatConfig.getMaxConsecutiveToolCalls()
+                        : defaultMaxConsecutiveToolCalls;
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
@@ -181,11 +337,19 @@ public class ChatBIServiceImpl implements ChatBIService {
                 emitter,
                 interruptFlag,
                 chatClient,
-                finalQuestion,
                 sampleSqls,
-                30);
+                historicalQuestions,
+                maxSteps,
+                Boolean.TRUE.equals(requestDto.getShowThinking()),
+                maxConsecutiveToolCalls);
 
         if (interruptFlag.get()) {
+            return Tuple.of(null, question);
+        }
+
+        // 检测是否需要等待用户回答
+        if (answer != null && Boolean.TRUE.equals(answer.get("isWaitingForUser"))) {
+            // ask_user tool 已被调用，等待用户回答，不保存答案
             return Tuple.of(null, question);
         }
 
@@ -193,6 +357,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);
         }
+
         String answerId = CommonUtil.getUUIDV7String();
         ChatAnswer chatAnswer = new ChatAnswer();
         chatAnswer.setAnswerId(answerId);
@@ -203,10 +368,24 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setQuestionId(requestDto.getQuestionId());
         chatAnswer.setQuestion(finalQuestion);
         chatAnswer.setSql(ChatContextHolder.getChatContext().getSql());
-        chatAnswer.setReqTokens(ChatContextHolder.getChatContext().getReqTokens().get());
-        chatAnswer.setRepTokens(ChatContextHolder.getChatContext().getRepTokens().get());
+        chatAnswer.setInputTokens(ChatContextHolder.getChatContext().getInputTokens().get());
+        chatAnswer.setOutputTokens(ChatContextHolder.getChatContext().getOutputTokens().get());
 
-        // 3.1 直接回答
+        // 3.1 发送数据查询结果
+        String sql = ChatContextHolder.getChatContext().getSql();
+        if (StringUtils.isNotBlank(sql)) {
+            SseUtil.sendChatBIMd(emitter, "\n> 数据查询：\n\n");
+
+            List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
+            List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
+            Map<String, Object> tableMessage = new HashMap<>();
+            tableMessage.put("sql", SqlFormatter.standard().format(sql));
+            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, queryColumns);
+            tableMessage.putAll(tableConfig);
+            SseUtil.sendChatBITable(emitter, tableMessage);
+        }
+
+        // 3.2 直接回答
         String answerText = null;
         if (answer.containsKey("final_answer")) {
             Object finalAnswerValue = answer.get("final_answer");
@@ -237,19 +416,15 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         if (answerText != null) {
             chatAnswer.setAnswer(answerText);
-            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 500);
+            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
         }
 
-        // 3.2 图表
+        // 3.3 图表
         Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
         if (MapUtils.isNotEmpty(chartConfig)) {
             chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
             var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
-            if ("table".equals(renderResult._1)) {
-                SseUtil.sendChatBITable(emitter, renderResult._2);
-            } else {
-                SseUtil.sendChatBIChart(emitter, renderResult._2);
-            }
+            SseUtil.sendChatBIChart(emitter, renderResult._2);
         }
 
         // 3.3 报告
@@ -262,7 +437,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
 
             if ("markdown".equals(reportType)) {
-                SseUtil.sendChatBIMd(emitter, reportText);
+                SseUtil.sendChatBIMdReport(emitter, reportText);
             }
 
             if ("html".equals(reportType)) {
@@ -341,61 +516,18 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            数据源ID
      * @param currentQuestion
      *            当前问题
-     * @param chatClient
-     *            ChatClient
      * @return 相关的问题-SQL 对列表
      */
-    private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion,
-            ChatClient chatClient) {
+    private List<Map<String, String>> getSampleSqls(String dataSourceId, String currentQuestion) {
         try {
-            // 1. 获取历史 LIKE 回答（包含 answerId 和 question）
-            List<ChatAnswer> historicalAnswers = chatAnswerService.list(Wrappers.<ChatAnswer>lambdaQuery()
-                    .select(ChatAnswer::getAnswerId, ChatAnswer::getQuestion)
-                    .eq(ChatAnswer::getDataSourceId, dataSourceId)
-                    .eq(ChatAnswer::getFeedback, "LIKE")
-                    .isNotNull(ChatAnswer::getSql)
-                    .ne(ChatAnswer::getSql, "")
-                    .last("LIMIT 500"));
-            log.info("获取到 {} 条历史 LIKE 回答", historicalAnswers.size());
-            if (historicalAnswers.isEmpty()) {
-                return new ArrayList<>();
-            }
+            List<SampleSqlDto> sampleSqls = sampleSqlService.search(dataSourceId, currentQuestion, null);
 
-            // 2. 转换为 Map 列表（只包含 answerId 和 question）
-            List<Map<String, String>> answerMaps = new ArrayList<>();
-            for (ChatAnswer answer : historicalAnswers) {
-                answerMaps.add(Map.of("answerId", answer.getAnswerId(), "question", answer.getQuestion()));
-            }
-
-            // 3. 让 Agent 判断相关性，返回相关的 answerId 列表
-            Map<String, Object> filterResult = chatAgent.filterRelatedHistoricalAnswers(
-                    chatClient, currentQuestion, answerMaps, 5);
-            List<String> relatedAnswerIds = new ArrayList<>();
-            if (filterResult.containsKey("related_answer_ids")
-                    && filterResult.get("related_answer_ids") instanceof List) {
-                Object ids = filterResult.get("related_answer_ids");
-                for (Object id : (List<?>) ids) {
-                    if (id instanceof String strId) {
-                        relatedAnswerIds.add(strId);
-                    }
-                }
-            }
-            log.info("Agent 返回 {} 个相关 answerId: {}", relatedAnswerIds.size(), relatedAnswerIds);
-
-            if (relatedAnswerIds.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            // 4. 根据 answerId 查询对应的 SQL
-            List<SampleSqlDto> sampleSqls = chatAnswerService.getSqlsByAnswerIds(relatedAnswerIds);
-            log.info("根据 answerId 查询到 {} 条示例 SQL", sampleSqls.size());
-
-            // 5. 转换为 Map 列表返回
             List<Map<String, String>> result = new ArrayList<>();
             for (SampleSqlDto dto : sampleSqls) {
                 result.add(Map.of("question", dto.getQuestion(), "sql", dto.getSql()));
             }
 
+            log.info("向量检索返回 {} 条相关示例 SQL", result.size());
             return result;
         } catch (Exception e) {
             log.error("获取示例 SQL 失败", e);

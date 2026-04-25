@@ -3,30 +3,33 @@ Your task is to generate an accurate SQL query based on the given information an
 
 ### Given Information
 Relevant Tables:
-
 <#list relevant_tables as table>
-
 - **Table**: ${table.table_name}
-<#if table.description?? && table.description != "">- **Description**: ${table.description}
-</#if><#if table.additional_info?? && table.additional_info != "">- **Additional Info**: ${table.additional_info}
-</#if>- **Columns**:
-
+<#if table.description?? && table.description != "">
+  - **Description**: ${table.description}
+</#if>
+<#if table.additional_info?? && table.additional_info != "">
+  - **Additional Info**: ${table.additional_info}
+</#if>
+  - **Columns**:
 <#list table.fields as item>
-
-  - ${item}
-
+    - ${item}
 </#list>
-
 </#list>
 
 ### Reasoning Process
 1. **Identify the relevant tables**: Determine which tables are needed based on the user question.
 2. **Extract required fields**: Identify the columns that should be included in the query.
-3. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
-4. **Check for user-specified limits**: Look for explicit row limit requests in the user question.
-5. **Apply default limit**: If no user limit is specified, add **LIMIT 1000** as the final clause.
-6. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
-7. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
+3. **Consider CTE for complex queries**: Use WITH clauses (CTE - Common Table Expression) to cache intermediate results when:
+   - The query involves multiple joins or aggregations
+   - The same subquery needs to be referenced multiple times
+   - Breaking down the query improves readability and performance
+   - Intermediate calculations need to be named and reused
+4. **Construct the SQL query**: Assemble the final query using the extracted information, ensuring it follows SQL syntax and best practices.
+5. **Check for user-specified limits**: Look for explicit row limit requests in the user question.
+6. **Apply default limit**: If no user limit is specified, add **LIMIT ${sql_result_limit}** as the final clause.
+7. **Avoid assumptions**: Do not assume any table join relationships that are not explicitly provided in the information.
+8. **Finalize the SQL query**: Provide a well-structured and clear SQL query that answers the user's question accurately.
 
 ### Requirements
 1. When the user question does not explicitly specify a date format, use the following standard format for date columns:

@@ -6,17 +6,16 @@ import cn.opensrcdevelop.auth.audit.context.AuditContext;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
-import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
-import cn.opensrcdevelop.auth.biz.constants.MessageConstants;
-import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
+import cn.opensrcdevelop.auth.biz.constants.*;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionRequestDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.PermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionResponseDto;
-import cn.opensrcdevelop.auth.biz.dto.permission.VerifyPermissionsRequestDto;
+import cn.opensrcdevelop.auth.biz.dto.permission.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
+import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest;
+import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequestItem;
+import cn.opensrcdevelop.auth.biz.entity.resource.Resource;
+import cn.opensrcdevelop.auth.biz.entity.resource.group.ResourceGroup;
 import cn.opensrcdevelop.auth.biz.entity.role.Role;
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
@@ -25,6 +24,8 @@ import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
+import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestItemService;
+import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
 import cn.opensrcdevelop.auth.biz.service.resource.ResourceService;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -39,12 +40,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
-import jakarta.annotation.Resource;
-import java.util.*;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -53,24 +51,36 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Service
-@RequiredArgsConstructor
 public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permission> implements PermissionService {
 
     private final PermissionRepository permissionRepository;
     private final AuthorizeService authorizeService;
+    private final PermissionRequestService permissionRequestService;
+    private final PermissionRequestItemService permissionRequestItemService;
+    private final ResourceService resourceService;
+    private final PermissionExpService permissionExpService;
+    private final UserGroupService userGroupService;
 
-    @Resource
-    @Lazy
-    private ResourceService resourceService;
-
-    @Resource
-    @Lazy
-    private PermissionExpService permissionExpService;
-
-    @Resource
-    @Lazy
-    private UserGroupService userGroupService;
+    public PermissionServiceImpl(
+            PermissionRepository permissionRepository,
+            AuthorizeService authorizeService,
+            @Lazy ResourceService resourceService,
+            @Lazy PermissionExpService permissionExpService,
+            @Lazy UserGroupService userGroupService,
+            @Lazy PermissionRequestService permissionRequestService,
+            PermissionRequestItemService permissionRequestItemService) {
+        this.permissionRepository = permissionRepository;
+        this.authorizeService = authorizeService;
+        this.resourceService = resourceService;
+        this.permissionExpService = permissionExpService;
+        this.userGroupService = userGroupService;
+        this.permissionRequestService = permissionRequestService;
+        this.permissionRequestItemService = permissionRequestItemService;
+    }
 
     /**
      * 创建权限
@@ -99,6 +109,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permission.setDescription(requestDto.getDesc());
         permission.setPermissionId(permissionId);
         permission.setResourceId(requestDto.getResourceId());
+        permission.setAllowApply(Boolean.TRUE.equals(requestDto.getAllowApply()));
+        permission.setAutoApprove(Boolean.TRUE.equals(requestDto.getAutoApprove()));
 
         // 3. 数据库操作
         super.save(permission);
@@ -137,15 +149,12 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
                 // 3.1 权限信息
                 Permission permission = authorizeRecord.getPermission();
+                response.setPermissionId(permission.getPermissionId());
+                response.setPermissionName(permission.getPermissionName());
+                response.setResourceName(permission.getResource().getResourceName());
+                response.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
+                response.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
                 response.setPermissionLocator(generatePermissionLocator(permission));
-
-                // 3.2 限制条件
-                var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
-                    PermissionExpResponseDto permissionExpResponse = new PermissionExpResponseDto();
-                    permissionExpResponse.setId(exp.getExpressionId());
-                    return permissionExpResponse;
-                }).toList();
-                response.setConditions(conditions);
                 return response;
             }).toList();
         }
@@ -279,7 +288,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         PermissionResponseDto permissionResponse = new PermissionResponseDto();
         // 1. 查询数据库
         Permission permission = permissionRepository.getPermission(permissionId);
-        if (permission == null) {
+        if (permission == null || permission.getResource() == null) {
             return permissionResponse;
         }
 
@@ -289,6 +298,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         permissionResponse.setPermissionCode(permission.getPermissionCode());
         permissionResponse.setPermissionDesc(permission.getDescription());
         permissionResponse.setResourceId(permission.getResource().getResourceId());
+        permissionResponse.setAllowApply(permission.getAllowApply());
+        permissionResponse.setAutoApprove(permission.getAutoApprove());
 
         permissionResponse.setPermissionLocator(generatePermissionLocator(permission));
 
@@ -297,8 +308,16 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 .map(authorizeRecord -> {
                     AuthorizeRecordResponseDto authorizeRecordResponse = new AuthorizeRecordResponseDto();
                     authorizeRecordResponse.setAuthorizeId(authorizeRecord.getAuthorizeId());
+                    authorizeRecordResponse.setPrincipalType(authorizeRecord.getType());
                     authorizeRecordResponse.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
                     authorizeRecordResponse.setPriority(authorizeRecord.getPriority());
+                    authorizeRecordResponse.setAuthorizerId(authorizeRecord.getAuthorizerId());
+                    authorizeRecordResponse.setAuthorizerUsername(authorizeRecord.getAuthorizerUsername());
+
+                    AuthorizeTypeEnum authorizeType = AuthorizeTypeEnum.fromType(authorizeRecord.getType());
+                    if (Objects.nonNull(authorizeType)) {
+                        authorizeRecordResponse.setAuthorizeType(authorizeType.getDisplayName());
+                    }
 
                     // 3.1 授权条件
                     var conditions = CommonUtil.stream(authorizeRecord.getPermissionExps()).map(exp -> {
@@ -399,6 +418,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         updatePermission.setPermissionCode(requestDto.getCode());
         updatePermission.setDescription(requestDto.getDesc());
         updatePermission.setVersion(rawPermission.getVersion());
+        CommonUtil.callSetWithCheck(Objects::nonNull, updatePermission::setAllowApply, requestDto::getAllowApply);
+        CommonUtil.callSetWithCheck(Objects::nonNull, updatePermission::setAutoApprove, requestDto::getAutoApprove);
 
         // 4. 数据库操作
         super.updateById(updatePermission);
@@ -464,6 +485,88 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 }).toList();
     }
 
+    /**
+     * 获取可申请的权限树
+     *
+     * @return 权限树（按资源组 -> 资源 -> 权限 三层结构）
+     */
+    @Override
+    public List<PermissionTreeNodeResponseDto> getAvailablePermissionTree() {
+        // 1. 获取可申请的权限
+        List<Permission> availablePermissions = permissionRepository.getAllowApplyPermissions();
+        if (CollectionUtils.isEmpty(availablePermissions)) {
+            return Collections.emptyList();
+        }
+
+        // 2. 获取当前用户权限
+        PermissionService proxyService = (PermissionService) AopContext.currentProxy();
+        final List<String> ownedPermissionIds = new ArrayList<>(CommonUtil
+                .stream(proxyService.getCurrentUserPermissions()).map(PermissionResponseDto::getPermissionId).toList());
+
+        // 3. 获取用户申请中的权限
+        final List<String> pendingPermissionIds = new ArrayList<>();
+        List<PermissionRequest> permissionRequestList = permissionRequestService
+                .list(Wrappers.<PermissionRequest>lambdaQuery()
+                        .select(PermissionRequest::getRequestId)
+                        .eq(PermissionRequest::getUserId, AuthUtil.getCurrentUserId()));
+        if (CollectionUtils.isNotEmpty(permissionRequestList)) {
+            pendingPermissionIds
+                    .addAll(CommonUtil
+                            .stream(permissionRequestItemService.list(Wrappers.<PermissionRequestItem>lambdaQuery()
+                                    .in(PermissionRequestItem::getRequestId,
+                                            permissionRequestList.stream().map(PermissionRequest::getRequestId)
+                                                    .toList())
+                                    .eq(PermissionRequestItem::getStatus, PermissionRequestStatusEnum.PENDING.name())))
+                            .map(PermissionRequestItem::getPermissionId).toList());
+        }
+
+        List<Resource> availableResource = availablePermissions.stream().map(Permission::getResource).distinct()
+                .toList();
+        List<ResourceGroup> availableResourceGroup = availableResource.stream().map(Resource::getResourceGroup)
+                .distinct().toList();
+        Map<String, List<Resource>> groupedAvailableResource = CommonUtil.stream(availableResource)
+                .collect(Collectors.groupingBy(r -> r.getResourceGroup().getResourceGroupId()));
+        Map<String, List<Permission>> groupedAvailablePermissions = CommonUtil.stream(availablePermissions)
+                .collect(Collectors.groupingBy(p -> p.getResource().getResourceId()));
+
+        // 4. 构建权限树
+        return CommonUtil.stream(availableResourceGroup).map(rg -> {
+            // 4.1 资源组
+            PermissionTreeNodeResponseDto treeNode1 = new PermissionTreeNodeResponseDto();
+            treeNode1.setId(rg.getResourceGroupId());
+            treeNode1.setName(rg.getResourceGroupName());
+            treeNode1.setCode(rg.getResourceGroupCode());
+            treeNode1.setType("RESOURCE_GROUP");
+
+            // 4.2 资源
+            treeNode1.setChildren(CommonUtil.stream(groupedAvailableResource.get(rg.getResourceGroupId())).map(r -> {
+                PermissionTreeNodeResponseDto treeNode2 = new PermissionTreeNodeResponseDto();
+                treeNode2.setId(r.getResourceId());
+                treeNode2.setName(r.getResourceName());
+                treeNode2.setCode(r.getResourceCode());
+                treeNode2.setType("RESOURCE");
+
+                // 4.3 权限
+                treeNode2.setChildren(CommonUtil.stream(groupedAvailablePermissions.get(r.getResourceId())).map(p -> {
+                    PermissionTreeNodeResponseDto treeNode3 = new PermissionTreeNodeResponseDto();
+                    treeNode3.setId(p.getPermissionId());
+                    treeNode3.setName(p.getPermissionName());
+                    treeNode3.setCode(p.getPermissionCode());
+                    treeNode3.setAutoApprove(p.getAutoApprove());
+                    treeNode3.setPending(pendingPermissionIds.contains(p.getPermissionId()));
+                    treeNode3.setOwned(ownedPermissionIds.contains(p.getPermissionId()));
+                    treeNode3.setType("PERMISSION");
+
+                    return treeNode3;
+                }).toList());
+
+                return treeNode2;
+            }).toList());
+
+            return treeNode1;
+        }).toList();
+    }
+
     private Tuple4<String, String, String, String> getPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -510,7 +613,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
     private void checkPermissionCode(PermissionRequestDto requestDto, Permission rawPermission) {
         if (Objects.nonNull(rawPermission)
-                && StringUtils.equals(requestDto.getCode(), rawPermission.getPermissionCode())) {
+                && Strings.CS.equals(requestDto.getCode(), rawPermission.getPermissionCode())) {
             return;
         }
 
@@ -530,8 +633,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
             return StringUtils.EMPTY;
         }
 
-        List<String> locatorParts = List.of(permission.getResource().getResourceGroup().getResourceGroupCode(),
-                permission.getResource().getResourceCode(), permission.getPermissionCode());
+        var resource = permission.getResource();
+        var resourceGroup = resource != null ? resource.getResourceGroup() : null;
+
+        List<String> locatorParts = List.of(
+                resourceGroup != null ? resourceGroup.getResourceGroupCode() : StringUtils.EMPTY,
+                resource != null ? resource.getResourceCode() : StringUtils.EMPTY,
+                permission.getPermissionCode());
         return CommonUtil.stream(locatorParts).map(x -> {
             if (Objects.isNull(x)) {
                 return StringUtils.EMPTY;

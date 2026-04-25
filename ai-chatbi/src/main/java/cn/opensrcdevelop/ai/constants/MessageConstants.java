@@ -13,4 +13,5 @@ public class MessageConstants {
     public static final String AI_DATASOURCE_MSG_1003 = "ai.datasource.msg.1003";
     public static final String AI_DATASOURCE_MSG_1004 = "ai.datasource.msg.1004";
     public static final String AI_CHAT_MSG_1000 = "ai.chat.msg.1000";
+    public static final String AI_SAMPLE_SQL_MSG_1000 = "ai.sample.sql.msg.1000";
 }

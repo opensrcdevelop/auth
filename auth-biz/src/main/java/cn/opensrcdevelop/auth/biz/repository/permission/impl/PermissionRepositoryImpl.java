@@ -5,9 +5,10 @@ import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionMapper;
 import cn.opensrcdevelop.auth.biz.repository.permission.PermissionRepository;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -139,5 +140,15 @@ public class PermissionRepositoryImpl implements PermissionRepository {
     @Override
     public Permission getPermission(String permissionId) {
         return permissionMapper.getPermission(permissionId);
+    }
+
+    /**
+     * 获取允许申请的权限
+     *
+     * @return 允许申请的权限列表
+     */
+    @Override
+    public List<Permission> getAllowApplyPermissions() {
+        return permissionMapper.getAllowApplyPermissions();
     }
 }

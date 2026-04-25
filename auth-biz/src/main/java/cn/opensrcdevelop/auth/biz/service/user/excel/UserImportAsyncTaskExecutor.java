@@ -1,7 +1,8 @@
 package cn.opensrcdevelop.auth.biz.service.user.excel;
 
-import cn.opensrcdevelop.auth.biz.enums.AsyncTaskType;
+import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
+import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@AsyncTaskExecutorAnno(taskType = "USER_IMPORT")
 public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     public static final String TASK_NAME = "用户数据导入";
@@ -29,7 +31,7 @@ public class UserImportAsyncTaskExecutor implements AsyncTaskExecutor {
 
     @Override
     public String getTaskType() {
-        return AsyncTaskType.USER_IMPORT.getCode();
+        return AsyncTaskTypeEnum.USER_IMPORT.getCode();
     }
 
     @Override

@@ -22,6 +22,7 @@
       <ChartMessage :message="message" />
       <TableMessage :message="message" />
       <HtmlReportMessage :message="message" />
+      <MdReportMessage :message="message" />
       <ThinkingMessage :message="message" />
       <DoneMessage :message="message" @resend-message="handleResendMessage" />
     </div>
@@ -32,6 +33,7 @@
 import ChartMessage from "./messages/ChartMessage.vue";
 import DoneMessage from "./messages/DoneMessage.vue";
 import HtmlReportMessage from "./messages/HtmlReportMessage.vue";
+import MdReportMessage from "./messages/MdReportMessage.vue";
 import LoadingMessage from "./messages/LoadingMessage.vue";
 import TableMessage from "./messages/TableMessage.vue";
 import TextMessage from "./messages/TextMessage.vue";

@@ -2,11 +2,15 @@ package cn.opensrcdevelop.auth.biz.dto.permission;
 
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
-import lombok.Data;
 
 @Schema(description = "权限响应")
 @Data
@@ -66,9 +70,19 @@ public class PermissionResponseDto implements Serializable {
     @Schema(description = "授权ID")
     private String authorizeId;
 
+    @Schema(description = "授权时间")
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime authorizeTime;
+
     @Schema(description = "授权记录")
     private List<AuthorizeRecordResponseDto> authorizeRecords;
 
     @Schema(description = "优先级")
     private Integer priority;
+
+    @Schema(description = "是否允许用户申请")
+    private Boolean allowApply;
+
+    @Schema(description = "申请后是否自动批准")
+    private Boolean autoApprove;
 }

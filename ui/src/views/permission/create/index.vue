@@ -1,5 +1,6 @@
 <script lang="ts">
 import createTs from "./index";
+
 export default createTs;
 </script>
 
@@ -47,6 +48,24 @@ export default createTs;
             }"
           />
         </a-form-item>
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item field="allowApply" label="允许用户申请">
+              <a-switch
+                type="round"
+                v-model="createPermissionForm.allowApply"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item field="autoApprove" label="申请后自动批准">
+              <a-switch
+                type="round"
+                v-model="createPermissionForm.autoApprove"
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
         <a-form-item hide-label>
           <a-space>
             <a-button type="primary" html-type="submit">创建</a-button>

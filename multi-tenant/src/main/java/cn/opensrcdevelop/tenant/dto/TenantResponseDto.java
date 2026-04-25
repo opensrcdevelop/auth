@@ -34,4 +34,12 @@ public class TenantResponseDto {
     @Schema(description = "创建时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime createTime;
+
+    @Schema(description = "生效时间")
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime effectiveTime;
+
+    @Schema(description = "失效时间")
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime expirationTime;
 }

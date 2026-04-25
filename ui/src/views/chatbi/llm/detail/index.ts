@@ -42,15 +42,13 @@ const modelProviderInfoForm = reactive({
   type: undefined,
   baseUrl: undefined,
   apiKey: undefined,
-  temperature: undefined,
-  maxTokens: undefined,
   defaultModel: undefined,
 });
 
 /**
  * 可选模型
  */
-const optionalModelList = ref([]);
+const optionalModelList = reactive([] as any[]);
 
 /**
  * 获取模型提供商详情
@@ -67,11 +65,10 @@ const handleGetModelProviderDetail = (id: string = modelProviderId.value) => {
         modelProviderInfoForm.type = data.type;
         modelProviderInfoForm.baseUrl = data.baseUrl;
         modelProviderInfoForm.apiKey = data.apiKey;
-        modelProviderInfoForm.temperature = data.temperature;
-        modelProviderInfoForm.maxTokens = data.maxTokens;
         modelProviderInfoForm.defaultModel = data.defaultModel;
 
-        optionalModelList.value = data.optionalModels;
+        optionalModelList.length = 0;
+        optionalModelList.push(...data.optionalModels);
       });
     })
     .catch((err: any) => {
@@ -106,8 +103,9 @@ const handleResetModelProviderInfoForm = () => {
 /**
  * 可选模型列表变更
  */
-const handleOptionalModelListChange = (_data) => {
-  optionalModelList.value = _data;
+const handleOptionalModelListChange = (_data: any) => {
+  optionalModelList.length = 0;
+  optionalModelList.push(..._data);
   handleUpdateOptionalModelList();
 };
 
@@ -123,7 +121,7 @@ const handleRemoveOptionalModel = (model: any) => {
       status: "danger",
     },
     onOk: () => {
-      optionalModelList.value.splice(optionalModelList.value.indexOf(model), 1);
+      optionalModelList.splice(optionalModelList.indexOf(model), 1);
       handleUpdateOptionalModelList();
     },
   });
@@ -135,7 +133,7 @@ const handleRemoveOptionalModel = (model: any) => {
 const handleUpdateOptionalModelList = () => {
   updateModelProvider({
     id: modelProviderId.value,
-    optionalModels: optionalModelList.value.map((item: any) => item.name),
+    optionalModels: optionalModelList.map((item: any) => item.name),
   })
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -166,12 +164,13 @@ const addOptionalModelFormRules = {
 const handleAddOptionalModelFormSubmit = async () => {
   const errors = await addOptionalModelFormRef.value.validate();
   if (!errors) {
-    optionalModelList.value.push({
+    optionalModelList.push({
       name: addOptionalModelForm.name,
       usedReqTokens: 0,
       usedRepTokens: 0,
     });
     addOptionalModelModalVisible.value = false;
+    addOptionalModelFormRef.value.resetFields();
     handleUpdateOptionalModelList();
   } else {
     addOptionalModelModalVisible.value = true;
@@ -188,7 +187,7 @@ const handleCloseAddOptionalModelModal = () => {
 
 export default defineComponent({
   setup() {
-    const modelProviderId = getQueryString("id");
+    const modelProviderId = getQueryString("id") || "";
 
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "model_provider_info";

@@ -2,26 +2,16 @@ You are a data security and compliance expert. Your task is to verify the legiti
 
 ### Given Information
 1. **Relevant Tables Information**:
-
 <#list relevant_tables as table>
-
 - Table: ${table.table_name}
 - **Forbidden Fields**:
-
 <#if table.forbidden_fields??>
-
 <#list table.forbidden_fields as field>
-
-- ${field}
-
+  - ${field}
 </#list>
-
 <#else>
-
 None Forbidden Fields
-
 </#if>
-
 </#list>
 
 ### Verification Process

@@ -25,7 +25,15 @@ const princialSelectable = ref(false);
 
 /** 授权表单 */
 const authorizeFormRef = ref();
-const authorizeForm = reactive({
+const authorizeForm = reactive<{
+  userIds: string[];
+  roleIds: string[];
+  userGroupIds: string[];
+  permissionIds: string[];
+  expressionIds: string[];
+  resourceId: string | undefined;
+  priority: number | undefined;
+}>({
   userIds: [],
   roleIds: [],
   userGroupIds: [],
@@ -51,7 +59,7 @@ const principalFormRules = {
 };
 
 /** 资源列表 */
-const resourceList = reactive([]);
+const resourceList = reactive([] as any[]);
 const resourceSearchKeyword = ref("");
 const resourceListPagination = {
   current: 1,
@@ -106,7 +114,7 @@ const loadMoreResource = () => {
 };
 
 /** 权限列表 */
-const permissionList = reactive([]);
+const permissionList = reactive([] as any[]);
 const permissionSearchKeyword = ref("");
 const permissionListPagination = {
   current: 1,
@@ -174,7 +182,7 @@ const handlePermissionSelectVisibleChange = (visible: boolean) => {
 };
 
 /** 限制条件列表 */
-const authorizeConditionList = reactive([]);
+const authorizeConditionList = reactive([] as any[]);
 const authorizeConditionSearchKeyword = ref("");
 const authorizeConditionListPagination = {
   total: 0,
@@ -186,7 +194,7 @@ const authorizeConditionListPagination = {
  */
 const handleGetAuthorizeConditionList = (
   page: number = 1,
-  size: number = 15
+  size: number = 15,
 ) => {
   getPermissionExpList({
     page,
@@ -232,7 +240,7 @@ const loadMoreAuthorizeCondition = () => {
 };
 
 /** 用户列表 */
-const userList = reactive([]);
+const userList = reactive([] as any[]);
 const userSearchKeyword = ref("");
 const userListPagination = {
   current: 1,
@@ -282,7 +290,7 @@ const loadMoreUser = () => {
 };
 
 /** 用户组列表 */
-const userGroupList = reactive([]);
+const userGroupList = reactive([] as any[]);
 const userGroupSearchKeyword = ref("");
 const userGroupListPagination = {
   current: 1,
@@ -333,7 +341,7 @@ const loadMoreUserGroup = () => {
 };
 
 /** 角色列表 */
-const roleList = reactive([]);
+const roleList = reactive([] as any[]);
 const roleSearchKeyword = ref("");
 const roleListPagination = {
   current: 1,
@@ -408,7 +416,7 @@ const principalSelectChange = (value: any) => {
  */
 const handleAuthorizeFormSubmit = () => {
   if (princialSelectable.value) {
-    principalFormRef.value.validate((errors) => {
+    principalFormRef.value.validate((errors: any) => {
       if (!errors) {
         if (principalForm.type === "USER") {
           authorizeForm.userIds.push(...principalForm.id);
@@ -425,7 +433,7 @@ const handleAuthorizeFormSubmit = () => {
     });
   }
 
-  authorizeFormRef.value.validate((errors) => {
+  authorizeFormRef.value.validate((errors: any) => {
     if (!errors) {
       authorize(authorizeForm)
         .then((result: any) => {

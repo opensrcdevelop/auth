@@ -1,6 +1,6 @@
 package cn.opensrcdevelop.auth.biz.dto.user.group;
 
-import cn.opensrcdevelop.auth.biz.constants.UserGroupType;
+import cn.opensrcdevelop.auth.biz.constants.UserGroupTypeEnum;
 import cn.opensrcdevelop.common.validation.ValidationGroups;
 import cn.opensrcdevelop.common.validation.constraints.AlphaNum;
 import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
@@ -34,7 +34,7 @@ public class UserGroupRequestDto {
 
     @Schema(description = "用户组类型")
     @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
-    private UserGroupType type;
+    private UserGroupTypeEnum type;
 
     @Schema(description = "动态用户组条件")
     @NotNull(groups = {DynamicUserGroup.class})

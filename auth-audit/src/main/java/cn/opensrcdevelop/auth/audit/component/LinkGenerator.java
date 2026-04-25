@@ -2,11 +2,12 @@ package cn.opensrcdevelop.auth.audit.component;
 
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import org.springframework.stereotype.Component;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.springframework.stereotype.Component;
 
 @Component("linkGen")
 public class LinkGenerator {
@@ -38,6 +39,8 @@ public class LinkGenerator {
                 LINK_TEMPLATE.formatted("/chatbi/datasource/detail", "%s", "%s"));
         LINK_TEMPLATES.put(ResourceType.CHAT_BI_MODEL_PROVIDER,
                 LINK_TEMPLATE.formatted("/chatbi/llm/detail", "%s", "%s"));
+        LINK_TEMPLATES.put(ResourceType.PERMISSION_REQUEST,
+                LINK_TEMPLATE.formatted("/permission/request/detail", "%s", "%s"));
     }
 
     public String toLink(String id, ResourceType resourceType) {

@@ -8,13 +8,13 @@ import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.response.PageData;
+import cn.opensrcdevelop.common.util.WebUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
 
 /**
  * 异步任务控制器
@@ -61,7 +61,7 @@ public class AsyncTaskController {
         }
         byte[] data = storageService.read(task.getResultFilePath());
         response.setContentType(CommonConstants.EXCEL_CONTENT_TYPE);
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + task.getResultFileName() + "\"");
+        response.setHeader("Content-Disposition", WebUtil.encodeContentDisposition(task.getResultFileName()));
         response.getOutputStream().write(data);
         response.getOutputStream().flush();
     }

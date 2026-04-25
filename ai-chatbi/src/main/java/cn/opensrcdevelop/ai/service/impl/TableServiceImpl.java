@@ -18,15 +18,17 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -139,19 +141,30 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
      * 获取 Table Schema
      *
      * @param tables
-     *            表列表
+     *            表ID列表
      * @return Table Schema
      */
     @Override
-    public List<Map<String, Object>> getTableSchemas(List<Map<String, Object>> tables) {
-        List<String> tableIds = CommonUtil.stream(tables).map(x -> x.get("table_id").toString()).toList();
+    public List<Map<String, Object>> getTableSchemas(List<String> tables) {
+        List<Table> allTables = super.list(Wrappers.<Table>lambdaQuery()
+                .in(Table::getTableId, tables).or()
+                .in(Table::getTableName, tables));
         List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .in(TableField::getTableId, tableIds));
+                .in(TableField::getTableId, tables));
 
-        return CommonUtil.stream(tables).map(table -> {
-            Map<String, Object> newTableInfo = new HashMap<>(table);
+        return CommonUtil.stream(allTables).map(table -> {
+            // 表信息
+            Map<String, Object> tableInfo = new HashMap<>();
+            tableInfo.put("table_id", table.getTableId());
+            tableInfo.put("table_name", table.getTableName());
+            tableInfo.put("description",
+                    table.getRemark() == null ? "No description available" : table.getRemark());
+            tableInfo.put("additional_info",
+                    table.getAdditionalInfo() == null ? "No additional info available" : table.getAdditionalInfo());
+
+            // 字段信息
             List<TableField> tableFields = CommonUtil.stream(allTableFields)
-                    .filter(x -> x.getTableId().equals(table.get("table_id"))).toList();
+                    .filter(x -> x.getTableId().equals(table.getTableId())).toList();
             List<String> fieldDescriptions = CommonUtil.stream(tableFields).map(x -> {
                 Map<String, String> fieldDescription = new HashMap<>();
                 fieldDescription.put("field_name", x.getFieldName());
@@ -161,8 +174,8 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                         x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
                 return CommonUtil.serializeObject(fieldDescription);
             }).toList();
-            newTableInfo.put("fields", fieldDescriptions);
-            return newTableInfo;
+            tableInfo.put("fields", fieldDescriptions);
+            return tableInfo;
         }).toList();
     }
 
@@ -194,40 +207,17 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
     /**
      * 获取表的禁止字段
      *
-     * @param tableId
-     *            表ID
+     * @param tableIds
+     *            表ID列表
      * @return 表的禁止字段
      */
     @Override
-    public List<String> getTableForbiddenFields(String tableId) {
+    public Map<String, List<String>> getTableForbiddenFields(List<String> tableIds) {
         List<TableField> forbiddenFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .select(TableField::getFieldName)
-                .eq(TableField::getTableId, tableId)
+                .select(TableField::getTableId, TableField::getFieldName)
+                .in(TableField::getTableId, tableIds)
                 .eq(TableField::getToUse, false));
-        return CommonUtil.stream(forbiddenFields).map(TableField::getFieldName).toList();
-    }
-
-    /**
-     * 获取表的字段定义
-     *
-     * @param tableId
-     *            表ID
-     * @return 表的字段定义
-     */
-    @Override
-    public List<Map<String, Object>> getTableFields(String tableId) {
-        List<TableField> tableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .eq(TableField::getTableId, tableId)
-                .eq(TableField::getToUse, true));
-
-        return CommonUtil.stream(tableFields).map(x -> {
-            Map<String, Object> fieldDescription = new HashMap<>();
-            fieldDescription.put("field_name", x.getFieldName());
-            fieldDescription.put("field_data_type", x.getFieldType());
-            fieldDescription.put("description", x.getRemark() == null ? "No description available" : x.getRemark());
-            fieldDescription.put("additional_info",
-                    x.getAdditionalInfo() == null ? "No additional info available" : x.getAdditionalInfo());
-            return fieldDescription;
-        }).toList();
+        return CommonUtil.stream(forbiddenFields).collect(Collectors.groupingBy(TableField::getTableId,
+                Collectors.mapping(TableField::getFieldName, Collectors.toList())));
     }
 }

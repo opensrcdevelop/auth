@@ -70,4 +70,11 @@ public class MessageConstants {
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1000 = "permission.exp.template.msg.1000";
     public static final String PERMISSION_EXP_TEMPLATE_MSG_1001 = "permission.exp.template.msg.1001";
     public static final String ASYNC_TASK_MSG_1000 = "async.task.msg.1000";
+    public static final String PERMISSION_REQUEST_MSG_1000 = "permission.request.msg.1000";
+    public static final String PERMISSION_REQUEST_MSG_1001 = "permission.request.msg.1001";
+    public static final String PERMISSION_REQUEST_MSG_1002 = "permission.request.msg.1002";
+    public static final String PERMISSION_REQUEST_MSG_1003 = "permission.request.msg.1003";
+    public static final String PERMISSION_REQUEST_MSG_1004 = "permission.request.msg.1004";
+    public static final String PERMISSION_REQUEST_MSG_1005 = "permission.request.msg.1005";
+    public static final String PERMISSION_REQUEST_MSG_1006 = "permission.request.msg.1006";
 }

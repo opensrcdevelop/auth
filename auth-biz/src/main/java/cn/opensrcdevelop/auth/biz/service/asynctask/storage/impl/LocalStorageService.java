@@ -2,11 +2,6 @@ package cn.opensrcdevelop.auth.biz.service.asynctask.storage.impl;
 
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.exception.ServerException;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,12 +9,18 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 /**
  * 本地存储服务实现
  */
 @Slf4j
 @Service
+@ConditionalOnProperty(name = "async-task.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalStorageService implements StorageService {
 
     @Value("${async-task.storage.local.base-path:/tmp/async-task}")

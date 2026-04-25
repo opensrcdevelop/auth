@@ -4,6 +4,7 @@ import cn.opensrcdevelop.auth.biz.constants.SystemSettingConstants;
 import cn.opensrcdevelop.auth.biz.entity.client.Client;
 import cn.opensrcdevelop.auth.biz.service.client.ClientService;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
+import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.tenant.component.MultiTenantProperties;
 import cn.opensrcdevelop.tenant.entity.Tenant;
@@ -23,8 +24,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AuthServerApplicationRunner implements ApplicationRunner, Ordered {
 
-    private static final String CONSOLE_CLIENT_NAME = "auth-server-console";
-
     private final TenantService tenantService;
     private final ClientService clientService;
     private final SystemSettingService systemSettingService;
@@ -37,7 +36,8 @@ public class AuthServerApplicationRunner implements ApplicationRunner, Ordered {
         executeWithTenantContext(() -> {
             // 存储控制台客户端 ID
             Client client = clientService
-                    .getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName, CONSOLE_CLIENT_NAME));
+                    .getOne(Wrappers.<Client>lambdaQuery().eq(Client::getClientName,
+                            CommonConstants.CONSOLE_CLIENT_NAME));
             if (Objects.nonNull(client)) {
                 String clientId = client.getClientId();
                 systemSettingService.saveSystemSetting(SystemSettingConstants.CONSOLE_CLIENT_ID, clientId);

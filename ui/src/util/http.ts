@@ -40,9 +40,9 @@ export class Request {
           if (
             token &&
             config.url !== "/oauth2/token" &&
-            !config.url.startsWith("/tenant/check/") &&
-            !config.url.startsWith("/captcha") &&
-            !config.url.startsWith("/identitySource/enabled")
+            !config.url?.startsWith("/tenant/check/") &&
+            !config.url?.startsWith("/captcha") &&
+            !config.url?.startsWith("/identitySource/enabled")
           ) {
             config.headers!.Authorization = `${token.token_type} ${token.access_token}`;
           }
@@ -161,7 +161,7 @@ export class Request {
 // 是否正在刷新标记
 let isRefreshing = false;
 // 重试队列
-let retryRequests = [];
+let retryRequests = [] as any[];
 
 /**
  * 刷新 token
@@ -221,7 +221,7 @@ async function refreshingToken(
   } else {
     return new Promise((resolve) => {
       // 等待刷新 token 完成后执行
-      retryRequests.push((token) => {
+      retryRequests.push((token: any) => {
         resetToken(token, requestConfig);
         resolve(axios(requestConfig));
       });
