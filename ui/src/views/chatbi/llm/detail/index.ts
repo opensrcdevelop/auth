@@ -48,7 +48,7 @@ const modelProviderInfoForm = reactive({
 /**
  * 可选模型
  */
-const optionalModelList = ref([] as any[]);
+const optionalModelList = reactive([] as any[]);
 
 /**
  * 获取模型提供商详情
@@ -67,7 +67,8 @@ const handleGetModelProviderDetail = (id: string = modelProviderId.value) => {
         modelProviderInfoForm.apiKey = data.apiKey;
         modelProviderInfoForm.defaultModel = data.defaultModel;
 
-        optionalModelList.value = data.optionalModels;
+        optionalModelList.length = 0;
+        optionalModelList.push(...data.optionalModels);
       });
     })
     .catch((err: any) => {
@@ -103,7 +104,8 @@ const handleResetModelProviderInfoForm = () => {
  * 可选模型列表变更
  */
 const handleOptionalModelListChange = (_data: any) => {
-  optionalModelList.value = _data;
+  optionalModelList.length = 0;
+  optionalModelList.push(..._data);
   handleUpdateOptionalModelList();
 };
 
@@ -119,7 +121,7 @@ const handleRemoveOptionalModel = (model: any) => {
       status: "danger",
     },
     onOk: () => {
-      optionalModelList.value.splice(optionalModelList.value.indexOf(model), 1);
+      optionalModelList.splice(optionalModelList.indexOf(model), 1);
       handleUpdateOptionalModelList();
     },
   });
@@ -131,7 +133,7 @@ const handleRemoveOptionalModel = (model: any) => {
 const handleUpdateOptionalModelList = () => {
   updateModelProvider({
     id: modelProviderId.value,
-    optionalModels: optionalModelList.value.map((item: any) => item.name),
+    optionalModels: optionalModelList.map((item: any) => item.name),
   })
     .then((result: any) => {
       handleApiSuccess(result, () => {
@@ -162,12 +164,13 @@ const addOptionalModelFormRules = {
 const handleAddOptionalModelFormSubmit = async () => {
   const errors = await addOptionalModelFormRef.value.validate();
   if (!errors) {
-    optionalModelList.value.push({
+    optionalModelList.push({
       name: addOptionalModelForm.name,
       usedReqTokens: 0,
       usedRepTokens: 0,
     });
     addOptionalModelModalVisible.value = false;
+    addOptionalModelFormRef.value.resetFields();
     handleUpdateOptionalModelList();
   } else {
     addOptionalModelModalVisible.value = true;

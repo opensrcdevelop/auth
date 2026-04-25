@@ -1,5 +1,5 @@
 <#if question??>
-Based on the following question, consider the execution of the first step.
+Based on the current user question, consider the execution of the first step.
 <#if historical_questions?? && historical_questions?size gt 0>
 ### Historical Questions(Sort in ascending order of time)
 <#list historical_questions as histQuestion>
@@ -20,7 +20,7 @@ ${raw_question}
 
 <#else>
 
-Analyze the below tool execution results and the raw user question to determine the next step.
+Analyze the below tool execution results and the previous user question to determine the next step.
 <#if historical_questions?? && historical_questions?size gt 0>
 ### Historical Questions(Sort in ascending order of time)
 The following are the user's previous questions in this conversation for context:
@@ -65,7 +65,7 @@ Output the final answer when ANY of the following is true:
 Your previous thinking: ${previous_thinking}
 </#if>
 
-### Current User Question
+### Previous User Question
 ${raw_question}
 </#if>
 
@@ -81,6 +81,9 @@ Please ensure your next output strictly follows the required format.
 ## ⚠️ Consecutive Tool Failure Warning (IMPORTANT)
 ${consecutive_failure_warning}
 </#if>
+
+** Current Time **
+${current_time}
 
 ** Decision Output **
 Based on the above analysis, either:

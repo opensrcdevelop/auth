@@ -125,12 +125,12 @@ export default indexTs;
               </a-table-column>
               <a-table-column title="已使用输入 token 数">
                 <template #cell="{ record }">
-                  <span>{{ record.usedInputTokens.toLocaleString() }}</span>
+                  <span>{{ record.usedInputTokens?.toLocaleString() }}</span>
                 </template>
               </a-table-column>
               <a-table-column title="已使用输出 token 数">
                 <template #cell="{ record }">
-                  <span>{{ record.usedOutputTokens.toLocaleString() }}</span>
+                  <span>{{ record.usedOutputTokens?.toLocaleString() }}</span>
                 </template>
               </a-table-column>
               <a-table-column title="操作" :width="80">

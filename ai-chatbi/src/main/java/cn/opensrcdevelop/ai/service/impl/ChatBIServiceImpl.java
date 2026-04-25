@@ -162,7 +162,7 @@ public class ChatBIServiceImpl implements ChatBIService {
                         finalChatId);
 
                 if (!interruptFlag.get()) {
-                    SseUtil.sendChatBIDone(emitter, result._1);
+                    SseUtil.sendChatBIDone(emitter, result._1, result._2);
                 } else {
                     chatMessageHistoryService.createChatMessageHistory("回答已取消", ChatContentType.LOADING);
                     SseUtil.sendChatBIDone(emitter);

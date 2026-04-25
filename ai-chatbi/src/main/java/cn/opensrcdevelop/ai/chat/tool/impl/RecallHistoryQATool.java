@@ -11,6 +11,7 @@ import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -51,52 +52,46 @@ public class RecallHistoryQATool implements MethodTool {
             return response;
         }
 
-        List<ChatMessageHistory> assistantMessages = chatMessageHistoryService.list(
+        List<ChatMessageHistory> userMessages = new ArrayList<>(chatMessageHistoryService.list(
                 Wrappers.<ChatMessageHistory>lambdaQuery()
                         .eq(ChatMessageHistory::getChatId, chatId)
-                        .eq(ChatMessageHistory::getRole, ChatRole.ASSISTANT.name())
-                        .isNotNull(ChatMessageHistory::getRewrittenQuestion)
-                        .isNotNull(ChatMessageHistory::getAnswerId)
-                        .orderByDesc(ChatMessageHistory::getCreateTime));
+                        .eq(ChatMessageHistory::getRole, ChatRole.USER.name())
+                        .isNotNull(ChatMessageHistory::getContent)
+                        .orderByAsc(ChatMessageHistory::getCreateTime)));
 
-        if (assistantMessages.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(userMessages)) {
+            userMessages.removeLast();
+        }
+
+        if (userMessages.isEmpty()) {
             response.setSuccess(true);
             response.setQaPairs(new ArrayList<>());
             response.setTotal(0);
             return response;
         }
 
-        List<String> answerIds = assistantMessages.stream()
-                .map(ChatMessageHistory::getAnswerId)
+        List<String> questionIds = userMessages.stream()
+                .map(ChatMessageHistory::getQuestionId)
                 .filter(StringUtils::isNotBlank)
                 .distinct()
                 .collect(Collectors.toList());
 
         Map<String, ChatAnswer> answerMap = new HashMap<>();
-        if (!answerIds.isEmpty()) {
+        if (!questionIds.isEmpty()) {
             List<ChatAnswer> answers = chatAnswerService.list(
                     Wrappers.<ChatAnswer>lambdaQuery()
-                            .in(ChatAnswer::getAnswerId, answerIds));
+                            .eq(ChatAnswer::getChatId, chatId)
+                            .in(ChatAnswer::getQuestionId, questionIds));
             for (ChatAnswer answer : answers) {
-                answerMap.put(answer.getAnswerId(), answer);
+                answerMap.put(answer.getQuestionId(), answer);
             }
         }
 
         List<QAItem> qaPairs = new ArrayList<>();
-        for (ChatMessageHistory assistantMsg : assistantMessages) {
-            String answerId = assistantMsg.getAnswerId();
-            if (StringUtils.isBlank(answerId)) {
-                continue;
-            }
-
-            ChatAnswer chatAnswer = answerMap.get(answerId);
-            if (chatAnswer == null) {
-                continue;
-            }
-
-            String question = assistantMsg.getRewrittenQuestion();
-
-            qaPairs.add(new QAItem(question, chatAnswer.getAnswer(), chatAnswer));
+        for (ChatMessageHistory userMsg : userMessages) {
+            String questionId = userMsg.getQuestionId();
+            ChatAnswer chatAnswer = answerMap.get(questionId);
+            qaPairs.add(new QAItem(userMsg.getContent(), chatAnswer == null ? null : chatAnswer.getAnswer(), chatAnswer));
         }
 
         if (qaPairs.isEmpty()) {
@@ -105,11 +100,6 @@ public class RecallHistoryQATool implements MethodTool {
             response.setTotal(0);
             return response;
         }
-
-        // 降序查询时，需要反转列表使回数从 1（最老）开始
-        List<QAItem> reversedQaPairs = new ArrayList<>(qaPairs);
-        Collections.reverse(reversedQaPairs);
-        qaPairs = reversedQaPairs;
 
         int startIndex = request.getStartIndex();
         int endIndex = request.getEndIndex();
@@ -162,18 +152,18 @@ public class RecallHistoryQATool implements MethodTool {
         public Map<String, Object> toMap(boolean includeSql, boolean includeReport, boolean includeChartConfig) {
             Map<String, Object> map = new HashMap<>();
             map.put("question", question);
-            map.put("answer", chatAnswer.getAnswer());
+            map.put("answer", answer == null ? "This question is not answered." : answer);
 
-            if (includeSql) {
+            if (includeSql && Objects.nonNull(chatAnswer)) {
                 map.put("sql", chatAnswer.getSql());
             }
 
-            if (includeReport) {
+            if (includeReport && Objects.nonNull(chatAnswer)) {
                 map.put("reportType", chatAnswer.getReportType());
                 map.put("report", chatAnswer.getReport());
             }
 
-            if (includeChartConfig) {
+            if (includeChartConfig && Objects.nonNull(chatAnswer)) {
                 map.put("chartConfig", chatAnswer.getChartConfig());
             }
 

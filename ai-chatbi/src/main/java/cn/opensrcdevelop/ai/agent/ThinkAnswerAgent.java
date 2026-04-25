@@ -102,7 +102,7 @@ public class ThinkAnswerAgent {
 
             String result = callLlm(emitter, interruptFlag, chatClient, showThinking,
                     formatErrorFeedback, consecutiveFailureWarning);
-            if (StringUtils.isEmpty(result)) {
+            if (interruptFlag.get()) {
                 break;
             }
 
@@ -202,6 +202,7 @@ public class ThinkAnswerAgent {
                     SecurityContextHolder.setContext(securityContext);
                     SseUtil.sendChatBIError(emitter, "模型调用失败，请检查提供商配置和额度");
                     latch.countDown();
+                    interruptFlag.compareAndSet(false, true);
                 }, latch::countDown);
         try {
             boolean completed = latch.await(5, TimeUnit.MINUTES);
@@ -236,6 +237,7 @@ public class ThinkAnswerAgent {
 
         var thinkAnswerPromptBuilder = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
+                .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
                 .param("historical_questions", CollectionUtils.isEmpty(historicalQuestions)
                         ? new ArrayList<>()
@@ -319,8 +321,14 @@ public class ThinkAnswerAgent {
                 Map<String, Object> paramsMap = CommonUtil.nonJdkDeserializeObject(parameters,
                         new TypeReference<Map<String, Object>>() {
                         });
-                Object request = CommonUtil.convertMap2Obj((Map<String, Object>) paramsMap.get("request"),
-                        executeMethodParamTypes[0]);
+
+                Map<String, Object> params;
+                if (paramsMap.containsKey("request")) {
+                    params = (Map<String, Object>) paramsMap.get("request");
+                } else {
+                    params = paramsMap;
+                }
+                Object request = CommonUtil.convertMap2Obj(params, executeMethodParamTypes[0]);
 
                 CommonUtil.validateBean(request);
                 executeMethodResult = executeMethod.invoke(tool, request);

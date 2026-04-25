@@ -164,8 +164,10 @@ public class SseUtil {
      *            SseEmitter
      * @param answerId
      *            回答ID
+     * @param rewrittenQuestion
+     *            重写后的问题
      */
-    public static void sendChatBIDone(SseEmitter emitter, String answerId) {
+    public static void sendChatBIDone(SseEmitter emitter, String answerId, String rewrittenQuestion) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         LocalDateTime now = LocalDateTime.now();
         Try.run(() -> emitter.send(SseEmitter
@@ -174,13 +176,13 @@ public class SseUtil {
                         .chatId(chatContext.getChatId())
                         .questionId(chatContext.getQuestionId())
                         .answerId(answerId)
-                        .rewrittenQuestion(chatContext.getRawQuestion())
+                        .rewrittenQuestion(rewrittenQuestion)
                         .inputTokens(chatContext.getInputTokens().longValue())
                         .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, chatContext.getRawQuestion(),
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion,
                 chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
     }
 
