@@ -623,6 +623,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *            请求
      */
     @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.BIND_EMAIL, success = "绑定了邮箱（{{ #requestDto.email }}）", fail = "绑定邮箱（{{ #requestDto.email }}）失败")
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO, key = "#root.target.generateCurrentUserInfoCacheKey()")
     @Override
     public void bindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, true);
@@ -635,6 +636,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      *            请求
      */
     @Audit(type = AuditType.USER_OPERATION, resource = ResourceType.USER, userOperation = UserOperationType.UNBIND_EMAIL, success = "解绑了邮箱（{{ #requestDto.email }}）", fail = "解绑邮箱（{{ #requestDto.email }}）失败")
+    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_INFO, key = "#root.target.generateCurrentUserInfoCacheKey()")
     @Override
     public void unbindEmail(BindOrUnbindEmailRequestDto requestDto) {
         doBindOrUnbindEmail(requestDto, false);
