@@ -67,7 +67,7 @@
           </a-space>
         </div>
         <div style="display: flex; align-items: center">
-          <a-tooltip content="显示思考过程">
+          <a-tooltip content="显示思考内容">
             <a-switch
               v-model="showThinking"
               size="small"

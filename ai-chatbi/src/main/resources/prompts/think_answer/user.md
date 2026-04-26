@@ -49,6 +49,8 @@ Output the final answer when ANY of the following is true:
 - The data source doesn't contain information to answer the question
 - Maximum tool execution attempts have been reached
 
+**Critical Rule**: The `generate_sql` tool must ALWAYS generate the FINAL SQL - a composite query that directly answers the user's question in one execution. The final SQL can include multiple JOINs, subqueries, and aggregations to return the complete answer directly. Do NOT generate multiple separate SQLs that each return partial results, expecting AI to manually combine them afterward.
+
 <#if tool_execution_results?? && tool_execution_results?size gt 0>
 ### Tool Execution Results
 <#list tool_execution_results as item>
