@@ -150,7 +150,7 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 .in(Table::getTableId, tables).or()
                 .in(Table::getTableName, tables));
         List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .in(TableField::getTableId, tables));
+                .in(TableField::getTableId, CommonUtil.stream(allTables).map(Table::getTableId).toList()));
 
         return CommonUtil.stream(allTables).map(table -> {
             // 表信息
