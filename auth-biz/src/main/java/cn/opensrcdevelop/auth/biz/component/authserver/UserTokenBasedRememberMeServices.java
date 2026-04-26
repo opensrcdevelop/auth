@@ -10,10 +10,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -24,6 +20,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.stereotype.Component;
+
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -159,10 +160,13 @@ public class UserTokenBasedRememberMeServices implements RememberMeServices {
     }
 
     private String getRememberMeTokenSecret(String userId) {
-        return userService
+        User user = userService
                 .getOne(Wrappers.<User>lambdaQuery()
                         .select(User::getUserId, User::getRememberMeTokenSecret)
-                        .eq(User::getUserId, userId))
-                .getRememberMeTokenSecret();
+                        .eq(User::getUserId, userId));
+        if (Objects.isNull(user)) {
+            return null;
+        }
+        return user.getRememberMeTokenSecret();
     }
 }
