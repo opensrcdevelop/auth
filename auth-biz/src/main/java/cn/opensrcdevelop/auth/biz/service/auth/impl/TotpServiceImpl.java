@@ -59,7 +59,7 @@ public class TotpServiceImpl implements TotpService {
 
             // 3.1 设置 RememberToken
             if (mfaValidContext.isRememberMeRequested()) {
-                rememberMeServices.setRememberMeTokenToCookie(request, response, user.getUserId());
+                rememberMeServices.setRememberMeTokenToCookie(request, response, mfaValidContext.getUserId());
             }
         }
 
