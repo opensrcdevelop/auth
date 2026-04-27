@@ -100,7 +100,7 @@ public class SqlAgent {
                 ? chatConfig.getSqlResultLimit()
                 : defaultSqlResultLimit;
 
-        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_SQL)
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_EXECUTE_SQL)
                 .param("sql_syntax", dataSourceManager.getDataSourceType(dataSourceId).getDialectName())
                 .param("current_time",
                         LocalDateTime.now().format(
@@ -112,9 +112,9 @@ public class SqlAgent {
 
         // 2. 生成 SQL
         return chatClient.prompt()
-                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_SQL))
-                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_SQL))
-                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_SQL))
+                .system(prompt.buildSystemPrompt(PromptTemplate.GENERATE_EXECUTE_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.GENERATE_EXECUTE_SQL))
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.GENERATE_EXECUTE_SQL))
                 .call()
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
@@ -133,8 +133,8 @@ public class SqlAgent {
      *            相关表
      * @param dataSourceId
      *            数据源ID
-     * @param instruction
-     *            指令
+     * @param queryInstruction
+     *            查询指令
      * @return 修复后的 SQL
      */
     public Map<String, Object> fixSql(ChatClient chatClient,
@@ -142,7 +142,7 @@ public class SqlAgent {
             String error,
             List<String> relevantTables,
             String dataSourceId,
-            String instruction) {
+            String queryInstruction) {
         // 1. 获取关联表的 Schema
         List<Map<String, Object>> schemas = tableService.getTableSchemas(relevantTables);
 
@@ -151,7 +151,7 @@ public class SqlAgent {
                 .param("sql", sql)
                 .param("error", error)
                 .param("relevant_tables", schemas)
-                .param("instruction", instruction);
+                .param("query_instruction", queryInstruction);
 
         // 2. 修复 SQL
         return chatClient.prompt()

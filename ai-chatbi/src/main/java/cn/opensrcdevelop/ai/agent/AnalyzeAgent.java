@@ -5,14 +5,15 @@ import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -98,7 +99,6 @@ public class AnalyzeAgent {
             String analysisSummary, String instruction) {
         // 1. 生成分析报告
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_REPORT)
-                .param("question", ChatContextHolder.getChatContext().getQuestion())
                 .param("query_result", CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryData()))
                 .param("column_aliases",
                         CommonUtil.serializeObject(ChatContextHolder.getChatContext().getQueryColumns()))

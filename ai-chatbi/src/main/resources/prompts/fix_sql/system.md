@@ -5,18 +5,13 @@ Your task is to fix the given SQL according to the given information and the use
 Relevant Tables:
 
 <#list relevant_tables as table>
-
 - **Table**: ${table.table_name}
 - **Description**: ${table.description}
 - **Additional Info**: ${table.additional_info}
 - **Columns**:
-
 <#list table.fields as item>
-
   - ${item}
-
 </#list>
-
 </#list>
 
 ### Reasoning Process

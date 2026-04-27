@@ -40,7 +40,6 @@ public class GenerateChartTool implements MethodTool {
         Map<String, Object> result = chartAgent.generateChart(
                 chatContext.getChatClient(),
                 chatContext.getSql(),
-                request.question,
                 chatContext.getQueryData(),
                 request.instruction);
 
@@ -71,11 +70,8 @@ public class GenerateChartTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The question to generate the chart")
+        @ToolParam(description = "The instruction to generate the chart")
         @NotBlank
-        private String question;
-
-        @ToolParam(description = "The instruction to generate the chart", required = false)
         private String instruction;
     }
 

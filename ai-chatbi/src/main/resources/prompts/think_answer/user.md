@@ -40,7 +40,7 @@ The following are similar questions and their SQL queries for reference:
 
 ### Decision Criteria
 1. **Output Final Answer**: If you have gathered enough data to answer the question, OR if no more useful data can be obtained, output the final answer.
-2. **Generate/Execute More SQL**: If you can generate a new SQL query that would provide additional useful data, proceed with generate_sql tool.
+2. **Generate/Execute More SQL**: If you can generate a new SQL query that would provide additional useful data, proceed with generate_execute_sql tool.
 
 ### When to Output Final Answer
 Output the final answer when ANY of the following is true:
@@ -49,7 +49,7 @@ Output the final answer when ANY of the following is true:
 - The data source doesn't contain information to answer the question
 - Maximum tool execution attempts have been reached
 
-**Critical Rule**: The `generate_sql` tool must ALWAYS generate the FINAL SQL - a composite query that directly answers the user's question in one execution. The final SQL can include multiple JOINs, subqueries, and aggregations to return the complete answer directly. Do NOT generate multiple separate SQLs that each return partial results, expecting AI to manually combine them afterward.
+**Critical Rule**: The `generate_execute_sql` tool must ALWAYS generate the FINAL SQL - a composite query that directly answers the user's question in one execution. The final SQL can include multiple JOINs, subqueries, and aggregations to return the complete answer directly. Do NOT generate multiple separate SQLs that each return partial results, expecting AI to manually combine them afterward.
 
 <#if tool_execution_results?? && tool_execution_results?size gt 0>
 ### Tool Execution Results

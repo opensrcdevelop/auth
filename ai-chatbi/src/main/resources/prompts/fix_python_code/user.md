@@ -1,10 +1,6 @@
-### User Inputs
+### Fix Python Code Inputs
 1. Original Python Code: ${python_code}
 2. Error Output: ${error_output}
 
-<#if instruction??>
-
-### Instruction
+### Raw Generate Python Code Instruction
 ${instruction}
-
-</#if>

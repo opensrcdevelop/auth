@@ -74,12 +74,12 @@ public class AnalyzeDataTool implements MethodTool {
             SseUtil.sendChatBIToolCall(emitter, "开始生成用于分析数据的 Python 代码");
             Map<String, Object> pythonCodeResult = analyzeAgent.generatePythonCode(
                     ChatContextHolder.getChatContext().getChatClient(), tempDataFile.getAbsolutePath(),
-                    request.analyzeDataInstruction);
+                    request.generatePythonCodeInstruction);
             if (!Boolean.TRUE.equals(pythonCodeResult.get("success"))) {
                 SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码失败");
 
                 response.setSuccess(false);
-                response.setError("无法生成用于分析数据的 Python 代码，原因：%s".formatted(pythonCodeResult.get("error")));
+                response.setError("Failed to generate Python code to analyze data, reason: %s".formatted(pythonCodeResult.get("error")));
                 return response;
             }
             SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码成功");
@@ -92,13 +92,13 @@ public class AnalyzeDataTool implements MethodTool {
                     (String) pythonCodeResult.get("python_code"),
                     (List<String>) pythonCodeResult.get("packages"),
                     getMaxPythonExecutionRetryCount(),
-                    request.fixGeneratePythonCodeInstruction,
+                    request.generatePythonCodeInstruction,
                     emitter);
             if (!Boolean.TRUE.equals(executeResult._1)) {
                 SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码失败");
 
                 response.setSuccess(false);
-                response.setError("无法执行 Python 代码，原因：%s".formatted(executeResult._2));
+                response.setError("Failed to execute Python code to analyze data, reason: %s".formatted(executeResult._2));
                 return response;
             }
             SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码成功");
@@ -212,8 +212,9 @@ public class AnalyzeDataTool implements MethodTool {
         @NotBlank
         private String analyzeDataInstruction;
 
-        @ToolParam(description = "The instruction to fix Python code used to analyze data", required = false)
-        private String fixGeneratePythonCodeInstruction;
+        @ToolParam(description = "The instruction to generate Python code to analyze data")
+        @NotBlank
+        private String generatePythonCodeInstruction;
     }
 
     @Data

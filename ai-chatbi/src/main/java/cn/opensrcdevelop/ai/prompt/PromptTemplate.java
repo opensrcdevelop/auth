@@ -1,10 +1,11 @@
 package cn.opensrcdevelop.ai.prompt;
 
-import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 @ConfigurationProperties("ai.prompt")
@@ -14,7 +15,7 @@ public class PromptTemplate {
 
     public static final String PROMPT_TEMPLATE = "prompt_template";
     public static final String SELECT_TABLE = "select_table";
-    public static final String GENERATE_SQL = "generate_sql";
+    public static final String GENERATE_EXECUTE_SQL = "generate_execute_sql";
     public static final String GENERATE_CHART = "generate_chart";
     public static final String FIX_SQL = "fix_sql";
     public static final String ANALYZE_DATA = "analyze_data";

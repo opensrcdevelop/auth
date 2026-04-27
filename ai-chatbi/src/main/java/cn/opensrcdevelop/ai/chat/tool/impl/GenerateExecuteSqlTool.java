@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@Component(ExecuteSqlTool.TOOL_NAME)
+@Component(GenerateExecuteSqlTool.TOOL_NAME)
 @RequiredArgsConstructor
 @Slf4j
-public class ExecuteSqlTool implements MethodTool {
+public class GenerateExecuteSqlTool implements MethodTool {
 
-    public static final String TOOL_NAME = "execute_sql";
+    public static final String TOOL_NAME = "generate_execute_sql";
 
     private final SqlAgent sqlAgent;
     private final DataSourceManager dataSourceManager;
@@ -41,14 +41,61 @@ public class ExecuteSqlTool implements MethodTool {
     @Value("${chatbi.max-sql-execution-retry-count:3}")
     private Integer defaultMaxSqlExecutionRetryCount;
 
-    @Tool(name = TOOL_NAME, description = "Used to execute the SQL")
-    public Response execute(@ToolParam(description = "The request to execute SQL") Request request) {
+    @SuppressWarnings("unchecked")
+    @Tool(name = TOOL_NAME, description = "Generate SQL from the query and optionally execute it")
+    public Response execute(@ToolParam(description = "The request to generate and optionally execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
-        SseEmitter emitter = chatContext.getEmitter();
         Response response = new Response();
+        chatContext.setSql(null);
+
+        List<String> tableIds = request.getTableIds();
+        if (CollectionUtils.isEmpty(tableIds)) {
+            response.setSuccess(false);
+            response.setError("No table found, please provide the correct table ids");
+            return response;
+        }
+
+        // 1. 生成 SQL
+        Map<String, Object> result = sqlAgent.generateSql(
+                chatContext.getChatClient(),
+                request.getQueryInstruction(),
+                tableIds,
+                chatContext.getDataSourceId(),
+                chatContext.getSampleSqls());
+        Boolean success = (Boolean) result.get("success");
+        if (!Boolean.TRUE.equals(success)) {
+            response.setSuccess(false);
+            response.setError((String) result.get("error"));
+            return response;
+        }
+
+        String sql = (String) result.get("sql");
+        List<Map<String, Object>> columns = (List<Map<String, Object>>) result.get("columns");
+        response.setSql(sql);
+        chatContext.setSql(sql);
+        chatContext.setQueryColumns(columns);
+        chatContext.setRelevantTableIds(tableIds);
+
+        // 2. 执行 SQL
+        if (request.getExecute()) {
+            return executeSql(chatContext, request.getQueryInstruction(), response);
+        }
+
+        response.setSuccess(true);
+        return response;
+    }
+
+    @Override
+    public String toolName() {
+        return TOOL_NAME;
+    }
+
+    private Response executeSql(ChatContext chatContext, String queryInstruction, Response response) {
+        SseEmitter emitter = chatContext.getEmitter();
+
         if (StringUtils.isEmpty(chatContext.getSql())) {
             response.setSuccess(false);
-            response.setError("No sql found, please execute generate sql tool first.");
+            response.setError("No sql found, please provide valid SQL.");
             return response;
         }
 
@@ -63,8 +110,8 @@ public class ExecuteSqlTool implements MethodTool {
         var chatConfig = chatContext.getChatConfig();
         int maxSqlExecutionRetryCount = Objects.nonNull(chatConfig)
                 && Objects.nonNull(chatConfig.getMaxSqlExecutionRetryCount())
-                        ? chatConfig.getMaxSqlExecutionRetryCount()
-                        : defaultMaxSqlExecutionRetryCount;
+                ? chatConfig.getMaxSqlExecutionRetryCount()
+                : defaultMaxSqlExecutionRetryCount;
 
         var result = executeSqlWithFix(
                 chatContext.getChatClient(),
@@ -72,10 +119,10 @@ public class ExecuteSqlTool implements MethodTool {
                 chatContext.getDataSourceId(),
                 chatContext.getRelevantTableIds(),
                 maxSqlExecutionRetryCount,
-                request.fixSqlInstruction,
+                queryInstruction,
                 emitter);
-        Boolean success = result._1;
-        if (!Boolean.TRUE.equals(success)) {
+        Boolean execSuccess = result._1;
+        if (!Boolean.TRUE.equals(execSuccess)) {
             response.setError("Failed to execute SQL: %s, error message: %s".formatted(result._3, result._4()));
         } else {
             List<Map<String, Object>> queryData = result._2;
@@ -98,41 +145,8 @@ public class ExecuteSqlTool implements MethodTool {
             }
         }
 
-        response.setSuccess(success);
+        response.setSuccess(execSuccess);
         return response;
-    }
-
-    @Override
-    public String toolName() {
-        return TOOL_NAME;
-    }
-
-    @Data
-    public static class Request {
-
-        @ToolParam(description = "The instruction to fix the SQL, which is used to fix the SQL if it is has syntax error. "
-                +
-                "If the SQL is legal but execution failed, do not pass the fix instruction.", required = false)
-        private String fixSqlInstruction;
-    }
-
-    @Data
-    public static class Response {
-
-        @ToolParam(description = "The success of the execute sql")
-        private Boolean success;
-
-        @ToolParam(description = "The query data if the execute sql success")
-        private List<Map<String, Object>> queryData;
-
-        @ToolParam(description = "The error message if the execute sql failed")
-        private String error;
-
-        @ToolParam(description = "The temp file path if the query result exceeds threshold")
-        private String tempFilePath;
-
-        @ToolParam(description = "The total record count if the query result exceeds threshold")
-        private Integer recordCount;
     }
 
     @SuppressWarnings("all")
@@ -141,7 +155,7 @@ public class ExecuteSqlTool implements MethodTool {
             String dataSourceId,
             List<String> relevantTables,
             int maxAttempts,
-            String instruction,
+            String queryInstruction,
             SseEmitter emitter) {
         JdbcTemplate jdbcTemplate = dataSourceManager.getJdbcTemplate(dataSourceId);
         int attempt = 0;
@@ -185,7 +199,7 @@ public class ExecuteSqlTool implements MethodTool {
                     SseUtil.sendChatBIToolCall(emitter, "第 %d 次执行 SQL 失败，开始修复 SQL".formatted(attempt));
                     Map<String, Object> sqlResult = sqlAgent.fixSql(chatClient, sql, errorMsg, relevantTables,
                             dataSourceId,
-                            instruction);
+                            queryInstruction);
                     if (!Boolean.TRUE.equals(sqlResult.get("success"))) {
                         return Tuple.of(false, queryResult, sql, errorMsg);
                     }
@@ -222,5 +236,40 @@ public class ExecuteSqlTool implements MethodTool {
         }
 
         return lowerSql.startsWith("select") || lowerSql.startsWith("with");
+    }
+
+    @Data
+    public static class Request {
+
+        @ToolParam(description = "The table ids to generate SQL")
+        private List<String> tableIds;
+
+        @ToolParam(description = "The query and instruction to generate SQL")
+        private String queryInstruction;
+
+        @ToolParam(description = "Whether to execute the SQL after generation, default is true", required = false)
+        private Boolean execute = true;
+    }
+
+    @Data
+    public static class Response {
+
+        @ToolParam(description = "The success of generate and execute SQL")
+        private Boolean success;
+
+        @ToolParam(description = "The generated SQL if generate SQL success")
+        private String sql;
+
+        @ToolParam(description = "The query data if the SQL execution success")
+        private List<Map<String, Object>> queryData;
+
+        @ToolParam(description = "The error message if generate or execute SQL failed")
+        private String error;
+
+        @ToolParam(description = "The temp file path if the query result exceeds threshold")
+        private String tempFilePath;
+
+        @ToolParam(description = "The total record count if the query result exceeds threshold")
+        private Integer recordCount;
     }
 }

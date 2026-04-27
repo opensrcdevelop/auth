@@ -3,12 +3,13 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.prompt.Prompt;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -23,8 +24,6 @@ public class ChartAgent {
      *            ChatClient
      * @param sql
      *            执行的 SQL
-     * @param question
-     *            用户提问
      * @param queryResult
      *            查询结果
      * @param instruction
@@ -33,12 +32,10 @@ public class ChartAgent {
      */
     public Map<String, Object> generateChart(ChatClient chatClient,
             String sql,
-            String question,
             List<Map<String, Object>> queryResult,
             String instruction) {
         // 1. 生成图表配置
         Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.GENERATE_CHART)
-                .param("question", question)
                 .param("sql", sql)
                 .param("query_result", CommonUtil.serializeObject(queryResult))
                 .param("instruction", instruction);

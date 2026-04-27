@@ -25,12 +25,11 @@ public class GenerateReportTool implements MethodTool {
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
-        chatContext.setQuestion(request.getQuestion());
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
                 chatContext.getChatClient(),
                 chatContext.getAnalyzeDataResult(),
                 chatContext.getAnalyzeDataSummary(),
-                request.instruction);
+                request.getInstruction());
 
         Boolean success = (Boolean) result.get("success");
         if (Boolean.TRUE.equals(result.get("success"))) {
@@ -51,11 +50,8 @@ public class GenerateReportTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The question to generate report")
+        @ToolParam(description = "The instruction to generate report")
         @NotBlank
-        private String question;
-
-        @ToolParam(description = "The instruction to generate report", required = false)
         private String instruction;
     }
 

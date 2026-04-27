@@ -80,7 +80,7 @@ public class ReadQueryResultTool implements MethodTool {
     @Data
     public static class Request {
 
-        @ToolParam(description = "The temp file path returned from execute_sql tool response (optional if not provided, will use the latest file from ChatContext)", required = false)
+        @ToolParam(description = "The temp file path returned from generate_execute_sql tool response (optional if not provided, will use the latest file from ChatContext)", required = false)
         @NotBlank
         private String filePath;
 
