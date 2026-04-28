@@ -151,7 +151,7 @@ public class PermissionController {
             @Parameter(name = "id", description = "权限表达式ID", in = ParameterIn.PATH, required = true),
     })
     @GetMapping("/exp/{id}/permissions")
-    @Authorize({"allPermPermissions", "listExpPermissions"})
+    @Authorize({"allPermissionExpPermissions", "listPermissionExp"})
     public List<PermissionResponseDto> expPermissions(@PathVariable @NotBlank String id) {
         return permissionExpService.expPermissions(id);
     }
