@@ -188,16 +188,16 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         var records = super.list(query);
 
         if (CollectionUtils.isNotEmpty(records)) {
-            // 2. 删除授权信息
+            // 2. 清除用户权限缓存
+            CommonUtil.stream(records).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
+
+            // 3. 删除授权信息
             super.remove(query);
 
-            // 3. 删除授权限定条件
+            // 4. 删除授权限定条件
             authorizeConditionService
                     .remove(Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getAuthorizeId,
                             records.stream().map(AuthorizeRecord::getAuthorizeId).toList()));
-
-            // 4. 清除用户权限缓存
-            CommonUtil.stream(records).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
         }
     }
 
@@ -249,16 +249,16 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         var authorizeRecords = super.list(query);
 
         if (CollectionUtils.isNotEmpty(authorizeRecords)) {
-            // 2. 删除授权信息
+            // 2. 清除用户权限缓存
+            CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
+
+            // 3. 删除授权信息
             super.remove(query);
 
-            // 3. 删除授权条件
+            // 4. 删除授权条件
             var ids = authorizeRecords.stream().map(AuthorizeRecord::getAuthorizeId).toList();
             authorizeConditionService
                     .remove(Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getAuthorizeId, ids));
-
-            // 4. 清除用户权限缓存
-            CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
         }
     }
 
