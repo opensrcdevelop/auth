@@ -43,7 +43,8 @@ public class GenerateExecuteSqlTool implements MethodTool {
 
     @SuppressWarnings("unchecked")
     @Tool(name = TOOL_NAME, description = "Generate SQL from the query and optionally execute it")
-    public Response execute(@ToolParam(description = "The request to generate and optionally execute SQL") Request request) {
+    public Response execute(
+            @ToolParam(description = "The request to generate and optionally execute SQL") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setSql(null);
@@ -110,8 +111,8 @@ public class GenerateExecuteSqlTool implements MethodTool {
         var chatConfig = chatContext.getChatConfig();
         int maxSqlExecutionRetryCount = Objects.nonNull(chatConfig)
                 && Objects.nonNull(chatConfig.getMaxSqlExecutionRetryCount())
-                ? chatConfig.getMaxSqlExecutionRetryCount()
-                : defaultMaxSqlExecutionRetryCount;
+                        ? chatConfig.getMaxSqlExecutionRetryCount()
+                        : defaultMaxSqlExecutionRetryCount;
 
         var result = executeSqlWithFix(
                 chatContext.getChatClient(),

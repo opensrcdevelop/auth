@@ -133,6 +133,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
             // 3. 数据库操作
             userGroupMappingService.saveBatch(mappings);
         }
+
+        // 4. 删除用户权限缓存
+        if (CollectionUtils.isNotEmpty(requestDto.getUserGroupIds())) {
+            for (String groupId : requestDto.getUserGroupIds()) {
+                permissionService.clearUserPermissionsCacheByUserGroupId(groupId);
+            }
+        }
     }
 
     /**
@@ -262,6 +269,13 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
                                         .eq(UserGroupMapping::getUserGroupId, userUserGroupMapping.getUserGroupId())));
                     }));
         }
+
+        // 3. 删除用户权限缓存
+        if (CollectionUtils.isNotEmpty(requestDto.getUserGroupIds())) {
+            for (String groupId : requestDto.getUserGroupIds()) {
+                permissionService.clearUserPermissionsCacheByUserGroupId(groupId);
+            }
+        }
     }
 
     /**
@@ -275,6 +289,8 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupMapper, UserGroup
     public void removeUserGroupMapping(String userId) {
         userGroupMappingService
                 .remove(Wrappers.<UserGroupMapping>lambdaQuery().eq(UserGroupMapping::getUserId, userId));
+
+        permissionService.clearUserPermissionsCacheByUserId(userId);
     }
 
     /**

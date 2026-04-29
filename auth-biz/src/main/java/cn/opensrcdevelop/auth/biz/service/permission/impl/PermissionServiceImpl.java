@@ -10,6 +10,8 @@ import cn.opensrcdevelop.auth.biz.constants.*;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRecordResponseDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.*;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.PermissionExpResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.role.RoleResponseDto;
+import cn.opensrcdevelop.auth.biz.dto.user.UserResponseDto;
 import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest;
@@ -27,12 +29,13 @@ import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpSer
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestItemService;
 import cn.opensrcdevelop.auth.biz.service.permission.request.PermissionRequestService;
 import cn.opensrcdevelop.auth.biz.service.resource.ResourceService;
+import cn.opensrcdevelop.auth.biz.service.role.RoleService;
 import cn.opensrcdevelop.auth.biz.service.user.group.UserGroupService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
-import cn.opensrcdevelop.common.cache.annoation.CacheExpire;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
+import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -44,7 +47,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.springframework.aop.framework.AopContext;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -64,15 +66,17 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     private final ResourceService resourceService;
     private final PermissionExpService permissionExpService;
     private final UserGroupService userGroupService;
+    private final RoleService roleService;
 
     public PermissionServiceImpl(
             PermissionRepository permissionRepository,
-            AuthorizeService authorizeService,
+            @Lazy AuthorizeService authorizeService,
             @Lazy ResourceService resourceService,
             @Lazy PermissionExpService permissionExpService,
             @Lazy UserGroupService userGroupService,
             @Lazy PermissionRequestService permissionRequestService,
-            PermissionRequestItemService permissionRequestItemService) {
+            PermissionRequestItemService permissionRequestItemService,
+            @Lazy RoleService roleService) {
         this.permissionRepository = permissionRepository;
         this.authorizeService = authorizeService;
         this.resourceService = resourceService;
@@ -80,6 +84,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         this.userGroupService = userGroupService;
         this.permissionRequestService = permissionRequestService;
         this.permissionRequestItemService = permissionRequestItemService;
+        this.roleService = roleService;
     }
 
     /**
@@ -122,19 +127,17 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      * @return 当前用户权限
      */
     @Cacheable(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, key = "#root.target.generateCurrentUserPermissionsCacheKey()", condition = "#root.target.generateCurrentUserPermissionsCacheCondition()")
-    @CacheExpire("5 * 3600")
     @Override
     public List<PermissionResponseDto> getCurrentUserPermissions() {
         // 1. 获取当前用户
         String userId = AuthUtil.getCurrentUserId();
-        List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
 
-        if (StringUtils.isNotEmpty(userId) && CollectionUtils.isNotEmpty(aud)) {
+        if (StringUtils.isNotEmpty(userId)) {
             // 2. 数据库操作
             Page<AuthorizeRecord> pageRequest = new Page<>(1, -1);
             List<String> dynamicUserGroupIds = CommonUtil.stream(userGroupService.getDynamicUserGroups(userId))
                     .map(UserGroup::getUserGroupId).toList();
-            getUserPermissions(pageRequest, userId, dynamicUserGroupIds, aud.getFirst(), null, null, null, null);
+            getUserPermissions(pageRequest, userId, dynamicUserGroupIds, null, null, null, null, null);
             List<AuthorizeRecord> authorizeRecords = pageRequest.getRecords();
             // 2.1 过滤重复的权限（先按优先级再按授权时间排序）
             var records = CommonUtil.stream(authorizeRecords).collect(Collectors
@@ -155,6 +158,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
                 response.setResourceGroupName(permission.getResource().getResourceGroup().getResourceGroupName());
                 response.setAuthorizeTime(authorizeRecord.getAuthorizeTime());
                 response.setPermissionLocator(generatePermissionLocator(permission));
+
+                // 3.2 限制条件信息
+                response.setConditions(CommonUtil.stream(authorizeRecord.getPermissionExps()).map(x -> {
+                    PermissionExpResponseDto exp = new PermissionExpResponseDto();
+                    exp.setId(x.getExpressionId());
+                    return exp;
+                }).toList());
                 return response;
             }).toList();
         }
@@ -349,7 +359,6 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      * @param resourceIds
      *            资源ID集合
      */
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeResourcePermissions(List<String> resourceIds) {
@@ -363,7 +372,16 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
             // 3. 删除权限有关的所有授权记录
             var ids = permissions.stream().map(Permission::getPermissionId).toList();
-            authorizeService.removeAuthorization(ids);
+            List<AuthorizeRecord> authorizeRecords = authorizeService.list(Wrappers.<AuthorizeRecord>lambdaQuery().in(AuthorizeRecord::getPermissionId, ids));
+            if (CollectionUtils.isNotEmpty(authorizeRecords)) {
+                return;
+            }
+            authorizeService.removeAuthorization(CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).toList());
+
+            // 4. 清除用户权限缓存
+            for (AuthorizeRecord authorizeRecord : authorizeRecords) {
+                this.clearUserPermissionsCacheByAuthorizeId(authorizeRecord.getAuthorizeId());
+            }
         }
     }
 
@@ -374,7 +392,6 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *            权限ID
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.DELETE, success = "删除了权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）", fail = "删除权限（{{ @linkGen.toLink(#permissionId, T(ResourceType).PERMISSION) }}）失败")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removePermission(String permissionId) {
@@ -392,7 +409,6 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      *            请求
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.UPDATE, success = "修改了权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）", fail = "修改权限（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION) }}）失败")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void updatePermission(PermissionRequestDto requestDto) {
@@ -423,6 +439,14 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
         // 4. 数据库操作
         super.updateById(updatePermission);
+
+        // 5. 清除用户权限缓存
+        List<AuthorizeRecord> authorizeRecords = authorizeService.list(Wrappers.<AuthorizeRecord>lambdaQuery().eq(AuthorizeRecord::getPermissionId, permissionId));
+        if (CollectionUtils.isNotEmpty(authorizeRecords)) {
+            for (AuthorizeRecord authorizeRecord : authorizeRecords) {
+                this.clearUserPermissionsCacheByAuthorizeId(authorizeRecord.getAuthorizeId());
+            }
+        }
 
         compareObjBuilder.after(super.getById(permissionId));
         AuditContext.addCompareObj(compareObjBuilder.build());
@@ -567,6 +591,101 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         }).toList();
     }
 
+    /**
+     * 清除用户权限缓存
+     *
+     * @param roleId 角色 ID
+     */
+    @Override
+    public void clearUserPermissionsCacheByRoleId(String roleId) {
+        // 1. 获取角色下的所有用户 ID
+        List<RoleResponseDto> rolePrincipals = roleService.getRolePrincipals(1, -1, roleId, null).getList();
+        List<String> userIds = new ArrayList<>();
+        for (RoleResponseDto rolePrincipal : rolePrincipals) {
+            if (PrincipalTypeEnum.USER.getType().equals(rolePrincipal.getPrincipalId())) {
+                userIds.add(rolePrincipal.getPrincipalId());
+            }
+
+            if (PrincipalTypeEnum.USER_GROUP.getType().equals(rolePrincipal.getPrincipalId())) {
+                userIds.addAll(
+                        CommonUtil.stream(userGroupService.getGroupUsers(1, -1, rolePrincipal.getPrincipalId(), null).getList())
+                                .map(UserResponseDto::getId).toList());
+            }
+        }
+
+        // 2. 构建 Redis 缓存 key
+        String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
+        List<String> cacheKeys = CommonUtil.stream(userIds).map(id -> CacheConstants.CACHE_CURRENT_USER_PERMISSIONS
+                + "::" + tenantCode + CommonConstants.COLON + id).toList();
+
+        // 3. 清除缓存
+        if (CollectionUtils.isNotEmpty(cacheKeys)) {
+            RedisUtil.delete(cacheKeys.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * 清除用户权限缓存
+     *
+     * @param userId 用户 ID
+     */
+    @Override
+    public void clearUserPermissionsCacheByUserId(String userId) {
+        // 1. 清除缓存
+        String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
+        RedisUtil.delete(CacheConstants.CACHE_CURRENT_USER_PERMISSIONS + "::" + tenantCode + CommonConstants.COLON + userId);
+    }
+
+    /**
+     * 清除用户组权限缓存
+     *
+     * @param groupId 用户组 ID
+     */
+    @Override
+    public void clearUserPermissionsCacheByUserGroupId(String groupId) {
+        // 1. 获取用户组下的所有用户 ID
+        List<String> userIds = CommonUtil.stream(userGroupService.getGroupUsers(1, -1, groupId, null).getList()).map(UserResponseDto::getId).toList();
+
+        // 2. 构建 Redis 缓存 key
+        String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
+        List<String> cacheKeys = CommonUtil.stream(userIds).map(id -> CacheConstants.CACHE_CURRENT_USER_PERMISSIONS
+                + "::" + tenantCode + CommonConstants.COLON + id).toList();
+
+        // 3. 清除缓存
+        if (CollectionUtils.isNotEmpty(cacheKeys)) {
+            RedisUtil.delete(cacheKeys.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * 清除用户权限缓存
+     *
+     * @param authorizeId 授权 ID
+     */
+    @Override
+    public void clearUserPermissionsCacheByAuthorizeId(String authorizeId) {
+        // 1. 获取授权记录
+        AuthorizeRecord authorizeRecord = authorizeService.getById(authorizeId);
+        if (Objects.isNull(authorizeRecord)) {
+            return;
+        }
+
+        // 2. 清除角色权限
+        if (Objects.nonNull(authorizeRecord.getRoleId())) {
+            clearUserPermissionsCacheByRoleId(authorizeRecord.getRoleId());
+        }
+
+        // 3. 清除用户组权限
+        if (Objects.nonNull(authorizeRecord.getUserGroupId())) {
+            clearUserPermissionsCacheByUserGroupId(authorizeRecord.getUserGroupId());
+        }
+
+        // 4. 清除用户权限
+        if (Objects.nonNull(authorizeRecord.getUserId())) {
+            clearUserPermissionsCacheByUserId(authorizeRecord.getUserId());
+        }
+    }
+
     private Tuple4<String, String, String, String> getPrincipal(AuthorizeRecord authorizeRecord) {
         User user = authorizeRecord.getUser();
         UserGroup userGroup = authorizeRecord.getUserGroup();
@@ -596,9 +715,7 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
      */
     public String generateCurrentUserPermissionsCacheKey() {
         String userId = AuthUtil.getCurrentJwtClaim(JwtClaimNames.SUB);
-        List<String> aud = AuthUtil.getCurrentJwtClaim(JwtClaimNames.AUD);
-        Objects.requireNonNull(aud);
-        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId + ":" + aud.getFirst();
+        return TenantContextHolder.getTenantContext().getTenantCode() + ":" + userId;
     }
 
     /**

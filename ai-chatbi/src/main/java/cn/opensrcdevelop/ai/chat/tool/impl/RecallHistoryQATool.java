@@ -91,7 +91,8 @@ public class RecallHistoryQATool implements MethodTool {
         for (ChatMessageHistory userMsg : userMessages) {
             String questionId = userMsg.getQuestionId();
             ChatAnswer chatAnswer = answerMap.get(questionId);
-            qaPairs.add(new QAItem(userMsg.getContent(), chatAnswer == null ? null : chatAnswer.getAnswer(), chatAnswer));
+            qaPairs.add(
+                    new QAItem(userMsg.getContent(), chatAnswer == null ? null : chatAnswer.getAnswer(), chatAnswer));
         }
 
         if (qaPairs.isEmpty()) {

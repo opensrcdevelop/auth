@@ -36,16 +36,17 @@ import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,6 +125,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             // 3. 数据库操作
             roleMappingService.saveBatch(mappings);
         }
+
+        // 3. 删除用户权限缓存
+        if (CollectionUtils.isNotEmpty(requestDto.getUserIds())) {
+            for (String userId : requestDto.getUserIds()) {
+                permissionService.clearUserPermissionsCacheByUserId(userId);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(requestDto.getUserGroupIds())) {
+            for (String groupId : requestDto.getUserGroupIds()) {
+                permissionService.clearUserPermissionsCacheByUserGroupId(groupId);
+            }
+        }
     }
 
     /**
@@ -173,6 +187,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                                         .and(o -> o.eq(RoleMapping::getUserId, principalId)
                                                 .or(i -> i.eq(RoleMapping::getUserGroupId, principalId))));
                     });
+        }
+
+        // 3. 删除用户权限缓存
+        if (CollectionUtils.isNotEmpty(requestDto.getUserIds())) {
+            for (String userId : requestDto.getUserIds()) {
+                permissionService.clearUserPermissionsCacheByUserId(userId);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(requestDto.getUserGroupIds())) {
+            for (String groupId : requestDto.getUserGroupIds()) {
+                permissionService.clearUserPermissionsCacheByUserGroupId(groupId);
+            }
         }
     }
 

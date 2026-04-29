@@ -13,9 +13,12 @@ import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionE
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateParamDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.permission.expression.template.PermissionExpTemplateResponseDto;
+import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeCondition;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExp;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionExpTemplate;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionExpTemplateMapper;
+import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeConditionService;
+import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
 import cn.opensrcdevelop.common.exception.BizException;
@@ -41,6 +44,8 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
             PermissionExpTemplateService {
 
     private final PermissionExpService permissionExpService;
+    private final AuthorizeConditionService authorizeConditionService;
+    private final PermissionService permissionService;
 
     /**
      * 创建权限表达式模版
@@ -110,6 +115,20 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
 
         // 3. 数据库操作
         super.updateById(updatePermissionExpTemplate);
+
+        // 4. 获取关联的权限表达式
+        List<PermissionExp> permissionExps = permissionExpService.list(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+        if (CollectionUtils.isNotEmpty(permissionExps)) {
+            // 5. 获取关联的授权条件
+            List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(
+                    Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getPermissionExpId, CommonUtil.stream(permissionExps).map(PermissionExp::getExpressionId).toList()));
+            if (CollectionUtils.isNotEmpty(authorizeConditions)) {
+                // 6. 清除关联的用户权限缓存
+                for (AuthorizeCondition authorizeCondition : authorizeConditions) {
+                    permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeCondition.getAuthorizeId());
+                }
+            }
+        }
 
         compareObjBuilder.after(super.getById(templateId));
         AuditContext.addCompareObj(compareObjBuilder.build());

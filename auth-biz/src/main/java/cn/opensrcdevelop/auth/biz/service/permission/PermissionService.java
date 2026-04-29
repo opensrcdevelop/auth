@@ -40,4 +40,12 @@ public interface PermissionService extends IService<Permission> {
     List<VerifyPermissionResponseDto> verifyPermissions(VerifyPermissionsRequestDto requestDto);
 
     List<PermissionTreeNodeResponseDto> getAvailablePermissionTree();
+
+    void clearUserPermissionsCacheByRoleId(String roleId);
+
+    void clearUserPermissionsCacheByUserId(String userId);
+
+    void clearUserPermissionsCacheByUserGroupId(String groupId);
+
+    void clearUserPermissionsCacheByAuthorizeId(String authorizeId);
 }

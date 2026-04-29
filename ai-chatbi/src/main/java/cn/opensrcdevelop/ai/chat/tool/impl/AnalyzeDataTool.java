@@ -79,7 +79,8 @@ public class AnalyzeDataTool implements MethodTool {
                 SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码失败");
 
                 response.setSuccess(false);
-                response.setError("Failed to generate Python code to analyze data, reason: %s".formatted(pythonCodeResult.get("error")));
+                response.setError("Failed to generate Python code to analyze data, reason: %s"
+                        .formatted(pythonCodeResult.get("error")));
                 return response;
             }
             SseUtil.sendChatBIToolCall(emitter, "生成用于分析数据的 Python 代码成功");
@@ -98,7 +99,8 @@ public class AnalyzeDataTool implements MethodTool {
                 SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码失败");
 
                 response.setSuccess(false);
-                response.setError("Failed to execute Python code to analyze data, reason: %s".formatted(executeResult._2));
+                response.setError(
+                        "Failed to execute Python code to analyze data, reason: %s".formatted(executeResult._2));
                 return response;
             }
             SseUtil.sendChatBIToolCall(emitter, "执行用于分析数据的 Python 代码成功");

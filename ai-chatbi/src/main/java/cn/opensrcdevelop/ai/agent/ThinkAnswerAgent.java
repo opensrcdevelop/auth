@@ -237,7 +237,9 @@ public class ThinkAnswerAgent {
 
         var thinkAnswerPromptBuilder = promptTemplate.getTemplates()
                 .get(PromptTemplate.THINK_ANSWER)
-                .param("current_time", LocalDateTime.now().format(DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
+                .param("current_time",
+                        LocalDateTime.now().format(
+                                DateTimeFormatter.ofPattern(CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSSSSS)))
                 .param("raw_question", ChatContextHolder.getChatContext().getRawQuestion())
                 .param("historical_questions", CollectionUtils.isEmpty(historicalQuestions)
                         ? new ArrayList<>()
@@ -310,7 +312,8 @@ public class ThinkAnswerAgent {
         boolean isSuccess = true;
         try {
             log.info("Executing tool: {}, parameters: {}", toolName, parameters);
-            SseUtil.sendChatBIToolCall(emitter, "开始执行工具【%s】，参数：%s".formatted(toolName, truncateString(parameters, 100)));
+            SseUtil.sendChatBIToolCall(emitter,
+                    "开始执行工具【%s】，参数：%s".formatted(toolName, truncateString(parameters, 100)));
 
             Object tool = SpringContextUtil.getBean(toolName);
             Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods()).filter(
@@ -579,8 +582,10 @@ public class ThinkAnswerAgent {
     /**
      * 截断字符串，超过 maxLength 时在末尾添加 ...
      *
-     * @param str 待截断的字符串
-     * @param maxLength 截断的最大长度
+     * @param str
+     *            待截断的字符串
+     * @param maxLength
+     *            截断的最大长度
      * @return 截断后的字符串
      */
     private String truncateString(String str, int maxLength) {

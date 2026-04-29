@@ -7,7 +7,6 @@ import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.AuthorizeTypeEnum;
-import cn.opensrcdevelop.auth.biz.constants.CacheConstants;
 import cn.opensrcdevelop.auth.biz.constants.PrincipalTypeEnum;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeConditionRequestDto;
 import cn.opensrcdevelop.auth.biz.dto.auth.AuthorizeRequestDto;
@@ -17,6 +16,7 @@ import cn.opensrcdevelop.auth.biz.mapper.auth.AuthorizeConditionMapper;
 import cn.opensrcdevelop.auth.biz.mapper.auth.AuthorizeMapper;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeConditionService;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
+import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -25,7 +25,6 @@ import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +40,7 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
 
     private final AuthorizeConditionService authorizeConditionService;
     private final LinkGenerator linkGenerator;
+    private final PermissionService permissionService;
 
     /**
      * 授权
@@ -57,7 +57,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                     "{{ @linkGen.toLinks(#requestDto.userGroupIds, T(ResourceType).USER_GROUP) }}）、角色（" +
                     "{{ @linkGen.toLinks(#requestDto.roleIds, T(ResourceType).ROLE) }}" +
                     "）权限（{{ @linkGen.toLinks(#requestDto.permissionIds, T(ResourceType).PERMISSION) }}）失败，授权类型：{{ #authorizeType.displayName }}")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void authorize(AuthorizeRequestDto requestDto, AuthorizeTypeEnum authorizeType) {
@@ -89,6 +88,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setType(authorizeType.getType());
                 authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
+
+                permissionService.clearUserPermissionsCacheByUserId(userId);
             }));
         }
 
@@ -104,6 +105,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setType(authorizeType.getType());
                 authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
+
+                permissionService.clearUserPermissionsCacheByUserGroupId(userGroupId);
             }));
         }
 
@@ -119,6 +122,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                 authorizeRecord.setType(authorizeType.getType());
                 authorizeRecord.setAuthorizerId(finalAuthorizerId);
                 authorizeRecords.add(authorizeRecord);
+
+                permissionService.clearUserPermissionsCacheByRoleId(roleId);
             }));
         }
 
@@ -173,7 +178,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param principalId
      *            用户 / 用户组 / 角色ID
      */
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(String principalId) {
@@ -191,6 +195,9 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             authorizeConditionService
                     .remove(Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getAuthorizeId,
                             records.stream().map(AuthorizeRecord::getAuthorizeId).toList()));
+
+            // 4. 清除用户权限缓存
+            CommonUtil.stream(records).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
         }
     }
 
@@ -203,7 +210,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *            用户 / 用户组 / 角色ID
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.DELETE, success = "取消了对 {{ #principalPermission }}", fail = "取消对 {{ #principalPermission }} 失败")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(String permissionId, String principalId) {
@@ -217,10 +223,13 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
         if (authorizeRecord != null) {
             AuditContext.setSpelVariable("principalPermission", getAuditPrincipalPermission(authorizeRecord));
 
-            // 2. 删除授权信息
+            // 2. 清除用户权限缓存
+            permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeRecord.getAuthorizeId());
+
+            // 3. 删除授权信息
             super.remove(query);
 
-            // 3. 删除授权限定条件
+            // 4. 删除授权限定条件
             authorizeConditionService.remove(Wrappers.<AuthorizeCondition>lambdaQuery()
                     .eq(AuthorizeCondition::getAuthorizeId, authorizeRecord.getAuthorizeId()));
         }
@@ -232,7 +241,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param permissionIds
      *            权限ID 集合
      */
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorization(List<String> permissionIds) {
@@ -248,6 +256,9 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             var ids = authorizeRecords.stream().map(AuthorizeRecord::getAuthorizeId).toList();
             authorizeConditionService
                     .remove(Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getAuthorizeId, ids));
+
+            // 4. 清除用户权限缓存
+            CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
         }
     }
 
@@ -260,7 +271,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.CREATE, success = "给 {{ #principalPermissions }} 添加了限制条件（"
             +
             "{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）", fail = "给 {{ #principalPermissions }} 添加限制条件（{{ @linkGen.toLinks(#requestDto.permissionExpIds, T(ResourceType).PERMISSION_EXP) }}）失败")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void createAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
@@ -284,6 +294,11 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
 
             // 3. 数据库操作
             authorizeConditionService.saveBatch(conditions);
+
+            // 4. 删除用户权限缓存
+            for (String id : requestDto.getAuthorizeIds()) {
+                permissionService.clearUserPermissionsCacheByAuthorizeId(id);
+            }
         }
     }
 
@@ -293,7 +308,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      * @param requestDto
      *            请求
      */
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Transactional
     @Override
     public void removeAuthorizeCondition(AuthorizeConditionRequestDto requestDto) {
@@ -311,6 +325,11 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
                                 .and(o -> o.eq(AuthorizeCondition::getPermissionExpId,
                                         authorizeCondition.getPermissionExpId())));
                     }));
+
+            // 3. 删除用户权限缓存
+            for (String id : requestDto.getAuthorizeIds()) {
+                permissionService.clearUserPermissionsCacheByAuthorizeId(id);
+            }
         }
     }
 
@@ -323,7 +342,6 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
      *            优先级
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION, sysOperation = SysOperationType.UPDATE, success = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为了 {{ #newPriority }}", fail = "将对 {{ #principalPermission }} 的优先级由 {{ #oldPriority }} 修改为 {{ #newPriority }} 失败")
-    @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true)
     @Override
     public void updateAuthorizePriority(String authorizeId, Integer priority) {
         if (Objects.nonNull(priority)) {
@@ -336,6 +354,9 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
             super.update(Wrappers.<AuthorizeRecord>lambdaUpdate()
                     .set(AuthorizeRecord::getPriority, priority)
                     .eq(AuthorizeRecord::getAuthorizeId, authorizeId));
+
+            // 2. 删除用户权限缓存
+            permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeId);
         }
     }
 

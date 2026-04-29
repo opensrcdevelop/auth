@@ -25,6 +25,7 @@ import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.auth.biz.entity.user.group.UserGroup;
 import cn.opensrcdevelop.auth.biz.mapper.permission.PermissionExpMapper;
 import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeConditionService;
+import cn.opensrcdevelop.auth.biz.service.auth.AuthorizeService;
 import cn.opensrcdevelop.auth.biz.service.permission.PermissionService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpService;
 import cn.opensrcdevelop.auth.biz.service.permission.expression.PermissionExpTemplateService;
@@ -43,10 +44,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
 import jakarta.annotation.Resource;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -54,10 +51,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +74,10 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     @Resource
     @Lazy
     private PermissionExpTemplateService permissionExpTemplateService;
+
+    @Resource
+    @Lazy
+    private AuthorizeService authorizeService;
 
     /**
      * 创建权限表达式
@@ -205,10 +210,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
      *            请求
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP, sysOperation = SysOperationType.UPDATE, success = "修改了限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）", fail = "修改限制条件（{{ @linkGen.toLink(#requestDto.id, T(ResourceType).PERMISSION_EXP) }}）失败")
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
-    })
+    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#requestDto.id)")
     @Transactional
     @Override
     public void updatePermissionExp(PermissionExpRequestDto requestDto) {
@@ -246,6 +248,14 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         // 4. 数据库操作
         super.updateById(permissionExp);
 
+        // 5. 获取关联的全部授权记录
+        List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, requestDto.getId()));
+        if (CollectionUtils.isNotEmpty(authorizeConditions)) {
+            for (AuthorizeCondition authorizeCondition : authorizeConditions) {
+                permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeCondition.getAuthorizeId());
+            }
+        }
+
         compareObjBuilder.after(super.getById(expressionId));
         AuditContext.addCompareObj(compareObjBuilder.build());
     }
@@ -257,10 +267,7 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
      *            权限表达式ID
      */
     @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.PERMISSION_EXP, sysOperation = SysOperationType.DELETE, success = "删除了限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）", fail = "删除限制条件（{{ @linkGen.toLink(#permissionExpId, T(ResourceType).PERMISSION_EXP) }}）失败")
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
-    })
+    @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, key = "#root.target.generatePermissionExpCacheKey(#permissionExpId)")
     @Transactional
     @Override
     public void removePermissionExp(String permissionExpId) {
@@ -268,8 +275,17 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         super.removeById(permissionExpId);
 
         // 2. 删除关联的全部的授权记录
-        authorizeConditionService.remove(
+        List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(
                 Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, permissionExpId));
+        if (CollectionUtils.isEmpty(authorizeConditions)) {
+            return;
+        }
+        authorizeService.removeByIds(CommonUtil.stream(authorizeConditions).map(AuthorizeCondition::getAuthorizeId).toList());
+
+        // 3. 清除关联的全部用户权限缓存
+        for (AuthorizeCondition authorizeCondition : authorizeConditions) {
+            permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeCondition.getAuthorizeId());
+        }
     }
 
     /**
@@ -461,15 +477,20 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
      * @param templateId
      *            模板ID
      */
-    @Caching(evict = {
-            @CacheEvict(cacheNames = CacheConstants.CACHE_CURRENT_USER_PERMISSIONS, allEntries = true),
-            @CacheEvict(cacheNames = CacheConstants.CACHE_PERMISSION_EXP, allEntries = true)
-    })
     @Transactional
     @Override
     public void removeTemplatePermissionExp(String templateId) {
-        // 1. 数据库操作
-        super.remove(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+        // 1. 查询关联的权限表达式
+        List<PermissionExp> permissionExps = super.list(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+        if (CollectionUtils.isEmpty(permissionExps)) {
+            return;
+        }
+
+        // 2. 删除关联的权限表达式
+        PermissionExpService proxyService = (PermissionExpService) AopContext.currentProxy();
+        for (PermissionExp permissionExp : permissionExps) {
+            proxyService.removePermissionExp(permissionExp.getExpressionId());
+        }
     }
 
     /**
