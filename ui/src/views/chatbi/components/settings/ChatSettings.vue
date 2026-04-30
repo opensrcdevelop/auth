@@ -153,7 +153,7 @@ defineExpose({
             <a-input-number
               placeholder="请输入最大 SQL 执行重试次数"
               v-model="chatConfigForm.maxSqlExecutionRetryCount"
-              :min="1"
+              :min="0"
               :step="1"
             />
           </a-form-item>
@@ -166,7 +166,7 @@ defineExpose({
             <a-input-number
               placeholder="请输入最大 Python 执行重试次数"
               v-model="chatConfigForm.maxPythonExecutionRetryCount"
-              :min="1"
+              :min="0"
               :step="1"
             />
           </a-form-item>

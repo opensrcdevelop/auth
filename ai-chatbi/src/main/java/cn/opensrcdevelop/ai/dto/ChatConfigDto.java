@@ -51,11 +51,11 @@ public class ChatConfigDto {
 
     @PropertyName("最大 SQL 执行重试次数")
     @Schema(description = "最大 SQL 执行重试次数")
-    @Min(1)
+    @Min(0)
     private Integer maxSqlExecutionRetryCount;
 
     @PropertyName("最大 Python 执行重试次数")
     @Schema(description = "最大 Python 代码执行重试次数")
-    @Min(1)
+    @Min(0)
     private Integer maxPythonExecutionRetryCount;
 }

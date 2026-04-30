@@ -3,7 +3,6 @@ package cn.opensrcdevelop.ai.agent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
-import cn.opensrcdevelop.ai.chat.tool.impl.ExecutePythonTool;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.prompt.PromptTemplate;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
@@ -218,7 +217,7 @@ public class ThinkAnswerAgent {
 
     private List<ToolDefinition> getToolDefinitions() {
         return CommonUtil.stream(methodTools)
-                .filter(m -> !ExecutePythonTool.TOOL_NAME.equals(m.toolName()))
+                .filter(m -> !m.isInternalTool())
                 .flatMap(
                         methodTool -> Arrays.stream(methodTool.getToolCallbacks()).map(ToolCallback::getToolDefinition))
                 .toList();

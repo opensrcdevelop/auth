@@ -10,4 +10,8 @@ public interface MethodTool {
     default ToolCallback[] getToolCallbacks() {
         return MethodToolCallbackProvider.builder().toolObjects(this).build().getToolCallbacks();
     }
+
+    default boolean isInternalTool() {
+        return false;
+    }
 }

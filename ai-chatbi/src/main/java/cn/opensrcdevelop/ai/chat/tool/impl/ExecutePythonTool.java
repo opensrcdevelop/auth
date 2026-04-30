@@ -193,6 +193,11 @@ public class ExecutePythonTool implements MethodTool {
     }
 
     @Override
+    public boolean isInternalTool() {
+        return true;
+    }
+
+    @Override
     public String toolName() {
         return TOOL_NAME;
     }
