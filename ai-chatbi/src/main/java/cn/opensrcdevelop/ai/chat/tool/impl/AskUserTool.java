@@ -169,14 +169,10 @@ public class AskUserTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "Whether the operation was successful")
         private Boolean success;
 
-        @ToolParam(description = "List of user answers")
         private List<Answer> answers;
 
-        @ToolParam(description = "The error message if ask user failed")
         private String error;
     }
 }

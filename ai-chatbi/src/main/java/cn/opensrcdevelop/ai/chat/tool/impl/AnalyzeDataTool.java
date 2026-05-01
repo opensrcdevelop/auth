@@ -56,10 +56,24 @@ public class AnalyzeDataTool implements MethodTool {
         chatContext.setAnalyzeDataResult(null);
         File tempDataFile = null;
         try {
-            // 1. 检查是否存在查询数据
+            // 1.1 检查是否存在查询数据
             if (CollectionUtils.isEmpty(ChatContextHolder.getChatContext().getQueryData())) {
                 response.setSuccess(false);
                 response.setError("The query data is empty, check the sql is executed");
+                return response;
+            }
+
+            // 1.2 检查是否已审核 SQL
+            if (!Boolean.TRUE.equals(chatContext.getFinalSqlReviewed())) {
+                response.setSuccess(false);
+                response.setError("The generated final SQL is not reviewed, please call tool review_sql first.");
+                return response;
+            }
+
+            // 1.3 检查是否已生成有效 SQL
+            if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
+                response.setSuccess(false);
+                response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
                 return response;
             }
 
@@ -221,17 +235,12 @@ public class AnalyzeDataTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of analyze data")
         private Boolean success;
 
-        @ToolParam(description = "The summary of analyze data")
         private String analysisSummary;
 
-        @ToolParam(description = "The result of analyze data")
         private String analysisResult;
 
-        @ToolParam(description = "The error message if analyze data failed")
         private String error;
     }
 }

@@ -254,23 +254,16 @@ public class GenerateExecuteSqlTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of generate and execute SQL")
         private Boolean success;
 
-        @ToolParam(description = "The generated SQL if generate SQL success")
         private String sql;
 
-        @ToolParam(description = "The query data if the SQL execution success")
         private List<Map<String, Object>> queryData;
 
-        @ToolParam(description = "The error message if generate or execute SQL failed")
         private String error;
 
-        @ToolParam(description = "The temp file path if the query result exceeds threshold")
         private String tempFilePath;
 
-        @ToolParam(description = "The total record count if the query result exceeds threshold")
         private Integer recordCount;
     }
 }

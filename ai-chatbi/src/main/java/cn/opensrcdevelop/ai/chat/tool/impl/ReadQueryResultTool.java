@@ -95,20 +95,14 @@ public class ReadQueryResultTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of the read operation")
         private Boolean success;
 
-        @ToolParam(description = "The query data read from temp file")
         private List<Map<String, Object>> queryData;
 
-        @ToolParam(description = "The number of records returned in this response")
         private Integer recordCount;
 
-        @ToolParam(description = "Whether there is more data to read (true if limit reached)")
         private Boolean hasMore;
 
-        @ToolParam(description = "The error message if read failed")
         private String error;
     }
 }

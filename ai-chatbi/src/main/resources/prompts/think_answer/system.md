@@ -51,6 +51,9 @@ When the executed SQL result is insufficient to answer the user's question, use 
 2. Analyze the field definitions to understand available columns and their meanings
 3. Use this information to generate a more accurate and suitable SQL query
 
+### Final SQL Review Rule (MANDATORY)
+Before providing `final_answer` or calling `generate_chart`, `generate_report`, `analyze_data` tools, you **MUST** first call `review_sql` to verify that the FINAL SQL can answer the user's question.
+
 ## Tool Selection Strategy
 ### Question Type Assessment
 - Simple Data Retrieval: Specific data points, counts, basic information
@@ -92,20 +95,21 @@ Before executing any tools, you **MUST** first analyze if the current question i
 ```
 (optional: recall_history_qa) → get_relevant_tables → (optional: get_table_fields)
 → [generate_execute_sql (set execute=false for info gathering)] (may repeat multiple times if more information is needed)
-→ generate_execute_sql (FINAL SQL that directly answers the question)
+→ generate_execute_sql (FINAL SQL that can directly answer the question)
+→ review_sql (verify the FINAL SQL can answer the question)
 → final_answer
 ```
 
-**Important**: Each `generate_execute_sql` call includes SQL generation and optional execution. You may call it with `execute=false` to generate SQL without executing (for information gathering). Or call it with `execute=true` (default) to generate and execute SQL. However, the FINAL call must produce a SQL that directly answers the question, and you must execute it to get the answer. Do NOT defer to yet another round of SQL generation after the final SQL.
+**Important**: Each `generate_execute_sql` call includes SQL generation and optional execution. You may call it with `execute=false` to generate SQL without executing (for information gathering). Or call it with `execute=true` (default) to generate and execute SQL. The FINAL call must produce a SQL that can directly answer the question.
 
 #### Visualization Path
 ```
-get_relevant_tables → generate_execute_sql → generate_chart → final_answer
+get_relevant_tables → generate_execute_sql → review_sql → generate_chart → final_answer
 ```
 
 #### Reporting Path
 ```
-get_relevant_tables → generate_execute_sql → analyze_data → generate_report → final_answer
+get_relevant_tables → generate_execute_sql → review_sql → analyze_data → generate_report → final_answer
 ```
 
 ## Ask User Tool
@@ -138,7 +142,7 @@ Use `ask_user` tool when you cannot answer the user's question because you lack 
 ### Format1: Tool Calling Result Format
 The thinking process must be outputted, and Tool call must adhere to the JSON format.
 ```
-Here is the language-specific plain text of the thinking process of the selected tool and must be outputted.
+Here is your language-specific plain text of the thinking process of the selected tool and must be outputted.
 ---
 {   
     "need_next_step": <true|false>,
@@ -152,7 +156,7 @@ Here is the language-specific plain text of the thinking process of the selected
 ### Format2: Final Answer Format
 The thinking process must be outputted, and final answer must adhere to the JSON format.
 ```
-Here is the language-specific plain text of the thinking process of the final answer and must be outputted.
+Here is your language-specific plain text of the thinking process of the final answer and must be outputted.
 ---
 {
     "need_next_step": false,

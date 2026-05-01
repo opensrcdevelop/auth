@@ -330,11 +330,8 @@ public class ExecutePythonTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "Python script execution success")
         private Boolean success;
 
-        @ToolParam(description = "Python script execution result")
         public String result;
     }
 }

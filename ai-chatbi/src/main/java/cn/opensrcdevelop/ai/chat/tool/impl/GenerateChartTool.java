@@ -37,6 +37,18 @@ public class GenerateChartTool implements MethodTool {
             return response;
         }
 
+        if (!Boolean.TRUE.equals(chatContext.getFinalSqlReviewed())) {
+            response.setSuccess(false);
+            response.setError("The generated final SQL is not reviewed, please call tool review_sql first.");
+            return response;
+        }
+
+        if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
+            response.setSuccess(false);
+            response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+            return response;
+        }
+
         Map<String, Object> result = chartAgent.generateChart(
                 chatContext.getChatClient(),
                 chatContext.getSql(),
@@ -77,11 +89,8 @@ public class GenerateChartTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of the chart generation")
         private Boolean success;
 
-        @ToolParam(description = "The error message if the chart generation failed")
         private String error;
     }
 }

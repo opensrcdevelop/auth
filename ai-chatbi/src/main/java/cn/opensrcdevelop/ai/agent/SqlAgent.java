@@ -211,4 +211,46 @@ public class SqlAgent {
                 .entity(new ParameterizedTypeReference<Map<String, Object>>() {
                 });
     }
+
+    /**
+     * 审查 SQL 是否能够满足用户的提问
+     *
+     * @param chatClient
+     *            ChatClient
+     * @param sql
+     *            SQL
+     * @param question
+     *            重写后的用户提问
+     * @param queryColumns
+     *            查询列
+     * @param queryData
+     *            查询数据
+     * @param viewpoint
+     *            审查观点
+     * @return 审查结果
+     */
+    public Map<String, Object> reviewSql(
+            ChatClient chatClient,
+            String sql,
+            String question,
+            List<Map<String, Object>> queryColumns,
+            List<Map<String, Object>> queryData,
+            String viewpoint) {
+        Prompt prompt = promptTemplate.getTemplates().get(PromptTemplate.REVIEW_SQL)
+                .param("sql", sql)
+                .param("question", question)
+                .param("query_columns", queryColumns)
+                .param("sample_data", CollectionUtils.isNotEmpty(queryData)
+                        ? CommonUtil.nonJdkSerializeObject(queryData.getFirst())
+                        : null)
+                .param("viewpoint", viewpoint);
+
+        return chatClient.prompt()
+                .system(prompt.buildSystemPrompt(PromptTemplate.REVIEW_SQL))
+                .user(prompt.buildUserPrompt(PromptTemplate.REVIEW_SQL))
+                .advisors(a -> a.param(PromptTemplate.PROMPT_TEMPLATE, PromptTemplate.REVIEW_SQL))
+                .call()
+                .entity(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
+    }
 }

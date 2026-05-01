@@ -193,17 +193,12 @@ public class RecallHistoryQATool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "Whether the recall operation was successful")
         private boolean success;
 
-        @ToolParam(description = "Error message if the recall operation failed")
         private String error;
 
-        @ToolParam(description = "Total number of successful QA pairs in the conversation")
         private int total;
 
-        @ToolParam(description = "List of recalled QA pairs, each containing question and answer (and optionally SQL, report, chart config based on request parameters)")
         private List<Map<String, Object>> qaPairs;
     }
 }

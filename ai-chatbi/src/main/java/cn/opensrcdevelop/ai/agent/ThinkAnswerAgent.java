@@ -111,7 +111,7 @@ public class ThinkAnswerAgent {
             if (!validationResult.isValid()) {
                 log.warn("Output format validation failed: {}, the llm result is: {}",
                         validationResult.getErrorMessage(), result);
-                SseUtil.sendChatBIThinking(emitter, "⚠ The output format of the LLM has encountered an error.", true);
+                SseUtil.sendChatBIThinking(emitter, "⚠ The output format of the LLM is not valid, go to the next step for correction", true);
 
                 // 格式验证失败，将错误反馈给下一轮
                 formatErrorFeedback = validationResult.getErrorMessage() + "\n Your output is: \n" + result;
@@ -413,15 +413,15 @@ public class ThinkAnswerAgent {
         if (toolName == null) {
             return;
         }
-        if (toolName.equals(chatContext.getLastFailedToolName())) {
+        if (toolName.equals(chatContext.getLastToolCallName())) {
             // 同一工具连续调用，递增计数
-            chatContext.setConsecutiveToolFailures(
-                    chatContext.getConsecutiveToolFailures() + 1);
+            chatContext.setConsecutiveToolCalls(
+                    chatContext.getConsecutiveToolCalls() + 1);
         } else {
             // 不同工具，重置计数
-            chatContext.setConsecutiveToolFailures(1);
+            chatContext.setConsecutiveToolCalls(1);
         }
-        chatContext.setLastFailedToolName(toolName);
+        chatContext.setLastToolCallName(toolName);
     }
 
     /**
@@ -433,8 +433,8 @@ public class ThinkAnswerAgent {
      */
     private String buildConsecutiveToolCallsWarning(int maxConsecutiveToolCalls) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
-        Integer consecutiveCalls = chatContext.getConsecutiveToolFailures();
-        String lastTool = chatContext.getLastFailedToolName();
+        Integer consecutiveCalls = chatContext.getConsecutiveToolCalls();
+        String lastTool = chatContext.getLastToolCallName();
 
         if (consecutiveCalls == null || consecutiveCalls < maxConsecutiveToolCalls) {
             return null;
@@ -460,7 +460,7 @@ public class ThinkAnswerAgent {
     @SuppressWarnings({"unchecked", "java:S3776"})
     private FormatValidationResult validateOutputFormat(String llmResult, boolean showThinking) {
         if (StringUtils.isEmpty(llmResult)) {
-            return new FormatValidationResult(false, "LLM output is empty");
+            return new FormatValidationResult(false, "Output is empty, ensure the output conforms to the format requirements");
         }
 
         // 移除 JSON 格式中的 ```json 或 ``` 包裹

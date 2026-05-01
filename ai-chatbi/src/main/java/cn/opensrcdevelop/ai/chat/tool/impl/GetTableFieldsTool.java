@@ -59,14 +59,10 @@ public class GetTableFieldsTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of get table fields")
         private boolean success;
 
-        @ToolParam(description = "The field definitions of the tables")
         private List<Map<String, Object>> fields;
 
-        @ToolParam(description = "The error message if get table fields failed")
         private String error;
     }
 }

@@ -7,6 +7,7 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,28 @@ public class GenerateReportTool implements MethodTool {
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
+
+        // 检查是否存在查询数据
+        if (CollectionUtils.isEmpty(ChatContextHolder.getChatContext().getQueryData())) {
+            response.setSuccess(false);
+            response.setError("The query data is empty, check the sql is executed");
+            return response;
+        }
+
+        // 检查是否已审核 SQL
+        if (!Boolean.TRUE.equals(chatContext.getFinalSqlReviewed())) {
+            response.setSuccess(false);
+            response.setError("The generated final SQL is not reviewed, please call tool review_sql first.");
+            return response;
+        }
+
+        // 检查是否已生成有效 SQL
+        if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
+            response.setSuccess(false);
+            response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+            return response;
+        }
+
         Map<String, Object> result = analyzeAgent.generateAnalysisReport(
                 chatContext.getChatClient(),
                 chatContext.getAnalyzeDataResult(),
@@ -57,11 +80,8 @@ public class GenerateReportTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of generate report")
         private Boolean success;
 
-        @ToolParam(description = "The error message if analyze data failed")
         private String error;
     }
 }

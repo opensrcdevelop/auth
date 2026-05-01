@@ -58,14 +58,10 @@ public class GetRelevantTablesTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of get relevant tables")
         private boolean success;
 
-        @ToolParam(description = "The relevant table ids of the query")
         private List<String> tables;
 
-        @ToolParam(description = "The error message of get relevant tables")
         private String error;
     }
 }

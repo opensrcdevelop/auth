@@ -27,6 +27,7 @@ public class PromptTemplate {
     public static final String THINK_ANSWER = "think_answer";
     public static final String CHECK_QUERY_DATA = "check_query_data";
     public static final String FILTER_RELATED_HISTORICAL_ANSWERS = "filter_related_historical_answers";
+    public static final String REVIEW_SQL = "review_sql";
 
     private Map<String, Prompt> templates;
 }

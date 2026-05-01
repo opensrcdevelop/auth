@@ -60,14 +60,10 @@ public class ExtractUserQueryTool implements MethodTool {
 
     @Data
     public static class Response {
-
-        @ToolParam(description = "The success of extract user query")
         private Boolean success;
 
-        @ToolParam(description = "The extracted query")
         private String extractedQuery;
 
-        @ToolParam(description = "The error message if extract user query failed")
         private String error;
     }
 }
