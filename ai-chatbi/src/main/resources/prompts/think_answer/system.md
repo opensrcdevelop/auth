@@ -90,7 +90,7 @@ Before executing any tools, you **MUST** first analyze if the current question i
 
 #### Standard Execution Flow
 ```
-get_relevant_tables → (optional: get_table_fields)
+(optional: recall_history_qa) → get_relevant_tables → (optional: get_table_fields)
 → [generate_execute_sql (set execute=false for info gathering)] (may repeat multiple times if more information is needed)
 → generate_execute_sql (FINAL SQL that directly answers the question)
 → final_answer
