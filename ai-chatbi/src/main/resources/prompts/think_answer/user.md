@@ -57,6 +57,7 @@ Output the final answer when ANY of the following is true:
 <#if item.tool_name??>
 - tool: ${item.tool_name}
   - execute time: ${item.execute_time}
+  - parameters: ${item.parameters}
   - result: ${item.result}
 </#if>
 </#list>
@@ -79,9 +80,9 @@ ${format_error_feedback}
 Please ensure your next output strictly follows the required format.
 </#if>
 
-<#if consecutive_failure_warning?? && consecutive_failure_warning != "">
-## ⚠️ Consecutive Tool Failure Warning (IMPORTANT)
-${consecutive_failure_warning}
+<#if consecutive_tool_call_warning?? && consecutive_tool_call_warning != "">
+### ⚠️ Consecutive Tool Call Warning (IMPORTANT)
+${consecutive_tool_call_warning}
 </#if>
 
 ** Current Time **

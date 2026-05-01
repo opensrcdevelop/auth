@@ -85,7 +85,7 @@ public class ThinkAnswerAgent {
         ChatContextHolder.getChatContext().setHistoricalQuestions(historicalQuestions);
 
         String formatErrorFeedback = null;
-        String consecutiveFailureWarning = null;
+        String consecutiveToolCallWarning = null;
         int step = 0;
         while (step < maxSteps) {
             if (interruptFlag.get()) {
@@ -100,7 +100,7 @@ public class ThinkAnswerAgent {
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
             String result = callLlm(emitter, interruptFlag, chatClient, showThinking,
-                    formatErrorFeedback, consecutiveFailureWarning);
+                    formatErrorFeedback, consecutiveToolCallWarning);
             if (interruptFlag.get()) {
                 break;
             }
@@ -145,7 +145,7 @@ public class ThinkAnswerAgent {
             } else {
                 executeToolCall(jsonMap, emitter);
                 // 更新连续调用警告，供下一轮 LLM 调用使用
-                consecutiveFailureWarning = buildConsecutiveToolCallsWarning(maxConsecutiveToolCalls);
+                consecutiveToolCallWarning = buildConsecutiveToolCallsWarning(maxConsecutiveToolCalls);
             }
             step++;
         }
@@ -154,10 +154,10 @@ public class ThinkAnswerAgent {
 
     @SuppressWarnings("all")
     private String callLlm(SseEmitter emitter, AtomicBoolean interruptFlag, ChatClient chatClient,
-            boolean showThinking, String formatErrorFeedback, String consecutiveFailureWarning) {
+            boolean showThinking, String formatErrorFeedback, String consecutiveToolCallWarning) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        Prompt prompt = getPrompt(showThinking, formatErrorFeedback, consecutiveFailureWarning);
+        Prompt prompt = getPrompt(showThinking, formatErrorFeedback, consecutiveToolCallWarning);
         StringBuilder fullOutput = new StringBuilder();
         AtomicBoolean hasJsonOutput = new AtomicBoolean(false);
         AtomicReference<String> lastOutput = new AtomicReference<>("");
@@ -224,7 +224,7 @@ public class ThinkAnswerAgent {
     }
 
     private Prompt getPrompt(boolean showThinking, String formatErrorFeedback,
-            String consecutiveFailureWarning) {
+            String consecutiveToolCallWarning) {
         // 获取会话历史用户消息
         List<String> historicalQuestions = ChatContextHolder.getChatContext().getHistoricalQuestions();
 
@@ -249,8 +249,8 @@ public class ThinkAnswerAgent {
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
                 .param("show_thinking", showThinking)
                 .param("format_error_feedback", formatErrorFeedback)
-                .param("consecutive_failure_warning",
-                        consecutiveFailureWarning != null ? consecutiveFailureWarning : "");
+                .param("consecutive_tool_call_warning",
+                        consecutiveToolCallWarning != null ? consecutiveToolCallWarning : "");
 
         Prompt.Builder builder = Prompt.builder();
         builder.chatOptions(
@@ -343,6 +343,7 @@ public class ThinkAnswerAgent {
 
             toolCallResult = Map.of(
                     "tool_name", toolName,
+                    "parameters", parameters,
                     "execute_time", executeTime,
                     "result", result);
             SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行成功，结果：%s".formatted(toolName, truncateString(result, 100)));
@@ -367,6 +368,7 @@ public class ThinkAnswerAgent {
 
             toolCallResult = Map.of(
                     "tool_name", toolName,
+                    "parameters", parameters,
                     "execute_time", executeTime,
                     "result", errorMsg);
             SseUtil.sendChatBIToolCall(emitter, "工具【%s】执行失败".formatted(toolName));
