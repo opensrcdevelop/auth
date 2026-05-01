@@ -372,11 +372,13 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
             // 3. 删除权限有关的所有授权记录
             var ids = permissions.stream().map(Permission::getPermissionId).toList();
-            List<AuthorizeRecord> authorizeRecords = authorizeService.list(Wrappers.<AuthorizeRecord>lambdaQuery().in(AuthorizeRecord::getPermissionId, ids));
+            List<AuthorizeRecord> authorizeRecords = authorizeService
+                    .list(Wrappers.<AuthorizeRecord>lambdaQuery().in(AuthorizeRecord::getPermissionId, ids));
             if (CollectionUtils.isNotEmpty(authorizeRecords)) {
                 return;
             }
-            authorizeService.removeAuthorization(CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).toList());
+            authorizeService.removeAuthorization(
+                    CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).toList());
 
             // 4. 清除用户权限缓存
             for (AuthorizeRecord authorizeRecord : authorizeRecords) {
@@ -441,7 +443,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
         super.updateById(updatePermission);
 
         // 5. 清除用户权限缓存
-        List<AuthorizeRecord> authorizeRecords = authorizeService.list(Wrappers.<AuthorizeRecord>lambdaQuery().eq(AuthorizeRecord::getPermissionId, permissionId));
+        List<AuthorizeRecord> authorizeRecords = authorizeService
+                .list(Wrappers.<AuthorizeRecord>lambdaQuery().eq(AuthorizeRecord::getPermissionId, permissionId));
         if (CollectionUtils.isNotEmpty(authorizeRecords)) {
             for (AuthorizeRecord authorizeRecord : authorizeRecords) {
                 this.clearUserPermissionsCacheByAuthorizeId(authorizeRecord.getAuthorizeId());
@@ -594,7 +597,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 清除用户权限缓存
      *
-     * @param roleId 角色 ID
+     * @param roleId
+     *            角色 ID
      */
     @Override
     public void clearUserPermissionsCacheByRoleId(String roleId) {
@@ -608,7 +612,9 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
 
             if (PrincipalTypeEnum.USER_GROUP.getType().equals(rolePrincipal.getPrincipalId())) {
                 userIds.addAll(
-                        CommonUtil.stream(userGroupService.getGroupUsers(1, -1, rolePrincipal.getPrincipalId(), null).getList())
+                        CommonUtil
+                                .stream(userGroupService.getGroupUsers(1, -1, rolePrincipal.getPrincipalId(), null)
+                                        .getList())
                                 .map(UserResponseDto::getId).toList());
             }
         }
@@ -627,24 +633,28 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 清除用户权限缓存
      *
-     * @param userId 用户 ID
+     * @param userId
+     *            用户 ID
      */
     @Override
     public void clearUserPermissionsCacheByUserId(String userId) {
         // 1. 清除缓存
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
-        RedisUtil.delete(CacheConstants.CACHE_CURRENT_USER_PERMISSIONS + "::" + tenantCode + CommonConstants.COLON + userId);
+        RedisUtil.delete(
+                CacheConstants.CACHE_CURRENT_USER_PERMISSIONS + "::" + tenantCode + CommonConstants.COLON + userId);
     }
 
     /**
      * 清除用户组权限缓存
      *
-     * @param groupId 用户组 ID
+     * @param groupId
+     *            用户组 ID
      */
     @Override
     public void clearUserPermissionsCacheByUserGroupId(String groupId) {
         // 1. 获取用户组下的所有用户 ID
-        List<String> userIds = CommonUtil.stream(userGroupService.getGroupUsers(1, -1, groupId, null).getList()).map(UserResponseDto::getId).toList();
+        List<String> userIds = CommonUtil.stream(userGroupService.getGroupUsers(1, -1, groupId, null).getList())
+                .map(UserResponseDto::getId).toList();
 
         // 2. 构建 Redis 缓存 key
         String tenantCode = TenantContextHolder.getTenantContext().getTenantCode();
@@ -660,7 +670,8 @@ public class PermissionServiceImpl extends ServiceImpl<PermissionMapper, Permiss
     /**
      * 清除用户权限缓存
      *
-     * @param authorizeId 授权 ID
+     * @param authorizeId
+     *            授权 ID
      */
     @Override
     public void clearUserPermissionsCacheByAuthorizeId(String authorizeId) {

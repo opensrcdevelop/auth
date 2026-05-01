@@ -346,6 +346,29 @@ public class AuthUtil {
             String attrKey, Object value,
             UserAttrDataTypeEnum valueDataType,
             ConjunctionTypeEnum conjunction) {
+        // IS_NULL 和 IS_NOT_NULL 单独处理
+        String existsCondition = "SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '"
+                + attrKey + "'";
+        if (filterType == DataFilterEnum.IS_NULL) {
+            // 为空：不存在 attr_key = xxx 的映射记录
+            if (ConjunctionTypeEnum.OR == conjunction) {
+                queryWrapper.or(q -> q.notExists(existsCondition));
+            } else {
+                queryWrapper.and(q -> q.notExists(existsCondition));
+            }
+            return;
+        }
+        if (filterType == DataFilterEnum.IS_NOT_NULL) {
+            // 不为空：存在 attr_key = xxx 的映射记录
+            if (ConjunctionTypeEnum.OR == conjunction) {
+                queryWrapper.or(q -> q.exists(existsCondition));
+            } else {
+                queryWrapper.and(q -> q.exists(existsCondition));
+            }
+            return;
+        }
+
+        // 其他过滤类型（EQ, NE, LIKE 等）走原有逻辑
         String sqlSegment = """
                 SELECT
                     1
@@ -370,18 +393,6 @@ public class AuthUtil {
 
     private static String getExistsConditionSqlSegment(DataFilterEnum filterType, String attrKey, Object value,
             UserAttrDataTypeEnum valueDataType) {
-        // IS_NULL 和 IS_NOT_NULL 需要特殊处理，使用 EXISTS/NOT EXISTS 判断属性记录是否存在
-        if (filterType == DataFilterEnum.IS_NULL) {
-            return String.format(
-                    "NOT EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
-                    attrKey);
-        }
-        if (filterType == DataFilterEnum.IS_NOT_NULL) {
-            return String.format(
-                    "EXISTS (SELECT 1 FROM t_user_attr_mapping, t_user_attr WHERE t_user_attr_mapping.attr_id = t_user_attr.attr_id AND t_user_attr_mapping.user_id = t_user.user_id AND t_user_attr.attr_key = '%s')",
-                    attrKey);
-        }
-
         String queryKey = "t_user_attr.attr_key";
         String valueKey;
         // 日期、日期时间、数字类型进行 sql 类型强制转换为数值类型进行条件判断

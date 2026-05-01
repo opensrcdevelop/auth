@@ -189,7 +189,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
 
         if (CollectionUtils.isNotEmpty(records)) {
             // 2. 清除用户权限缓存
-            CommonUtil.stream(records).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
+            CommonUtil.stream(records).map(AuthorizeRecord::getAuthorizeId)
+                    .forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
 
             // 3. 删除授权信息
             super.remove(query);
@@ -250,7 +251,8 @@ public class AuthorizeServiceImpl extends ServiceImpl<AuthorizeMapper, Authorize
 
         if (CollectionUtils.isNotEmpty(authorizeRecords)) {
             // 2. 清除用户权限缓存
-            CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId).forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
+            CommonUtil.stream(authorizeRecords).map(AuthorizeRecord::getAuthorizeId)
+                    .forEach(permissionService::clearUserPermissionsCacheByAuthorizeId);
 
             // 3. 删除授权信息
             super.remove(query);

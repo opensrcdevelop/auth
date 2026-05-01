@@ -249,7 +249,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         super.updateById(permissionExp);
 
         // 5. 获取关联的全部授权记录
-        List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(Wrappers.<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, requestDto.getId()));
+        List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(Wrappers
+                .<AuthorizeCondition>lambdaQuery().eq(AuthorizeCondition::getPermissionExpId, requestDto.getId()));
         if (CollectionUtils.isNotEmpty(authorizeConditions)) {
             for (AuthorizeCondition authorizeCondition : authorizeConditions) {
                 permissionService.clearUserPermissionsCacheByAuthorizeId(authorizeCondition.getAuthorizeId());
@@ -280,7 +281,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
         if (CollectionUtils.isEmpty(authorizeConditions)) {
             return;
         }
-        authorizeService.removeByIds(CommonUtil.stream(authorizeConditions).map(AuthorizeCondition::getAuthorizeId).toList());
+        authorizeService
+                .removeByIds(CommonUtil.stream(authorizeConditions).map(AuthorizeCondition::getAuthorizeId).toList());
 
         // 3. 清除关联的全部用户权限缓存
         for (AuthorizeCondition authorizeCondition : authorizeConditions) {
@@ -481,7 +483,8 @@ public class PermissionExpServiceImpl extends ServiceImpl<PermissionExpMapper, P
     @Override
     public void removeTemplatePermissionExp(String templateId) {
         // 1. 查询关联的权限表达式
-        List<PermissionExp> permissionExps = super.list(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+        List<PermissionExp> permissionExps = super.list(
+                Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
         if (CollectionUtils.isEmpty(permissionExps)) {
             return;
         }

@@ -117,11 +117,13 @@ public class PermissionExpTemplateServiceImpl extends ServiceImpl<PermissionExpT
         super.updateById(updatePermissionExpTemplate);
 
         // 4. 获取关联的权限表达式
-        List<PermissionExp> permissionExps = permissionExpService.list(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
+        List<PermissionExp> permissionExps = permissionExpService
+                .list(Wrappers.<PermissionExp>lambdaQuery().eq(PermissionExp::getTemplateId, templateId));
         if (CollectionUtils.isNotEmpty(permissionExps)) {
             // 5. 获取关联的授权条件
             List<AuthorizeCondition> authorizeConditions = authorizeConditionService.list(
-                    Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getPermissionExpId, CommonUtil.stream(permissionExps).map(PermissionExp::getExpressionId).toList()));
+                    Wrappers.<AuthorizeCondition>lambdaQuery().in(AuthorizeCondition::getPermissionExpId,
+                            CommonUtil.stream(permissionExps).map(PermissionExp::getExpressionId).toList()));
             if (CollectionUtils.isNotEmpty(authorizeConditions)) {
                 // 6. 清除关联的用户权限缓存
                 for (AuthorizeCondition authorizeCondition : authorizeConditions) {
