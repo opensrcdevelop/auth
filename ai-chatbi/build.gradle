@@ -94,7 +94,6 @@ dependencies {
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
     implementation 'org.springframework.boot:spring-boot-starter-freemarker'
-    implementation 'org.springframework.boot:spring-boot-sql'
     implementation 'org.springframework.ai:spring-ai-chroma-store'
     implementation "com.github.vertical-blank:sql-formatter:$rootProject.sqlFormatterVer"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
