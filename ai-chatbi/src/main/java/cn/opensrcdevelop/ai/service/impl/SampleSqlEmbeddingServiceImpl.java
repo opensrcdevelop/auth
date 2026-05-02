@@ -11,20 +11,19 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -84,14 +83,10 @@ public class SampleSqlEmbeddingServiceImpl implements SampleSqlEmbeddingService 
 
     private EmbeddingModel createOpenAiEmbeddingModel(ModelProvider modelProvider, String embeddingModel,
             Integer dimension) {
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .baseUrl(modelProvider.getBaseUrl())
-                .apiKey(modelProvider.getApiKey())
-                .build();
-
-        return new OpenAiEmbeddingModel(openAiApi,
-                MetadataMode.EMBED,
+        return new OpenAiEmbeddingModel(
                 OpenAiEmbeddingOptions.builder()
+                        .baseUrl(modelProvider.getBaseUrl())
+                        .apiKey(modelProvider.getApiKey())
                         .model(embeddingModel)
                         .dimensions(dimension)
                         .build());

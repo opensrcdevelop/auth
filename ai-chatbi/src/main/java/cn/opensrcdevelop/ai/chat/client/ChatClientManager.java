@@ -12,13 +12,11 @@ import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -29,12 +27,10 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.retry.policy.MaxAttemptsRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -108,17 +104,21 @@ public class ChatClientManager {
             temperature = chatConfig.getTemperature();
         }
 
+        Integer retryCount = defaultLlmApiRetryCount;
+        if (Objects.nonNull(chatConfig) && Objects.nonNull(retryCount) && retryCount > 0) {
+            retryCount = chatConfig.getLlmApiRetryCount();
+        }
+
         return OpenAiChatModel.builder()
-                .openAiApi(OpenAiApi.builder()
-                        .baseUrl(modelProvider.getBaseUrl())
-                        .apiKey(modelProvider.getApiKey())
-                        .build())
-                .defaultOptions(OpenAiChatOptions.builder()
-                        .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
-                        .temperature(temperature)
-                        .build())
+                .options(
+                        OpenAiChatOptions.builder()
+                                .baseUrl(modelProvider.getBaseUrl())
+                                .apiKey(modelProvider.getApiKey())
+                                .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
+                                .temperature(temperature)
+                                .maxRetries(retryCount)
+                                .build())
                 .toolCallingManager(toolCallingManager)
-                .retryTemplate(getRetryTemplate(chatConfig))
                 .build();
     }
 
@@ -146,27 +146,20 @@ public class ChatClientManager {
             temperature = chatConfig.getTemperature();
         }
 
-        return AnthropicChatModel.builder()
-                .anthropicApi(AnthropicApi.builder()
-                        .baseUrl(modelProvider.getBaseUrl())
-                        .apiKey(modelProvider.getApiKey())
-                        .build())
-                .defaultOptions(AnthropicChatOptions.builder()
-                        .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
-                        .temperature(temperature)
-                        .build())
-                .toolCallingManager(toolCallingManager)
-                .retryTemplate(getRetryTemplate(chatConfig))
-                .build();
-    }
-
-    private RetryTemplate getRetryTemplate(ChatConfigDto chatConfig) {
         Integer retryCount = defaultLlmApiRetryCount;
         if (Objects.nonNull(chatConfig) && Objects.nonNull(retryCount) && retryCount > 0) {
             retryCount = chatConfig.getLlmApiRetryCount();
         }
 
-        RetryUtils.DEFAULT_RETRY_TEMPLATE.setRetryPolicy(new MaxAttemptsRetryPolicy(retryCount));
-        return RetryUtils.DEFAULT_RETRY_TEMPLATE;
+        return AnthropicChatModel.builder()
+                .options(AnthropicChatOptions.builder()
+                        .baseUrl(modelProvider.getBaseUrl())
+                        .apiKey(modelProvider.getApiKey())
+                        .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)
+                        .temperature(temperature)
+                        .maxRetries(retryCount)
+                        .build())
+                .toolCallingManager(toolCallingManager)
+                .build();
     }
 }

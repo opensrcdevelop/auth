@@ -38,7 +38,7 @@ ext {
     javersVer = '7.8.0'
     uuidCreatorVer = '6.1.1'
     jexl3Ver = '3.5.0'
-    springAiVer = '1.1.5'
+    springAiVer = '2.0.0-M5'
     sqlFormatterVer = '2.0.5'
     snakeYamlVer = '2.5'
     easyexcelVer = '4.0.3'
