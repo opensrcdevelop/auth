@@ -7,22 +7,10 @@ import com.blueconic.browscap.Capabilities;
 import com.blueconic.browscap.UserAgentParser;
 import com.blueconic.browscap.UserAgentService;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.lionsoul.ip2region.xdb.Searcher;
@@ -35,6 +23,17 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @SuppressWarnings("unused")
@@ -44,7 +43,10 @@ public class WebUtil {
     private static final String IP_REGION_COUNTRY_CHAIN = "中国";
     private static final String IP_REGION_ISP_INTERNAL = "内网IP";
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builder()
+            .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+                    .withContentInclusion(JsonInclude.Include.NON_NULL))
+            .build();
     private static final UserAgentParser USER_AGENT_PARSER = Try
             .of(() -> new UserAgentService().loadParser())
             .getOrElseThrow(e -> {
@@ -60,12 +62,6 @@ public class WebUtil {
                 log.error("Failed to load ip region db into memory");
                 return new IllegalStateException("Failed to load ip region db into memory");
             });
-
-    static {
-        OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        OBJECT_MAPPER.registerModule(new JavaTimeModule());
-        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    }
 
     private WebUtil() {
     }
@@ -83,7 +79,7 @@ public class WebUtil {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
             response.setStatus(status.value());
-            response.getWriter().write(OBJECT_MAPPER.writeValueAsString(object));
+            response.getWriter().write(JSON_MAPPER.writeValueAsString(object));
             response.getWriter().flush();
         } catch (IOException e) {
             throw new ServerException(e);

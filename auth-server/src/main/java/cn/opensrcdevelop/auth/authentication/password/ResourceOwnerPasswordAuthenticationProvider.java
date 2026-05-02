@@ -3,19 +3,14 @@ package cn.opensrcdevelop.auth.authentication.password;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.*;
-import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
@@ -32,11 +27,21 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.util.Assert;
 
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * 密码授权模式认证提供者
  */
 @Slf4j
 public class ResourceOwnerPasswordAuthenticationProvider implements AuthenticationProvider {
+
+    public static final String PARAM_USERNAME = "username";
+    public static final String PARAM_PASSWORD = "password";
+
     private static final String ERROR_URI = "https://datatracker.ietf.org/doc/html/rfc6749#section-5.2";
     private static final String ERROR_MESSAGE = "无效的用户信息";
     private static final OAuth2TokenType ID_TOKEN_TOKEN_TYPE = new OAuth2TokenType(OidcParameterNames.ID_TOKEN);
@@ -56,7 +61,7 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
     }
 
     @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+    public Authentication authenticate(@NonNull Authentication authentication) throws AuthenticationException {
         ResourceOwnerPasswordAuthenticationToken authenticationToken = (ResourceOwnerPasswordAuthenticationToken) authentication;
 
         // 客户端验证
@@ -104,14 +109,14 @@ public class ResourceOwnerPasswordAuthenticationProvider implements Authenticati
     }
 
     @Override
-    public boolean supports(Class<?> authentication) {
+    public boolean supports(@NonNull Class<?> authentication) {
         return ResourceOwnerPasswordAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
     private Authentication getAuthenticatedUser(ResourceOwnerPasswordAuthenticationToken authenticationToken) {
         Map<String, Object> additionalParameters = authenticationToken.getAdditionalParameters();
-        String username = (String) additionalParameters.get(OAuth2ParameterNames.USERNAME);
-        String password = (String) additionalParameters.get(OAuth2ParameterNames.PASSWORD);
+        String username = (String) additionalParameters.get(PARAM_USERNAME);
+        String password = (String) additionalParameters.get(PARAM_PASSWORD);
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = UsernamePasswordAuthenticationToken
                 .unauthenticated(username, password);
         Authentication authenticated = null;

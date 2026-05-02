@@ -73,7 +73,8 @@ public class AnalyzeDataTool implements MethodTool {
             // 1.3 检查是否已生成有效 SQL
             if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
                 response.setSuccess(false);
-                response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+                response.setError(
+                        "The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
                 return response;
             }
 

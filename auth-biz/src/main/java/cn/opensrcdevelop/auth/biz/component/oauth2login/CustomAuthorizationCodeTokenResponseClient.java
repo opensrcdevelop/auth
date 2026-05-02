@@ -7,12 +7,6 @@ import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationSer
 import cn.opensrcdevelop.auth.biz.util.HttpExpressionUtil;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.HttpUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,7 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
@@ -33,6 +27,13 @@ import org.springframework.security.oauth2.core.http.converter.OAuth2AccessToken
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.type.TypeReference;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -48,13 +49,13 @@ public class CustomAuthorizationCodeTokenResponseClient
             .builder()
             .requestInterceptor(new HttpUtil.CustomClientHttpRequestInterceptor())
             .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
-            .messageConverters(messageConverters -> {
-                messageConverters.clear();
+            .configureMessageConverters(messageConverters -> {
+                messageConverters.disableDefaults();
                 var accessTokenResponseHttpMessageConverter = new OAuth2AccessTokenResponseHttpMessageConverter();
                 accessTokenResponseHttpMessageConverter.setAccessTokenResponseConverter(accessTokenResponseConverter);
-                messageConverters.addFirst(accessTokenResponseHttpMessageConverter);
-                messageConverters.add(new FormHttpMessageConverter());
-                messageConverters.add(new MappingJackson2HttpMessageConverter());
+                messageConverters.addCustomConverter(accessTokenResponseHttpMessageConverter);
+                messageConverters.addCustomConverter(new FormHttpMessageConverter());
+                messageConverters.addCustomConverter(new JacksonJsonHttpMessageConverter());
             })
             .build();
 

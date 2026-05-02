@@ -12,15 +12,14 @@ import cn.opensrcdevelop.auth.handler.LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.LoginSuccessHandler;
 import cn.opensrcdevelop.auth.handler.LoginTargetAuthenticationEntryPoint;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.security.web.authentication.DelegatingAuthenticationConverter;
@@ -30,6 +29,8 @@ import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.CorsFilter;
+
+import java.util.List;
 
 /**
  * 授权服务器配置
@@ -47,7 +48,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     private final RememberMeServices rememberMeServices;
 
     @Override
-    public void init(HttpSecurity http) throws Exception {
+    public void init(HttpSecurity http) {
         // 拦截授权服务器相关端点
         RequestMatcher endpointsMatcher = oauth2AuthorizationServerConfigurer
                 .getEndpointsMatcher();
@@ -80,7 +81,7 @@ public class AuthorizationServerConfigurer extends AbstractHttpConfigurer<Author
     }
 
     @Override
-    public void configure(HttpSecurity http) throws Exception {
+    public void configure(HttpSecurity http) {
         AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
 
         // 添加跨域过滤器

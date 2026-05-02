@@ -1,14 +1,16 @@
 package cn.opensrcdevelop.auth.client.authorize;
 
-import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
 
-public class AuthorizeExpressionRootObject extends SecurityExpressionRoot
+import java.util.function.Supplier;
+
+public class AuthorizeExpressionRootObject extends SecurityExpressionRoot<MethodInvocation>
         implements
             MethodSecurityExpressionOperations {
 
@@ -21,15 +23,15 @@ public class AuthorizeExpressionRootObject extends SecurityExpressionRoot
     private MethodInvocation methodInvocation;
 
     public AuthorizeExpressionRootObject(Authentication authentication) {
-        super(authentication);
+        super(() -> authentication, null);
     }
 
-    public AuthorizeExpressionRootObject(Supplier<Authentication> authentication) {
-        super(authentication);
+    public AuthorizeExpressionRootObject(Supplier<? extends @Nullable Authentication> authentication) {
+        super(authentication, null);
     }
 
     @Override
-    public void setFilterObject(Object filterObject) {
+    public void setFilterObject(@Nullable Object filterObject) {
         this.filterObject = filterObject;
     }
 

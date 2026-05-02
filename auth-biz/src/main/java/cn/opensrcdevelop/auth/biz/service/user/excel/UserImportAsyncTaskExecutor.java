@@ -6,10 +6,10 @@ import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
 import cn.opensrcdevelop.auth.biz.service.asynctask.storage.StorageService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.Map;
 

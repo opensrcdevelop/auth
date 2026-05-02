@@ -1,8 +1,7 @@
 package cn.opensrcdevelop.auth.client.authorize;
 
-import java.util.Objects;
-import java.util.function.Supplier;
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.expression.MethodBasedEvaluationContext;
@@ -11,10 +10,15 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
 
+import java.util.Objects;
+import java.util.function.Supplier;
+
 public class AuthorizeExpressionHandler extends DefaultMethodSecurityExpressionHandler {
 
     @Override
-    public EvaluationContext createEvaluationContext(Supplier<Authentication> authentication, MethodInvocation mi) {
+    @SuppressWarnings("all")
+    public EvaluationContext createEvaluationContext(Supplier<? extends @Nullable Authentication> authentication,
+            MethodInvocation mi) {
         MethodBasedEvaluationContext context = new MethodBasedEvaluationContext(
                 createCustomSecurityExpressionRoot(authentication, mi),
                 AopUtils.getMostSpecificMethod(mi.getMethod(),
@@ -26,21 +30,20 @@ public class AuthorizeExpressionHandler extends DefaultMethodSecurityExpressionH
     }
 
     @Override
-    protected MethodSecurityExpressionOperations createSecurityExpressionRoot(Authentication authentication,
+    @SuppressWarnings("all")
+    protected MethodSecurityExpressionOperations createSecurityExpressionRoot(@Nullable Authentication authentication,
             MethodInvocation invocation) {
         return createCustomSecurityExpressionRoot(() -> authentication, invocation);
     }
 
     private MethodSecurityExpressionOperations createCustomSecurityExpressionRoot(
-            Supplier<Authentication> authentication, MethodInvocation methodInvocation) {
+            Supplier<? extends @Nullable Authentication> authentication, MethodInvocation methodInvocation) {
 
         AuthorizeExpressionRootObject authorizeRootObject = new AuthorizeExpressionRootObject(authentication);
         authorizeRootObject.setMethodInvocation(methodInvocation);
         authorizeRootObject.setThis(methodInvocation.getThis());
         authorizeRootObject.setPermissionEvaluator(getPermissionEvaluator());
-        authorizeRootObject.setTrustResolver(getTrustResolver());
-        authorizeRootObject.setRoleHierarchy(getRoleHierarchy());
-        authorizeRootObject.setDefaultRolePrefix(getDefaultRolePrefix());
+        authorizeRootObject.setAuthorizationManagerFactory(getAuthorizationManagerFactory());
         return authorizeRootObject;
     }
 }

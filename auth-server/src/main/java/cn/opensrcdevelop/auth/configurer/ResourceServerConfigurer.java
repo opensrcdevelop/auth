@@ -38,7 +38,7 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
     private final OpaqueTokenIntrospector tokenIntrospector;
 
     @Override
-    public void init(HttpSecurity http) throws Exception {
+    public void init(HttpSecurity http) {
         // 表单 login 配置
         http
                 .authorizeHttpRequests(x -> {
@@ -89,7 +89,7 @@ public class ResourceServerConfigurer extends AbstractHttpConfigurer<ResourceSer
     }
 
     @Override
-    public void configure(HttpSecurity http) throws Exception {
+    public void configure(HttpSecurity http) {
         // 添加 cors 过滤器
         http.addFilter(corsFilter);
         // 添加 MFA 校验过滤器（统一处理 TOTP 和 WebAuthn）

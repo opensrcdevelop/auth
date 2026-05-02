@@ -1,12 +1,5 @@
 package cn.opensrcdevelop.common.util;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import org.redisson.api.RLock;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -14,13 +7,16 @@ import org.redisson.api.listener.MessageListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+
 @SuppressWarnings("unused")
 public class RedisUtil {
 
     private RedisUtil() {
     }
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final ReentrantLock LOCK = new ReentrantLock();
     private static StringRedisTemplate redisTemplate;
     private static RedissonClient redissonClient;
@@ -45,12 +41,6 @@ public class RedisUtil {
         } finally {
             LOCK.unlock();
         }
-    }
-
-    static {
-        OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        OBJECT_MAPPER.registerModule(new JavaTimeModule());
-        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     /**

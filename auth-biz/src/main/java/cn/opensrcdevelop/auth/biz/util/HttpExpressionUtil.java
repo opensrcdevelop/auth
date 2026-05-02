@@ -1,14 +1,12 @@
 package cn.opensrcdevelop.auth.biz.util;
 
 import cn.opensrcdevelop.common.util.HttpUtil;
-import java.util.Map;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.MapAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,15 +14,17 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Map;
+
 public class HttpExpressionUtil {
 
-    private static final RestTemplate REST_TEMPLATE = new RestTemplateBuilder()
-            .additionalInterceptors(new HttpUtil.CustomClientHttpRequestInterceptor()).build();
+    private static final RestTemplate REST_TEMPLATE = new RestTemplate();
     private static final ExpressionParser PARSER = new SpelExpressionParser();
     private static final StandardEvaluationContext CONTEXT;
 
     static {
         CONTEXT = new StandardEvaluationContext(new HttpExpressionUtil());
+        REST_TEMPLATE.getInterceptors().add((new HttpUtil.CustomClientHttpRequestInterceptor()));
     }
 
     public Object http(String url, String method, Map<String, String> headers, Object body,

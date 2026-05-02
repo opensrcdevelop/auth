@@ -3,11 +3,6 @@ package cn.opensrcdevelop.common.util;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -20,6 +15,14 @@ import freemarker.template.TemplateExceptionHandler;
 import io.vavr.control.Try;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.ReflectionUtils;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.*;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.InvocationTargetException;
@@ -37,34 +40,18 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ReflectionUtils;
 
 @SuppressWarnings("unused")
 public class CommonUtil {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final ObjectMapper OBJECT_MAPPER_ALLOW_NULL = createObjectMapperAllowNull();
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builder()
+            .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+                    .withContentInclusion(JsonInclude.Include.NON_NULL))
+            .build();
+    private static final JsonMapper JSON_MAPPER_ALLOW_NULL = JsonMapper.builder().build();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base32 BASE32 = new Base32();
     private static final Base64 BASE64 = new Base64();
-
-    static {
-        OBJECT_MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        OBJECT_MAPPER.registerModule(new JavaTimeModule());
-        OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    }
-
-    private static ObjectMapper createObjectMapperAllowNull() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.registerModule(new JavaTimeModule());
-        mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-        return mapper;
-    }
 
     private CommonUtil() {
     }
@@ -146,8 +133,8 @@ public class CommonUtil {
         String val = null;
         try {
             // json 序列化
-            val = OBJECT_MAPPER.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
+            val = JSON_MAPPER.writeValueAsString(obj);
+        } catch (Exception e) {
             // jdk 序列化
             val = javaSerialize(obj);
         }
@@ -162,7 +149,7 @@ public class CommonUtil {
      * @return 序列化字符串
      */
     public static String nonJdkSerializeObject(Object obj) {
-        return Try.of(() -> OBJECT_MAPPER.writeValueAsString(obj)).getOrElseThrow(ServerException::new);
+        return Try.of(() -> JSON_MAPPER.writeValueAsString(obj)).getOrElseThrow(ServerException::new);
     }
 
     /**
@@ -176,8 +163,8 @@ public class CommonUtil {
         String val = null;
         try {
             // json 序列化，使用独立的 ObjectMapper 避免全局配置污染
-            val = OBJECT_MAPPER_ALLOW_NULL.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
+            val = JSON_MAPPER_ALLOW_NULL.writeValueAsString(obj);
+        } catch (Exception e) {
             // jdk 序列化
             val = javaSerialize(obj);
         }
@@ -194,8 +181,8 @@ public class CommonUtil {
     public static <T> T deserializeObject(String value, Class<T> clazz) {
         try {
             // json 反序列化
-            return OBJECT_MAPPER.readValue(value, clazz);
-        } catch (JsonProcessingException e) {
+            return JSON_MAPPER.readValue(value, clazz);
+        } catch (Exception e) {
             // jdk 反序列化
             return javaDeserialize(value);
         }
@@ -212,14 +199,9 @@ public class CommonUtil {
      *            目标类
      * @return 对象
      */
-    @SuppressWarnings("all")
     public static <T> T nonJdkDeserializeObject(String value, Class<T> clazz) {
-        try {
-            // json 反序列化
-            return OBJECT_MAPPER.readValue(value, clazz);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        // json 反序列化
+        return JSON_MAPPER.readValue(value, clazz);
     }
 
     /**
@@ -232,8 +214,8 @@ public class CommonUtil {
     public static <T> T deserializeObject(String value, TypeReference<T> valueTypeRef) {
         try {
             // json 反序列化
-            return OBJECT_MAPPER.readValue(value, valueTypeRef);
-        } catch (JsonProcessingException e) {
+            return JSON_MAPPER.readValue(value, valueTypeRef);
+        } catch (Exception e) {
             // jdk 反序列化
             return javaDeserialize(value);
         }
@@ -250,14 +232,9 @@ public class CommonUtil {
      *            目标类
      * @return 对象
      */
-    @SuppressWarnings("all")
     public static <T> T nonJdkDeserializeObject(String value, TypeReference<T> valueTypeRef) {
-        try {
-            // json 反序列化
-            return OBJECT_MAPPER.readValue(value, valueTypeRef);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        // json 反序列化
+        return JSON_MAPPER.readValue(value, valueTypeRef);
     }
 
     /**
@@ -272,7 +249,7 @@ public class CommonUtil {
      * @return 目标对象
      */
     public static <T> T convertMap2Obj(Map<String, Object> map, Class<T> clazz) {
-        return OBJECT_MAPPER.convertValue(map, clazz);
+        return JSON_MAPPER.convertValue(map, clazz);
     }
 
     /**
@@ -287,7 +264,7 @@ public class CommonUtil {
      * @return 目标对象
      */
     public static <T> T convertObj(Object obj, TypeReference<T> typeReference) {
-        return OBJECT_MAPPER.convertValue(obj, typeReference);
+        return JSON_MAPPER.convertValue(obj, typeReference);
     }
 
     /**
@@ -505,11 +482,7 @@ public class CommonUtil {
      * @return 格式化后的 JSON 字符串
      */
     public static String formatJson(Object obj) {
-        try {
-            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
-            throw new ServerException("Failed to format JSON string", e);
-        }
+        return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
     }
 
     /**

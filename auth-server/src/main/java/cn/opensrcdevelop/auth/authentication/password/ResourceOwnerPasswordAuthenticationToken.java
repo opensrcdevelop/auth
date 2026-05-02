@@ -1,15 +1,16 @@
 package cn.opensrcdevelop.auth.authentication.password;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+
 import java.io.Serial;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import org.springframework.lang.Nullable;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 /**
  * 密码授权模式 token

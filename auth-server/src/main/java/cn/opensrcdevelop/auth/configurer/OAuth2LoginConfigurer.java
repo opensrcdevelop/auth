@@ -9,7 +9,6 @@ import cn.opensrcdevelop.auth.biz.service.identity.IdentitySourceRegistrationSer
 import cn.opensrcdevelop.auth.handler.OAuth2LoginFailureHandler;
 import cn.opensrcdevelop.auth.handler.OAuth2LoginSuccessHandler;
 import cn.opensrcdevelop.common.config.AuthorizationServerProperties;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -19,6 +18,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcAuthorizationCodeAuthenticationProvider;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+
+import java.util.List;
 
 /**
  * OAuth2 Login 配置
@@ -33,7 +34,7 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
     private final AuthorizationServerProperties authorizationServerProperties;
 
     @Override
-    public void init(HttpSecurity http) throws Exception {
+    public void init(HttpSecurity http) {
         http
                 .oauth2Login(x -> {
                     x.successHandler(new OAuth2LoginSuccessHandler());
@@ -52,7 +53,7 @@ public class OAuth2LoginConfigurer extends AbstractHttpConfigurer<OAuth2LoginCon
     }
 
     @Override
-    public void configure(HttpSecurity http) throws Exception {
+    public void configure(HttpSecurity http) {
         // 禁用 OidcAuthorizationCodeAuthenticationProvider 和
         // OAuth2LoginAuthenticationProvider
         // 避免 OIDC id_token 认证失败

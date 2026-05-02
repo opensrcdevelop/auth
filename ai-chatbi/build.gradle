@@ -94,13 +94,13 @@ dependencies {
     implementation "com.baomidou:mybatis-plus-boot-starter:$rootProject.mybatisPlusVer"
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$rootProject.springDocVer"
     implementation 'org.springframework.boot:spring-boot-starter-freemarker'
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
+    implementation 'org.springframework.boot:spring-boot-sql'
     implementation 'org.springframework.ai:spring-ai-chroma-store'
     implementation "com.github.vertical-blank:sql-formatter:$rootProject.sqlFormatterVer"
     implementation "com.alibaba:transmittable-thread-local:${rootProject.ttlVer}"
     implementation "org.redisson:redisson-spring-boot-starter:$rootProject.redissonVer"
     implementation 'org.springframework.security:spring-security-core'
-    implementation "com.baomidou:dynamic-datasource-spring-boot3-starter:${rootProject.dynamicDsVer}"
+    implementation "com.baomidou:dynamic-datasource-spring-boot4-starter:${rootProject.dynamicDsVer}"
     implementation 'com.github.ben-manes.caffeine:caffeine'
     implementation "io.milvus:milvus-sdk-java:${rootProject.milvusSdkVer}"
     implementation "io.grpc:grpc-core:${rootProject.grpcVer}"
@@ -108,6 +108,7 @@ dependencies {
     implementation "io.grpc:grpc-protobuf:${rootProject.grpcVer}"
     implementation "io.grpc:grpc-stub:${rootProject.grpcVer}"
     implementation "io.grpc:grpc-netty-shaded:${rootProject.grpcVer}"
+    implementation 'tools.jackson.core:jackson-core'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'

@@ -3,10 +3,7 @@ package cn.opensrcdevelop.common.aop;
 import cn.opensrcdevelop.common.annoation.NoRestResponse;
 import cn.opensrcdevelop.common.annoation.RestResponse;
 import cn.opensrcdevelop.common.constants.CommonConstants;
-import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.response.R;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
@@ -18,12 +15,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class RestResponseHandler implements ResponseBodyAdvice<Object> {
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     @SuppressWarnings("all")
@@ -48,12 +46,8 @@ public class RestResponseHandler implements ResponseBodyAdvice<Object> {
         if (body instanceof R<?> r) {
             return r;
         } else if (body instanceof String r) {
-            try {
-                response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                return objectMapper.writeValueAsString(R.ok(r));
-            } catch (JsonProcessingException e) {
-                throw new ServerException(e);
-            }
+            response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            return jsonMapper.writeValueAsString(R.ok(r));
         }
         return R.ok(body);
     }

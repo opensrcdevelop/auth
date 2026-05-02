@@ -13,24 +13,21 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.jackson2.CoreJackson2Module;
-import org.springframework.security.oauth2.client.jackson2.OAuth2ClientJackson2Module;
+import org.springframework.security.jackson.SecurityJacksonModules;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
-import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.security.oauth2.server.resource.introspection.OAuth2IntrospectionAuthenticatedPrincipal;
-import org.springframework.security.web.jackson2.WebServletJackson2Module;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -47,16 +44,12 @@ public class AuthUtil {
     private AuthUtil() {
     }
 
-    public static final ObjectMapper AUTH_OBJECT_MAPPER = new ObjectMapper();
-
-    static {
-        AUTH_OBJECT_MAPPER.registerModules(
-                new CoreJackson2Module(),
-                new WebServletJackson2Module(),
-                new JavaTimeModule(),
-                new OAuth2ClientJackson2Module(),
-                new OAuth2AuthorizationServerJackson2Module());
-    }
+    public static final JsonMapper AUTH_JSON_MAPPER = JsonMapper.builder()
+            .addModules(
+                    SecurityJacksonModules.getModules(AuthUtil.class.getClassLoader(),
+                            BasicPolymorphicTypeValidator.builder()
+                                    .allowIfSubType("cn.opensrcdevelop.")))
+            .build();
 
     /**
      * 获取当前用户名
@@ -74,7 +67,7 @@ public class AuthUtil {
      */
     public static String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.getPrincipal() instanceof User user) {
+        if (Objects.nonNull(authentication) && authentication.getPrincipal() instanceof User user) {
             return user.getUserId();
         }
         return getCurrentJwtClaim(JwtClaimNames.SUB);
@@ -192,7 +185,7 @@ public class AuthUtil {
      */
     public static String writeMap(Map<String, Object> data) {
         try {
-            return AUTH_OBJECT_MAPPER.writeValueAsString(data);
+            return AUTH_JSON_MAPPER.writeValueAsString(data);
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
@@ -207,7 +200,7 @@ public class AuthUtil {
      */
     public static Map<String, Object> parseMap(String data) {
         try {
-            return AuthUtil.AUTH_OBJECT_MAPPER.readValue(data, new TypeReference<>() {
+            return AuthUtil.AUTH_JSON_MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
             });
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);

@@ -45,7 +45,8 @@ public class GenerateChartTool implements MethodTool {
 
         if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
             response.setSuccess(false);
-            response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+            response.setError(
+                    "The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
             return response;
         }
 

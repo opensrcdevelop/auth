@@ -7,8 +7,8 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
@@ -17,13 +17,16 @@ import org.springframework.security.oauth2.server.resource.web.BearerTokenResolv
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
+import java.util.Objects;
+
 public class ClearTokenLogoutHandler implements LogoutHandler {
 
     private static final DbOAuth2AuthorizationService dbOAuth2AuthorizationService = SpringContextUtil
             .getBean(DbOAuth2AuthorizationService.class);
 
     @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    public void logout(@Nullable HttpServletRequest request, @Nullable HttpServletResponse response,
+            Authentication authentication) {
         // 1. 获取 AccessToken
         BearerTokenResolver bearerTokenResolver = new DefaultBearerTokenResolver();
         String accessToken = bearerTokenResolver.resolve(request);

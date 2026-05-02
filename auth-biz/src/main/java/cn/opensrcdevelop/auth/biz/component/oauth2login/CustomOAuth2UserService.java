@@ -12,19 +12,13 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.HttpUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import jakarta.servlet.http.HttpSession;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -40,12 +34,19 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestOperations;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.type.TypeReference;
+
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
-public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User>, InitializingBean {
 
     private static final String INVALID_USER_INFO_RESPONSE_ERROR_CODE = "invalid_user_info_response";
     private static final MediaType DEFAULT_CONTENT_TYPE = MediaType
@@ -53,8 +54,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     private final IdentitySourceRegistrationService identitySourceRegistrationService;
     private final ThirdAccountService thirdAccountService;
-    private final RestOperations restOperations = new RestTemplateBuilder()
-            .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor()).build();
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -188,10 +188,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         }
 
         if (HttpMethod.GET.matches(method)) {
-            return new RequestEntity<>(convert2MultiValueMap(requestCfg.getHeaders()), HttpMethod.GET,
+            return new RequestEntity<>(convert2HttpHeaders(requestCfg.getHeaders()), HttpMethod.GET,
                     uriBuilder.build().toUri());
         }
-        return new RequestEntity<>(requestCfg.getBody(), convert2MultiValueMap(requestCfg.getHeaders()),
+        return new RequestEntity<>(requestCfg.getBody(), convert2HttpHeaders(requestCfg.getHeaders()),
                 HttpMethod.valueOf(method), uriBuilder.build().toUri());
     }
 
@@ -203,19 +203,19 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         return HttpMethod.GET;
     }
 
-    private MultiValueMap<String, String> convert2MultiValueMap(Map<String, Object> requestHeaders) {
-        MultiValueMap<String, String> multiValueHeaders = new LinkedMultiValueMap<>();
+    private HttpHeaders convert2HttpHeaders(Map<String, Object> requestHeaders) {
+        HttpHeaders httpHeaders = new HttpHeaders();
         if (MapUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach((key, value) -> multiValueHeaders.add(key, value != null ? value.toString() : null));
+            requestHeaders.forEach((key, value) -> httpHeaders.set(key, value != null ? value.toString() : null));
         }
-        return multiValueHeaders;
+        return httpHeaders;
     }
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getResponse(RequestEntity<?> request) {
         try {
             List<Map<String, Object>> responseObjList = new ArrayList<>();
-            Object responseObj = this.restOperations.exchange(request, Object.class).getBody();
+            Object responseObj = this.restTemplate.exchange(request, Object.class).getBody();
             if (responseObj instanceof Map<?, ?>) {
                 responseObjList.add((Map<String, Object>) responseObj);
             }
@@ -242,5 +242,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             OAuth2Error oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE);
             throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString(), ex);
         }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.restTemplate.getInterceptors().add(new HttpUtil.CustomClientHttpRequestInterceptor());
     }
 }

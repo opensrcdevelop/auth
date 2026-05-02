@@ -1,7 +1,5 @@
 package cn.opensrcdevelop.auth.config;
 
-import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -9,7 +7,7 @@ import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,12 +18,15 @@ import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.Objects;
+import java.util.Optional;
+
 @Configuration
 @RequiredArgsConstructor
 @EnableCaching
 public class RedisCacheConfig {
 
-    private final RedisProperties redisProperties;
+    private final DataRedisProperties redisProperties;
 
     @Bean
     public RedisCacheConfiguration redisCacheConfiguration() {
@@ -43,6 +44,7 @@ public class RedisCacheConfig {
         return RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory);
     }
 
+    @SuppressWarnings("all")
     @Bean
     @ConditionalOnProperty(name = {"host", "port"}, prefix = "spring.data.redis")
     public RedissonClient redissonClient() {

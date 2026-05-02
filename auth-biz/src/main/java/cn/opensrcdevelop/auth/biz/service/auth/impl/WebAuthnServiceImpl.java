@@ -22,7 +22,6 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import cn.opensrcdevelop.common.util.WebUtil;
 import cn.opensrcdevelop.tenant.support.TenantHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.credential.CredentialRecord;
 import com.webauthn4j.credential.CredentialRecordImpl;
@@ -41,12 +40,6 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +47,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -61,7 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WebAuthnServiceImpl implements WebAuthnService {
 
     private final WebAuthnCredentialRepository webAuthnCredentialRepository;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Resource
     @Lazy
@@ -303,7 +304,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
                     .challenge(new DefaultChallenge(sessionChallenge))
                     .build();
 
-            COSEKey coseKey = objectMapper.readValue(credential.getPublicKey(), COSEKey.class);
+            COSEKey coseKey = jsonMapper.readValue(credential.getPublicKey(), COSEKey.class);
             AttestedCredentialData attestedCredentialData = new AttestedCredentialData(
                     AAGUID.ZERO, credential.getCredentialId().getBytes(), coseKey);
             CredentialRecord credentialRecord = new CredentialRecordImpl(null, null, null, null,
@@ -443,7 +444,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
             // 4. 解析和验证
             WebAuthnManager webAuthnManager = WebAuthnManager.createNonStrictWebAuthnManager();
             RegistrationData registrationData = webAuthnManager.verifyRegistrationResponseJSON(
-                    objectMapper.writeValueAsString(requestDto),
+                    jsonMapper.writeValueAsString(requestDto),
                     parameters);
 
             // 5. 提取公钥
@@ -453,7 +454,7 @@ public class WebAuthnServiceImpl implements WebAuthnService {
                 AttestedCredentialData attestedCredentialData = authData.getAttestedCredentialData();
                 if (attestedCredentialData != null) {
                     COSEKey coseKey = attestedCredentialData.getCOSEKey();
-                    String publicKeyJson = objectMapper.writeValueAsString(coseKey);
+                    String publicKeyJson = jsonMapper.writeValueAsString(coseKey);
                     result.setPublicKeyJson(publicKeyJson);
                     result.setValid(true);
                     log.info("WebAuthn 注册验证成功");

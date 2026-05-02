@@ -18,13 +18,14 @@ import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.tenant.support.TenantContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class MailTemplateServiceImpl extends ServiceImpl<MailTemplateMapper, MailTemplate>

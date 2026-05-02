@@ -1,5 +1,33 @@
 package cn.opensrcdevelop.auth.client.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.impl.DefaultConnectionKeepAliveStrategy;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
+import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -10,37 +38,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.config.ConnectionConfig;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.cookie.BasicCookieStore;
-import org.apache.hc.client5.http.impl.DefaultConnectionKeepAliveStrategy;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
-import org.apache.hc.core5.http.config.Registry;
-import org.apache.hc.core5.http.config.RegistryBuilder;
-import org.apache.hc.core5.http.io.SocketConfig;
-import org.apache.hc.core5.util.TimeValue;
-import org.apache.hc.core5.util.Timeout;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 public class HttpUtil {
@@ -59,9 +56,7 @@ public class HttpUtil {
         } else {
             REST_CLIENT_LOCK.lock();
             try {
-                if (restClient == null) {
-                    restClient = RestClient.builder(getRestTemplate()).build();
-                }
+                restClient = RestClient.builder(getRestTemplate()).build();
                 return restClient;
             } finally {
                 REST_CLIENT_LOCK.unlock();
@@ -75,12 +70,9 @@ public class HttpUtil {
         } else {
             REST_TEMPLATE_LOCK.lock();
             try {
-                if (restTemplate == null) {
-                    restTemplate = new RestTemplateBuilder()
-                            .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(getHttpClient()))
-                            .interceptors(new HttpUtil.CustomClientHttpRequestInterceptor())
-                            .build();
-                }
+                restTemplate = new RestTemplate();
+                restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory(getHttpClient()));
+                restTemplate.getInterceptors().add(new HttpUtil.CustomClientHttpRequestInterceptor());
                 return restTemplate;
             } finally {
                 REST_TEMPLATE_LOCK.unlock();
@@ -122,7 +114,7 @@ public class HttpUtil {
             try {
                 return SSLContext.getDefault();
             } catch (Exception ex) {
-                throw new RuntimeException("Failed to create default SSL context", ex);
+                throw new IllegalStateException("Failed to create default SSL context", ex);
             }
         }
     }
@@ -131,14 +123,10 @@ public class HttpUtil {
         try {
             SSLContext sslContext = createSslContext();
 
-            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create()
-                    .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                    .register("https", SSLConnectionSocketFactoryBuilder.create()
-                            .setSslContext(sslContext)
-                            .build())
+            PoolingHttpClientConnectionManager poolingConnectionManager = PoolingHttpClientConnectionManagerBuilder
+                    .create()
+                    .setTlsSocketStrategy(new DefaultClientTlsStrategy(sslContext))
                     .build();
-            PoolingHttpClientConnectionManager poolingConnectionManager = new PoolingHttpClientConnectionManager(
-                    registry);
 
             poolingConnectionManager
                     .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(Timeout.ofSeconds(10)).build());
@@ -172,7 +160,7 @@ public class HttpUtil {
 
         @Override
         @NonNull
-        public ClientHttpResponse intercept(HttpRequest request, @NonNull byte[] bytes,
+        public ClientHttpResponse intercept(HttpRequest request, byte @NonNull [] bytes,
                 @NonNull ClientHttpRequestExecution execution) throws IOException {
             log.info("HTTP Method: {}, URI: {}, Headers: {}", request.getMethod(), request.getURI(),
                     request.getHeaders());

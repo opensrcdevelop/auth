@@ -12,10 +12,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.Serial;
-import java.io.Serializable;
-import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -23,6 +19,11 @@ import org.springframework.security.oauth2.core.AuthenticationMethod;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.type.TypeReference;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Map;
 
 /**
  * 身份源注册实体

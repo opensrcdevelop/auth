@@ -3,7 +3,6 @@ package cn.opensrcdevelop.auth.authentication.password;
 import cn.opensrcdevelop.auth.biz.constants.AuthConstants;
 import cn.opensrcdevelop.common.util.WebUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -14,6 +13,8 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+
+import java.util.*;
 
 /**
  * 密码授权模式 token 转换器
@@ -42,22 +43,24 @@ public class ResourceOwnerPasswordAuthenticationConverter implements Authenticat
         }
 
         // username (REQUIRED)
-        String username = parameters.getFirst(OAuth2ParameterNames.USERNAME);
-        if (!StringUtils.hasText(username) || parameters.get(OAuth2ParameterNames.USERNAME).size() != 1) {
-            throwError(OAuth2ErrorCodes.INVALID_REQUEST, OAuth2ParameterNames.USERNAME);
+        String username = parameters.getFirst(ResourceOwnerPasswordAuthenticationProvider.PARAM_USERNAME);
+        if (!StringUtils.hasText(username)
+                || parameters.get(ResourceOwnerPasswordAuthenticationProvider.PARAM_USERNAME).size() != 1) {
+            throwError(OAuth2ErrorCodes.INVALID_REQUEST, ResourceOwnerPasswordAuthenticationProvider.PARAM_USERNAME);
         }
 
         // password (REQUIRED)
-        String password = parameters.getFirst(OAuth2ParameterNames.PASSWORD);
-        if (!StringUtils.hasText(password) || parameters.get(OAuth2ParameterNames.PASSWORD).size() != 1) {
-            throwError(OAuth2ErrorCodes.INVALID_REQUEST, OAuth2ParameterNames.PASSWORD);
+        String password = parameters.getFirst(ResourceOwnerPasswordAuthenticationProvider.PARAM_PASSWORD);
+        if (!StringUtils.hasText(password)
+                || parameters.get(ResourceOwnerPasswordAuthenticationProvider.PARAM_PASSWORD).size() != 1) {
+            throwError(OAuth2ErrorCodes.INVALID_REQUEST, ResourceOwnerPasswordAuthenticationProvider.PARAM_PASSWORD);
         }
 
         Map<String, Object> additionalParameters = new HashMap<>();
         parameters.forEach((k, v) -> {
             if (!k.equals(OAuth2ParameterNames.GRANT_TYPE) &&
                     !k.equals(OAuth2ParameterNames.CLIENT_ID)) {
-                additionalParameters.put(k, (v.size() == 1) ? v.get(0) : v.toArray(new String[0]));
+                additionalParameters.put(k, (v.size() == 1) ? v.getFirst() : v.toArray(new String[0]));
             }
         });
 
