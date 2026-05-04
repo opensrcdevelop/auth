@@ -62,6 +62,14 @@ public class ChatMessageHistory {
     @PropertyName("用户ID")
     private String userId;
 
+    /** 模型提供商ID */
+    @PropertyName("模型提供商ID")
+    private String modelProviderId;
+
+    /** 模型 */
+    @PropertyName("模型")
+    private String model;
+
     /** 创建时间 */
     @PropertyName("创建时间")
     private LocalDateTime createTime;

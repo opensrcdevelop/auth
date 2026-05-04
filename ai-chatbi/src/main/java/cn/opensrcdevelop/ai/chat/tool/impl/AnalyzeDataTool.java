@@ -10,6 +10,13 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import jakarta.validation.constraints.NotBlank;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +27,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component(AnalyzeDataTool.TOOL_NAME)
@@ -73,7 +72,8 @@ public class AnalyzeDataTool implements MethodTool {
             // 1.3 检查是否已生成有效 SQL
             if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
                 response.setSuccess(false);
-                response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+                response.setError(
+                        "The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
                 return response;
             }
 

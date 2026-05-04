@@ -12,15 +12,14 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -65,12 +64,21 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      *            输出 token 数
      * @param rewrittenQuestion
      *            重写后的问题
+     * @param modelProviderId
+     *            模型提供商ID
+     * @param model
+     *            模型
      * @param time
      *            时间
      */
     @Override
-    public void createChatMessageHistory(ChatContentType chatContentType, String rewrittenQuestion,
-            Long inputTokens, Long outputTokens, LocalDateTime time) {
+    public void createChatMessageHistory(ChatContentType chatContentType,
+            String rewrittenQuestion,
+            Long inputTokens,
+            Long outputTokens,
+            String modelProviderId,
+            String model,
+            LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
         chatMessageHistory.setMessageId(CommonUtil.getUUIDV7String());
@@ -83,6 +91,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
         chatMessageHistory.setInputTokens(inputTokens);
         chatMessageHistory.setOutputTokens(outputTokens);
+        chatMessageHistory.setModelProviderId(modelProviderId);
+        chatMessageHistory.setModel(model);
         chatMessageHistory.setTime(time);
 
         asyncSaveChatMessageHistory(chatMessageHistory);
@@ -101,12 +111,21 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
      *            输入 token 数
      * @param outputTokens
      *            输出 token 数
+     * @param modelProviderId
+     *            模型提供商ID
+     * @param model
+     *            模型
      * @param time
      *            时间
      */
     @Override
-    public void createChatMessageHistory(ChatContentType chatContentType, String answerId, String rewrittenQuestion,
-            Long inputTokens, Long outputTokens,
+    public void createChatMessageHistory(ChatContentType chatContentType,
+            String answerId,
+            String rewrittenQuestion,
+            Long inputTokens,
+            Long outputTokens,
+            String modelProviderId,
+            String model,
             LocalDateTime time) {
         ChatMessageHistory chatMessageHistory = new ChatMessageHistory();
 
@@ -121,6 +140,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
         chatMessageHistory.setRewrittenQuestion(rewrittenQuestion);
         chatMessageHistory.setInputTokens(inputTokens);
         chatMessageHistory.setOutputTokens(outputTokens);
+        chatMessageHistory.setModelProviderId(modelProviderId);
+        chatMessageHistory.setModel(model);
         chatMessageHistory.setTime(time);
 
         asyncSaveChatMessageHistory(chatMessageHistory);

@@ -60,8 +60,7 @@ public class ClearExpiredTokensEventListener implements ApplicationListener<Clea
         clearAuthorizationCode(oauth2AuthorizationList, deleteTargetList);
 
         // 3. 数据库操作
-        var deleteTargetIds = CommonUtil.stream(deleteTargetList).map(OAuth2Authorization::getId).map(Long::parseLong)
-                .toList();
+        var deleteTargetIds = CommonUtil.stream(deleteTargetList).map(OAuth2Authorization::getId).toList();
         log.info("清除的过期 token 数：{}", deleteTargetIds.size());
         if (CollectionUtils.isNotEmpty(deleteTargetIds)) {
             dbOAuth2AuthorizationService.removeByIds(deleteTargetIds);

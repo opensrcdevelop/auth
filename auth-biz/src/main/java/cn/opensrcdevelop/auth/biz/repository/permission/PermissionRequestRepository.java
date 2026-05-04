@@ -3,7 +3,6 @@ package cn.opensrcdevelop.auth.biz.repository.permission;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest;
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequestItem;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-
 import java.util.List;
 
 public interface PermissionRequestRepository {

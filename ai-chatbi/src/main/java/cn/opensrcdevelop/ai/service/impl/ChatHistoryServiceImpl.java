@@ -74,6 +74,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     @Override
     public void createChatHistory(String chatId, String title, String dataSourceId) {
         ChatHistory chatHistory = new ChatHistory();
+        chatHistory.setChatHistoryId(CommonUtil.getUUIDV7String());
         chatHistory.setChatId(chatId);
         chatHistory.setUserId(SecurityContextHolder.getContext().getAuthentication().getName());
         chatHistory.setDataSourceId(dataSourceId);

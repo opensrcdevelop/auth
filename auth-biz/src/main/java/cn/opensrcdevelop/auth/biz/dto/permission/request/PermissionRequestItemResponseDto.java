@@ -3,9 +3,8 @@ package cn.opensrcdevelop.auth.biz.dto.permission.request;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Data;
 
 /**
  * 权限申请明细响应

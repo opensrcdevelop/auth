@@ -10,15 +10,14 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
 import io.vavr.control.Try;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.MediaType;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public class SseUtil {
 
@@ -176,14 +175,22 @@ public class SseUtil {
                         .chatId(chatContext.getChatId())
                         .questionId(chatContext.getQuestionId())
                         .answerId(answerId)
+                        .modelProviderId(chatContext.getModelProviderId())
+                        .model(chatContext.getModel())
                         .rewrittenQuestion(rewrittenQuestion)
                         .inputTokens(chatContext.getInputTokens().longValue())
                         .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, answerId, rewrittenQuestion,
-                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
+        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE,
+                answerId,
+                rewrittenQuestion,
+                chatContext.getInputTokens().longValue(),
+                chatContext.getOutputTokens().longValue(),
+                chatContext.getModelProviderId(),
+                chatContext.getModel(),
+                now);
     }
 
     /**
@@ -200,14 +207,22 @@ public class SseUtil {
                 .data(ChatBIResponseDto.builder()
                         .chatId(chatContext.getChatId())
                         .questionId(chatContext.getQuestionId())
+                        .modelProviderId(chatContext.getModelProviderId())
+                        .model(chatContext.getModel())
                         .rewrittenQuestion(chatContext.getQuestion())
                         .inputTokens(chatContext.getInputTokens().longValue())
                         .outputTokens(chatContext.getOutputTokens().longValue())
                         .type(ChatContentType.DONE)
                         .time(now)
                         .build(), MediaType.APPLICATION_JSON)));
-        chatMessageHistoryService.createChatMessageHistory(ChatContentType.DONE, chatContext.getQuestion(),
-                chatContext.getInputTokens().longValue(), chatContext.getOutputTokens().longValue(), now);
+        chatMessageHistoryService.createChatMessageHistory(
+                ChatContentType.DONE,
+                chatContext.getQuestion(),
+                chatContext.getInputTokens().longValue(),
+                chatContext.getOutputTokens().longValue(),
+                chatContext.getModelProviderId(),
+                chatContext.getModel(),
+                now);
     }
 
     /**

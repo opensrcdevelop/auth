@@ -3,10 +3,9 @@ package cn.opensrcdevelop.auth.biz.dto.permission.request;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "权限申请响应")
 @Data

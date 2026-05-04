@@ -4,15 +4,14 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.service.TableService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(GetTableFieldsTool.TOOL_NAME)
 @RequiredArgsConstructor

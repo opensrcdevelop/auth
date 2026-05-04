@@ -4,13 +4,12 @@ import cn.opensrcdevelop.ai.agent.ChatAgent;
 import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component(RewriteUserQuestionTool.TOOL_NAME)
 @RequiredArgsConstructor

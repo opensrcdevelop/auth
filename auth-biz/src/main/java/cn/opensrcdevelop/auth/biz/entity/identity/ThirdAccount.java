@@ -2,7 +2,9 @@ package cn.opensrcdevelop.auth.biz.entity.identity;
 
 import cn.opensrcdevelop.auth.biz.entity.user.User;
 import cn.opensrcdevelop.common.entity.BaseEntity;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serial;
 import java.io.Serializable;
@@ -20,6 +22,10 @@ public class ThirdAccount extends BaseEntity implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -495384309561604976L;
+
+    /** 主键 ID */
+    @TableId(type = IdType.INPUT)
+    private String thirdAccountId;
 
     /** 用户 ID */
     private String userId;

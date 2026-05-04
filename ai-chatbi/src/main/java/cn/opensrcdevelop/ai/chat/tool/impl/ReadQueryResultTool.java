@@ -6,6 +6,8 @@ import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 @Component(ReadQueryResultTool.TOOL_NAME)
 @RequiredArgsConstructor

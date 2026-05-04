@@ -5,6 +5,7 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Slf4j
 @Component(ReviewSqlTool.TOOL_NAME)
@@ -64,7 +63,10 @@ public class ReviewSqlTool implements MethodTool {
             Boolean valid = (Boolean) reviewResult.get("valid");
 
             response.setValid((Boolean) reviewResult.get("valid"));
-            response.setMessage(valid ? message : message + "\n Re-execute Tool generate_execute_sql to ensure that the final generated SQL meets the user's question");
+            response.setMessage(valid
+                    ? message
+                    : message
+                            + "\n Re-execute Tool generate_execute_sql to ensure that the final generated SQL meets the user's question");
             chatContext.setFinalSqlValid(valid);
         } else {
             response.setSuccess(false);

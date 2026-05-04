@@ -18,8 +18,8 @@ public class Authorization implements Serializable {
     @Serial
     private static final long serialVersionUID = -4765719855341393851L;
 
-    @TableId(type = IdType.AUTO)
-    private Long id;
+    @TableId(type = IdType.INPUT)
+    private String authorizationId;
 
     private String registeredClientId;
 

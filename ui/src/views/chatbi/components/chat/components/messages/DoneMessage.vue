@@ -36,6 +36,7 @@
         </a-space>
       </a-space>
       <a-space>
+        <span class="model">模型: {{ message.model ? message.model : "-"}}</span>
         <span class="token"
           >输入 token 数: {{ formatTokenCount(message.inputTokens) }}</span
         >
@@ -97,7 +98,7 @@ const handleVoteAnswer = (doneMessage: any, feedback: string) => {
       });
     })
     .catch((err: any) => {
-      handleApiError(err, "反馈图表");
+      handleApiError(err, "反馈回答");
     });
 };
 </script>
@@ -109,6 +110,7 @@ const handleVoteAnswer = (doneMessage: any, feedback: string) => {
   justify-content: space-between;
   align-items: center;
 
+  .model,
   .time,
   .token {
     font-size: 12px;

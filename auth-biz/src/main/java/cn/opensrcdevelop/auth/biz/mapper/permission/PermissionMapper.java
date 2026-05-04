@@ -4,10 +4,9 @@ import cn.opensrcdevelop.auth.biz.entity.auth.AuthorizeRecord;
 import cn.opensrcdevelop.auth.biz.entity.permission.Permission;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
-import java.util.List;
 
 @Mapper
 public interface PermissionMapper extends BaseMapper<Permission> {

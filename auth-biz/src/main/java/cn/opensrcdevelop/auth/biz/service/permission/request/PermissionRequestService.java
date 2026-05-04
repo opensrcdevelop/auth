@@ -7,7 +7,6 @@ import cn.opensrcdevelop.auth.biz.dto.permission.request.PermissionRequestRespon
 import cn.opensrcdevelop.auth.biz.entity.permission.PermissionRequest;
 import cn.opensrcdevelop.common.response.PageData;
 import com.baomidou.mybatisplus.extension.service.IService;
-
 import java.util.List;
 
 public interface PermissionRequestService extends IService<PermissionRequest> {

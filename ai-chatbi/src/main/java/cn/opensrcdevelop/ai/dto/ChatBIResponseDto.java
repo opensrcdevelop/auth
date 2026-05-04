@@ -33,6 +33,12 @@ public class ChatBIResponseDto {
     @Schema(description = "重写后的问题")
     private String rewrittenQuestion;
 
+    @Schema(description = "模型提供商ID")
+    private String modelProviderId;
+
+    @Schema(description = "模型")
+    private String model;
+
     @Schema(description = "输入 Token 数")
     private Long inputTokens;
 

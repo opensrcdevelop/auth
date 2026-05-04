@@ -67,6 +67,7 @@ public class MultiChatMemoryRepository implements ChatMemoryRepository {
     public void saveAll(@NonNull String conversationId, @NonNull List<Message> messages) {
         List<MultiChatMemory> saveList = CommonUtil.stream(messages).map(message -> {
             MultiChatMemory multiChatMemory = new MultiChatMemory();
+            multiChatMemory.setMemoryId(CommonUtil.getUUIDV7String());
             multiChatMemory.setChatId(conversationId);
             multiChatMemory.setPromptTemplate(ChatMemoryContextHolder.getChatMemoryContext().getPromptTemplate());
 

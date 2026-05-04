@@ -24,12 +24,10 @@ public class WebAuthnCredential extends BaseEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = -5859507849014293865L;
 
-    @TableId(type = IdType.AUTO)
-    private Long id;
-
     /**
      * 凭证ID（Base64URL编码）
      */
+    @TableId(type = IdType.INPUT)
     @PropertyName("凭证ID")
     private String credentialId;
 

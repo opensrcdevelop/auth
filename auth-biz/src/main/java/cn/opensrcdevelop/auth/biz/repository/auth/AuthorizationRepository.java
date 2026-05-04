@@ -22,9 +22,9 @@ public interface AuthorizationRepository {
 
     Authorization findByDeviceCodeValue(String token);
 
-    Authorization findById(Long id);
+    Authorization findById(String authorizationId);
 
-    void deleteById(Long id);
+    void deleteById(String authorizationId);
 
     void save(Authorization authorization);
 
@@ -32,7 +32,7 @@ public interface AuthorizationRepository {
 
     List<Authorization> getAuthorizationsByClientId(String clientId);
 
-    void deleteByIds(List<Long> ids);
+    void deleteByIds(List<String> authorizationIds);
 
     void deleteByLoginId(String loginId);
 

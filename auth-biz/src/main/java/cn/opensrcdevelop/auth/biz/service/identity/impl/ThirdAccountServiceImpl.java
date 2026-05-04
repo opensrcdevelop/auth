@@ -132,6 +132,7 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
 
             // 3.3.2 绑定第三方账号
             ThirdAccount thirdAccount = new ThirdAccount();
+            thirdAccount.setThirdAccountId(CommonUtil.getUUIDV7String());
             thirdAccount.setUserId(user.getUserId());
             thirdAccount.setUniqueId(uniqueIdAttributeValue);
             thirdAccount.setUsername(usernameAttributeValue);
@@ -177,6 +178,7 @@ public class ThirdAccountServiceImpl extends ServiceImpl<ThirdAccountMapper, Thi
 
         // 3. 第三方账号未被绑定，绑定第三方账号
         ThirdAccount thirdAccount = new ThirdAccount();
+        thirdAccount.setThirdAccountId(CommonUtil.getUUIDV7String());
         thirdAccount.setUserId(userId);
         thirdAccount.setUniqueId(uniqueIdAttributeValue);
         thirdAccount.setUsername(usernameAttributeValue);

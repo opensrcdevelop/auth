@@ -26,7 +26,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
                 .eq(Authorization::getOidcIdTokenValue, token).or()
                 .eq(Authorization::getUserCodeValue, token).or()
                 .eq(Authorization::getDeviceCodeValue, token)
-                .orderByDesc(Authorization::getId));
+                .orderByDesc(Authorization::getAuthorizationId));
         if (CollectionUtils.isNotEmpty(authorizationList)) {
             return authorizationList.get(0);
         }
@@ -52,7 +52,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
     @Override
     public Authorization findByRefreshTokenValue(String token) {
         return mapper.selectOne(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getRefreshTokenValue, token)
-                .orderByDesc(Authorization::getId));
+                .orderByDesc(Authorization::getAuthorizationId));
     }
 
     @Override
@@ -71,13 +71,14 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
     }
 
     @Override
-    public Authorization findById(Long id) {
-        return mapper.selectById(id);
+    public Authorization findById(String authorizationId) {
+        return mapper.selectOne(
+                Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationId, authorizationId));
     }
 
     @Override
-    public void deleteById(Long id) {
-        mapper.deleteById(id);
+    public void deleteById(String authorizationId) {
+        mapper.delete(Wrappers.<Authorization>lambdaQuery().eq(Authorization::getAuthorizationId, authorizationId));
     }
 
     @Override
@@ -97,8 +98,8 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
     }
 
     @Override
-    public void deleteByIds(List<Long> ids) {
-        mapper.deleteByIds(ids);
+    public void deleteByIds(List<String> authorizationIds) {
+        mapper.delete(Wrappers.<Authorization>lambdaQuery().in(Authorization::getAuthorizationId, authorizationIds));
     }
 
     @Override

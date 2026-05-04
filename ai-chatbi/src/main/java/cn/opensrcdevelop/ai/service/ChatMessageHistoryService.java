@@ -11,11 +11,22 @@ public interface ChatMessageHistoryService extends IService<ChatMessageHistory> 
 
     void createChatMessageHistory(String content, ChatContentType chatContentType);
 
-    void createChatMessageHistory(ChatContentType chatContentType, String rewrittenQuestion, Long inputTokens,
-            Long outputTokens, LocalDateTime time);
+    void createChatMessageHistory(ChatContentType chatContentType,
+            String rewrittenQuestion,
+            Long inputTokens,
+            Long outputTokens,
+            String modelProviderId,
+            String model,
+            LocalDateTime time);
 
-    void createChatMessageHistory(ChatContentType chatContentType, String chartId, String rewrittenQuestion,
-            Long inputTokens, Long outputTokens, LocalDateTime time);
+    void createChatMessageHistory(ChatContentType chatContentType,
+            String chartId,
+            String rewrittenQuestion,
+            Long inputTokens,
+            Long outputTokens,
+            String modelProviderId,
+            String model,
+            LocalDateTime time);
 
     void createUserChatMessageHistory(String content);
 

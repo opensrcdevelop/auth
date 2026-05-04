@@ -6,6 +6,7 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.util.ChartRenderer;
 import jakarta.validation.constraints.NotBlank;
+import java.util.Map;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -13,8 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component(GenerateChartTool.TOOL_NAME)
 @RequiredArgsConstructor
@@ -45,7 +44,8 @@ public class GenerateChartTool implements MethodTool {
 
         if (!Boolean.TRUE.equals(chatContext.getFinalSqlValid())) {
             response.setSuccess(false);
-            response.setError("The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
+            response.setError(
+                    "The generated final SQL is not valid, please call tool generate_execute_sql to regenerate.");
             return response;
         }
 

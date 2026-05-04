@@ -5,10 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
+import java.util.*;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.collections4.CollectionUtils;
-
-import java.util.*;
 
 @UtilityClass
 public class ChartRenderer {

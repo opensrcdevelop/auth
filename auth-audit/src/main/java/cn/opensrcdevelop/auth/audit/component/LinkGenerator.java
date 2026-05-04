@@ -2,12 +2,11 @@ package cn.opensrcdevelop.auth.audit.component;
 
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
 import cn.opensrcdevelop.common.util.CommonUtil;
-import org.springframework.stereotype.Component;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.stereotype.Component;
 
 @Component("linkGen")
 public class LinkGenerator {

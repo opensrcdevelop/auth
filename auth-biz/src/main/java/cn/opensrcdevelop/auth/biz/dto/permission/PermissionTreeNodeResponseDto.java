@@ -1,9 +1,8 @@
 package cn.opensrcdevelop.auth.biz.dto.permission;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "权限树响应节点")
 @Data

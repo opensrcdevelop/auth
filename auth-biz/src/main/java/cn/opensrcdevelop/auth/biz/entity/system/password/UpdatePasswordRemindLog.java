@@ -1,7 +1,9 @@
 package cn.opensrcdevelop.auth.biz.entity.system.password;
 
 import cn.opensrcdevelop.auth.biz.entity.user.User;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serial;
 import java.io.Serializable;
@@ -17,6 +19,10 @@ public class UpdatePasswordRemindLog implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -7430027239181604992L;
+
+    /** 主键 ID */
+    @TableId(type = IdType.INPUT)
+    private String remindLogId;
 
     /** 用户ID */
     private String userId;

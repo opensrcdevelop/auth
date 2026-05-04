@@ -38,6 +38,12 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import io.vavr.control.Try;
 import jakarta.annotation.Resource;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -49,13 +55,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -145,6 +144,8 @@ public class ChatBIServiceImpl implements ChatBIService {
                 chatContext.setEmitter(emitter);
                 chatContext.setChatId(finalChatId);
                 chatContext.setQuestionId(requestDto.getQuestionId());
+                chatContext.setModelProviderId(requestDto.getModelProviderId());
+                chatContext.setModel(requestDto.getModel());
                 chatContext.setDataSourceId(requestDto.getDataSourceId());
                 chatContext.setQuestion(requestDto.getQuestion());
                 chatContext.setRawQuestion(requestDto.getQuestion());
@@ -354,6 +355,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         if (MapUtils.isEmpty(answer)) {
+            SseUtil.sendChatBILoading(emitter, "思考已达上限");
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);
         }
@@ -391,27 +393,7 @@ public class ChatBIServiceImpl implements ChatBIService {
             Object finalAnswerValue = answer.get("final_answer");
             if (finalAnswerValue instanceof String) {
                 answerText = (String) finalAnswerValue;
-            } else if (finalAnswerValue instanceof Map) {
-                // 如果 final_answer 被解析为 Map，尝试获取 content 或 text 字段
-                Map<String, Object> finalAnswerMap = (Map<String, Object>) finalAnswerValue;
-                if (finalAnswerMap.containsKey("content")) {
-                    Object content = finalAnswerMap.get("content");
-                    answerText = content instanceof String ? (String) content : content.toString();
-                } else if (finalAnswerMap.containsKey("text")) {
-                    Object text = finalAnswerMap.get("text");
-                    answerText = text instanceof String ? (String) text : text.toString();
-                } else {
-                    answerText = finalAnswerMap.toString();
-                }
             }
-        } else if (answer.containsKey("content")) {
-            // final_answer 已被解析，content 在外层
-            Object content = answer.get("content");
-            answerText = content instanceof String ? (String) content : content.toString();
-        } else if (answer.containsKey("text")) {
-            // final_answer 已被解析，text 在外层
-            Object text = answer.get("text");
-            answerText = text instanceof String ? (String) text : text.toString();
         }
 
         if (answerText != null) {

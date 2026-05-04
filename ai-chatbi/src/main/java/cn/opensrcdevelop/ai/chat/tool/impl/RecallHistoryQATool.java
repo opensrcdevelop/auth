@@ -9,6 +9,8 @@ import cn.opensrcdevelop.ai.enums.ChatRole;
 import cn.opensrcdevelop.ai.service.ChatAnswerService;
 import cn.opensrcdevelop.ai.service.ChatMessageHistoryService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
@@ -16,9 +18,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Component(RecallHistoryQATool.TOOL_NAME)
 @RequiredArgsConstructor

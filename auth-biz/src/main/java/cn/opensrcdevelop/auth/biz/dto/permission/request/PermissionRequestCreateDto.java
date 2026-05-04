@@ -3,9 +3,8 @@ package cn.opensrcdevelop.auth.biz.dto.permission.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "权限申请提交请求")
 @Data

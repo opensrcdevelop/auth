@@ -14,6 +14,15 @@ import cn.opensrcdevelop.common.util.SpringContextUtil;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.ConstraintViolation;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,16 +40,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -84,6 +83,7 @@ public class ThinkAnswerAgent {
         ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
         ChatContextHolder.getChatContext().setHistoricalQuestions(historicalQuestions);
 
+        SseUtil.sendChatBILoading(emitter, "思考中...");
         String formatErrorFeedback = null;
         String consecutiveToolCallWarning = null;
         int step = 0;
@@ -93,7 +93,6 @@ public class ThinkAnswerAgent {
                 break;
             }
 
-            SseUtil.sendChatBILoading(emitter, "思考中...");
             String stepThinkingMsg = step > 0
                     ? "\n<strong>Step " + (step + 1) + "</strong>\n"
                     : "<strong>Step " + (step + 1) + "</strong>\n";
@@ -111,7 +110,8 @@ public class ThinkAnswerAgent {
             if (!validationResult.isValid()) {
                 log.warn("Output format validation failed: {}, the llm result is: {}",
                         validationResult.getErrorMessage(), result);
-                SseUtil.sendChatBIThinking(emitter, "⚠ The output format of the LLM is not valid, go to the next step for correction", true);
+                SseUtil.sendChatBIThinking(emitter,
+                        "⚠ The output format of the LLM is not valid, go to the next step for correction", true);
 
                 // 格式验证失败，将错误反馈给下一轮
                 formatErrorFeedback = validationResult.getErrorMessage() + "\n Your output is: \n" + result;
@@ -460,7 +460,8 @@ public class ThinkAnswerAgent {
     @SuppressWarnings({"unchecked", "java:S3776"})
     private FormatValidationResult validateOutputFormat(String llmResult, boolean showThinking) {
         if (StringUtils.isEmpty(llmResult)) {
-            return new FormatValidationResult(false, "Output is empty, ensure the output conforms to the format requirements");
+            return new FormatValidationResult(false,
+                    "Output is empty, ensure the output conforms to the format requirements");
         }
 
         // 移除 JSON 格式中的 ```json 或 ``` 包裹

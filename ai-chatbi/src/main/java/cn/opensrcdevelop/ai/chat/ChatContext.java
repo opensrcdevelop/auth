@@ -2,14 +2,13 @@ package cn.opensrcdevelop.ai.chat;
 
 import cn.opensrcdevelop.ai.dto.ChatConfigDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Data;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Data
 public class ChatContext {
@@ -22,6 +21,12 @@ public class ChatContext {
 
     @JsonIgnore
     private SseEmitter emitter;
+
+    /** 模型提供商ID */
+    private String modelProviderId;
+
+    /** 模型 */
+    private String model;
 
     /** 数据源 ID */
     private String dataSourceId;

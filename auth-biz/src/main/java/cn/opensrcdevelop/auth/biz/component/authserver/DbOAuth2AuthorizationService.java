@@ -90,13 +90,13 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     @Override
     public void remove(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization cannot be null");
-        authorizationRepository.deleteById(Long.valueOf(authorization.getId()));
+        authorizationRepository.deleteById(authorization.getId());
     }
 
     @Override
     public OAuth2Authorization findById(String id) {
         Assert.hasText(id, "id cannot be empty");
-        return Optional.ofNullable(authorizationRepository.findById(Long.valueOf(id))).map(this::toObject).orElse(null);
+        return Optional.ofNullable(authorizationRepository.findById(id)).map(this::toObject).orElse(null);
     }
 
     @Override
@@ -135,7 +135,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
     }
 
     @Transactional
-    public void removeByIds(List<Long> ids) {
+    public void removeByIds(List<String> ids) {
         authorizationRepository.deleteByIds(ids);
     }
 
@@ -191,7 +191,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
         }
 
         OAuth2Authorization.Builder builder = OAuth2Authorization.withRegisteredClient(registeredClient)
-                .id(String.valueOf(entity.getId()))
+                .id(entity.getAuthorizationId())
                 .principalName(entity.getPrincipalName())
                 .authorizationGrantType(resolveAuthorizationGrantType(entity.getAuthorizationGrantType()))
                 .authorizedScopes(StringUtils.commaDelimitedListToSet(entity.getAuthorizedScopes()))
@@ -264,6 +264,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
 
     private Authorization toEntity(OAuth2Authorization authorization) {
         Authorization entity = new Authorization();
+        entity.setAuthorizationId(authorization.getId());
         entity.setRegisteredClientId(authorization.getRegisteredClientId());
         entity.setPrincipalName(authorization.getPrincipalName());
         entity.setAuthorizationGrantType(authorization.getAuthorizationGrantType().getValue());

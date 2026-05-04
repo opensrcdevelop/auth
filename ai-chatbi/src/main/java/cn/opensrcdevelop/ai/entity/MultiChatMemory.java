@@ -13,9 +13,9 @@ import lombok.Data;
 @EntityName("多轮对话记忆")
 public class MultiChatMemory {
 
-    @TableId(type = IdType.AUTO)
-    @PropertyName("主键")
-    private Long id;
+    @TableId(type = IdType.INPUT)
+    @PropertyName("主键ID")
+    private String memoryId;
 
     /** 对话ID */
     @PropertyName("对话ID")

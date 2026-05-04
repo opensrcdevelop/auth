@@ -4,9 +4,8 @@ import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Schema(description = "批准或拒绝权限申请请求")
 @Data

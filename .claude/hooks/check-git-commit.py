@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-检查 git commit 命令是否在 develop 或 main 分支上执行
+检查 git commit 命令是否在 main 分支上执行
 """
 import sys
 import json
@@ -34,8 +34,8 @@ def main():
         # 不在 git 仓库中，直接通过
         sys.exit(0)
 
-    # 如果是 develop 或 main 分支，拒绝执行
-    if branch in ["develop", "main"]:
+    # 如果是 main 分支，拒绝执行
+    if branch in ["main"]:
         print(f"❌ 禁止在 {branch} 分支上执行 git commit", file=sys.stderr)
         print("请在作业分支上进行提交，例如：", file=sys.stderr)
         print("  git checkout -b feature/your-task-name", file=sys.stderr)

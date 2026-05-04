@@ -9,8 +9,8 @@ import lombok.Data;
 @Data
 public class ObjChangeLog {
 
-    @TableId(type = IdType.AUTO)
-    private Long id;
+    @TableId(type = IdType.INPUT)
+    private String changeLogId;
 
     /** 审计 ID */
     private String auditId;

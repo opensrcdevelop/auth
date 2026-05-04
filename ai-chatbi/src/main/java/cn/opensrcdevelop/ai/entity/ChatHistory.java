@@ -13,8 +13,12 @@ import lombok.Data;
 @EntityName("对话历史")
 public class ChatHistory {
 
-    /** 对话ID */
+    /** 主键 ID */
     @TableId(type = IdType.INPUT)
+    @PropertyName("主键ID")
+    private String chatHistoryId;
+
+    /** 对话ID */
     @PropertyName("对话ID")
     private String chatId;
 

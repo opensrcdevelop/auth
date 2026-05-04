@@ -455,6 +455,8 @@ const handleMessage = (message: any) => {
       questionId: message.questionId,
       chatId: message.chatId,
       answerId: message.answerId,
+      modelProviderId: message.modelProviderId,
+      model: message.model,
       actionType: message.actionType,
       rewrittenQuestion: message.rewrittenQuestion,
       inputTokens: message.inputTokens,
