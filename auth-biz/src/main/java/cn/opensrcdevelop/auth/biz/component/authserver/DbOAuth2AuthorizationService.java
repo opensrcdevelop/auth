@@ -264,7 +264,7 @@ public class DbOAuth2AuthorizationService implements OAuth2AuthorizationService 
 
     private Authorization toEntity(OAuth2Authorization authorization) {
         Authorization entity = new Authorization();
-        entity.setAuthorizationId(authorization.getId());
+        entity.setAuthorizationId(CommonUtil.getUUIDV7String());
         entity.setRegisteredClientId(authorization.getRegisteredClientId());
         entity.setPrincipalName(authorization.getPrincipalName());
         entity.setAuthorizationGrantType(authorization.getAuthorizationGrantType().getValue());
