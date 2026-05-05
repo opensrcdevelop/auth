@@ -46,7 +46,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
@@ -301,17 +300,9 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 2.2 获取示例 SQL（用户反馈为 LIKE 的历史问题-SQL）
         List<Map<String, String>> sampleSqls = getSampleSqls(dataSourceId, finalQuestion);
+        ChatContextHolder.getChatContext().setSampleSqls(sampleSqls);
 
-        // 2.3 获取会话历史用户消息
-        List<String> historicalQuestions = chatMessageHistoryService.getUserHistoryQuestions(
-                ChatContextHolder.getChatContext().getChatId());
-        if (CollectionUtils.isNotEmpty(historicalQuestions)) {
-            historicalQuestions = new ArrayList<>(historicalQuestions);
-            historicalQuestions.removeLast();
-            historicalQuestions = CommonUtil.stream(historicalQuestions).distinct().toList();
-        }
-
-        // 2.4 获取对话配置
+        // 2.3 获取对话配置
         ChatConfigDto chatConfig = null;
         try {
             chatConfig = systemSettingService.getSystemSetting(
@@ -334,27 +325,18 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 3. 回答问题
         SseUtil.sendChatBILoading(emitter, "正在回答问题...");
-        Map<String, Object> answer = thinkAnswerAgent.thinkAnswer(
+        String answerText = thinkAnswerAgent.thinkAnswer(
                 emitter,
                 interruptFlag,
                 chatClient,
-                sampleSqls,
-                historicalQuestions,
                 maxSteps,
-                Boolean.TRUE.equals(requestDto.getShowThinking()),
                 maxConsecutiveToolCalls);
 
         if (interruptFlag.get()) {
             return Tuple.of(null, question);
         }
 
-        // 检测是否需要等待用户回答
-        if (answer != null && Boolean.TRUE.equals(answer.get("isWaitingForUser"))) {
-            // ask_user tool 已被调用，等待用户回答，不保存答案
-            return Tuple.of(null, question);
-        }
-
-        if (MapUtils.isEmpty(answer)) {
+        if (StringUtils.isBlank(answerText)) {
             SseUtil.sendChatBILoading(emitter, "思考已达上限");
             SseUtil.sendChatBIText(emitter, "抱歉无法回答您的提问，请稍后重试。");
             return Tuple.of(null, question);
@@ -388,18 +370,8 @@ public class ChatBIServiceImpl implements ChatBIService {
         }
 
         // 3.2 直接回答
-        String answerText = null;
-        if (answer.containsKey("final_answer")) {
-            Object finalAnswerValue = answer.get("final_answer");
-            if (finalAnswerValue instanceof String) {
-                answerText = (String) finalAnswerValue;
-            }
-        }
-
-        if (answerText != null) {
-            chatAnswer.setAnswer(answerText);
-            SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
-        }
+        chatAnswer.setAnswer(answerText);
+        SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
 
         // 3.3 图表
         Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
