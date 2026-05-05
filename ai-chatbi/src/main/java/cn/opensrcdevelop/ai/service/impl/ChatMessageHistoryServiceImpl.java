@@ -194,6 +194,8 @@ public class ChatMessageHistoryServiceImpl extends ServiceImpl<ChatMessageHistor
                     .role(chatMessageHistory.getRole())
                     .type(chatMessageHistory.getType())
                     .rewrittenQuestion(chatMessageHistory.getRewrittenQuestion())
+                    .modelProviderId(chatMessageHistory.getModelProviderId())
+                    .model(chatMessageHistory.getModel())
                     .inputTokens(chatMessageHistory.getInputTokens())
                     .outputTokens(chatMessageHistory.getOutputTokens())
                     .time(chatMessageHistory.getTime())

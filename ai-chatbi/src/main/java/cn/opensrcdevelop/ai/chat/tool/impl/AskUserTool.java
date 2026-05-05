@@ -53,7 +53,6 @@ public class AskUserTool implements MethodTool {
         CommonUtil.stream(request.questions).forEach(q -> q.setId(UUID.randomUUID().toString()));
 
         // 2. 向用户发送提问
-        SseUtil.sendChatBILoading(emitter, "等待用户回答...");
         SseUtil.sendChatBIAskUser(emitter, request.getQuestions());
 
         // 3. 等待用户回答（2 分钟）

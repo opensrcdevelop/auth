@@ -47,6 +47,12 @@ public class ChatMessageHistoryResponseDto {
     @Schema(description = "输出 token 数")
     private Long outputTokens;
 
+    @Schema(description = "模型提供商ID")
+    private String modelProviderId;
+
+    @Schema(description = "模型")
+    private String model;
+
     @Schema(description = "时间")
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
     private LocalDateTime time;
