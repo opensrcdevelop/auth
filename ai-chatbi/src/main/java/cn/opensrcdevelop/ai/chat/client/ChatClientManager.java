@@ -2,6 +2,7 @@ package cn.opensrcdevelop.ai.chat.client;
 
 import cn.opensrcdevelop.ai.chat.advisor.LanguageConstraintAdvisor;
 import cn.opensrcdevelop.ai.chat.advisor.TokenCountAdvisor;
+import cn.opensrcdevelop.ai.chat.api.OpenAiRequestFilter;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.constants.SystemSettingConstants;
 import cn.opensrcdevelop.ai.dto.ChatConfigDto;
@@ -10,7 +11,6 @@ import cn.opensrcdevelop.ai.enums.ModelProviderType;
 import cn.opensrcdevelop.ai.service.ModelProviderService;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.exception.BizException;
-import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,6 @@ import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -35,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.policy.MaxAttemptsRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 @Component
@@ -97,8 +97,7 @@ public class ChatClientManager {
                         .param(ChatMemory.CONVERSATION_ID, chatId)
                         .param("model_provider_id", providerId)
                         .param("model", model))
-                .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor,
-                        SimpleLoggerAdvisor.builder().requestToString(CommonUtil::formatJson).build());
+                .defaultAdvisors(languageConstraintAdvisor, tokenCountAdvisor);
         return builder.build();
     }
 
@@ -112,6 +111,8 @@ public class ChatClientManager {
                 .openAiApi(OpenAiApi.builder()
                         .baseUrl(modelProvider.getBaseUrl())
                         .apiKey(modelProvider.getApiKey())
+                        .webClientBuilder(WebClient.builder()
+                                .filter(new OpenAiRequestFilter()))
                         .build())
                 .defaultOptions(OpenAiChatOptions.builder()
                         .model(StringUtils.isEmpty(model) ? modelProvider.getDefaultModel() : model)

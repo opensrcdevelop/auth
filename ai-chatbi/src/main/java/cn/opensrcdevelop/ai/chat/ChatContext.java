@@ -79,17 +79,8 @@ public class ChatContext {
     /** 输出令牌计数 */
     private AtomicInteger outputTokens = new AtomicInteger(0);
 
-    /** 工具调用结果列表 */
-    private List<Map<String, Object>> toolCallResults;
-
-    /** 上一轮的思考内容，用于连贯推理 */
-    private String previousThinking;
-
     /** 示例 SQL（问题-SQL 对列表） */
     private List<Map<String, String>> sampleSqls;
-
-    /** 历史问题列表（按时间升序排列） */
-    private List<String> historicalQuestions;
 
     /** 是否终止对话 */
     private Boolean terminated = false;

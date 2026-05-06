@@ -24,7 +24,10 @@ public class LanguageConstraintAdvisor implements BaseAdvisor {
 
     private static final PromptTemplate SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
             {instructions}
-            ** MUST: Answer in language **: {lang}
+
+            <language>
+            MUST: answering and thinking in language {lang}
+            </language>
             """);
 
     @Value("${ai.chat.default-language:简体中文}")
