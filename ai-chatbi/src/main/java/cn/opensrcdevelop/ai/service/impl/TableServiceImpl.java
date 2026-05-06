@@ -147,9 +147,11 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
     public List<Map<String, Object>> getTableSchemas(List<String> tables) {
         List<Table> allTables = super.list(Wrappers.<Table>lambdaQuery()
                 .in(Table::getTableId, tables).or()
-                .in(Table::getTableName, tables));
+                .in(Table::getTableName, tables)
+                .eq(Table::getToUse, true));
         List<TableField> allTableFields = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
-                .in(TableField::getTableId, CommonUtil.stream(allTables).map(Table::getTableId).toList()));
+                .in(TableField::getTableId, CommonUtil.stream(allTables).map(Table::getTableId).toList())
+                .eq(TableField::getToUse, true));
 
         return CommonUtil.stream(allTables).map(table -> {
             // 表信息
