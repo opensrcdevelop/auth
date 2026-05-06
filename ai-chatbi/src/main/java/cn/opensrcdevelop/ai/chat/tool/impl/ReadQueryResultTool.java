@@ -4,6 +4,7 @@ import cn.opensrcdevelop.ai.chat.ChatContext;
 import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
+import cn.opensrcdevelop.common.validation.constraints.NotBlankStr;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -80,7 +81,7 @@ public class ReadQueryResultTool implements MethodTool {
     public static class Request {
 
         @ToolParam(description = "The temp file path returned from generate_execute_sql tool response (optional if not provided, will use the latest file from ChatContext)", required = false)
-        @NotBlank
+        @NotBlankStr
         private String filePath;
 
         @ToolParam(description = "The starting offset position (0-based index)")
