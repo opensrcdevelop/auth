@@ -15,6 +15,7 @@ import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.ConstraintViolation;
@@ -40,6 +41,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
@@ -54,6 +56,25 @@ public class ThinkAnswerAgent {
     private final ChatMessageHistoryService chatMessageHistoryService;
     private final ChatAnswerService chatAnswerService;
 
+    /**
+     * 执行思考回答的主入口方法
+     * <p>
+     * 该方法采用多步骤推理模式，通过循环调用 LLM 和执行工具来完成复杂任务。 每个步骤包括：调用 LLM 获取回复 → 检查是否有工具调用 → 执行工具 →
+     * 返回结果
+     * </p>
+     *
+     * @param emitter
+     *            SSE Emitter，用于向客户端发送实时事件
+     * @param interruptFlag
+     *            中断标志，用于外部中断对话
+     * @param chatClient
+     *            ChatClient 实例，用于调用 LLM
+     * @param maxSteps
+     *            最大执行步数，防止无限循环
+     * @param maxConsecutiveToolCalls
+     *            连续工具调用阈值，超过后发送警告
+     * @return 最终回答文本，如果被中断或达到最大步数则返回 null
+     */
     @SuppressWarnings("java:S3776")
     public String thinkAnswer(SseEmitter emitter,
             AtomicBoolean interruptFlag,
@@ -78,7 +99,11 @@ public class ThinkAnswerAgent {
                     : "<strong>Step " + (step + 1) + "</strong>\n";
             SseUtil.sendChatBIThinking(emitter, stepThinkingMsg, true);
 
-            messages.addFirst(new SystemMessage(buildSystemPrompt(consecutiveToolCallWarning)));
+            if (messages.getFirst() instanceof SystemMessage) {
+                messages.set(0, new SystemMessage(buildSystemPrompt(consecutiveToolCallWarning)));
+            } else {
+                messages.addFirst(new SystemMessage(buildSystemPrompt(consecutiveToolCallWarning)));
+            }
             AssistantMessage assistantMessage = callLlm(emitter, interruptFlag, chatClient, messages);
             if (interruptFlag.get()) {
                 break;
@@ -87,9 +112,16 @@ public class ThinkAnswerAgent {
             messages.add(assistantMessage);
             boolean hasToolCalls = assistantMessage.hasToolCalls();
             String text = assistantMessage.getText();
+            String reasoningContent = (String) assistantMessage.getMetadata().get("reasoningContent");
+
+            if (StringUtils.isNotEmpty(reasoningContent)) {
+                chatMessageHistoryService.createChatMessageHistory("> " + reasoningContent, ChatContentType.THINKING);
+            }
+
             if (hasToolCalls) {
                 if (StringUtils.isNotEmpty(text)) {
-                    SseUtil.sendChatBIThinking(emitter, text, true);
+                    SseUtil.sendChatBIThinking(emitter, StringUtils.isNotEmpty(reasoningContent) ? "\n" + text : text,
+                            true);
                 }
 
                 List<ToolCall> toolCalls = assistantMessage.getToolCalls();
@@ -117,6 +149,22 @@ public class ThinkAnswerAgent {
         return null;
     }
 
+    /**
+     * 调用 LLM 获取回复
+     * <p>
+     * 使用流式调用方式，通过 SSE 向客户端实时推送 LLM 的思考过程和输出内容。 收集完整的输出文本、推理内容和工具调用列表。
+     * </p>
+     *
+     * @param emitter
+     *            SSE Emitter，用于向客户端发送实时事件
+     * @param interruptFlag
+     *            中断标志，用于外部中断对话
+     * @param chatClient
+     *            ChatClient 实例
+     * @param messages
+     *            消息列表
+     * @return AssistantMessage，包含完整输出、推理内容和工具调用
+     */
     @SuppressWarnings("all")
     private AssistantMessage callLlm(SseEmitter emitter,
             AtomicBoolean interruptFlag,
@@ -130,6 +178,7 @@ public class ThinkAnswerAgent {
 
         ToolCallback[] toolCallbacks = getToolCallbacks();
         StringBuilder fullOutput = new StringBuilder();
+        StringBuilder reasoningContent = new StringBuilder();
         List<ToolCall> toolCallsList = new ArrayList<>();
 
         try {
@@ -151,19 +200,35 @@ public class ThinkAnswerAgent {
                             return;
                         }
 
-                        String outputText = generation.getOutput().getText();
+                        AssistantMessage assistantMessage = generation.getOutput();
+
+                        String outputText = assistantMessage.getText();
                         if (StringUtils.isNotEmpty(outputText)) {
                             fullOutput.append(outputText);
+                        }
+
+                        String reasoning = (String) assistantMessage.getMetadata().get("reasoningContent");
+                        if (StringUtils.isNotEmpty(reasoning)) {
+                            if (StringUtils.isEmpty(reasoningContent.toString())) {
+                                SseUtil.sendChatBIThinking(emitter, "> " + reasoning, false);
+                            } else {
+                                SseUtil.sendChatBIThinking(emitter, reasoning, false);
+                            }
+                            reasoningContent.append(reasoning);
                         }
 
                         if (chatResponse.hasToolCalls()) {
                             List<ToolCall> calls = generation.getOutput().getToolCalls();
                             if (!calls.isEmpty()) {
-                                toolCallsList.addAll(calls);
+                                toolCallsList.add(calls.getFirst());
                             }
                         }
                     }, error -> {
                         log.error("LLM 调用出错", error);
+                        if (error.getCause().getCause() instanceof WebClientResponseException responseException) {
+                            log.error("LLM Response Body: {}", responseException.getResponseBodyAsString());
+                        }
+
                         ChatContextHolder.setChatContext(chatContext);
                         SecurityContextHolder.setContext(securityContext);
                         SseUtil.sendChatBIError(emitter, "模型调用失败，请检查提供商配置和额度");
@@ -184,10 +249,18 @@ public class ThinkAnswerAgent {
 
         return AssistantMessage.builder()
                 .content(fullOutput.toString())
+                .properties(Map.of("reasoningContent", reasoningContent.toString()))
                 .toolCalls(toolCallsList)
                 .build();
     }
 
+    /**
+     * 构建系统提示词
+     *
+     * @param consecutiveToolCallWarning
+     *            连续工具调用警告信息，如果为 null 则不包含警告
+     * @return 构建后的系统提示词
+     */
     private String buildSystemPrompt(String consecutiveToolCallWarning) {
         var thinkAnswerPromptBuilder = promptTemplate.getTemplates().get(PromptTemplate.THINK_ANSWER);
         var sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
@@ -198,6 +271,16 @@ public class ThinkAnswerAgent {
                 .buildSystemPrompt(PromptTemplate.THINK_ANSWER);
     }
 
+    /**
+     * 构建消息列表
+     * <p>
+     * 组装完整的对话上下文，包括：系统提示、历史用户消息和AI回复、当前用户问题。 用于发送给 LLM 进行推理。
+     * </p>
+     *
+     * @param chatId
+     *            对话 ID
+     * @return 消息列表
+     */
     private List<Message> buildMessages(String chatId) {
         List<Message> messages = new ArrayList<>();
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -207,7 +290,7 @@ public class ThinkAnswerAgent {
 
         // 获取用户历史消息
         List<ChatMessageHistory> userMessages = chatMessageHistoryService.list(
-                com.baomidou.mybatisplus.core.toolkit.Wrappers.<ChatMessageHistory>lambdaQuery()
+                Wrappers.<ChatMessageHistory>lambdaQuery()
                         .eq(ChatMessageHistory::getChatId, chatId)
                         .eq(ChatMessageHistory::getRole, ChatRole.USER.name())
                         .isNotNull(ChatMessageHistory::getContent)
@@ -228,7 +311,7 @@ public class ThinkAnswerAgent {
             Map<String, ChatAnswer> answerMap = new HashMap<>();
             if (!questionIds.isEmpty()) {
                 List<ChatAnswer> answers = chatAnswerService.list(
-                        com.baomidou.mybatisplus.core.toolkit.Wrappers.<ChatAnswer>lambdaQuery()
+                        Wrappers.<ChatAnswer>lambdaQuery()
                                 .eq(ChatAnswer::getChatId, chatId)
                                 .in(ChatAnswer::getQuestionId, questionIds));
                 for (ChatAnswer answer : answers) {
@@ -242,6 +325,8 @@ public class ThinkAnswerAgent {
                 ChatAnswer chatAnswer = answerMap.get(userMsg.getQuestionId());
                 if (chatAnswer != null && StringUtils.isNotBlank(chatAnswer.getAnswer())) {
                     messages.add(new AssistantMessage(chatAnswer.getAnswer()));
+                } else {
+                    messages.add(new AssistantMessage(""));
                 }
             }
         }
@@ -251,6 +336,11 @@ public class ThinkAnswerAgent {
         return messages;
     }
 
+    /**
+     * 获取工具回调数组
+     *
+     * @return ToolCallback 数组
+     */
     private ToolCallback[] getToolCallbacks() {
         return CommonUtil.stream(methodTools)
                 .filter(m -> !m.isInternalTool())
@@ -258,6 +348,18 @@ public class ThinkAnswerAgent {
                 .toArray(ToolCallback[]::new);
     }
 
+    /**
+     * 执行工具调用
+     * <p>
+     * 根据 LLM 返回的工具调用信息，查找并执行对应的工具。 处理工具执行结果和异常情况。
+     * </p>
+     *
+     * @param toolCall
+     *            工具调用信息
+     * @param emitter
+     *            SSE Emitter，用于发送工具执行状态
+     * @return 工具执行结果（成功时返回结果字符串，失败时返回错误信息）
+     */
     @SuppressWarnings("unchecked")
     private String executeToolCall(ToolCall toolCall, SseEmitter emitter) {
         String toolName = toolCall.name();
@@ -327,6 +429,13 @@ public class ThinkAnswerAgent {
         }
     }
 
+    /**
+     * 获取工具方法的参数类型
+     *
+     * @param toolName
+     *            工具名称
+     * @return 参数类型数组
+     */
     private Class<?>[] getToolMethodParamTypes(String toolName) {
         try {
             Object tool = SpringContextUtil.getBean(toolName);
@@ -343,6 +452,12 @@ public class ThinkAnswerAgent {
         return new Class[0];
     }
 
+    /**
+     * 更新连续工具调用计数
+     *
+     * @param toolName
+     *            工具名称
+     */
     private void updateConsecutiveToolCalls(String toolName) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         if (toolName == null) {
@@ -356,6 +471,13 @@ public class ThinkAnswerAgent {
         chatContext.setLastToolCallName(toolName);
     }
 
+    /**
+     * 构建连续工具调用警告信息
+     *
+     * @param maxConsecutiveToolCalls
+     *            最大允许的连续工具调用次数
+     * @return 警告信息，如果未达到阈值则返回 null
+     */
     private String buildConsecutiveToolCallsWarning(int maxConsecutiveToolCalls) {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Integer consecutiveCalls = chatContext.getConsecutiveToolCalls();
@@ -373,6 +495,13 @@ public class ThinkAnswerAgent {
                 lastTool, consecutiveCalls, maxConsecutiveToolCalls);
     }
 
+    /**
+     * 截断字符串到最大长度
+     *
+     * @param str
+     *            原字符串
+     * @return 截断后的字符串，如果超过最大长度则添加 "..."
+     */
     private String truncateString(String str) {
         if (StringUtils.isBlank(str)) {
             return str;
