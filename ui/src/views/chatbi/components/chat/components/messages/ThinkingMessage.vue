@@ -14,13 +14,16 @@
       ref="thinkingContainer"
       class="message-thinking"
       v-show="!isCollapsed"
-      v-html="formattedContent"
+      v-html="renderMarkdown(message.content)"
     ></div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useMarkdown } from "@/hooks/useMarkdown";
 import {computed, nextTick, ref, watch} from "vue";
+
+const { renderMarkdown } = useMarkdown();
 
 const props = withDefaults(
   defineProps<{

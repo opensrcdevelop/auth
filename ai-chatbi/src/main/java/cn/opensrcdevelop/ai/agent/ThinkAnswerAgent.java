@@ -115,12 +115,12 @@ public class ThinkAnswerAgent {
             String reasoningContent = (String) assistantMessage.getMetadata().get("reasoningContent");
 
             if (StringUtils.isNotEmpty(reasoningContent)) {
-                chatMessageHistoryService.createChatMessageHistory("> " + reasoningContent, ChatContentType.THINKING);
+                chatMessageHistoryService.createChatMessageHistory(reasoningContent, ChatContentType.THINKING);
             }
 
             if (hasToolCalls) {
                 if (StringUtils.isNotEmpty(text)) {
-                    SseUtil.sendChatBIThinking(emitter, StringUtils.isNotEmpty(reasoningContent) ? "\n" + text : text,
+                    SseUtil.sendChatBIThinking(emitter, StringUtils.isNotEmpty(reasoningContent) ? "\n\n---\n\n" + text : text,
                             true);
                 }
 
@@ -209,11 +209,7 @@ public class ThinkAnswerAgent {
 
                         String reasoning = (String) assistantMessage.getMetadata().get("reasoningContent");
                         if (StringUtils.isNotEmpty(reasoning)) {
-                            if (StringUtils.isEmpty(reasoningContent.toString())) {
-                                SseUtil.sendChatBIThinking(emitter, "> " + reasoning, false);
-                            } else {
-                                SseUtil.sendChatBIThinking(emitter, reasoning, false);
-                            }
+                            SseUtil.sendChatBIThinking(emitter, reasoning, false);
                             reasoningContent.append(reasoning);
                         }
 

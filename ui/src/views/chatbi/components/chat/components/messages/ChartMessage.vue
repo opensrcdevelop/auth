@@ -28,7 +28,7 @@ withDefaults(
 
 const chartRefs = new Map<any, any>();
 
-const initChart = (el, option) => {
+const initChart = (el: any, option: any) => {
   if (!el || !option) return;
 
   const existingChart = chartRefs.get(el);
