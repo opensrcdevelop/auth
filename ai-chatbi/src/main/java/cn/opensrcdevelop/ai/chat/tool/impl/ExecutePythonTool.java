@@ -331,6 +331,6 @@ public class ExecutePythonTool implements MethodTool {
     public static class Response {
         private Boolean success;
 
-        public String result;
+        private String result;
     }
 }
