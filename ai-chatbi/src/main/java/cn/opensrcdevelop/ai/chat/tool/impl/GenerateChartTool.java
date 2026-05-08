@@ -23,7 +23,7 @@ public class GenerateChartTool implements MethodTool {
 
     private final ChartAgent chartAgent;
 
-    @Tool(name = TOOL_NAME, description = "Used to generate chart based on user question and database query result")
+    @Tool(name = TOOL_NAME, description = "Used to generate chart based on user question and the final SQL query result")
     @SuppressWarnings("unchecked")
     public Response execute(@ToolParam(description = "The request to generate the chart") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();

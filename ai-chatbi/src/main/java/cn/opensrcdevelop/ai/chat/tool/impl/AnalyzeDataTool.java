@@ -44,7 +44,7 @@ public class AnalyzeDataTool implements MethodTool {
     @Value("${chatbi.max-python-execution-retry-count:3}")
     private Integer defaultMaxPythonExecutionRetryCount;
 
-    @Tool(name = TOOL_NAME, description = "Used to analyze data and return the analysis results")
+    @Tool(name = TOOL_NAME, description = "Used to analyze the final SQL query result and return the analysis results")
     @SuppressWarnings({"all"})
     public Response execute(@ToolParam(description = "The request to analyze data") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();

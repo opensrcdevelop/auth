@@ -13,6 +13,7 @@ const chatConfigForm = reactive({
   sqlResultLimit: undefined,
   maxSqlExecutionRetryCount: undefined,
   maxPythonExecutionRetryCount: undefined,
+  extraInstruction: undefined,
 });
 
 const chatConfigFormRules = {
@@ -47,6 +48,7 @@ const loadChatConfig = () => {
           data.maxSqlExecutionRetryCount;
         chatConfigForm.maxPythonExecutionRetryCount =
           data.maxPythonExecutionRetryCount;
+        chatConfigForm.extraInstruction = data.extraInstruction;
       });
     })
     .catch((err: any) => handleApiError(err, "获取 ChatBI 对话配置"));
@@ -168,6 +170,17 @@ defineExpose({
               v-model="chatConfigForm.maxPythonExecutionRetryCount"
               :min="0"
               :step="1"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="24">
+          <a-form-item label="额外指令" field="extraInstruction">
+            <a-textarea
+              v-model="chatConfigForm.extraInstruction"
+              placeholder="会追加到系统提示词末尾，优先级最低"
+              :max-length="2000"
+              :auto-size="{minRows: 5}"
+              show-word-limit
             />
           </a-form-item>
         </a-col>

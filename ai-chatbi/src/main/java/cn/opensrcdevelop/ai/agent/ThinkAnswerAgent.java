@@ -120,7 +120,8 @@ public class ThinkAnswerAgent {
 
             if (hasToolCalls) {
                 if (StringUtils.isNotEmpty(text)) {
-                    SseUtil.sendChatBIThinking(emitter, StringUtils.isNotEmpty(reasoningContent) ? "\n\n---\n\n" + text : text,
+                    SseUtil.sendChatBIThinking(emitter,
+                            StringUtils.isNotEmpty(reasoningContent) ? "\n\n---\n\n" + text : text,
                             true);
                 }
 
@@ -258,12 +259,17 @@ public class ThinkAnswerAgent {
      * @return 构建后的系统提示词
      */
     private String buildSystemPrompt(String consecutiveToolCallWarning) {
+        ChatContext chatContext = ChatContextHolder.getChatContext();
         var thinkAnswerPromptBuilder = promptTemplate.getTemplates().get(PromptTemplate.THINK_ANSWER);
-        var sampleSqls = ChatContextHolder.getChatContext().getSampleSqls();
+        var sampleSqls = chatContext.getSampleSqls();
+        var extraInstruction = chatContext.getChatConfig() != null
+                ? chatContext.getChatConfig().getExtraInstruction()
+                : null;
         return thinkAnswerPromptBuilder
                 .param("consecutive_tool_call_warning",
                         consecutiveToolCallWarning != null ? consecutiveToolCallWarning : "")
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
+                .param("extra_instruction", extraInstruction != null ? extraInstruction : "")
                 .buildSystemPrompt(PromptTemplate.THINK_ANSWER);
     }
 

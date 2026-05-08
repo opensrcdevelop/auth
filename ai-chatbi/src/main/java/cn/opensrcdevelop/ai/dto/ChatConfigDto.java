@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 
 @EntityName("ChatBI 对话配置")
 @Schema(description = "ChatBI 对话配置")
@@ -58,4 +59,9 @@ public class ChatConfigDto {
     @Schema(description = "最大 Python 代码执行重试次数")
     @Min(0)
     private Integer maxPythonExecutionRetryCount;
+
+    @PropertyName("额外指令")
+    @Schema(description = "额外指令，会追加到系统提示词末尾，优先级最低")
+    @Length(max = 2000)
+    private String extraInstruction;
 }

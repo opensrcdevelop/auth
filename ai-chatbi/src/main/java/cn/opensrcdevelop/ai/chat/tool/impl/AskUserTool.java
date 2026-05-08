@@ -37,9 +37,7 @@ public class AskUserTool implements MethodTool {
     public static final String TOOL_NAME = "ask_user";
 
     @SuppressWarnings("all")
-    @Tool(name = TOOL_NAME, description = "Used when AI cannot answer directly or needs more information." +
-            " Apply when: 1. Missing key filter conditions; 2. User intent is unclear;" +
-            " 3. User needs to choose from multiple options;")
+    @Tool(name = TOOL_NAME, description = "Used when cannot answer directly or needs more information.")
     public Response execute(@ToolParam(description = "Request parameters") Request request) {
         SseEmitter emitter = ChatContextHolder.getChatContext().getEmitter();
         Response response = new Response();

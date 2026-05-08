@@ -34,11 +34,11 @@ public class RecallHistoryQATool implements MethodTool {
         return TOOL_NAME;
     }
 
-    @Tool(name = TOOL_NAME, description = "Recall historical question-answer pairs from the current conversation."
-            +
-            "Use this to retrieve past questions and answers for reference. Only Q&A pairs with successful answers are returned."
-            +
-            "The index starts from 1 (the first Q&A pair).")
+    @Tool(name = TOOL_NAME, description = "Recall historical question-answer pairs from the current conversation. "
+            + "Use this to retrieve past questions and answers for reference. "
+            + "The index starts from 1 (the first Q&A pair). "
+            + "Supports additional data retrieval via optional parameters: includeSql (returns the SQL query), "
+            + "includeReport (returns the report and report type), includeChartConfig (returns the chart configuration).")
     @SuppressWarnings("java:S3776")
     public Response execute(@ToolParam(description = "The request to recall history QA pairs") Request request) {
         ChatContext chatContext = ChatContextHolder.getChatContext();

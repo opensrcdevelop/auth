@@ -47,6 +47,8 @@ public class GenerateExecuteSqlTool implements MethodTool {
         ChatContext chatContext = ChatContextHolder.getChatContext();
         Response response = new Response();
         chatContext.setSql(null);
+        chatContext.setFinalSqlReviewed(false);
+        chatContext.setFinalSqlValid(false);
 
         List<String> tableIds = request.getTableIds();
         if (CollectionUtils.isEmpty(tableIds)) {
