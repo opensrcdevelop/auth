@@ -265,11 +265,14 @@ public class ThinkAnswerAgent {
         var extraInstruction = chatContext.getChatConfig() != null
                 ? chatContext.getChatConfig().getExtraInstruction()
                 : null;
+        var systemTime = java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         return thinkAnswerPromptBuilder
                 .param("consecutive_tool_call_warning",
                         consecutiveToolCallWarning != null ? consecutiveToolCallWarning : "")
                 .param("sample_sqls", CollectionUtils.isEmpty(sampleSqls) ? new ArrayList<>() : sampleSqls)
                 .param("extra_instruction", extraInstruction != null ? extraInstruction : "")
+                .param("system_time", systemTime)
                 .buildSystemPrompt(PromptTemplate.THINK_ANSWER);
     }
 

@@ -275,6 +275,13 @@ public class ChatBIController {
         return chatAnswerService.getAnsweredSql(id);
     }
 
+    @Operation(summary = "获取当前用户的回答内容", description = "根据 answerId 获取当前用户的回答内容")
+    @GetMapping("/answer/{id}")
+    @Authorize({"allChatBIPermissions", "chat"})
+    public ChatAnswerResponseDto getCurrentUserAnswer(@PathVariable @NotBlank String id) {
+        return chatAnswerService.getCurrentUserAnswer(id);
+    }
+
     @Operation(summary = "处理用户对问题的回答", description = "处理用户对问题的回答")
     @PostMapping(path = "/chat/answerAskUserQuestion")
     @Authorize({"allChatBIPermissions", "chat"})

@@ -306,6 +306,18 @@ export function getAnsweredSql(id: string) {
 }
 
 /**
+ * 获取当前用户的回答内容
+ *
+ * @param id 回答ID
+ * @returns 回答内容
+ */
+export function getCurrentUserAnswer(id: string) {
+  return noneLoadingApiRequest.get({
+    url: `/chatbi/answer/${id}`,
+  });
+}
+
+/**
  * 处理用户对问题的回答
  *
  * @param data 请求数据

@@ -5,7 +5,7 @@ import MarkdownHandler from "./md/MarkdownHandler";
 import {copyToClipboard} from "@/util/tool";
 import * as echarts from "echarts";
 
-const md = new MarkdownIt({
+const md: any = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
@@ -47,11 +47,11 @@ const md = new MarkdownIt({
 });
 
 // 自定义 hr 渲染规则
-md.renderer.rules.hr = (tokens, idx) => {
+md.renderer.rules.hr = (tokens: any, idx: any) => {
   return '<hr class="md-hr">';
 };
 
-md.renderer.rules.code_inline = (tokens, idx) => {
+md.renderer.rules.code_inline = (tokens: any, idx: any) => {
   const token = tokens[idx];
   return [
     `<div class="inline-code-container">`,
@@ -181,6 +181,11 @@ export function useMarkdown() {
           if (chartConfig && !chartEl.dataset.chartInitialized) {
             try {
               const option = JSON.parse(decodeURIComponent(chartConfig));
+              // 设置图表高度
+              if (option.height) {
+                chartEl.style.height = option.height;
+                delete option.height;
+              }
               const chart = echarts.init(chartEl);
               chart.setOption(option);
               chartEl.dataset.chartInitialized = "true";

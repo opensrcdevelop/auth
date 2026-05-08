@@ -16,4 +16,7 @@ public class ChatAnswerResponseDto {
 
     @Schema(description = "生成的 SQL")
     private String sql;
+
+    @Schema(description = "回答内容")
+    private String answer;
 }

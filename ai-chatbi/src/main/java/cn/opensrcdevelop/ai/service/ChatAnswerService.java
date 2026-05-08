@@ -12,6 +12,8 @@ public interface ChatAnswerService extends IService<ChatAnswer> {
 
     ChatAnswerResponseDto getAnsweredSql(String answerId);
 
+    ChatAnswerResponseDto getCurrentUserAnswer(String answerId);
+
     /**
      * 根据 answerId 列表查询对应的 SQL
      *

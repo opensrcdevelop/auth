@@ -79,6 +79,11 @@ public class GenerateChartTool implements MethodTool {
         return TOOL_NAME;
     }
 
+    @Override
+    public boolean isInternalTool() {
+        return true;
+    }
+
     @Data
     public static class Request {
 

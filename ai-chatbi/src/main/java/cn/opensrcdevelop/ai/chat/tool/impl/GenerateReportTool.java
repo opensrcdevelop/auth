@@ -21,7 +21,7 @@ public class GenerateReportTool implements MethodTool {
 
     private final AnalyzeAgent analyzeAgent;
 
-    @Tool(name = TOOL_NAME, description = "Generate analysis report for the question")
+    @Tool(name = TOOL_NAME, description = "Generate analysis report for the question. Supports generating ECharts charts in markdown using ```echarts code blocks (JSON format).")
     public Response execute(@ToolParam(description = "The request to generate report") Request request) {
         Response response = new Response();
         ChatContext chatContext = ChatContextHolder.getChatContext();
@@ -68,6 +68,11 @@ public class GenerateReportTool implements MethodTool {
     @Override
     public String toolName() {
         return TOOL_NAME;
+    }
+
+    @Override
+    public boolean isInternalTool() {
+        return true;
     }
 
     @Data
