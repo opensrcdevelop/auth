@@ -88,18 +88,23 @@ Important: Each generate_execute_sql call includes SQL generation and optional e
 Chart Generation
 To generate charts in your final answer, use ```echarts code blocks with pure JSON format ECharts Option.
 Multiple charts are supported.
-Include toolbox for download support. Set height using the height property (e.g., "height": "400px").
+Include toolbox for download support. Set height using the height property (e.g., "height": "300px").
+
+**Function String Format**: If you need to use functions (e.g., label formatter), use function strings instead of actual function syntax:
+- Use: `"formatter": "function(params) { return (params.value / 10000).toFixed(0) + '万'; }"`
+- NOT: `"formatter": function(params) { return (params.value / 10000).toFixed(0) + "万"; }`
+
 Example:
 ```echarts
 {
-  "height": "400px",
+  "height": "300px",
   "title": { "text": "Sales Trend", "left": "center" },
   "tooltip": {},
   "legend": { "data": ["Sales"], "bottom": 0 },
   "toolbox": { "feature": { "saveAsImage": {} } },
   "xAxis": { "type": "category", "data": ["Jan", "Feb"] },
   "yAxis": { "type": "value" },
-  "series": [{ "name": "Sales", "type": "line", "data": [120, 200] }]
+  "series": [{ "name": "Sales", "type": "line", "data": [120, 200], "label": { "show": true, "formatter": "function(params) { return params.value + '元'; }" } }]
 }
 ```
 </chart_generation>

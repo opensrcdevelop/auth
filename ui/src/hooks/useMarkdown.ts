@@ -69,6 +69,37 @@ md.renderer.rules.table_close = () => {
   return '</table></div>';
 };
 
+// 递归转换 JSON 中的函数字符串为真正的函数
+function parseFunctionStrings(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === "string") {
+    // 匹配 function 开头的函数字符串
+    if (obj.trim().startsWith("function")) {
+      try {
+        // eslint-disable-next-line no-eval
+        return eval("(" + obj + ")");
+      } catch (e) {
+        console.error("函数转换失败:", e);
+        return obj;
+      }
+    }
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => parseFunctionStrings(item));
+  }
+  if (typeof obj === "object") {
+    const result: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        result[key] = parseFunctionStrings(obj[key]);
+      }
+    }
+    return result;
+  }
+  return obj;
+}
+
 export function useMarkdown() {
   const handlerState = MarkdownHandler.getInstance();
 
@@ -180,7 +211,9 @@ export function useMarkdown() {
           const chartConfig = chartEl.dataset.chartConfig;
           if (chartConfig && !chartEl.dataset.chartInitialized) {
             try {
-              const option = JSON.parse(decodeURIComponent(chartConfig));
+              let option = JSON.parse(decodeURIComponent(chartConfig));
+              // 转换函数字符串为真正的函数
+              option = parseFunctionStrings(option);
               // 设置图表高度
               if (option.height) {
                 chartEl.style.height = option.height;
@@ -197,6 +230,16 @@ export function useMarkdown() {
               resizeObserver.observe(chartEl);
             } catch (e) {
               console.error("初始化 echarts 图表失败:", e);
+              const errorMsg = e instanceof Error ? e.message : "未知错误";
+              // 设置默认高度以确保能垂直居中
+              if (!chartEl.style.height || chartEl.style.height === "0px" || chartEl.style.height === "") {
+                chartEl.style.height = "300px";
+              }
+              chartEl.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999; font-size: 14px; padding: 16px; text-align: center; box-sizing: border-box;">
+                  <div style="margin-bottom: 8px; font-weight: 500;">图表加载失败</div>
+                  <div style="font-size: 12px; color: #666; word-break: break-word; overflow-wrap: break-word; white-space: pre-wrap;">${errorMsg}</div>
+                </div>`;
             }
           }
         });

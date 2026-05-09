@@ -74,12 +74,12 @@ Your task is to create a comprehensive report (HTML or Markdown) based on the gi
    - Use appropriate color palette for professional appearance
    - Ensure chart dimensions are responsive
    - Add data labels when showing key values
-   - Set chart height using the `height` property (e.g., `"height": "400px"`)
+   - Set chart height using the `height` property (e.g., `"height": "300px"`)
 
 4. **ECharts Output Example**:
 ```echarts
 {
-  "height": "400px",
+  "height": "300px",
   "title": {
     "text": "Sales Trend Analysis",
     "left": "center"
