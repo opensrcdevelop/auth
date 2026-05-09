@@ -46,13 +46,10 @@ public class OpenAiRequestFilter implements ExchangeFilterFunction {
             // 通过反射获取请求体内容
             String bodyString = parseRequestBody(request.body());
             if (bodyString != null && !bodyString.isEmpty()) {
-                log.info("【OpenAI Request Filter】原始请求体:\n{}", bodyString);
-
+                log.debug("【OpenAI Request Filter】原始请求体:\n{}", bodyString);
                 // 处理 ASSISTANT 消息中的 reasoning_content
                 String modifiedBody = processAssistantMessages(bodyString);
-
-                // 打印编辑后的请求体
-                log.info("【OpenAI Request Filter】编辑后的请求体:\n{}", modifiedBody);
+                log.debug("【OpenAI Request Filter】编辑后的请求体:\n{}", modifiedBody);
 
                 // 构建修改后的请求
                 ClientRequest modifiedRequest = ClientRequest
