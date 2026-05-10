@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/gsd-prompt-guard.js",
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" .claude/hooks/gsd-prompt-guard.js",
             "timeout": 5
           }
         ]
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/gsd-read-guard.js",
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" .claude/hooks/gsd-read-guard.js",
             "timeout": 5
           }
         ]
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/gsd-workflow-guard.js",
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" .claude/hooks/gsd-workflow-guard.js",
             "timeout": 5
           }
         ]
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/gsd-check-update.js"
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" .claude/hooks/gsd-check-update.js"
           }
         ]
       },
@@ -93,7 +93,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/gsd-context-monitor.js",
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" .claude/hooks/gsd-context-monitor.js",
             "timeout": 10
           }
         ],
@@ -105,6 +105,16 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/gsd-phase-boundary.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"/Users/lee0407/.nvm/versions/node/v23.5.0/bin/node\" \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gsd-read-injection-scanner.js",
             "timeout": 5
           }
         ]
