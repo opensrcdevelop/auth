@@ -53,11 +53,7 @@ md.renderer.rules.hr = (tokens: any, idx: any) => {
 
 md.renderer.rules.code_inline = (tokens: any, idx: any) => {
   const token = tokens[idx];
-  return [
-    `<div class="inline-code-container">`,
-    `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`,
-    `</div>`,
-  ].join("");
+  return `<code class="inline-code">${md.utils.escapeHtml(token.content)}</code>`;
 };
 
 // 自定义表格渲染规则 - 包装表格容器支持滚动
