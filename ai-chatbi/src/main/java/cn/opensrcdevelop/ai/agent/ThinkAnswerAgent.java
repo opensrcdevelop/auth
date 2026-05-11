@@ -19,6 +19,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.validation.ConstraintViolation;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -265,8 +268,8 @@ public class ThinkAnswerAgent {
         var extraInstruction = chatContext.getChatConfig() != null
                 ? chatContext.getChatConfig().getExtraInstruction()
                 : null;
-        var systemTime = java.time.LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        var systemTime = LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         return thinkAnswerPromptBuilder
                 .param("consecutive_tool_call_warning",
                         consecutiveToolCallWarning != null ? consecutiveToolCallWarning : "")
@@ -444,7 +447,7 @@ public class ThinkAnswerAgent {
     private Class<?>[] getToolMethodParamTypes(String toolName) {
         try {
             Object tool = SpringContextUtil.getBean(toolName);
-            java.lang.reflect.Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods())
+            Method executeMethod = Arrays.stream(tool.getClass().getDeclaredMethods())
                     .filter(method -> "execute".equals(method.getName()))
                     .findFirst()
                     .orElse(null);
