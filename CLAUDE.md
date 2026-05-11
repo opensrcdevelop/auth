@@ -179,6 +179,7 @@ AI 功能需要配置环境变量（参考 `.env.example`）：
 | `development-workflow.md` | 完整开发流程规范（从创建 worktree 到 PR 合并） |
 | `git-workflow.md` | Git 工作流规范（分支策略、提交规范、PR 模板） |
 | `quality-gate.md` | 质量红线规则（提交前强制检查、禁止行为清单） |
+| `java-coding-standards.md` | Java 代码编写规范（导入语句、类型使用、方法设计等） |
 
 所有开发任务必须严格遵循这些规则。
 
