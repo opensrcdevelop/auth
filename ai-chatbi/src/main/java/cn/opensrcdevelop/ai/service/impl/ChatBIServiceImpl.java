@@ -26,6 +26,7 @@ import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
+import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -289,7 +290,9 @@ public class ChatBIServiceImpl implements ChatBIService {
             return Tuple.of(null, question);
         }
 
-        // 2. 获取 ChatClient
+        // 2. 校验历史会话不允许切换数据源
+        validateDataSourceBinding(chatId, dataSourceId, emitter);
+
         ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(),
                 chatId);
         ChatContextHolder.getChatContext().setChatClient(chatClient);
@@ -486,6 +489,34 @@ public class ChatBIServiceImpl implements ChatBIService {
         } catch (Exception e) {
             log.error("获取示例 SQL 失败", e);
             return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 校验历史会话不允许切换数据源
+     *
+     * @param chatId
+     *            对话ID
+     * @param requestDataSourceId
+     *            请求中的数据源ID
+     * @param emitter
+     *            SSE Emitter
+     */
+    private void validateDataSourceBinding(String chatId, String requestDataSourceId, SseEmitter emitter) {
+        // 新会话不需要校验
+        if (StringUtils.isBlank(chatId)) {
+            return;
+        }
+
+        // 查询历史会话的数据源ID
+        String historyDataSourceId = chatHistoryService.getDataSourceIdByChatId(chatId);
+        if (StringUtils.isBlank(historyDataSourceId)) {
+            return;
+        }
+
+        // 校验数据源是否一致
+        if (!historyDataSourceId.equals(requestDataSourceId)) {
+            throw new BizException(MessageConstants.AI_CHAT_MSG_1001, historyDataSourceId);
         }
     }
 }

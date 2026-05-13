@@ -14,6 +14,7 @@ const chatRef = ref();
 const chatHistoryRef = ref();
 const chatId = ref("");
 const dataSourceId = ref("");
+const dataSourceDisabled = ref(false);
 
 /** 用户信息相关 */
 const currentUser = reactive({
@@ -79,11 +80,13 @@ const handleLogout = () => {
 
 const handleSwitchChat = (id: string) => {
   chatId.value = id;
+  dataSourceDisabled.value = true;
 };
 
 const handleAddNewChat = () => {
   chatId.value = "";
   dataSourceId.value = "";
+  dataSourceDisabled.value = false;
 };
 
 const handleUpdateChatHistory = (id: string) => {
@@ -91,8 +94,9 @@ const handleUpdateChatHistory = (id: string) => {
   chatHistoryRef.value?.init(id);
 };
 
-const handleUpdateDataSourceId = (id: string) => {
+const handleUpdateDataSourceId = (id: string, disabled: boolean = false) => {
   dataSourceId.value = id;
+  dataSourceDisabled.value = disabled;
 };
 
 const handleToUserHome = () => {
@@ -119,6 +123,7 @@ export default defineComponent({
       chatHistoryRef,
       chatId,
       dataSourceId,
+      dataSourceDisabled,
       handleSwitchChat,
       handleAddNewChat,
       handleUpdateChatHistory,

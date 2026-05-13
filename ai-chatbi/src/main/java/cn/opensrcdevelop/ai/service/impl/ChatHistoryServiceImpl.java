@@ -143,4 +143,13 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
                 .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
                 .set(ChatHistory::getTitle, requestDto.getTitle()));
     }
+
+    @Override
+    public String getDataSourceIdByChatId(String chatId) {
+        ChatHistory chatHistory = super.getOne(Wrappers.<ChatHistory>lambdaQuery()
+                .eq(ChatHistory::getChatId, chatId)
+                .eq(ChatHistory::getUserId, SecurityContextHolder.getContext().getAuthentication().getName())
+                .select(ChatHistory::getDataSourceId));
+        return chatHistory != null ? chatHistory.getDataSourceId() : null;
+    }
 }

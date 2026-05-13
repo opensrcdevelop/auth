@@ -19,6 +19,7 @@ export default indexTs;
       @switchChat="handleSwitchChat"
       @addNewChat="handleAddNewChat"
       @updateDataSourceId="handleUpdateDataSourceId"
+      :dataSourceDisabled="dataSourceDisabled"
     />
 
     <div class="chat-main">
@@ -47,6 +48,7 @@ export default indexTs;
         style="width: 100%"
         :chatId="chatId"
         :dataSourceId="dataSourceId"
+        :dataSourceDisabled="dataSourceDisabled"
         @updateChatHistory="handleUpdateChatHistory"
       />
     </div>

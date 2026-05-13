@@ -34,6 +34,7 @@
               allow-search
               :bordered="false"
               v-model="selectedDataSource"
+              :disabled="dataSourceDisabled"
             >
               <a-option
                 v-for="item in dataSourceList"
@@ -115,11 +116,13 @@ const props = withDefaults(
   defineProps<{
     chatId: string;
     dataSourceId: string;
+    dataSourceDisabled?: boolean;
     height?: string;
   }>(),
   {
     chatId: undefined,
     dataSourceId: undefined,
+    dataSourceDisabled: false,
     height: "100%",
   },
 );
@@ -222,6 +225,15 @@ watch(
   () => props.dataSourceId,
   (newVal) => {
     selectedDataSource.value = newVal;
+  },
+);
+
+watch(
+  () => props.dataSourceDisabled,
+  (newVal) => {
+    if (newVal) {
+      selectedDataSource.value = props.dataSourceId;
+    }
   },
 );
 

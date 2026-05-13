@@ -17,4 +17,6 @@ public interface ChatHistoryService extends IService<ChatHistory> {
     void removeUserChatHistory(String chatId);
 
     void updateUserChatHistory(ChatHistoryRequestDto requestDto);
+
+    String getDataSourceIdByChatId(String chatId);
 }

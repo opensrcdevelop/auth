@@ -143,15 +143,17 @@ import {onMounted, onUnmounted, reactive, ref} from "vue";
 const emits = defineEmits<{
   (e: "switchChat", chatId: string): void;
   (e: "addNewChat"): void;
-  (e: "updateDataSourceId", dataSourceId: string): any;
+  (e: "updateDataSourceId", dataSourceId: string, disabled: boolean): any;
 }>();
 
 withDefaults(
   defineProps<{
     height?: string;
+    dataSourceDisabled?: boolean;
   }>(),
   {
     height: '100%',
+    dataSourceDisabled: false,
   }
 );
 
@@ -211,7 +213,7 @@ const activeChatId = ref("");
 const handleSwitchChat = (chatHistory: any) => {
   activeChatId.value = chatHistory.id;
   emits("switchChat", chatHistory.id);
-  emits("updateDataSourceId", chatHistory.dataSourceId);
+  emits("updateDataSourceId", chatHistory.dataSourceId, true);
 };
 
 /**
