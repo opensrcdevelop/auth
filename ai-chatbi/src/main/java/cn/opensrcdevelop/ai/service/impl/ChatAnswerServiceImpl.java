@@ -10,9 +10,8 @@ import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
-import java.util.Objects;
-
 import jakarta.annotation.Resource;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;

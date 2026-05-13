@@ -64,6 +64,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash .claude/hooks/git-commit-pre-check.sh"
+          },
+          {
+            "type": "command",
             "command": "bash .claude/hooks/gsd-validate-commit.sh",
             "timeout": 5
           }
