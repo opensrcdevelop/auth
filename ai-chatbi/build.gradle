@@ -112,5 +112,5 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
-    runtimeOnly "org.duckdb:duckdb-jdbc:${rootProject.duckDbVer}"
+    runtimeOnly "org.duckdb:duckdb_jdbc:${rootProject.duckDbVer}"
 }
