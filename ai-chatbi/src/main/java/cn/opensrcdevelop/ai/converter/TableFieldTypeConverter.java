@@ -13,6 +13,7 @@ public class TableFieldTypeConverter {
     private static final Map<String, TableFieldType> MYSQL_TYPE_MAPPINGS = new HashMap<>();
     private static final Map<String, TableFieldType> ORACLE_TYPE_MAPPINGS = new HashMap<>();
     private static final Map<String, TableFieldType> SQLSERVER_TYPE_MAPPINGS = new HashMap<>();
+    private static final Map<String, TableFieldType> DUCKDB_TYPE_MAPPINGS = new HashMap<>();
 
     // PostgreSQL 类型映射
     static {
@@ -86,6 +87,24 @@ public class TableFieldTypeConverter {
         SQLSERVER_TYPE_MAPPINGS.put("time", TableFieldType.DATETIME);
     }
 
+    // DuckDB 类型映射
+    static {
+        DUCKDB_TYPE_MAPPINGS.put("varchar", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("text", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("int", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("integer", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("bigint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("float", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("double", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("decimal", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("numeric", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("bit", TableFieldType.BOOLEAN);
+        DUCKDB_TYPE_MAPPINGS.put("boolean", TableFieldType.BOOLEAN);
+        DUCKDB_TYPE_MAPPINGS.put("date", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("timestamp", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("time", TableFieldType.DATETIME);
+    }
+
     /**
      * 将数据库数据类型转换为 TableFieldType
      *
@@ -101,6 +120,7 @@ public class TableFieldTypeConverter {
             case MYSQL -> MYSQL_TYPE_MAPPINGS;
             case ORACLE -> ORACLE_TYPE_MAPPINGS;
             case SQLSERVER -> SQLSERVER_TYPE_MAPPINGS;
+            case DUCKDB -> DUCKDB_TYPE_MAPPINGS;
         };
 
         return typeMappings.getOrDefault(dataType.toLowerCase(), TableFieldType.STRING);

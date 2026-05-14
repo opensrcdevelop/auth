@@ -27,7 +27,12 @@ public enum DataSourceType {
             "SQL Server",
             "T-SQL (Microsoft SQL Server)",
             "jdbc:sqlserver://%s:%s;DatabaseName=%s",
-            "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            "com.microsoft.sqlserver.jdbc.SQLServerDriver"),
+    DUCKDB(
+            "DuckDB",
+            "DuckDB SQL",
+            "jdbc:duckdb:",
+            "org.duckdb.DuckDBDriver");
 
     private final String displayName;
     private final String dialectName;
