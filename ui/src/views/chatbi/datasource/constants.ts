@@ -15,4 +15,8 @@ export const DS_TYPE_LIST = [
     label: "SQL Server",
     value: "SQLSERVER",
   },
+  {
+    label: "DuckDB",
+    value: "DUCKDB",
+  },
 ];
