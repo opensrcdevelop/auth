@@ -59,7 +59,34 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <!-- DUCKDB 专用 S3 配置字段 -->
+          <a-col :span="12" v-if="isDuckDB">
+            <a-form-item field="s3Bucket" label="S3 Bucket">
+              <a-input v-model="createDataSourceForm.s3Bucket" placeholder="请输入 S3 Bucket" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12" v-if="isDuckDB">
+            <a-form-item field="s3Endpoint" label="S3 Endpoint">
+              <a-input v-model="createDataSourceForm.s3Endpoint" placeholder="请输入 S3 Endpoint（可选）" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12" v-if="isDuckDB">
+            <a-form-item field="s3Region" label="S3 Region">
+              <a-input v-model="createDataSourceForm.s3Region" placeholder="请输入 S3 Region" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12" v-if="isDuckDB">
+            <a-form-item field="s3AccessKey" label="S3 Access Key">
+              <a-input v-model="createDataSourceForm.s3AccessKey" placeholder="请输入 S3 Access Key" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12" v-if="isDuckDB">
+            <a-form-item field="s3SecretKey" label="S3 Secret Key">
+              <a-input-password v-model="createDataSourceForm.s3SecretKey" placeholder="请输入 S3 Secret Key" />
+            </a-form-item>
+          </a-col>
+          <!-- 数据库类型专用字段 -->
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="host" label="主机地址">
               <a-input
                 v-model="createDataSourceForm.host"
@@ -67,7 +94,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="port" label="端口号">
               <a-input-number
                 v-model="createDataSourceForm.port"
@@ -77,7 +104,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="username" label="用户名">
               <a-input
                 v-model="createDataSourceForm.username"
@@ -85,7 +112,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="password" label="密码">
               <a-input-password
                 v-model="createDataSourceForm.password"
