@@ -243,6 +243,77 @@ export default indexTs;
           </a-table>
         </div>
       </a-tab-pane>
+    <a-tab-pane key="csv_files" title="CSV 文件">
+        <div class="tab-container">
+          <!-- 上传区域 -->
+          <div class="csv-upload-section">
+            <a-upload
+              :custom-request="handleCsvUpload"
+              :show-progress="true"
+              :limit="1"
+              accept=".csv"
+              drag
+            >
+              <template #upload-button>
+                <a-button type="primary">
+                  <template #icon><icon-upload /></template>
+                  上传文件
+                </a-button>
+              </template>
+            </a-upload>
+            <!-- 进度条 -->
+            <a-progress v-if="uploadProgress > 0" :percent="uploadProgress" class="csv-upload-progress" />
+          </div>
+
+          <!-- CSV 文件列表 -->
+          <a-table
+            :data="csvFileList"
+            :columns="csvFileColumns"
+            :pagination="false"
+            class="csv-file-table"
+          >
+            <template #columns>
+              <a-table-column title="文件名" data-index="fileName">
+                <template #cell="{ record }">
+                  <span>{{ record.fileName }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="上传时间" data-index="uploadTime">
+                <template #cell="{ record }">
+                  <span>{{ record.uploadTime || '-' }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="字段数" data-index="fieldCount">
+                <template #cell="{ record }">
+                  <span>{{ record.fieldCount || '-' }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="操作" :width="150">
+                <template #cell="{ record }">
+                  <a-space>
+                    <a-upload
+                      :custom-request="(options) => handleCsvUpdate(record.id, options)"
+                      :show-progress="true"
+                      :limit="1"
+                      accept=".csv"
+                    >
+                      <a-button type="text" size="small">替换</a-button>
+                    </a-upload>
+                    <a-button
+                      type="text"
+                      size="small"
+                      status="danger"
+                      @click="handleDeleteCsvFile(record)"
+                    >
+                      删除
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </div>
+      </a-tab-pane>
     </a-tabs>
 
     <TextEditorModal
