@@ -26,7 +26,12 @@ public enum AsyncTaskTypeEnum {
     /**
      * 示例 SQL 重建索引，并行度为 1
      */
-    SAMPLE_SQL_REBUILD("SAMPLE_SQL_REBUILD", "示例 SQL 重建索引", 1);
+    SAMPLE_SQL_REBUILD("SAMPLE_SQL_REBUILD", "示例 SQL 重建索引", 1),
+
+    /**
+     * CSV 文件解析，并行度为 2
+     */
+    CSV_PARSE("CSV_PARSE", "CSV 文件解析", 2);
 
     private final String code;
     private final String desc;

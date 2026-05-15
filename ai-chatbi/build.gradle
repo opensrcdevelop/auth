@@ -113,4 +113,6 @@ dependencies {
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
     runtimeOnly "org.duckdb:duckdb_jdbc:${rootProject.duckDbVer}"
+    implementation "software.amazon.awssdk:s3:$rootProject.awsS3Ver"
+    implementation "software.amazon.awssdk:sts:$rootProject.awsS3Ver"
 }
