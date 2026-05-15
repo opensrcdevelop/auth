@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.service.impl;
 
 import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
+import cn.opensrcdevelop.ai.dto.CsvFileResponseDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
@@ -18,6 +19,7 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -220,5 +222,39 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 .eq(TableField::getToUse, false));
         return CommonUtil.stream(forbiddenFields).collect(Collectors.groupingBy(TableField::getTableId,
                 Collectors.mapping(TableField::getFieldName, Collectors.toList())));
+    }
+
+    /**
+     * 获取数据源下的 CSV 文件列表
+     *
+     * @param dataSourceId
+     *            数据源ID
+     * @return CSV 文件列表
+     */
+    @Override
+    public List<CsvFileResponseDto> listCsvFiles(String dataSourceId) {
+        List<Table> tables = super.list(Wrappers.<Table>lambdaQuery()
+                .eq(Table::getDataSourceId, dataSourceId));
+
+        return CommonUtil.stream(tables).map(table -> {
+            CsvFileResponseDto dto = new CsvFileResponseDto();
+            dto.setTableId(table.getTableId());
+            dto.setTableName(table.getTableName());
+            dto.setRemark(table.getRemark());
+            dto.setToUse(table.getToUse());
+            dto.setAdditionalInfo(table.getAdditionalInfo());
+
+            // 统计字段数量
+            int fieldCount = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+                    .eq(TableField::getTableId, table.getTableId())).size();
+            dto.setFieldCount(fieldCount);
+
+            // 创建时间
+            if (table.getCreateTime() != null) {
+                dto.setCreatedAt(table.getCreateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            }
+
+            return dto;
+        }).toList();
     }
 }
