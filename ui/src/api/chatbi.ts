@@ -437,3 +437,67 @@ export function updateChatConfig(data: any) {
     data,
   });
 }
+
+/**
+ * 上传 CSV 文件
+ *
+ * @param dataSourceId 数据源ID
+ * @param file 文件
+ * @param config 请求配置（含 onUploadProgress）
+ * @returns 响应结果
+ */
+export function uploadCsvFile(dataSourceId: string, file: File, config?: any) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('dataSourceId', dataSourceId);
+  return apiRequest.post({
+    url: '/chatbi/csv/upload',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    ...config,
+  });
+}
+
+/**
+ * 获取 CSV 文件列表
+ *
+ * @param dataSourceId 数据源ID
+ * @returns CSV 文件列表
+ */
+export function getCsvFileList(dataSourceId: string) {
+  return apiRequest.get({
+    url: '/chatbi/csv/list',
+    params: { dataSourceId },
+  });
+}
+
+/**
+ * 删除 CSV 文件
+ *
+ * @param tableId 表ID（也是 CSV 文件记录ID）
+ * @returns 响应结果
+ */
+export function deleteCsvFile(tableId: string) {
+  return apiRequest.delete({
+    url: `/chatbi/csv/${tableId}`,
+  });
+}
+
+/**
+ * 更新 CSV 文件（替换）
+ *
+ * @param tableId 表ID
+ * @param file 新文件
+ * @param config 请求配置
+ * @returns 响应结果
+ */
+export function updateCsvFile(tableId: string, file: File, config?: any) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest.put({
+    url: `/chatbi/csv/${tableId}`,
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    ...config,
+  });
+}
