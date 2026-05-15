@@ -4,12 +4,16 @@ import {
     getTableList,
     testDataSourceConn,
     updateDataSourceConf,
+    uploadCsvFile,
+    getCsvFileList,
+    deleteCsvFile,
+    updateCsvFile,
 } from "@/api/chatbi";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {computed, defineComponent, onMounted, reactive, ref} from "vue";
 import {DS_TYPE_LIST} from "../constants";
-import {Notification} from "@arco-design/web-vue";
+import {Notification, Modal} from "@arco-design/web-vue";
 import {usePagination} from "@/hooks/usePagination";
 import TextEditorModal from "../../modal/TextEditorModal.vue";
 import MdEditorModal from "../../modal/MdEditorModal.vue";
@@ -50,6 +54,10 @@ const handleTabInit = (tabKey: string, id: string = dataSourceId.value) => {
       handleGetDataSourceDetail(id);
       handleGetTableList(id);
       break;
+    case "csv_files":
+      handleGetDataSourceDetail(id);
+      handleGetCsvFileList(id);
+      break;
   }
 };
 
@@ -57,6 +65,15 @@ const dataSourceTypeList = DS_TYPE_LIST;
 
 const dataSourceId = ref("");
 const dataSourceName = ref("");
+
+/** CSV 文件列表 */
+const csvFileList = reactive<any[]>([]);
+const csvFileColumns = [
+  { title: '文件名', dataIndex: 'fileName' },
+  { title: '上传时间', dataIndex: 'uploadTime' },
+  { title: '字段数', dataIndex: 'fieldCount' },
+];
+const uploadProgress = ref(0);
 
 /** 数据源信息表单 */
 const dataSourceInfoFormRef = ref();
@@ -388,6 +405,94 @@ const handleCloseTableFieldListDrawer = () => {
   tableFieldListDrawerTableId.value = "";
 }
 
+/**
+ * 获取 CSV 文件列表
+ */
+const handleGetCsvFileList = (id: string = dataSourceId.value) => {
+  getCsvFileList(id)
+    .then((result: any) => {
+      handleApiSuccess(result, (data: any) => {
+        csvFileList.length = 0;
+        if (Array.isArray(data)) {
+          data.forEach((item: any) => {
+            csvFileList.push(item);
+          });
+        }
+      });
+    })
+    .catch((err: any) => {
+      handleApiError(err, '获取 CSV 文件列表');
+    });
+};
+
+/**
+ * 上传 CSV 文件
+ */
+const handleCsvUpload = (options: any) => {
+  const { file, onProgress, onSuccess, onError } = options;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('dataSourceId', dataSourceId.value);
+
+  uploadCsvFile(dataSourceId.value, file as File, {
+    onUploadProgress: (progressEvent: any) => {
+      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      uploadProgress.value = percent;
+      if (onProgress) onProgress(percent);
+    }
+  }).then(() => {
+    uploadProgress.value = 0;
+    if (onSuccess) onSuccess();
+    Notification.success('上传成功');
+    handleGetCsvFileList();
+  }).catch((err: any) => {
+    uploadProgress.value = 0;
+    if (onError) onError(err);
+    handleApiError(err, '上传文件');
+  });
+};
+
+/**
+ * 更新 CSV 文件（替换）
+ */
+const handleCsvUpdate = (tableId: string, options: any) => {
+  const { file, onProgress, onSuccess, onError } = options;
+
+  updateCsvFile(tableId, file as File, {
+    onUploadProgress: (progressEvent: any) => {
+      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+      if (onProgress) onProgress(percent);
+    }
+  }).then(() => {
+    if (onSuccess) onSuccess();
+    Notification.success('替换成功');
+    handleGetCsvFileList();
+  }).catch((err: any) => {
+    if (onError) onError(err);
+    handleApiError(err, '替换文件');
+  });
+};
+
+/**
+ * 删除 CSV 文件
+ */
+const handleDeleteCsvFile = (record: any) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除文件「${record.fileName}」吗？删除后数据不可恢复。`,
+    okText: '确认删除',
+    okButtonProps: { status: 'danger' },
+    onOk: () => {
+      deleteCsvFile(record.id)
+        .then(() => {
+          Notification.success('删除成功');
+          handleGetCsvFileList();
+        })
+        .catch((err: any) => handleApiError(err, '删除文件'));
+    }
+  });
+};
+
 
 export default defineComponent({
   components: {
@@ -448,7 +553,14 @@ export default defineComponent({
       tableFieldListDrawerTitle,
       tableFieldListDrawerTableId,
       handleOpenTableFieldListDrawer,
-      handleCloseTableFieldListDrawer
+      handleCloseTableFieldListDrawer,
+      csvFileList,
+      csvFileColumns,
+      uploadProgress,
+      handleGetCsvFileList,
+      handleCsvUpload,
+      handleCsvUpdate,
+      handleDeleteCsvFile
     };
   },
 });
