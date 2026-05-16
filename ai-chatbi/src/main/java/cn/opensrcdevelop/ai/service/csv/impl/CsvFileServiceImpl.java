@@ -80,7 +80,8 @@ public class CsvFileServiceImpl implements CsvFileService {
         }
 
         // 2. 删除 S3 文件
-        String s3Path = "csv-datasource/" + table.getDataSourceId() + "/" + table.getTableName() + ".csv";
+        String s3Path = "csv-datasource/" + table.getDataSourceId() + "/"
+                + table.getTableName().replaceAll("\\.csv$", "") + ".csv";
         csvStorageService.delete(s3Path);
 
         // 3. 删除 t_table_field 记录
@@ -110,7 +111,7 @@ public class CsvFileServiceImpl implements CsvFileService {
         }
 
         // 3. 覆盖 S3 文件
-        String s3Path = table.getDataSourceId() + "/" + table.getTableName() + ".csv";
+        String s3Path = table.getDataSourceId() + "/" + table.getTableName().replaceAll("\\.csv$", "") + ".csv";
         try {
             csvStorageService.store(file.getBytes(), s3Path);
         } catch (IOException e) {
