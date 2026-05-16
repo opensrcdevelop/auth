@@ -66,6 +66,9 @@ const dataSourceTypeList = DS_TYPE_LIST;
 const dataSourceId = ref("");
 const dataSourceName = ref("");
 
+/** 判断是否为 DuckDB 类型 */
+const isDuckDB = computed(() => dataSourceInfoForm.type === "DUCKDB");
+
 /** CSV 文件列表 */
 const csvFileList = reactive<any[]>([]);
 const csvFileColumns = [
@@ -519,6 +522,7 @@ export default defineComponent({
       dataSourceTypeList,
       dataSourceId,
       dataSourceName,
+      isDuckDB,
       dataSourceInfoFormRef,
       dataSourceInfoForm,
       dataSourceInfoFormRules,

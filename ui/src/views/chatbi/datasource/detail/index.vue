@@ -53,17 +53,17 @@ export default indexTs;
                   </a-select>
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="database" label="数据库">
                   <a-input disabled v-model="dataSourceInfoForm.database" />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="schema" label="模式">
                   <a-input disabled v-model="dataSourceInfoForm.schema" />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="host" label="主机地址">
                   <a-input
                     v-model="dataSourceInfoForm.host"
@@ -71,7 +71,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="port" label="端口号">
                   <a-input-number
                     v-model="dataSourceInfoForm.port"
@@ -81,7 +81,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="username" label="用户名">
                   <a-input
                     v-model="dataSourceInfoForm.username"
@@ -89,7 +89,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="password" label="密码">
                   <a-input-password
                     v-model="dataSourceInfoForm.password"
@@ -98,7 +98,7 @@ export default indexTs;
                 </a-form-item>
               </a-col>
             </a-row>
-            <a-form-item field="jdbcParams" label="JDBC 参数">
+            <a-form-item field="jdbcParams" label="JDBC 参数" v-if="!isDuckDB">
               <a-input
                 v-model="dataSourceInfoForm.jdbcParams"
                 placeholder="请输入 JDBC 参数"
@@ -243,7 +243,7 @@ export default indexTs;
           </a-table>
         </div>
       </a-tab-pane>
-    <a-tab-pane key="csv_files" title="CSV 文件">
+    <a-tab-pane v-if="isDuckDB" key="csv_files" title="CSV 文件">
         <div class="tab-container">
           <!-- 上传区域 -->
           <div class="csv-upload-section">

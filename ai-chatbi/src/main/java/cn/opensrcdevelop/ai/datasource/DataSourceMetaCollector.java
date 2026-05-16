@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.context.annotation.Lazy;
@@ -29,17 +28,29 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DataSourceMetaCollector {
 
     private final TableService tableService;
     private final TableFieldService tableFieldService;
-    private final DataSourceManager dataSourceManager;
     private final TableFieldTypeConverter tableFieldTypeConverter;
 
     @Resource
     @Lazy
     private DataSourceConfService dataSourceConfService;
+
+    @Resource
+    @Lazy
+    private DataSourceManager dataSourceManager;
+
+    public DataSourceMetaCollector(TableService tableService,
+            TableFieldService tableFieldService,
+            @Lazy TableFieldTypeConverter tableFieldTypeConverter,
+            @Lazy DataSourceManager dataSourceManager) {
+        this.tableService = tableService;
+        this.tableFieldService = tableFieldService;
+        this.tableFieldTypeConverter = tableFieldTypeConverter;
+        this.dataSourceManager = dataSourceManager;
+    }
 
     /**
      * 收集数据源元信息

@@ -155,7 +155,7 @@ public class ChatBIController {
     @PostMapping("/dataSourceConf")
     @Authorize({"allChatBIDataSourcePermissions", "createDataSourceConf"})
     public void createDataSourceConf(
-            @RequestBody @Validated(ValidationGroups.Operation.INSERT.class) DataSourceConfRequestDto requestDto) {
+            @RequestBody @Validated DataSourceConfRequestDto requestDto) {
         dataSourceConfService.createDataSourceConf(requestDto);
     }
 

@@ -43,7 +43,8 @@ export default indexTs;
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <!-- 非 DuckDB: 数据库和模式 -->
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="database" label="数据库">
               <a-input
                 v-model="createDataSourceForm.database"
@@ -51,7 +52,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="schema" label="模式">
               <a-input
                 v-model="createDataSourceForm.schema"
@@ -59,33 +60,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <!-- DUCKDB 专用 S3 配置字段 -->
-          <a-col :span="12" v-if="isDuckDB">
-            <a-form-item field="s3Bucket" label="S3 Bucket">
-              <a-input v-model="createDataSourceForm.s3Bucket" placeholder="请输入 S3 Bucket" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="isDuckDB">
-            <a-form-item field="s3Endpoint" label="S3 Endpoint">
-              <a-input v-model="createDataSourceForm.s3Endpoint" placeholder="请输入 S3 Endpoint（可选）" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="isDuckDB">
-            <a-form-item field="s3Region" label="S3 Region">
-              <a-input v-model="createDataSourceForm.s3Region" placeholder="请输入 S3 Region" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="isDuckDB">
-            <a-form-item field="s3AccessKey" label="S3 Access Key">
-              <a-input v-model="createDataSourceForm.s3AccessKey" placeholder="请输入 S3 Access Key" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="isDuckDB">
-            <a-form-item field="s3SecretKey" label="S3 Secret Key">
-              <a-input-password v-model="createDataSourceForm.s3SecretKey" placeholder="请输入 S3 Secret Key" />
-            </a-form-item>
-          </a-col>
-          <!-- 数据库类型专用字段 -->
+          <!-- 非 DuckDB: 主机和端口 -->
           <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="host" label="主机地址">
               <a-input
@@ -104,6 +79,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
+          <!-- 非 DuckDB: 用户名和密码 -->
           <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="username" label="用户名">
               <a-input
@@ -121,7 +97,8 @@ export default indexTs;
             </a-form-item>
           </a-col>
         </a-row>
-        <a-form-item field="jdbcParams" label="JDBC 参数">
+        <!-- 非 DuckDB: JDBC 参数 -->
+        <a-form-item field="jdbcParams" label="JDBC 参数" v-if="!isDuckDB">
           <a-input
             v-model="createDataSourceForm.jdbcParams"
             placeholder="请输入 JDBC 参数"

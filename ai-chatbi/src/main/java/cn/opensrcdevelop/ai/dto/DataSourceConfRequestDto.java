@@ -32,29 +32,29 @@ public class DataSourceConfRequestDto {
     private Boolean enabled;
 
     @Schema(description = "数据库")
-    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT_DB.class})
     private String database;
 
     @Schema(description = "模式")
     private String schema;
 
     @Schema(description = "主机地址")
-    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT_DB.class})
     @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String host;
 
     @Schema(description = "端口号")
-    @NotNull(groups = {ValidationGroups.Operation.INSERT.class})
-    @Min(value = 1, groups = {ValidationGroups.Operation.INSERT.class})
+    @NotNull(groups = {ValidationGroups.Operation.INSERT_DB.class})
+    @Min(value = 1, groups = {ValidationGroups.Operation.INSERT_DB.class})
     private Integer port;
 
     @Schema(description = "用户名")
-    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT_DB.class})
     @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String username;
 
     @Schema(description = "密码")
-    @NotBlank(groups = {ValidationGroups.Operation.INSERT.class})
+    @NotBlank(groups = {ValidationGroups.Operation.INSERT_DB.class})
     @NotBlankStr(groups = {ValidationGroups.Operation.UPDATE.class})
     private String password;
 
