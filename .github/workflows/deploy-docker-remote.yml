@@ -97,6 +97,12 @@ jobs:
             -e S3_SECRET_KEY=\"\${S3_SECRET_KEY}\" \
             -e S3_BUCKET=\"\${S3_BUCKET}\" \
             -e S3_PATH_STYLE_ACCESS=\"\${S3_PATH_STYLE_ACCESS}\" \
+            -e CSV_DS_S3_ENDPOINT=\"\${CSV_DS_S3_ENDPOINT}\" \
+            -e CSV_DS_S3_ACCESS_KEY=\"\${CSV_DS_S3_ACCESS_KEY}\" \
+            -e CSV_DS_S3_SECRET_KEY=\"\${CSV_DS_S3_SECRET_KEY}\" \
+            -e CSV_DS_S3_BUCKET=\"\${CSV_DS_S3_BUCKET}\" \
+            -e CSV_DS_S3_URL_STYLE=\"\${CSV_DS_S3_URL_STYLE}\" \
+            -e CSV_DS_S3_USE_SSL=\"\${CSV_DS_S3_USE_SSL}\" \
             -e JAVA_OPTS=\"\${JAVA_OPTS}\" \
             -e JWS256=\"\${JWS256}\" \
             -e PYTHON_EXEC_LIMIT_ENABLED=\"\${PYTHON_EXEC_LIMIT_ENABLED}\" \
@@ -132,6 +138,12 @@ jobs:
             S3_SECRET_KEY='${{ secrets.DOCKER_DEPLOY_S3_SECRET_KEY }}' \
             S3_BUCKET='${{ vars.DOCKER_DEPLOY_S3_BUCKET }}' \
             S3_PATH_STYLE_ACCESS='${{ vars.DOCKER_DEPLOY_S3_PATH_STYLE_ACCESS }}' \
+            CSV_DS_S3_ENDPOINT='${{ vars.DOCKER_DEPLOY_CSV_DS_S3_ENDPOINT }}' \
+            CSV_DS_S3_ACCESS_KEY='${{ secrets.DOCKER_DEPLOY_CSV_DS_S3_ACCESS_KEY }}' \
+            CSV_DS_S3_SECRET_KEY='${{ secrets.DOCKER_DEPLOY_CSV_DS_S3_SECRET_KEY }}' \
+            CSV_DS_S3_BUCKET='${{ vars.DOCKER_DEPLOY_CSV_DS_S3_BUCKET }}' \
+            CSV_DS_S3_URL_STYLE='${{ vars.DOCKER_DEPLOY_CSV_DS_S3_URL_STYLE }}' \
+            CSV_DS_S3_USE_SSL='${{ vars.DOCKER_DEPLOY_CSV_DS_S3_USE_SSL }}' \
             JAVA_OPTS='${{ vars.DOCKER_DEPLOY_JAVA_OPTS }}' \
             JWS256='${{ secrets.DOCKER_DEPLOY_JWS256 }}' \
             PYTHON_EXEC_LIMIT_ENABLED='${{ vars.DOCKER_DEPLOY_PYTHON_EXEC_LIMIT_ENABLED }}' \
