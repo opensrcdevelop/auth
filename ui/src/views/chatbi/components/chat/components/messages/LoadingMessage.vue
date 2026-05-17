@@ -1,13 +1,13 @@
 <template>
-  <div v-if="message.type === 'LOADING'" class="avatar-container">
+  <div v-if="message.type === 'LOADING' || message.type === 'ERROR'" class="avatar-container">
     <a-avatar class="avatar-assistant">
-      <icon-font type="icon-assistant"></icon-font>
+      <icon-font type="icon-assistant" />
     </a-avatar>
-    <a-tag :color="message.error ? 'red' : 'arcoblue'">
+    <a-tag :color="message.type === 'ERROR' ? 'red' : 'arcoblue'">
       <template #icon>
-        <icon-close-circle v-if="message.error" />
-        <icon-loading v-if="!message.error && message.loading" />
-        <icon-check-circle v-if="!message.error && !message.loading" />
+        <icon-close-circle v-if="message.type === 'ERROR'" />
+        <icon-loading v-else-if="message.loading" />
+        <icon-check-circle v-else />
       </template>
       {{ message.content }}
     </a-tag>

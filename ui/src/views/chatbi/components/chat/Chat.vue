@@ -495,9 +495,16 @@ const handleMessage = (message: any) => {
         item.questionId === message.questionId && item.type === "LOADING",
     );
     if (loadingItem) {
-      loadingItem.loading = false;
-      loadingItem.error = true;
+      loadingItem.type = "ERROR";
       loadingItem.content = message.content;
+    } else {
+      messages.push({
+        role: "assistant",
+        type: "ERROR",
+        content: message.content,
+        questionId: message.questionId,
+        chatId: message.chatId,
+      });
     }
     return;
   }
