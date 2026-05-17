@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.service.impl;
 
 import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
+import cn.opensrcdevelop.ai.dto.CsvFileResponseDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
@@ -220,5 +221,36 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
                 .eq(TableField::getToUse, false));
         return CommonUtil.stream(forbiddenFields).collect(Collectors.groupingBy(TableField::getTableId,
                 Collectors.mapping(TableField::getFieldName, Collectors.toList())));
+    }
+
+    /**
+     * 获取数据源下的 CSV 文件列表
+     *
+     * @param dataSourceId
+     *            数据源ID
+     * @return CSV 文件列表
+     */
+    @Override
+    public List<CsvFileResponseDto> listCsvFiles(String dataSourceId) {
+        List<Table> tables = super.list(Wrappers.<Table>lambdaQuery()
+                .eq(Table::getDataSourceId, dataSourceId));
+
+        return CommonUtil.stream(tables).map(table -> {
+            CsvFileResponseDto dto = new CsvFileResponseDto();
+            dto.setTableId(table.getTableId());
+            // 文件名：去掉 .csv 后缀
+            String tableName = table.getTableName();
+            dto.setFileName(tableName.endsWith(".csv") ? tableName.substring(0, tableName.length() - 4) : tableName);
+            // 上传时间
+            if (table.getCreateTime() != null) {
+                dto.setUploadTime(table.getCreateTime());
+            }
+            // 字段数量
+            int fieldCount = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
+                    .eq(TableField::getTableId, table.getTableId())).size();
+            dto.setFieldCount(fieldCount);
+
+            return dto;
+        }).toList();
     }
 }

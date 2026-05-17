@@ -43,7 +43,8 @@ export default indexTs;
               </a-select>
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <!-- 非 DuckDB: 数据库和模式 -->
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="database" label="数据库">
               <a-input
                 v-model="createDataSourceForm.database"
@@ -51,7 +52,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="schema" label="模式">
               <a-input
                 v-model="createDataSourceForm.schema"
@@ -59,7 +60,8 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <!-- 非 DuckDB: 主机和端口 -->
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="host" label="主机地址">
               <a-input
                 v-model="createDataSourceForm.host"
@@ -67,7 +69,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="port" label="端口号">
               <a-input-number
                 v-model="createDataSourceForm.port"
@@ -77,7 +79,8 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <!-- 非 DuckDB: 用户名和密码 -->
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="username" label="用户名">
               <a-input
                 v-model="createDataSourceForm.username"
@@ -85,7 +88,7 @@ export default indexTs;
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="12" v-if="!isDuckDB">
             <a-form-item field="password" label="密码">
               <a-input-password
                 v-model="createDataSourceForm.password"
@@ -94,7 +97,8 @@ export default indexTs;
             </a-form-item>
           </a-col>
         </a-row>
-        <a-form-item field="jdbcParams" label="JDBC 参数">
+        <!-- 非 DuckDB: JDBC 参数 -->
+        <a-form-item field="jdbcParams" label="JDBC 参数" v-if="!isDuckDB">
           <a-input
             v-model="createDataSourceForm.jdbcParams"
             placeholder="请输入 JDBC 参数"
@@ -112,7 +116,7 @@ export default indexTs;
         </a-form-item>
         <a-form-item hide-label>
           <a-space>
-            <a-button type="primary" @click="hanleTestConn">测试连接</a-button>
+            <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn">测试连接</a-button>
             <a-button type="primary" html-type="submit">创建</a-button>
             <a-button @click="handleResetCreateDataSourceForm">重置</a-button>
           </a-space>

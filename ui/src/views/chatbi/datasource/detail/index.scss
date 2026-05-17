@@ -91,3 +91,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.csv-files-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.csv-upload-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.csv-upload-progress {
+  margin-bottom: 16px;
+}
+
+.csv-file-table {
+  width: 100%;
+}

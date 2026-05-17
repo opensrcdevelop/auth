@@ -13,6 +13,7 @@ public class TableFieldTypeConverter {
     private static final Map<String, TableFieldType> MYSQL_TYPE_MAPPINGS = new HashMap<>();
     private static final Map<String, TableFieldType> ORACLE_TYPE_MAPPINGS = new HashMap<>();
     private static final Map<String, TableFieldType> SQLSERVER_TYPE_MAPPINGS = new HashMap<>();
+    private static final Map<String, TableFieldType> DUCKDB_TYPE_MAPPINGS = new HashMap<>();
 
     // PostgreSQL 类型映射
     static {
@@ -86,6 +87,40 @@ public class TableFieldTypeConverter {
         SQLSERVER_TYPE_MAPPINGS.put("time", TableFieldType.DATETIME);
     }
 
+    // DuckDB 类型映射
+    static {
+        DUCKDB_TYPE_MAPPINGS.put("varchar", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("char", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("text", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("tinyint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("smallint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("int", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("integer", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("bigint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("hugeint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("utinyint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("usmallint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("uinteger", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("ubigint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("uhugeint", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("float", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("double", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("decimal", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("numeric", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("real", TableFieldType.NUMBER);
+        DUCKDB_TYPE_MAPPINGS.put("bit", TableFieldType.BOOLEAN);
+        DUCKDB_TYPE_MAPPINGS.put("boolean", TableFieldType.BOOLEAN);
+        DUCKDB_TYPE_MAPPINGS.put("date", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("timestamp", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("timestamptz", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("time", TableFieldType.DATETIME);
+        DUCKDB_TYPE_MAPPINGS.put("interval", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("uuid", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("json", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("jsonb", TableFieldType.STRING);
+        DUCKDB_TYPE_MAPPINGS.put("blob", TableFieldType.STRING);
+    }
+
     /**
      * 将数据库数据类型转换为 TableFieldType
      *
@@ -101,6 +136,7 @@ public class TableFieldTypeConverter {
             case MYSQL -> MYSQL_TYPE_MAPPINGS;
             case ORACLE -> ORACLE_TYPE_MAPPINGS;
             case SQLSERVER -> SQLSERVER_TYPE_MAPPINGS;
+            case DUCKDB -> DUCKDB_TYPE_MAPPINGS;
         };
 
         return typeMappings.getOrDefault(dataType.toLowerCase(), TableFieldType.STRING);

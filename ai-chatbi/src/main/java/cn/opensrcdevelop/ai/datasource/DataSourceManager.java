@@ -12,7 +12,6 @@ import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import jakarta.annotation.Resource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
@@ -21,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +28,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DataSourceManager {
 
-    @Resource
-    @Lazy
-    private DataSourceConfService dataSourceConfService;
+    private final DataSourceConfService dataSourceConfService;
+    private final DuckDBDataSourceProvider duckDBDataSourceProvider;
 
     private static final Map<String, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
 
@@ -60,13 +57,20 @@ public class DataSourceManager {
             return dynamicRoutingDataSource.getDataSource(DynamicDataSourceContextHolder.peek());
         }
 
-        // 3. 检查缓存中是否存在数据源
+        // 3. 判断数据类型
+        DataSourceType dataSourceType = DataSourceType.valueOf(dataSourceConf.getDataSourceType());
+
+        // 4. DUCKDB 类型特殊处理 - 使用 DuckDBDataSourceProvider 创建连接
+        if (dataSourceType == DataSourceType.DUCKDB) {
+            return duckDBDataSourceProvider.getDataSource(dataSourceId);
+        }
+
+        // 5. 检查缓存中是否存在数据源
         if (DATA_SOURCE_CACHE.containsKey(dataSourceId)) {
             return DATA_SOURCE_CACHE.get(dataSourceId);
         }
 
-        // 4. 创建数据源
-        DataSourceType dataSourceType = DataSourceType.valueOf(dataSourceConf.getDataSourceType());
+        // 6. 创建 HikariCP 数据源
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setDriverClassName(dataSourceType.getDriverClassName());
         hikariConfig.setJdbcUrl(dataSourceType.getJdbcUrl(dataSourceConf.getHost(), dataSourceConf.getPort(),
@@ -104,6 +108,9 @@ public class DataSourceManager {
      */
     public void removeDataSource(String dataSourceId) {
         DATA_SOURCE_CACHE.remove(dataSourceId);
+
+        // 关闭 DuckDB 连接
+        duckDBDataSourceProvider.closeConnection(dataSourceId);
     }
 
     /**

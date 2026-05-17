@@ -201,6 +201,7 @@ const taskTypeOptions: { label: string; value: TaskType }[] = [
   { label: "用户导出", value: "USER_EXPORT" },
   { label: "示例 SQL 同步", value: "SAMPLE_SQL_SYNC" },
   { label: "示例 SQL 重建索引", value: "SAMPLE_SQL_REBUILD" },
+  { label: "CSV 文件解析", value: "CSV_PARSE" },
 ];
 
 /**

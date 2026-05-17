@@ -4,6 +4,7 @@ import cn.opensrcdevelop.ai.component.SampleSqlRebuildTaskExecutor;
 import cn.opensrcdevelop.ai.component.SampleSqlSyncTaskExecutor;
 import cn.opensrcdevelop.ai.dto.*;
 import cn.opensrcdevelop.ai.service.*;
+import cn.opensrcdevelop.ai.service.csv.CsvFileService;
 import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
@@ -44,6 +46,7 @@ public class ChatBIController {
     private final ChatAnswerService chatAnswerService;
     private final SampleSqlService sampleSqlService;
     private final AsyncTaskSchedulerService asyncTaskSchedulerService;
+    private final CsvFileService csvFileService;
 
     @Operation(summary = "流式对话", description = "流式对话")
     @PostMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -152,7 +155,7 @@ public class ChatBIController {
     @PostMapping("/dataSourceConf")
     @Authorize({"allChatBIDataSourcePermissions", "createDataSourceConf"})
     public void createDataSourceConf(
-            @RequestBody @Validated(ValidationGroups.Operation.INSERT.class) DataSourceConfRequestDto requestDto) {
+            @RequestBody DataSourceConfRequestDto requestDto) {
         dataSourceConfService.createDataSourceConf(requestDto);
     }
 
@@ -400,5 +403,27 @@ public class ChatBIController {
     @Authorize({"allChatBIPermissions", "updateChatConfig"})
     public void updateChatConfig(@RequestBody @Validated ChatConfigDto config) {
         chatBIService.updateChatConfig(config);
+    }
+
+    @Operation(summary = "上传 CSV 文件", description = "上传 CSV 文件到 S3 并异步解析表结构")
+    @PostMapping("/csv/upload")
+    @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
+    public String uploadCsv(@RequestParam("file") MultipartFile file,
+            @RequestParam("dataSourceId") @NotBlank String dataSourceId) {
+        return csvFileService.uploadCsv(file, dataSourceId);
+    }
+
+    @Operation(summary = "获取 CSV 文件列表", description = "获取数据源下的 CSV 文件列表")
+    @GetMapping("/csv/list")
+    @Authorize({"allChatBIDataSourcePermissions", "getCsvList"})
+    public List<CsvFileResponseDto> listCsvFiles(@RequestParam @NotBlank String dataSourceId) {
+        return csvFileService.listCsvFiles(dataSourceId);
+    }
+
+    @Operation(summary = "删除 CSV 文件", description = "删除 CSV 文件及关联的表结构")
+    @DeleteMapping("/csv/{tableId}")
+    @Authorize({"allChatBIDataSourcePermissions", "deleteCsv"})
+    public void deleteCsv(@PathVariable @NotBlank String tableId) {
+        csvFileService.deleteCsv(tableId);
     }
 }

@@ -19,7 +19,7 @@ export default indexTs;
             <copy-text :text="dataSourceId" textColor="#86909c" />
           </div>
         </div>
-        <a-button type="primary" @click="hanleTestConn()">测试连接</a-button>
+        <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn()">测试连接</a-button>
       </div>
     </page-header>
     <a-tabs :active-key="activeTab" @change="handleTabChange">
@@ -53,17 +53,17 @@ export default indexTs;
                   </a-select>
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="database" label="数据库">
                   <a-input disabled v-model="dataSourceInfoForm.database" />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="schema" label="模式">
                   <a-input disabled v-model="dataSourceInfoForm.schema" />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="host" label="主机地址">
                   <a-input
                     v-model="dataSourceInfoForm.host"
@@ -71,7 +71,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="port" label="端口号">
                   <a-input-number
                     v-model="dataSourceInfoForm.port"
@@ -81,7 +81,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="username" label="用户名">
                   <a-input
                     v-model="dataSourceInfoForm.username"
@@ -89,7 +89,7 @@ export default indexTs;
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="12">
+              <a-col :span="12" v-if="!isDuckDB">
                 <a-form-item field="password" label="密码">
                   <a-input-password
                     v-model="dataSourceInfoForm.password"
@@ -98,7 +98,7 @@ export default indexTs;
                 </a-form-item>
               </a-col>
             </a-row>
-            <a-form-item field="jdbcParams" label="JDBC 参数">
+            <a-form-item field="jdbcParams" label="JDBC 参数" v-if="!isDuckDB">
               <a-input
                 v-model="dataSourceInfoForm.jdbcParams"
                 placeholder="请输入 JDBC 参数"
@@ -237,6 +237,62 @@ export default indexTs;
               <a-table-column title="是否使用" :width="100">
                 <template #cell="{ record }">
                   <a-switch type="round" size="small" v-model="record.toUse" />
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </div>
+      </a-tab-pane>
+    <a-tab-pane v-if="isDuckDB" key="csv_files" title="CSV 文件">
+        <div class="tab-container csv-files-container">
+          <div class="csv-upload-header">
+            <span></span>
+            <a-button type="primary" @click="handleCsvFileInputClick">
+              <template #icon><icon-upload /></template>
+              上传文件
+            </a-button>
+            <input
+              type="file"
+              ref="csvFileInputRef"
+              style="display: none"
+              accept=".csv"
+              @change="handleCsvFileChange"
+            />
+          </div>
+          <!-- 进度条 -->
+          <a-table
+            :data="csvFileList"
+            :columns="csvFileColumns"
+            :pagination="false"
+            :bordered="false"
+            class="csv-file-table"
+          >
+            <template #columns>
+              <a-table-column title="文件名" data-index="fileName">
+                <template #cell="{ record }">
+                  <span>{{ record.fileName }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="上传时间" data-index="uploadTime">
+                <template #cell="{ record }">
+                  <span>{{ record.uploadTime || '-' }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="字段数" data-index="fieldCount">
+                <template #cell="{ record }">
+                  <span>{{ record.fieldCount || '-' }}</span>
+                </template>
+              </a-table-column>
+              <a-table-column title="操作" :width="100">
+                <template #cell="{ record }">
+                  <a-button
+                    type="text"
+                    size="small"
+                    status="danger"
+                    @click="handleDeleteCsvFile(record)"
+                  >
+                    删除
+                  </a-button>
                 </template>
               </a-table-column>
             </template>

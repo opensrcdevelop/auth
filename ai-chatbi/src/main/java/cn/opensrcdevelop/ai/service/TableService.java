@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.service;
 
 import cn.opensrcdevelop.ai.dto.BatchUpdateTableRequestDto;
+import cn.opensrcdevelop.ai.dto.CsvFileResponseDto;
 import cn.opensrcdevelop.ai.dto.TableResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.common.response.PageData;
@@ -21,4 +22,6 @@ public interface TableService extends IService<Table> {
     List<Map<String, Object>> getTables(String dataSourceId);
 
     Map<String, List<String>> getTableForbiddenFields(List<String> tableIds);
+
+    List<CsvFileResponseDto> listCsvFiles(String dataSourceId);
 }

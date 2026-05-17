@@ -25,10 +25,12 @@ import cn.opensrcdevelop.common.response.PageData;
 import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import cn.opensrcdevelop.common.util.SpringContextUtil;
+import cn.opensrcdevelop.common.validation.ValidationGroups;
 import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -42,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.redisson.api.RLock;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,9 +57,17 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
 
     private static final String SYNC_TABLE_LOCK = "sync_table_lock:%s";
 
-    private final TableService tableService;
-    private final DataSourceMetaCollector dataSourceMetaCollector;
-    private final DataSourceManager dataSourceManager;
+    @Resource
+    @Lazy
+    private TableService tableService;
+
+    @Resource
+    @Lazy
+    private DataSourceMetaCollector dataSourceMetaCollector;
+
+    @Resource
+    @Lazy
+    private DataSourceManager dataSourceManager;
 
     /**
      * 获取已启用的数据源配置列表
@@ -246,7 +257,17 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         // 1. 检查数据源名称是否存在
         checkDataSourceName(requestDto, null);
 
-        // 2. 属性设置
+        // 2. 根据类型校验必填字段
+        Class<?>[] groups;
+        if (DataSourceType.DUCKDB.name().equals(requestDto.getType())) {
+            groups = new Class<?>[]{ValidationGroups.Operation.INSERT.class,
+                    DataSourceConfRequestDto.NoneNormalDB.class};
+        } else {
+            groups = new Class<?>[]{ValidationGroups.Operation.INSERT.class, DataSourceConfRequestDto.NormalDB.class};
+        }
+        CommonUtil.validateBean(requestDto, groups);
+
+        // 3. 属性设置
         String dataSourceId = CommonUtil.getUUIDV7String();
         AuditContext.setSpelVariable("dataSourceId", dataSourceId);
 
@@ -337,6 +358,11 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      */
     @Override
     public TestDataSourceConnResponseDto testConn(TestDataSourceConnRequestDto requestDto) {
+        // DuckDB 类型不支持测试连接（无远程连接概念）
+        if (DataSourceType.DUCKDB.equals(requestDto.getType())) {
+            return TestDataSourceConnResponseDto.builder().connected(false).build();
+        }
+
         DataSourceType dataSourceType = requestDto.getType();
         Connection connection = null;
         try {

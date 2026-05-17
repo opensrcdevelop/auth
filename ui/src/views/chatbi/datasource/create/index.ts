@@ -1,5 +1,5 @@
 import router from "@/router";
-import {defineComponent, reactive, ref} from "vue";
+import {computed, defineComponent, reactive, ref} from "vue";
 import {DS_TYPE_LIST} from "../constants";
 import {createDataSourceConf, testDataSourceConn} from "@/api/chatbi";
 import {handleApiError, handleApiSuccess} from "@/util/tool";
@@ -14,11 +14,15 @@ const handleBack = () => {
 
 const dataSourceTypeList = DS_TYPE_LIST;
 
+/** 判断是否为 DuckDB 类型 */
+const isDuckDB = computed(() => createDataSourceForm.type === "DUCKDB");
+
 /** 创建数据源表单 */
 const createDataSourceFormRef = ref();
 const createDataSourceForm = reactive({
   name: undefined,
   type: undefined,
+  // 非 DuckDB 使用
   database: undefined,
   schema: undefined,
   host: undefined,
@@ -28,15 +32,16 @@ const createDataSourceForm = reactive({
   jdbcParams: undefined,
   desc: undefined,
 });
-const createDataSourceFormRules = {
+const createDataSourceFormRules = computed(() => ({
   name: [{ required: true, message: "数据源名称未填写" }],
   type: [{ required: true, message: "数据源类型未选择" }],
-  database: [{ required: true, message: "数据库未填写" }],
-  host: [{ required: true, message: "主机地址未填写" }],
-  port: [{ required: true, message: "端口号未填写" }],
-  username: [{ required: true, message: "用户名未填写" }],
-  password: [{ required: true, message: "密码未填写" }],
-};
+  // 非 DuckDB 必填字段
+  database: [{ required: !isDuckDB.value, message: "数据库未填写" }],
+  host: [{ required: !isDuckDB.value, message: "主机地址未填写" }],
+  port: [{ required: !isDuckDB.value, message: "端口号未填写" }],
+  username: [{ required: !isDuckDB.value, message: "用户名未填写" }],
+  password: [{ required: !isDuckDB.value, message: "密码未填写" }],
+}));
 
 /**
  * 提交创建数据源表单
@@ -67,14 +72,16 @@ const handleResetCreateDataSourceForm = () => {
 const hanleTestConn = () => {
   createDataSourceFormRef.value.validate((errors) => {
     if (!errors) {
-      testDataSourceConn({
+      const connData: any = {
         type: createDataSourceForm.type,
         database: createDataSourceForm.database,
         host: createDataSourceForm.host,
         port: createDataSourceForm.port,
         username: createDataSourceForm.username,
         password: createDataSourceForm.password,
-      })
+      };
+
+      testDataSourceConn(connData)
         .then((result: any) => {
           handleApiSuccess(result, (data: any) => {
             if (data.connected) {
@@ -102,6 +109,7 @@ export default defineComponent({
       handleCreateDataSourceFormSubmit,
       handleResetCreateDataSourceForm,
       hanleTestConn,
+      isDuckDB,
     };
   },
 });
