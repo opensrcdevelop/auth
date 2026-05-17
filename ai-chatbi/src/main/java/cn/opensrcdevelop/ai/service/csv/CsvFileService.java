@@ -1,8 +1,10 @@
 package cn.opensrcdevelop.ai.service.csv;
 
 import cn.opensrcdevelop.ai.dto.CsvFileResponseDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadCompleteRequestDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadInitRequestDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadInitResponseDto;
 import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * CSV 文件服务接口
@@ -10,15 +12,35 @@ import org.springframework.web.multipart.MultipartFile;
 public interface CsvFileService {
 
     /**
-     * 上传 CSV 文件到 S3 并提交异步解析任务
+     * 初始化分片上传
      *
-     * @param file
-     *            上传的文件
-     * @param dataSourceId
-     *            数据源ID
+     * @param request
+     *            初始化请求
+     * @return 初始化响应（含上传ID）
+     */
+    MultipartUploadInitResponseDto initMultipartUpload(MultipartUploadInitRequestDto request);
+
+    /**
+     * 完成分片上传
+     *
+     * @param request
+     *            完成请求
      * @return 任务ID
      */
-    String uploadCsv(MultipartFile file, String dataSourceId);
+    String completeMultipartUpload(MultipartUploadCompleteRequestDto request);
+
+    /**
+     * 生成分片上传预签名URL
+     *
+     * @param key
+     *            文件键
+     * @param uploadId
+     *            上传ID
+     * @param partNumber
+     *            分片编号
+     * @return 预签名URL
+     */
+    String generateUploadPartUrl(String key, String uploadId, int partNumber);
 
     /**
      * 获取数据源下的 CSV 文件列表

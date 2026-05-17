@@ -4,7 +4,6 @@ import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
-import cn.opensrcdevelop.ai.service.csv.CsvDatasourceStorageService;
 import cn.opensrcdevelop.ai.service.csv.CsvParseService;
 import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
@@ -34,7 +33,6 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
 
     public static final String TASK_NAME = "CSV 文件解析";
 
-    private final CsvDatasourceStorageService csvStorageService;
     private final CsvParseService csvParseService;
     private final TableService tableService;
     private final TableFieldService tableFieldService;
@@ -65,15 +63,9 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
 
             log.info("开始解析 CSV 文件: dataSourceId={}, fileName={}, tableName={}", dataSourceId, fileName, tableName);
 
-            context.updateProgress(30);
+            context.updateProgress(50);
 
-            // 从 S3 下载 CSV 文件
-            byte[] csvData = csvStorageService.read(fileName);
-            log.info("CSV 文件下载成功: {} bytes", csvData.length);
-
-            context.updateProgress(60);
-
-            // 解析 CSV 表结构
+            // 解析 CSV 表结构（通过 DuckDB read_csv_auto 直接从 S3 读取推断）
             List<TableField> newFields = csvParseService.parseCsvSchema(dataSourceId, tableName, fileName);
 
             // 保存新增的字段记录（默认空列表，支持同步策略下的早期返回）

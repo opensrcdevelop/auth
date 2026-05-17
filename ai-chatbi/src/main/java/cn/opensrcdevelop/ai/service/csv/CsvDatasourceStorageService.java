@@ -1,5 +1,6 @@
 package cn.opensrcdevelop.ai.service.csv;
 
+import cn.opensrcdevelop.ai.service.csv.impl.CsvDatasourceStorageServiceImpl;
 import java.util.List;
 
 /**
@@ -9,30 +10,6 @@ import java.util.List;
  * </p>
  */
 public interface CsvDatasourceStorageService {
-
-    /**
-     * 存储类型：S3 对象存储
-     */
-    String TYPE_S3 = "s3";
-
-    /**
-     * 保存文件
-     *
-     * @param data
-     *            文件数据
-     * @param key
-     *            文件键
-     */
-    void store(byte[] data, String key);
-
-    /**
-     * 读取文件
-     *
-     * @param filePath
-     *            文件路径
-     * @return 文件数据
-     */
-    byte[] read(String filePath);
 
     /**
      * 删除文件
@@ -59,4 +36,48 @@ public interface CsvDatasourceStorageService {
      * @return 文件路径列表
      */
     List<String> list(String prefix);
+
+    /**
+     * 初始化分段上传
+     *
+     * @param key
+     *            文件键
+     * @return 上传ID
+     */
+    String initiateMultipartUpload(String key);
+
+    /**
+     * 生成分片上传预签名URL
+     *
+     * @param key
+     *            文件键
+     * @param uploadId
+     *            上传ID
+     * @param partNumber
+     *            分片编号（从1开始）
+     * @return 预签名URL
+     */
+    String generateUploadPartUrl(String key, String uploadId, int partNumber);
+
+    /**
+     * 完成分段上传
+     *
+     * @param key
+     *            文件键
+     * @param uploadId
+     *            上传ID
+     * @param parts
+     *            已上传的分片信息
+     */
+    void completeMultipartUpload(String key, String uploadId, List<CsvDatasourceStorageServiceImpl.UploadedPart> parts);
+
+    /**
+     * 取消分段上传
+     *
+     * @param key
+     *            文件键
+     * @param uploadId
+     *            上传ID
+     */
+    void abortMultipartUpload(String key, String uploadId);
 }

@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Tag(name = "API-Chat BI", description = "接口-Chat BI")
@@ -405,12 +406,28 @@ public class ChatBIController {
         chatBIService.updateChatConfig(config);
     }
 
-    @Operation(summary = "上传 CSV 文件", description = "上传 CSV 文件到 S3 并异步解析表结构")
-    @PostMapping("/csv/upload")
+    @Operation(summary = "初始化分片上传", description = "初始化分片上传并返回上传ID和分片大小")
+    @PostMapping("/csv/multipart/init")
     @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
-    public String uploadCsv(@RequestParam("file") MultipartFile file,
-            @RequestParam("dataSourceId") @NotBlank String dataSourceId) {
-        return csvFileService.uploadCsv(file, dataSourceId);
+    public MultipartUploadInitResponseDto initMultipartUpload(
+            @RequestBody @Valid MultipartUploadInitRequestDto request) {
+        return csvFileService.initMultipartUpload(request);
+    }
+
+    @Operation(summary = "生成分片上传预签名URL", description = "为指定分片生成预签名URL，前端直接上传到S3")
+    @GetMapping("/csv/multipart/upload-url")
+    @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
+    public String generateUploadUrl(@RequestParam @NotBlank String key,
+            @RequestParam @NotBlank String uploadId,
+            @RequestParam @NotNull @Positive Integer partNumber) {
+        return csvFileService.generateUploadPartUrl(key, uploadId, partNumber);
+    }
+
+    @Operation(summary = "完成分片上传", description = "完成分片上传并触发异步解析任务")
+    @PostMapping("/csv/multipart/complete")
+    @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
+    public String completeMultipartUpload(@RequestBody @Valid MultipartUploadCompleteRequestDto request) {
+        return csvFileService.completeMultipartUpload(request);
     }
 
     @Operation(summary = "获取 CSV 文件列表", description = "获取数据源下的 CSV 文件列表")

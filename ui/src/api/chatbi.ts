@@ -439,21 +439,55 @@ export function updateChatConfig(data: any) {
 }
 
 /**
- * 上传 CSV 文件
+ * 初始化分片上传
  *
  * @param dataSourceId 数据源ID
- * @param file 文件
- * @param config 请求配置（含 onUploadProgress）
- * @returns 响应结果
+ * @param filename 文件名
+ * @param fileSize 文件大小（字节）
+ * @returns 上传ID和分片信息
  */
-export function uploadCsvFile(dataSourceId: string, file: File, config?: any) {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('dataSourceId', dataSourceId);
+export function initMultipartUpload(dataSourceId: string, filename: string, fileSize: number) {
   return apiRequest.post({
-    url: '/chatbi/csv/upload',
-    data: formData,
-    ...config,
+    url: '/chatbi/csv/multipart/init',
+    data: { dataSourceId, filename, fileSize },
+  });
+}
+
+/**
+ * 生成分片上传预签名URL
+ *
+ * @param key 文件键
+ * @param uploadId 上传ID
+ * @param partNumber 分片编号
+ * @returns 预签名URL
+ */
+export function getUploadPartUrl(key: string, uploadId: string, partNumber: number) {
+  return noneLoadingApiRequest.get({
+    url: '/chatbi/csv/multipart/upload-url',
+    params: { key, uploadId, partNumber },
+  });
+}
+
+/**
+ * 完成分片上传
+ *
+ * @param key 文件键
+ * @param uploadId 上传ID
+ * @param parts 已上传的分片列表
+ * @param dataSourceId 数据源ID
+ * @param originalFilename 原始文件名
+ * @returns 任务ID
+ */
+export function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: Array<{ partNumber: number; etag: string }>,
+  dataSourceId: string,
+  originalFilename: string
+) {
+  return noneLoadingApiRequest.post({
+    url: '/chatbi/csv/multipart/complete',
+    data: { key, uploadId, parts, dataSourceId, originalFilename },
   });
 }
 

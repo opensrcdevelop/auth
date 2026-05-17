@@ -247,7 +247,7 @@ export default indexTs;
         <div class="tab-container csv-files-container">
           <div class="csv-upload-header">
             <span></span>
-            <a-button type="primary" @click="handleCsvFileInputClick">
+            <a-button type="primary" :disabled="csvUploadProgress > 0 && csvUploadProgress < 1" @click="handleCsvFileInputClick">
               <template #icon><icon-upload /></template>
               上传文件
             </a-button>
@@ -259,7 +259,15 @@ export default indexTs;
               @change="handleCsvFileChange"
             />
           </div>
-          <!-- 进度条 -->
+          <!-- 上传进度 -->
+          <a-progress
+            v-if="csvUploadProgress > 0 && csvUploadProgress < 1"
+            :percent="csvUploadProgress"
+            :status="csvUploadStatus"
+            :show-text="true"
+            class="csv-upload-progress"
+          />
+          <!-- 文件列表 -->
           <a-table
             :data="csvFileList"
             :columns="csvFileColumns"

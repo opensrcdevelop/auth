@@ -3,6 +3,9 @@ package cn.opensrcdevelop.ai.service.csv.impl;
 import cn.opensrcdevelop.ai.component.CsvParseAsyncTaskExecutor;
 import cn.opensrcdevelop.ai.constants.MessageConstants;
 import cn.opensrcdevelop.ai.dto.CsvFileResponseDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadCompleteRequestDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadInitRequestDto;
+import cn.opensrcdevelop.ai.dto.MultipartUploadInitResponseDto;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.service.TableFieldService;
@@ -14,16 +17,13 @@ import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
-import cn.opensrcdevelop.common.exception.ServerException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * CSV 文件服务实现
@@ -39,9 +39,9 @@ public class CsvFileServiceImpl implements CsvFileService {
     private final TableFieldService tableFieldService;
 
     @Override
-    public String uploadCsv(MultipartFile file, String dataSourceId) {
+    public MultipartUploadInitResponseDto initMultipartUpload(MultipartUploadInitRequestDto request) {
         // 1. 验证文件名
-        String originalFilename = file.getOriginalFilename();
+        String originalFilename = request.getFilename();
         if (originalFilename == null || !originalFilename.endsWith(".csv")) {
             throw new BizException(MessageConstants.AI_CSV_MSG_1000);
         }
@@ -50,24 +50,46 @@ public class CsvFileServiceImpl implements CsvFileService {
             throw new BizException(MessageConstants.AI_CSV_MSG_1001);
         }
 
-        // 2. 上传到 S3
+        // 2. 生成文件键
         String tableName = originalFilename.replaceAll("\\.csv$", "");
-        String fileName = dataSourceId + CommonConstants.SLASH + tableName + ".csv";
-        try {
-            csvStorageService.store(file.getBytes(), fileName);
-        } catch (IOException e) {
-            throw new ServerException("CSV 文件上传失败", e);
-        }
+        String key = request.getDataSourceId() + CommonConstants.SLASH + tableName + ".csv";
 
-        // 3. 检查是否已存在同名表
+        // 3. 初始化分片上传
+        CsvDatasourceStorageServiceImpl storageService = (CsvDatasourceStorageServiceImpl) csvStorageService;
+        String uploadId = storageService.initiateMultipartUpload(key);
+
+        // 4. 构建响应
+        return MultipartUploadInitResponseDto.builder()
+                .key(key)
+                .uploadId(uploadId)
+                .chunkSize(storageService.getChunkSizeBytes())
+                .urlExpirationMinutes(storageService.getUrlExpirationMinutes())
+                .build();
+    }
+
+    @Override
+    public String completeMultipartUpload(MultipartUploadCompleteRequestDto request) {
+        // 1. 转换为存储服务需要的格式
+        List<CsvDatasourceStorageServiceImpl.UploadedPart> parts = request.getParts().stream()
+                .map(p -> new CsvDatasourceStorageServiceImpl.UploadedPart(p.getPartNumber(), p.getEtag()))
+                .toList();
+
+        // 2. 完成分片上传
+        CsvDatasourceStorageServiceImpl storageService = (CsvDatasourceStorageServiceImpl) csvStorageService;
+        storageService.completeMultipartUpload(request.getKey(), request.getUploadId(), parts);
+
+        // 3. 提交异步解析任务
+        String tableName = request.getOriginalFilename().replaceAll("\\.csv$", "");
+        String fileName = request.getKey();
+
+        // 检查是否已存在同名表
         Table existingTable = tableService.getOne(
                 Wrappers.<Table>lambdaQuery()
-                        .eq(Table::getDataSourceId, dataSourceId)
+                        .eq(Table::getDataSourceId, request.getDataSourceId())
                         .eq(Table::getTableName, tableName));
 
-        // 4. 提交异步解析任务
         Map<String, Object> params = new HashMap<>();
-        params.put("dataSourceId", dataSourceId);
+        params.put("dataSourceId", request.getDataSourceId());
         params.put("fileName", fileName);
         if (existingTable != null) {
             params.put("tableId", existingTable.getTableId());
@@ -78,6 +100,12 @@ public class CsvFileServiceImpl implements CsvFileService {
                 CsvParseAsyncTaskExecutor.TASK_NAME,
                 params,
                 AuthUtil.getCurrentUserId());
+    }
+
+    @Override
+    public String generateUploadPartUrl(String key, String uploadId, int partNumber) {
+        CsvDatasourceStorageServiceImpl storageService = (CsvDatasourceStorageServiceImpl) csvStorageService;
+        return storageService.generateUploadPartUrl(key, uploadId, partNumber);
     }
 
     @Override

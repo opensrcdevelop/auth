@@ -4,10 +4,14 @@ import {
     getTableList,
     testDataSourceConn,
     updateDataSourceConf,
-    uploadCsvFile,
+    initMultipartUpload,
+    getUploadPartUrl,
+    completeMultipartUpload,
     getCsvFileList,
     deleteCsvFile,
 } from "@/api/chatbi";
+import {getTask} from "@/api/asyncTask";
+import {taskEmitter} from "@/hooks/taskEmitter";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
 import {computed, defineComponent, onMounted, reactive, ref} from "vue";
@@ -76,6 +80,10 @@ const csvFileColumns = [
   { title: '字段数', dataIndex: 'fieldCount' },
 ];
 const csvFileInputRef = ref();
+
+/** CSV 上传进度 */
+const csvUploadProgress = ref(0);
+const csvUploadStatus = ref<any>('normal');
 
 /** 数据源信息表单 */
 const dataSourceInfoFormRef = ref();
@@ -435,23 +443,82 @@ const handleCsvFileInputClick = () => {
 };
 
 /**
- * 处理 CSV 文件选择
+ * 处理 CSV 文件选择（分片上传）
  */
 const handleCsvFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  if (file) {
-    try {
-      await uploadCsvFile(dataSourceId.value, file, {
-        onUploadProgress: (progressEvent: any) => {
-        }
+  if (!file) return;
+
+  // 重置进度
+  csvUploadProgress.value = 0;
+  csvUploadStatus.value = 'normal';
+
+  try {
+    // 1. 初始化分片上传
+    csvUploadProgress.value = 0.1;
+    const initResponse = await initMultipartUpload(
+      dataSourceId.value,
+      file.name,
+      file.size
+    );
+    const { key, uploadId, chunkSize } = initResponse.data as any;
+
+    // 2. 计算分片数量
+    const chunkSizeNum = typeof chunkSize === 'number' ? chunkSize : 5 * 1024 * 1024;
+    const totalParts = Math.ceil(file.size / chunkSizeNum);
+    const uploadedParts: Array<{ partNumber: number; etag: string }> = [];
+
+    // 3. 分片上传
+    for (let i = 1; i <= totalParts; i++) {
+      const start = (i - 1) * chunkSizeNum;
+      const end = Math.min(i * chunkSizeNum, file.size);
+      const chunk = file.slice(start, end);
+
+      // 获取预签名URL
+      const urlResponse = await getUploadPartUrl(key, uploadId, i);
+      const presignedUrl = urlResponse.data as any;
+
+      // 直接上传到S3
+      const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: chunk,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
       });
-      Notification.success('上传成功');
-      handleGetCsvFileList();
-    } catch (err) {
-      handleApiError(err, '上传 CSV 文件');
+
+      if (!response.ok) {
+        throw new Error(`分片 ${i} 上传失败: ${response.status}`);
+      }
+
+      // 从响应头获取ETag（AWS S3格式：带引号，MinIO格式：不带引号）
+      const etag = response.headers.get('ETag') || response.headers.get('etag') || '';
+      uploadedParts.push({ partNumber: i, etag: etag.replace(/"/g, '') });
+
+      // 更新进度（转为0-10000的整数，a-progress使用小数）
+      csvUploadProgress.value = Math.round((0.1 + (i / totalParts) * 0.8) * 100) / 100;
     }
+
+    // 4. 完成分片上传，获取任务ID
+    csvUploadProgress.value = 0.95;
+    const taskId = await completeMultipartUpload(
+      key,
+      uploadId,
+      uploadedParts,
+      dataSourceId.value,
+      file.name
+    );
+
+    // 5. 更新状态，由全局任务通知监听自动刷新列表
+    csvUploadProgress.value = 1;
+    csvUploadStatus.value = 'success';
+    Notification.success('上传成功');
+  } catch (err) {
+    csvUploadStatus.value = 'error';
+    handleApiError(err, '上传 CSV 文件');
   }
+
   target.value = '';
 };
 
@@ -493,7 +560,19 @@ export default defineComponent({
     onMounted(() => {
       activeTab.value = getQueryString("active_tab") || "data_source_info";
       handleTabInit(activeTab.value, dataSourceId);
+      // 初始化任务通知监听
+      taskEmitter.on('task:update', handleTaskUpdate);
     });
+
+    /**
+     * 处理任务通知更新
+     */
+    const handleTaskUpdate = (message: any) => {
+      // CSV 解析任务完成后刷新列表
+      if (message.taskType === 'CSV_PARSE' && message.status === 'SUCCESS') {
+        handleGetCsvFileList();
+      }
+    };
 
     return {
       handleBack,
@@ -541,6 +620,8 @@ export default defineComponent({
       csvFileList,
       csvFileColumns,
       csvFileInputRef,
+      csvUploadProgress,
+      csvUploadStatus,
       handleGetCsvFileList,
       handleCsvFileInputClick,
       handleCsvFileChange,
