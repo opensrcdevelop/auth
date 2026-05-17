@@ -33,6 +33,7 @@ export default indexTs;
             height="calc(100vh - 198px)"
             :chatId="chatId"
             :dataSourceId="dataSourceId"
+            :dataSourceDisabled="dataSourceDisabled"
             @updateChatHistory="handleUpdateChatHistory"
           />
         </div>

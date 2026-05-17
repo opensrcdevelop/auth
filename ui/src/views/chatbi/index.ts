@@ -60,8 +60,19 @@ const handleTabInit = (tabKey: string) => {
  * 切换对话
  */
 const chatId = ref("");
+const dataSourceId = ref("");
+const dataSourceDisabled = ref(false);
+
 const handleSwitchChat = (id: string) => {
   chatId.value = id;
+  // 从会话列表中获取对应会话的数据源ID并设置
+  const chat = chatHistoryRef.value?.chatHistoryList?.find(
+    (item: any) => item.id === id,
+  );
+  if (chat) {
+    dataSourceId.value = chat.dataSourceId;
+  }
+  dataSourceDisabled.value = true;
 };
 
 /**
@@ -70,6 +81,7 @@ const handleSwitchChat = (id: string) => {
 const handleAddNewChat = () => {
   chatId.value = "";
   dataSourceId.value = "";
+  dataSourceDisabled.value = false;
 };
 
 /**
@@ -83,7 +95,6 @@ const handleUpdateChatHistory = (id: string) => {
 /**
  * 更新数据源ID
  */
-const dataSourceId = ref("");
 const handleUpdateDataSourceId = (id: string) => {
   dataSourceId.value = id;
 };
@@ -115,6 +126,7 @@ export default defineComponent({
       handleUpdateChatHistory,
       handleAddNewChat,
       dataSourceId,
+      dataSourceDisabled,
       handleUpdateDataSourceId,
       llmManagementRef,
       sampleSqlManagementRef,
