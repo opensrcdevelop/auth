@@ -453,7 +453,6 @@ export function uploadCsvFile(dataSourceId: string, file: File, config?: any) {
   return apiRequest.post({
     url: '/chatbi/csv/upload',
     data: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
     ...config,
   });
 }
@@ -480,24 +479,5 @@ export function getCsvFileList(dataSourceId: string) {
 export function deleteCsvFile(tableId: string) {
   return apiRequest.delete({
     url: `/chatbi/csv/${tableId}`,
-  });
-}
-
-/**
- * 更新 CSV 文件（替换）
- *
- * @param tableId 表ID
- * @param file 新文件
- * @param config 请求配置
- * @returns 响应结果
- */
-export function updateCsvFile(tableId: string, file: File, config?: any) {
-  const formData = new FormData();
-  formData.append('file', file);
-  return apiRequest.put({
-    url: `/chatbi/csv/${tableId}`,
-    data: formData,
-    headers: { 'Content-Type': 'multipart/form-data' },
-    ...config,
   });
 }

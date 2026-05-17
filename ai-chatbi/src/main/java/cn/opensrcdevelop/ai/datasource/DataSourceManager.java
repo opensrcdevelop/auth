@@ -18,23 +18,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DataSourceManager {
 
     private final DataSourceConfService dataSourceConfService;
     private final DuckDBDataSourceProvider duckDBDataSourceProvider;
-
-    public DataSourceManager(DataSourceConfService dataSourceConfService,
-            @Lazy DuckDBDataSourceProvider duckDBDataSourceProvider) {
-        this.dataSourceConfService = dataSourceConfService;
-        this.duckDBDataSourceProvider = duckDBDataSourceProvider;
-    }
 
     private static final Map<String, DataSource> DATA_SOURCE_CACHE = new ConcurrentHashMap<>();
 

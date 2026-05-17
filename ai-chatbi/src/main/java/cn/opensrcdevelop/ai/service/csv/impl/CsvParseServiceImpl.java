@@ -1,7 +1,10 @@
 package cn.opensrcdevelop.ai.service.csv.impl;
 
+import cn.opensrcdevelop.ai.converter.TableFieldTypeConverter;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
 import cn.opensrcdevelop.ai.entity.TableField;
+import cn.opensrcdevelop.ai.enums.DataSourceType;
+import cn.opensrcdevelop.ai.enums.TableFieldType;
 import cn.opensrcdevelop.ai.service.csv.CsvParseService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Service;
 public class CsvParseServiceImpl implements CsvParseService {
 
     private final DataSourceManager dataSourceManager;
+    private final TableFieldTypeConverter tableFieldTypeConverter;
 
     @Value("${csv-ds.storage.s3.bucket:}")
     private String s3Bucket;
@@ -35,7 +39,7 @@ public class CsvParseServiceImpl implements CsvParseService {
     public List<TableField> parseCsvSchema(String dataSourceId, String tableName, String s3Path) {
         List<TableField> fields = new ArrayList<>();
 
-        // S3 URI 格式: s3://{bucket}/csv-datasource/{dataSourceId}/{tableName}.csv
+        // S3 URI 格式: s3://{bucket}/{dataSourceId}/{tableName}.csv
         String s3Uri = "s3://" + s3Bucket + "/" + s3Path;
         String sql = "DESCRIBE SELECT * FROM read_csv_auto('" + escapeString(s3Uri) + "')";
 
@@ -53,12 +57,12 @@ public class CsvParseServiceImpl implements CsvParseService {
                 String escapedColumnName = "\"" + escapeString(columnName) + "\"";
 
                 // 类型映射
-                String mappedType = mapColumnType(columnType);
+                TableFieldType mappedType = tableFieldTypeConverter.convert(DataSourceType.DUCKDB, columnType);
 
                 TableField field = new TableField();
                 field.setFieldId(CommonUtil.getUUIDV7String());
                 field.setFieldName(escapedColumnName);
-                field.setFieldType(mappedType);
+                field.setFieldType(mappedType.name());
                 field.setToUse(true);
 
                 fields.add(field);
@@ -82,25 +86,5 @@ public class CsvParseServiceImpl implements CsvParseService {
             return "";
         }
         return input.replace("\\", "\\\\").replace("'", "\\'");
-    }
-
-    /**
-     * DuckDB 类型映射到应用类型
-     */
-    private String mapColumnType(String duckdbType) {
-        if (duckdbType == null) {
-            return "VARCHAR";
-        }
-        String upperType = duckdbType.toUpperCase();
-        if (upperType.equals("BOOLEAN")) {
-            return "BOOLEAN";
-        } else if (upperType
-                .matches("TINYINT|SMALLINT|INTEGER|BIGINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|HUGEINT|UHUGEINT")) {
-            return "BIGINT";
-        } else if (upperType.matches("FLOAT|DOUBLE|DECIMAL|REAL")) {
-            return "DOUBLE";
-        } else {
-            return "VARCHAR";
-        }
     }
 }

@@ -36,15 +36,4 @@ public interface CsvFileService {
      *            表ID
      */
     void deleteCsv(String tableId);
-
-    /**
-     * 更新 CSV 文件（替换）并重新解析表结构
-     *
-     * @param tableId
-     *            表ID
-     * @param file
-     *            上传的新文件
-     * @return 任务ID
-     */
-    String updateCsv(String tableId, MultipartFile file);
 }

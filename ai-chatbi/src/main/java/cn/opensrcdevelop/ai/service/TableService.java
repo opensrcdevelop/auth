@@ -23,12 +23,5 @@ public interface TableService extends IService<Table> {
 
     Map<String, List<String>> getTableForbiddenFields(List<String> tableIds);
 
-    /**
-     * 获取数据源下的 CSV 文件列表
-     *
-     * @param dataSourceId
-     *            数据源ID
-     * @return CSV 文件列表
-     */
     List<CsvFileResponseDto> listCsvFiles(String dataSourceId);
 }

@@ -10,10 +10,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Properties;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -148,8 +148,8 @@ public class DuckDBDataSourceProvider {
     /**
      * 注册 CSV 表
      * <p>
-     * 使用 CREATE TABLE ... FROM read_csv_auto() 将 S3 CSV 文件创建为可查询的表
-     * 路径格式: s3://{bucket}/{dataSourceId}/{tableName}.csv
+     * 使用 CREATE TABLE ... FROM read_csv_auto() 将 S3 CSV 文件创建为可查询的表 路径格式:
+     * s3://{bucket}/{dataSourceId}/{tableName}.csv
      */
     private void attachCsvTables(Connection conn, String dataSourceId, List<Table> tables) throws SQLException {
         if (tables == null || tables.isEmpty()) {

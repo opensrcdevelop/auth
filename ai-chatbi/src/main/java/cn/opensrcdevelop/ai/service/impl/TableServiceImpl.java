@@ -19,7 +19,6 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -239,20 +238,17 @@ public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements
         return CommonUtil.stream(tables).map(table -> {
             CsvFileResponseDto dto = new CsvFileResponseDto();
             dto.setTableId(table.getTableId());
-            dto.setTableName(table.getTableName());
-            dto.setRemark(table.getRemark());
-            dto.setToUse(table.getToUse());
-            dto.setAdditionalInfo(table.getAdditionalInfo());
-
-            // 统计字段数量
+            // 文件名：去掉 .csv 后缀
+            String tableName = table.getTableName();
+            dto.setFileName(tableName.endsWith(".csv") ? tableName.substring(0, tableName.length() - 4) : tableName);
+            // 上传时间
+            if (table.getCreateTime() != null) {
+                dto.setUploadTime(table.getCreateTime());
+            }
+            // 字段数量
             int fieldCount = tableFieldService.list(Wrappers.<TableField>lambdaQuery()
                     .eq(TableField::getTableId, table.getTableId())).size();
             dto.setFieldCount(fieldCount);
-
-            // 创建时间
-            if (table.getCreateTime() != null) {
-                dto.setCreatedAt(table.getCreateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            }
 
             return dto;
         }).toList();

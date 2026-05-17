@@ -5,6 +5,7 @@ import cn.opensrcdevelop.common.exception.ServerException;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -98,25 +100,20 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
     }
 
     @Override
-    public String store(byte[] data, String fileName) {
+    public void store(byte[] data, String key) {
         try {
-            // S3 路径格式: csv-datasource/{dataSourceId}/{fileName}.csv
-            String objectKey = "csv-datasource/" + fileName;
-
             // 上传到 S3
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket(bucket)
-                    .key(objectKey)
+                    .key(key)
                     .build();
 
             s3Client.putObject(putRequest, RequestBody.fromBytes(data));
 
-            log.info("CSV 文件上传成功: bucket={}, key={}", bucket, objectKey);
+            log.info("CSV 文件上传成功: bucket={}, key={}", bucket, key);
 
-            // 返回相对路径
-            return objectKey;
         } catch (Exception e) {
-            log.error("CSV 文件上传失败: fileName={}", fileName, e);
+            log.error("CSV 文件上传失败: key={}", key, e);
             throw new ServerException("CSV 文件上传失败", e);
         }
     }
@@ -179,5 +176,24 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
     @Override
     public String getType() {
         return TYPE_S3;
+    }
+
+    @Override
+    public List<String> list(String prefix) {
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucket)
+                    .prefix(prefix)
+                    .build();
+
+            return s3Client.listObjectsV2Paginator(listRequest)
+                    .contents()
+                    .stream()
+                    .map(obj -> obj.key())
+                    .toList();
+        } catch (Exception e) {
+            log.error("CSV 文件列表获取失败: prefix={}", prefix, e);
+            throw new ServerException("CSV 文件列表获取失败", e);
+        }
     }
 }

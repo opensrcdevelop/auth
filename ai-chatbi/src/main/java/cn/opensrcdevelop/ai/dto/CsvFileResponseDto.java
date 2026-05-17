@@ -1,6 +1,10 @@
 package cn.opensrcdevelop.ai.dto;
 
+import cn.opensrcdevelop.common.constants.CommonConstants;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
@@ -9,26 +13,19 @@ import lombok.Data;
 @Data
 public class CsvFileResponseDto implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = -1612928596027237227L;
 
     /** 表ID */
     private String tableId;
 
-    /** 表名 */
-    private String tableName;
+    /** 文件名 */
+    private String fileName;
 
-    /** 注释 */
-    private String remark;
-
-    /** 是否启用 */
-    private Boolean toUse;
-
-    /** 补充信息 */
-    private String additionalInfo;
+    /** 上传时间 */
+    @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
+    private LocalDateTime uploadTime;
 
     /** 字段数量 */
     private Integer fieldCount;
-
-    /** 创建时间 */
-    private String createdAt;
 }

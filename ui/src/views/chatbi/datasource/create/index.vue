@@ -116,7 +116,7 @@ export default indexTs;
         </a-form-item>
         <a-form-item hide-label>
           <a-space>
-            <a-button type="primary" @click="hanleTestConn">测试连接</a-button>
+            <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn">测试连接</a-button>
             <a-button type="primary" html-type="submit">创建</a-button>
             <a-button @click="handleResetCreateDataSourceForm">重置</a-button>
           </a-space>

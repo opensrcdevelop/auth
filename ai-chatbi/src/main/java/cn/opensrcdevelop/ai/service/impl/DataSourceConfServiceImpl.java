@@ -357,6 +357,11 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
      */
     @Override
     public TestDataSourceConnResponseDto testConn(TestDataSourceConnRequestDto requestDto) {
+        // DuckDB 类型不支持测试连接（无远程连接概念）
+        if (DataSourceType.DUCKDB.equals(requestDto.getType())) {
+            return TestDataSourceConnResponseDto.builder().connected(false).build();
+        }
+
         DataSourceType dataSourceType = requestDto.getType();
         Connection connection = null;
         try {
