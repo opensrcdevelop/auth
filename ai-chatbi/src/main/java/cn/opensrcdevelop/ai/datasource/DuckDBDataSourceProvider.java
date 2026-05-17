@@ -174,8 +174,9 @@ public class DuckDBDataSourceProvider {
                         table.getTableName());
 
                 // 使用 CREATE TABLE ... FROM read_csv_auto() 语法创建表
+                // 添加 ignore_errors = true 忽略有问题的行（如类型转换错误）
                 String sql = "CREATE TABLE \"" + escapeString(table.getTableName()) + "\" AS " +
-                        "SELECT * FROM read_csv_auto('" + escapeString(s3Path) + "')";
+                        "SELECT * FROM read_csv_auto('" + escapeString(s3Path) + "', ignore_errors = true)";
 
                 try {
                     stmt.execute(sql);
