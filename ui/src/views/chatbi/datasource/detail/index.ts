@@ -75,7 +75,6 @@ const csvFileColumns = [
   { title: '上传时间', dataIndex: 'uploadTime' },
   { title: '字段数', dataIndex: 'fieldCount' },
 ];
-const uploadProgress = ref(0);
 const csvFileInputRef = ref();
 
 /** 数据源信息表单 */
@@ -133,7 +132,7 @@ const handleGetDataSourceDetail = (id: string) => {
  * 测试数据源连接
  */
 const hanleTestConn = () => {
-  dataSourceInfoFormRef.value.validate((errors) => {
+  dataSourceInfoFormRef.value.validate((errors: any) => {
     if (!errors) {
       testDataSourceConn({
         type: dataSourceInfoForm.type,
@@ -184,9 +183,9 @@ const handleResetDataSourceInfoForm = () => {
 };
 
 /** 数据表列表 */
-const tableList = reactive([]);
+const tableList = reactive([] as any[]);
 const tableSearchKeyword = ref("");
-let tableListPagination;
+let tableListPagination: any;
 
 const handleTableListPageChange = (page: number) => {
   tableListPagination.handlePageChange(page, detectRowChanges);
@@ -210,7 +209,7 @@ const handleGetTableList = (
       handleApiSuccess(result, (data: any) => {
         tableList.length = 0;
 
-        data.list.forEach((item) => {
+        data.list.forEach((item: any) => {
           tableList.push({
             ...item,
             _isHovering: false,
@@ -443,18 +442,14 @@ const handleCsvFileChange = async (event: Event) => {
   const file = target.files?.[0];
   if (file) {
     try {
-      uploadProgress.value = 10;
       await uploadCsvFile(dataSourceId.value, file, {
         onUploadProgress: (progressEvent: any) => {
-          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         }
       });
-      uploadProgress.value = 0;
       Notification.success('上传成功');
       handleGetCsvFileList();
     } catch (err) {
-      uploadProgress.value = 0;
-      handleApiError(err, '上传文件');
+      handleApiError(err, '上传 CSV 文件');
     }
   }
   target.value = '';
@@ -475,7 +470,7 @@ const handleDeleteCsvFile = (record: any) => {
           Notification.success('删除成功');
           handleGetCsvFileList();
         })
-        .catch((err: any) => handleApiError(err, '删除文件'));
+        .catch((err: any) => handleApiError(err, '删除 CSV 文件'));
     }
   });
 };
@@ -488,9 +483,10 @@ export default defineComponent({
     TableFieldListDrawer,
   },
   setup() {
-    const dataSourceId = getQueryString("id");
+    const dataSourceId = getQueryString("id") || "";
 
-    tableListPagination = usePagination("tableList", ({ page, size }) => {
+    tableListPagination = usePagination("tableList", ({ page, size }: { page: number; size: number }) => {
+      handleGetTableList(dataSourceId, page, size);
       handleGetTableList(dataSourceId, page, size);
     });
 
@@ -544,7 +540,6 @@ export default defineComponent({
       handleCloseTableFieldListDrawer,
       csvFileList,
       csvFileColumns,
-      uploadProgress,
       csvFileInputRef,
       handleGetCsvFileList,
       handleCsvFileInputClick,

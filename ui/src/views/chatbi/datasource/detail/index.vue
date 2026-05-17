@@ -260,7 +260,6 @@ export default indexTs;
             />
           </div>
           <!-- 进度条 -->
-          <a-progress v-if="uploadProgress > 0" :percent="uploadProgress" class="csv-upload-progress" />
           <a-table
             :data="csvFileList"
             :columns="csvFileColumns"

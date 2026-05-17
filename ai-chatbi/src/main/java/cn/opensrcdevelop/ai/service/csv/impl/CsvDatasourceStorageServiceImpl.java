@@ -17,10 +17,7 @@ import software.amazon.awssdk.core.BytesWrapper;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -172,11 +169,6 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
     }
 
     @Override
-    public String getType() {
-        return TYPE_S3;
-    }
-
-    @Override
     public List<String> list(String prefix) {
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
@@ -187,7 +179,7 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
             return s3Client.listObjectsV2Paginator(listRequest)
                     .contents()
                     .stream()
-                    .map(obj -> obj.key())
+                    .map(S3Object::key)
                     .toList();
         } catch (Exception e) {
             log.error("CSV 文件列表获取失败: prefix={}", prefix, e);

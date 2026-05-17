@@ -47,7 +47,7 @@ ext {
     awsS3Ver = '2.41.34'
     milvusSdkVer = '2.6.14'
     grpcVer = '1.68.1'
-    duckDbVer = '1.3.1.0'
+    duckDbVer = '1.5.2.1'
 }
 
 allprojects {

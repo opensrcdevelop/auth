@@ -52,13 +52,6 @@ public interface CsvDatasourceStorageService {
     String getUrl(String filePath);
 
     /**
-     * 获取存储类型
-     *
-     * @return 存储类型
-     */
-    String getType();
-
-    /**
      * 列出指定前缀的所有文件路径
      *
      * @param prefix

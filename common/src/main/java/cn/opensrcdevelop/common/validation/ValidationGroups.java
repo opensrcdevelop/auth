@@ -21,11 +21,5 @@ public interface ValidationGroups extends Default {
 
         interface UPDATE extends Operation {
         }
-
-        /**
-         * 非 DuckDB 类型的 INSERT 校验分组（需要校验数据库连接字段）
-         */
-        interface INSERT_DB extends Operation {
-        }
     }
 }

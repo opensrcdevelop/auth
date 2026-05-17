@@ -109,7 +109,7 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
                     // 1.4 如果没有新字段需要添加，直接返回
                     if (fieldsToAdd.isEmpty()) {
                         context.updateProgress(100);
-                        context.setResult("CSV 文件解析完成（无变更）: tableId=" + tableId);
+                        context.setResult("CSV 文件解析完成: tableId=" + tableId);
                         return;
                     }
                 } else {
