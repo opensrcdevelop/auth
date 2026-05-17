@@ -26,7 +26,6 @@ import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.audit.enums.UserOperationType;
 import cn.opensrcdevelop.auth.biz.service.system.SystemSettingService;
 import cn.opensrcdevelop.common.constants.ExecutorConstants;
-import cn.opensrcdevelop.common.exception.BizException;
 import cn.opensrcdevelop.common.exception.ValidationException;
 import cn.opensrcdevelop.common.response.ValidationErrorResponse;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -286,12 +285,15 @@ public class ChatBIServiceImpl implements ChatBIService {
 
         // 1. 检查数据源是否已同步
         if (Boolean.FALSE.equals(dataSourceConfService.isSynced(dataSourceId))) {
-            SseUtil.sendChatBIText(emitter, "数据源未同步，请先执行同步表操作。");
+            SseUtil.sendChatBIError(emitter, "数据源未同步，请先执行同步表操作。");
             return Tuple.of(null, question);
         }
 
         // 2. 校验历史会话不允许切换数据源
-        validateDataSourceBinding(chatId, dataSourceId, emitter);
+        if (!validateDataSourceBinding(chatId, dataSourceId)) {
+            SseUtil.sendChatBIError(emitter, "历史会话无法切换数据源，请使用初始数据源。");
+            return Tuple.of(null, question);
+        }
 
         ChatClient chatClient = chatClientManager.getChatClient(requestDto.getModelProviderId(), requestDto.getModel(),
                 chatId);
@@ -499,24 +501,21 @@ public class ChatBIServiceImpl implements ChatBIService {
      *            对话ID
      * @param requestDataSourceId
      *            请求中的数据源ID
-     * @param emitter
-     *            SSE Emitter
+     * @return 校验结果
      */
-    private void validateDataSourceBinding(String chatId, String requestDataSourceId, SseEmitter emitter) {
+    private boolean validateDataSourceBinding(String chatId, String requestDataSourceId) {
         // 新会话不需要校验
         if (StringUtils.isBlank(chatId)) {
-            return;
+            return true;
         }
 
         // 查询历史会话的数据源ID
         String historyDataSourceId = chatHistoryService.getDataSourceIdByChatId(chatId);
         if (StringUtils.isBlank(historyDataSourceId)) {
-            return;
+            return true;
         }
 
         // 校验数据源是否一致
-        if (!historyDataSourceId.equals(requestDataSourceId)) {
-            throw new BizException(MessageConstants.AI_CHAT_MSG_1001, historyDataSourceId);
-        }
+        return historyDataSourceId.equals(requestDataSourceId);
     }
 }
