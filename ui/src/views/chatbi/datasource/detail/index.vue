@@ -19,7 +19,7 @@ export default indexTs;
             <copy-text :text="dataSourceId" textColor="#86909c" />
           </div>
         </div>
-        <a-button type="primary" @click="hanleTestConn()">测试连接</a-button>
+        <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn()">测试连接</a-button>
       </div>
     </page-header>
     <a-tabs :active-key="activeTab" @change="handleTabChange">
@@ -244,32 +244,28 @@ export default indexTs;
         </div>
       </a-tab-pane>
     <a-tab-pane v-if="isDuckDB" key="csv_files" title="CSV 文件">
-        <div class="tab-container">
-          <!-- 上传区域 -->
-          <div class="csv-upload-section">
-            <a-upload
-              :custom-request="handleCsvUpload"
-              :show-progress="true"
-              :limit="1"
+        <div class="tab-container csv-files-container">
+          <div class="csv-upload-header">
+            <span></span>
+            <a-button type="primary" @click="handleCsvFileInputClick">
+              <template #icon><icon-upload /></template>
+              上传文件
+            </a-button>
+            <input
+              type="file"
+              ref="csvFileInputRef"
+              style="display: none"
               accept=".csv"
-              drag
-            >
-              <template #upload-button>
-                <a-button type="primary">
-                  <template #icon><icon-upload /></template>
-                  上传文件
-                </a-button>
-              </template>
-            </a-upload>
-            <!-- 进度条 -->
-            <a-progress v-if="uploadProgress > 0" :percent="uploadProgress" class="csv-upload-progress" />
+              @change="handleCsvFileChange"
+            />
           </div>
-
-          <!-- CSV 文件列表 -->
+          <!-- 进度条 -->
+          <a-progress v-if="uploadProgress > 0" :percent="uploadProgress" class="csv-upload-progress" />
           <a-table
             :data="csvFileList"
             :columns="csvFileColumns"
             :pagination="false"
+            :bordered="false"
             class="csv-file-table"
           >
             <template #columns>
@@ -288,26 +284,16 @@ export default indexTs;
                   <span>{{ record.fieldCount || '-' }}</span>
                 </template>
               </a-table-column>
-              <a-table-column title="操作" :width="150">
+              <a-table-column title="操作" :width="100">
                 <template #cell="{ record }">
-                  <a-space>
-                    <a-upload
-                      :custom-request="(options) => handleCsvUpdate(record.id, options)"
-                      :show-progress="true"
-                      :limit="1"
-                      accept=".csv"
-                    >
-                      <a-button type="text" size="small">替换</a-button>
-                    </a-upload>
-                    <a-button
-                      type="text"
-                      size="small"
-                      status="danger"
-                      @click="handleDeleteCsvFile(record)"
-                    >
-                      删除
-                    </a-button>
-                  </a-space>
+                  <a-button
+                    type="text"
+                    size="small"
+                    status="danger"
+                    @click="handleDeleteCsvFile(record)"
+                  >
+                    删除
+                  </a-button>
                 </template>
               </a-table-column>
             </template>

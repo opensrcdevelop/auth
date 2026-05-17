@@ -7,7 +7,6 @@ import {
     uploadCsvFile,
     getCsvFileList,
     deleteCsvFile,
-    updateCsvFile,
 } from "@/api/chatbi";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
@@ -77,6 +76,7 @@ const csvFileColumns = [
   { title: '字段数', dataIndex: 'fieldCount' },
 ];
 const uploadProgress = ref(0);
+const csvFileInputRef = ref();
 
 /** 数据源信息表单 */
 const dataSourceInfoFormRef = ref();
@@ -429,51 +429,35 @@ const handleGetCsvFileList = (id: string = dataSourceId.value) => {
 };
 
 /**
- * 上传 CSV 文件
+ * 触发 CSV 文件选择
  */
-const handleCsvUpload = (options: any) => {
-  const { file, onProgress, onSuccess, onError } = options;
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('dataSourceId', dataSourceId.value);
-
-  uploadCsvFile(dataSourceId.value, file as File, {
-    onUploadProgress: (progressEvent: any) => {
-      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-      uploadProgress.value = percent;
-      if (onProgress) onProgress(percent);
-    }
-  }).then(() => {
-    uploadProgress.value = 0;
-    if (onSuccess) onSuccess();
-    Notification.success('上传成功');
-    handleGetCsvFileList();
-  }).catch((err: any) => {
-    uploadProgress.value = 0;
-    if (onError) onError(err);
-    handleApiError(err, '上传文件');
-  });
+const handleCsvFileInputClick = () => {
+  csvFileInputRef.value?.click();
 };
 
 /**
- * 更新 CSV 文件（替换）
+ * 处理 CSV 文件选择
  */
-const handleCsvUpdate = (tableId: string, options: any) => {
-  const { file, onProgress, onSuccess, onError } = options;
-
-  updateCsvFile(tableId, file as File, {
-    onUploadProgress: (progressEvent: any) => {
-      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-      if (onProgress) onProgress(percent);
+const handleCsvFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    try {
+      uploadProgress.value = 10;
+      await uploadCsvFile(dataSourceId.value, file, {
+        onUploadProgress: (progressEvent: any) => {
+          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        }
+      });
+      uploadProgress.value = 0;
+      Notification.success('上传成功');
+      handleGetCsvFileList();
+    } catch (err) {
+      uploadProgress.value = 0;
+      handleApiError(err, '上传文件');
     }
-  }).then(() => {
-    if (onSuccess) onSuccess();
-    Notification.success('替换成功');
-    handleGetCsvFileList();
-  }).catch((err: any) => {
-    if (onError) onError(err);
-    handleApiError(err, '替换文件');
-  });
+  }
+  target.value = '';
 };
 
 /**
@@ -486,7 +470,7 @@ const handleDeleteCsvFile = (record: any) => {
     okText: '确认删除',
     okButtonProps: { status: 'danger' },
     onOk: () => {
-      deleteCsvFile(record.id)
+      deleteCsvFile(record.tableId)
         .then(() => {
           Notification.success('删除成功');
           handleGetCsvFileList();
@@ -561,9 +545,10 @@ export default defineComponent({
       csvFileList,
       csvFileColumns,
       uploadProgress,
+      csvFileInputRef,
       handleGetCsvFileList,
-      handleCsvUpload,
-      handleCsvUpdate,
+      handleCsvFileInputClick,
+      handleCsvFileChange,
       handleDeleteCsvFile
     };
   },

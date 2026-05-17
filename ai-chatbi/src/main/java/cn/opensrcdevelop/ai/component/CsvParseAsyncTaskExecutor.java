@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -44,7 +45,7 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("java:S3776")
     public void execute(String taskId, String taskParams, TaskExecutionContext context) {
         try {
             context.updateProgress(10);
@@ -67,44 +68,79 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
             context.updateProgress(30);
 
             // 从 S3 下载 CSV 文件
-            String s3Path = "csv-datasource/" + fileName;
-            byte[] csvData = csvStorageService.read(s3Path);
+            byte[] csvData = csvStorageService.read(fileName);
             log.info("CSV 文件下载成功: {} bytes", csvData.length);
 
             context.updateProgress(60);
 
             // 解析 CSV 表结构
-            List<TableField> fields = csvParseService.parseCsvSchema(dataSourceId, tableName, s3Path);
+            List<TableField> newFields = csvParseService.parseCsvSchema(dataSourceId, tableName, fileName);
 
-            // 保存到数据库
-            // 1. 如果是更新操作，先删除旧记录
-            if (tableId != null && !tableId.isBlank()) {
-                tableFieldService.remove(Wrappers.<TableField>lambdaQuery()
-                        .eq(TableField::getTableId, tableId));
-                Table oldTable = tableService.getById(tableId);
-                if (oldTable != null) {
-                    tableService.removeById(tableId);
+            // 保存新增的字段记录（默认空列表，支持同步策略下的早期返回）
+            List<TableField> fieldsToAdd;
+
+            // 同步策略：如果是更新操作，删除 CSV 中不再存在的字段
+            if (StringUtils.isNotBlank(tableId)) {
+                Table existingTable = tableService.getById(tableId);
+                if (existingTable != null) {
+                    // 1.1 获取现有字段列表
+                    List<TableField> existingFields = tableFieldService.list(
+                            Wrappers.<TableField>lambdaQuery()
+                                    .eq(TableField::getTableId, tableId));
+
+                    // 1.2 删除 CSV 中不再存在的字段
+                    List<String> deleteFieldIds = existingFields.stream()
+                            .filter(ef -> newFields.stream()
+                                    .noneMatch(f -> f.getFieldName().equals(ef.getFieldName())))
+                            .map(TableField::getFieldId)
+                            .toList();
+                    if (!deleteFieldIds.isEmpty()) {
+                        tableFieldService.removeByIds(deleteFieldIds);
+                    }
+
+                    // 1.3 跳过已存在的字段（同名不处理）
+                    final List<String> finalExistFieldNames = existingFields.stream()
+                            .map(TableField::getFieldName)
+                            .toList();
+                    fieldsToAdd = newFields.stream()
+                            .filter(f -> !finalExistFieldNames.contains(f.getFieldName()))
+                            .toList();
+
+                    // 1.4 如果没有新字段需要添加，直接返回
+                    if (fieldsToAdd.isEmpty()) {
+                        context.updateProgress(100);
+                        context.setResult("CSV 文件解析完成（无变更）: tableId=" + tableId);
+                        return;
+                    }
+                } else {
+                    // 表不存在，说明可能被删除了，使用新字段列表
+                    fieldsToAdd = newFields;
                 }
+            } else {
+                // 新上传文件（无 tableId），所有字段都是新增的
+                fieldsToAdd = newFields;
             }
 
-            // 2. 创建新表记录
-            Table table = new Table();
-            table.setTableId(tableId != null ? tableId : CommonUtil.getUUIDV7String());
-            table.setDataSourceId(dataSourceId);
-            table.setTableName(tableName);
-            table.setToUse(true);
-            tableService.save(table);
+            // 2. 获取或创建表记录
+            Table table = StringUtils.isNotBlank(tableId) ? tableService.getById(tableId) : null;
+            if (table == null) {
+                table = new Table();
+                table.setTableId(StringUtils.isNotBlank(tableId) ? tableId : CommonUtil.getUUIDV7String());
+                table.setDataSourceId(dataSourceId);
+                table.setTableName(tableName);
+                table.setToUse(true);
+                tableService.save(table);
+            }
 
-            // 3. 保存字段记录
-            for (TableField field : fields) {
+            // 3. 保存新增的字段记录
+            for (TableField field : fieldsToAdd) {
                 field.setTableId(table.getTableId());
+                field.setToUse(true);
             }
-            tableFieldService.saveBatch(fields);
+            tableFieldService.saveBatch(fieldsToAdd);
 
             context.updateProgress(100);
-
-            log.info("CSV 文件解析完成: tableId={}, fieldCount={}", table.getTableId(), fields.size());
-
+            context.setResult("CSV 文件解析完成: tableId=" + table.getTableId());
         } catch (Exception e) {
             log.error("CSV 文件解析任务执行失败: taskId={}", taskId, e);
             throw new ServerException("CSV 文件解析任务执行失败: " + e.getMessage(), e);

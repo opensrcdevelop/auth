@@ -8,7 +8,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
@@ -88,19 +90,18 @@ public class DuckDBDataSourceProvider {
                 Wrappers.<Table>lambdaQuery().eq(Table::getDataSourceId, dataSourceId));
 
         try {
-            // 3. 创建 DuckDB 内存连接
-            Connection conn = DriverManager.getConnection("jdbc:duckdb:");
+            // 3. 创建 DuckDB 内存连接（明确读写模式）
+            Properties properties = new Properties();
+            properties.setProperty("access_mode", "READ_WRITE");
+            Connection conn = DriverManager.getConnection("jdbc:duckdb:", properties);
 
-            // 4. 创建 S3 Secret（使用 KEY_ID/SECRET 方式）
-            createS3Secret(conn);
+            // 4. 配置 S3 连接参数（使用旧版 SET 方式）
+            configureS3(conn);
 
-            // 5. 设置 S3 端点配置（MinIO 等兼容存储）
-            configureS3Endpoint(conn);
-
-            // 6. ATTACH 所有 CSV 文件
+            // 5. ATTACH 所有 CSV 文件
             attachCsvTables(conn, dataSourceId, tables);
 
-            // 7. 缓存连接
+            // 6. 缓存连接
             CONNECTION_CACHE.put(dataSourceId, conn);
 
             return conn;
@@ -111,58 +112,44 @@ public class DuckDBDataSourceProvider {
     }
 
     /**
-     * 创建 S3 Secret
+     * 配置 S3 连接参数
      * <p>
-     * 使用 CREATE SECRET 语法配置 S3 认证，这是 DuckDB 官方推荐的方式
+     * 使用旧版 SET 方式配置 S3 认证
      */
-    private void createS3Secret(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            String sql = String.format("""
-                    CREATE SECRET IF NOT EXISTS csv_datasource_secret (
-                        TYPE s3,
-                        KEY_ID '%s',
-                        SECRET '%s',
-                        REGION '%s'
-                    )
-                    """,
-                    escapeString(s3AccessKey),
-                    escapeString(s3SecretKey),
-                    escapeString(s3Region));
+    private void configureS3(Connection conn) throws SQLException {
+        setS3Config(conn, "s3_region", s3Region);
+        if (s3Endpoint != null && !s3Endpoint.isBlank()) {
+            setS3Config(conn, "s3_endpoint", stripProtocol(s3Endpoint));
+        }
+        setS3Config(conn, "s3_use_ssl", String.valueOf(s3UseSsl));
+        setS3Config(conn, "s3_url_style", s3UrlStyle);
+        setS3Config(conn, "s3_access_key_id", s3AccessKey);
+        setS3Config(conn, "s3_secret_access_key", s3SecretKey);
+    }
 
-            stmt.execute(sql);
-            log.debug("S3 Secret 创建成功");
+    /**
+     * 去除 URL 协议前缀
+     */
+    private String stripProtocol(String url) {
+        if (url == null) {
+            return "";
+        }
+        return url.replaceFirst("^https?://", "");
+    }
+
+    private void setS3Config(Connection conn, String key, String value) throws SQLException {
+        String sql = "SET " + key + " = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, value);
+            ps.execute();
         }
     }
 
     /**
-     * 配置 S3 端点（用于 MinIO 等非 AWS S3 兼容存储）
-     */
-    private void configureS3Endpoint(Connection conn) throws SQLException {
-        // 仅在配置了自定义端点时设置
-        if (s3Endpoint == null || s3Endpoint.isBlank()) {
-            return;
-        }
-
-        try (Statement stmt = conn.createStatement()) {
-            // 设置自定义端点（MinIO 地址）
-            stmt.execute("SET s3_endpoint = '" + escapeString(s3Endpoint) + "'");
-            log.debug("S3 endpoint 设置为: {}", s3Endpoint);
-
-            // 设置 SSL 模式（MinIO 默认不使用 TLS）
-            stmt.execute("SET s3_use_ssl = " + s3UseSsl);
-            log.debug("S3 use_ssl 设置为: {}", s3UseSsl);
-
-            // 设置 URL 风格（MinIO 必须使用 path）
-            stmt.execute("SET s3_url_style = '" + escapeString(s3UrlStyle) + "'");
-            log.debug("S3 url_style 设置为: {}", s3UrlStyle);
-        }
-    }
-
-    /**
-     * ATTACH CSV 表
+     * 注册 CSV 表
      * <p>
-     * 将 S3 上的 CSV 文件映射为 DuckDB 中的逻辑表名 路径格式:
-     * s3://{bucket}/csv-datasource/{dataSourceId}/{tableName}.csv
+     * 使用 CREATE TABLE ... FROM read_csv_auto() 将 S3 CSV 文件创建为可查询的表
+     * 路径格式: s3://{bucket}/{dataSourceId}/{tableName}.csv
      */
     private void attachCsvTables(Connection conn, String dataSourceId, List<Table> tables) throws SQLException {
         if (tables == null || tables.isEmpty()) {
@@ -172,20 +159,22 @@ public class DuckDBDataSourceProvider {
 
         try (Statement stmt = conn.createStatement()) {
             for (Table table : tables) {
-                // 路径格式: s3://{bucket}/csv-datasource/{dataSourceId}/{tableName}.csv
-                String s3Path = String.format("s3://%s/csv-datasource/%s/%s.csv",
+                // 路径格式: s3://{bucket}/{dataSourceId}/{tableName}.csv
+                // 与 CsvFileServiceImpl.uploadCsv 中的路径一致
+                String s3Path = String.format("s3://%s/%s/%s.csv",
                         s3Bucket,
                         dataSourceId,
                         table.getTableName());
 
-                // 使用双引号转义表名（防止特殊字符导致 SQL 错误）
-                String sql = "ATTACH '" + escapeString(s3Path) + "' AS \"" + escapeString(table.getTableName()) + "\"";
+                // 使用 CREATE TABLE ... FROM read_csv_auto() 语法创建表
+                String sql = "CREATE TABLE \"" + escapeString(table.getTableName()) + "\" AS " +
+                        "SELECT * FROM read_csv_auto('" + escapeString(s3Path) + "')";
 
                 try {
                     stmt.execute(sql);
-                    log.info("CSV 表 ATTACH 成功: {} -> {}", table.getTableName(), s3Path);
+                    log.info("CSV 表创建成功: {} -> {}", table.getTableName(), s3Path);
                 } catch (SQLException ex) {
-                    log.error("CSV 表 ATTACH 失败: {}", table.getTableName(), ex);
+                    log.error("CSV 表创建失败: {}", table.getTableName(), ex);
                     throw ex;
                 }
             }
