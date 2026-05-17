@@ -15,11 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Resource;
 import javax.sql.DataSource;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
@@ -30,13 +32,12 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DuckDBDataSourceProvider {
 
     private static final Map<String, Connection> CONNECTION_CACHE = new ConcurrentHashMap<>();
 
-    @Resource
-    @Lazy
-    private TableService tableService;
+    private final TableService tableService;
 
     @Value("${csv-ds.storage.s3.endpoint:}")
     private String s3Endpoint;
@@ -118,7 +119,7 @@ public class DuckDBDataSourceProvider {
      */
     private void configureS3(Connection conn) throws SQLException {
         setS3Config(conn, "s3_region", s3Region);
-        if (s3Endpoint != null && !s3Endpoint.isBlank()) {
+        if (StringUtils.isNotBlank(s3Endpoint)) {
             setS3Config(conn, "s3_endpoint", stripProtocol(s3Endpoint));
         }
         setS3Config(conn, "s3_use_ssl", String.valueOf(s3UseSsl));
@@ -137,7 +138,14 @@ public class DuckDBDataSourceProvider {
         return url.replaceFirst("^https?://", "");
     }
 
+    /**
+     * 设置 S3 配置参数
+     */
     private void setS3Config(Connection conn, String key, String value) throws SQLException {
+        if (StringUtils.isBlank(value)) {
+            return;
+        }
+
         String sql = "SET " + key + " = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, value);
@@ -152,7 +160,7 @@ public class DuckDBDataSourceProvider {
      * s3://{bucket}/{dataSourceId}/{tableName}.csv
      */
     private void attachCsvTables(Connection conn, String dataSourceId, List<Table> tables) throws SQLException {
-        if (tables == null || tables.isEmpty()) {
+        if (CollectionUtils.isEmpty(tables)) {
             log.warn("数据源 {} 没有关联的表", dataSourceId);
             return;
         }

@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -33,7 +32,6 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "csv-ds.storage.type", havingValue = "s3")
 public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageService {
 
     @Value("${csv-ds.storage.s3.endpoint:}")

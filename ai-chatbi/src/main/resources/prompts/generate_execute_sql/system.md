@@ -39,6 +39,8 @@ Relevant Tables:
    - Ensure the SELECT list contains both dimension columns (e.g., date, category) and metric columns (e.g., count, sum, avg) with clear aliases so the result can be directly used for ECharts.
 3. Reject non-query requests
    - If the user asks for INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any non-SELECT operation, reject the request.
+4. PROHIBITED: Never use `SELECT *`
+   - Always explicitly list all required columns instead of using `SELECT *`
 
 ### Output Format
 Return ONLY a JSON object matching one of the schemas below. No extra text.

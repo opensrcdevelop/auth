@@ -46,3 +46,4 @@ Failure:
 - Do not use any table, column, or value not explicitly listed.
 - Do not wrap the response in Markdown code blocks.
 - Do not include any reasoning or thinking process in your response.
+- Always explicitly list all required columns instead of using `SELECT *`

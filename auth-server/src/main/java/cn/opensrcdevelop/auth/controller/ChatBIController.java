@@ -407,6 +407,7 @@ public class ChatBIController {
 
     @Operation(summary = "上传 CSV 文件", description = "上传 CSV 文件到 S3 并异步解析表结构")
     @PostMapping("/csv/upload")
+    @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
     public String uploadCsv(@RequestParam("file") MultipartFile file,
             @RequestParam("dataSourceId") @NotBlank String dataSourceId) {
         return csvFileService.uploadCsv(file, dataSourceId);
@@ -414,12 +415,14 @@ public class ChatBIController {
 
     @Operation(summary = "获取 CSV 文件列表", description = "获取数据源下的 CSV 文件列表")
     @GetMapping("/csv/list")
+    @Authorize({"allChatBIDataSourcePermissions", "getCsvList"})
     public List<CsvFileResponseDto> listCsvFiles(@RequestParam @NotBlank String dataSourceId) {
         return csvFileService.listCsvFiles(dataSourceId);
     }
 
     @Operation(summary = "删除 CSV 文件", description = "删除 CSV 文件及关联的表结构")
     @DeleteMapping("/csv/{tableId}")
+    @Authorize({"allChatBIDataSourcePermissions", "deleteCsv"})
     public void deleteCsv(@PathVariable @NotBlank String tableId) {
         csvFileService.deleteCsv(tableId);
     }
