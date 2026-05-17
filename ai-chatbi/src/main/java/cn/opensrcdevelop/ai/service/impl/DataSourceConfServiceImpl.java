@@ -260,7 +260,8 @@ public class DataSourceConfServiceImpl extends ServiceImpl<DataSourceConfMapper,
         // 2. 根据类型校验必填字段
         Class<?>[] groups;
         if (DataSourceType.DUCKDB.name().equals(requestDto.getType())) {
-            groups = new Class<?>[]{ValidationGroups.Operation.INSERT.class, DataSourceConfRequestDto.NoneNormalDB.class};
+            groups = new Class<?>[]{ValidationGroups.Operation.INSERT.class,
+                    DataSourceConfRequestDto.NoneNormalDB.class};
         } else {
             groups = new Class<?>[]{ValidationGroups.Operation.INSERT.class, DataSourceConfRequestDto.NormalDB.class};
         }

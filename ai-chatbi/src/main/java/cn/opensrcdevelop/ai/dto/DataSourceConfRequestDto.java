@@ -61,7 +61,9 @@ public class DataSourceConfRequestDto {
     @Schema(description = "jdbc参数")
     private String jdbcParams;
 
-    public interface NormalDB {}
+    public interface NormalDB {
+    }
 
-    public interface NoneNormalDB {}
+    public interface NoneNormalDB {
+    }
 }
