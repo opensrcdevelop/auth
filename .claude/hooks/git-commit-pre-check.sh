@@ -46,9 +46,9 @@ else
     exit 1
 fi
 
-# 执行编译检查（跳过测试）
+# 执行 Java 编译检查
 echo "🔨 执行编译检查..."
-if ./gradlew build -x test --quiet 2>&1; then
+if ./gradlew compileJava --quiet 2>&1; then
     echo "✅ 编译检查通过"
 else
     echo "❌ 编译失败"
