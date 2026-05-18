@@ -611,7 +611,7 @@ const handleDeleteCsvFile = (record: any) => {
     okText: '确认删除',
     okButtonProps: { status: 'danger' },
     onOk: () => {
-      deleteCsvFile(record.tableId)
+      deleteCsvFile(dataSourceId.value, record.fileName)
         .then(() => {
           Notification.success('删除成功');
           handleGetCsvFileList();
