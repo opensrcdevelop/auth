@@ -229,13 +229,15 @@ public class DataSourceMetaCollector {
     private void collectDuckDbCsvTables(String dataSourceId, DataSourceConf dataSourceConf) {
         // 1. 获取 S3 中该数据源的所有 CSV 文件
         String prefix = dataSourceId + CommonConstants.SLASH;
-        List<String> csvFiles = csvStorageService.list(prefix);
+        List<String> csvFiles = CommonUtil.stream(csvStorageService.listFiles(prefix))
+                .map(CsvDatasourceStorageService.S3FileInfo::key)
+                .toList();
 
         // 2. 获取已有的 CSV 表信息
         List<Table> existTables = tableService.list(Wrappers.<Table>lambdaQuery()
                 .eq(Table::getDataSourceId, dataSourceId));
 
-        // 3. 提取 CSV 文件名（去掉路径和 .csv 后缀）
+        // 3. 过滤并提取 CSV 文件名
         List<String> csvTableNames = csvFiles.stream()
                 .map(path -> {
                     String fileName = path.substring(path.lastIndexOf('/') + 1);

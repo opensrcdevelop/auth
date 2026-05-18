@@ -18,6 +18,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -97,6 +98,14 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
             presignerBuilder.region(Region.of(region));
         }
 
+        // 配置 Presigner 使用 path-style（仅当配置为 path 时）
+        if (Strings.CI.equals("path", s3UrlStyle)) {
+            S3Configuration serviceConfig = S3Configuration.builder()
+                    .pathStyleAccessEnabled(true)
+                    .build();
+            presignerBuilder.serviceConfiguration(serviceConfig);
+        }
+
         s3Presigner = presignerBuilder.build();
 
         log.info("CsvDatasourceStorageService 初始化完成: endpoint={}, bucket={}", endpoint, bucket);
@@ -140,7 +149,7 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
     }
 
     @Override
-    public List<String> list(String prefix) {
+    public List<S3FileInfo> listFiles(String prefix) {
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(bucket)
@@ -150,11 +159,12 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
             return s3Client.listObjectsV2Paginator(listRequest)
                     .contents()
                     .stream()
-                    .map(S3Object::key)
+                    .filter(obj -> obj.key().endsWith(".csv"))
+                    .map(obj -> new S3FileInfo(obj.key(), obj.size(), obj.lastModified()))
                     .toList();
         } catch (Exception e) {
-            log.error("CSV 文件列表获取失败: prefix={}", prefix, e);
-            throw new ServerException("CSV 文件列表获取失败", e);
+            log.error("CSV 文件信息列表获取失败: prefix={}", prefix, e);
+            throw new ServerException("CSV 文件信息列表获取失败", e);
         }
     }
 
@@ -204,7 +214,6 @@ public class CsvDatasourceStorageServiceImpl implements CsvDatasourceStorageServ
                     .build();
 
             return s3Presigner.presignUploadPart(presignRequest).url().toString();
-
         } catch (Exception e) {
             log.error("生成分片上传预签名URL失败: key={}, uploadId={}, partNumber={}", key, uploadId, partNumber, e);
             throw new ServerException("生成分片上传预签名URL失败", e);

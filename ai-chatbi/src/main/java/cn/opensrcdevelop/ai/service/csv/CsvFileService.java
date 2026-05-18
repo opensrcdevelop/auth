@@ -52,10 +52,22 @@ public interface CsvFileService {
     List<CsvFileResponseDto> listCsvFiles(String dataSourceId);
 
     /**
+     * 取消分片上传
+     *
+     * @param key
+     *            文件键
+     * @param uploadId
+     *            上传ID
+     */
+    void abortMultipartUpload(String key, String uploadId);
+
+    /**
      * 删除 CSV 文件及关联的表结构
      *
-     * @param tableId
-     *            表ID
+     * @param dataSourceId
+     *            数据源ID
+     * @param fileName
+     *            文件名（不含路径和 .csv 后缀）
      */
-    void deleteCsv(String tableId);
+    void deleteCsv(String dataSourceId, String fileName);
 }

@@ -18,12 +18,15 @@ import cn.opensrcdevelop.auth.biz.util.AuthUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.BizException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * CSV 文件服务实现
@@ -110,27 +113,49 @@ public class CsvFileServiceImpl implements CsvFileService {
 
     @Override
     public List<CsvFileResponseDto> listCsvFiles(String dataSourceId) {
-        return tableService.listCsvFiles(dataSourceId);
+        // 直接从 S3 获取 CSV 文件列表（包含文件大小）
+        String prefix = dataSourceId + CommonConstants.SLASH;
+        List<CsvDatasourceStorageService.S3FileInfo> s3Files = csvStorageService.listFiles(prefix);
+
+        return s3Files.stream().map(s3File -> {
+            CsvFileResponseDto dto = new CsvFileResponseDto();
+            // 文件名：去掉 .csv 后缀
+            String fileName = s3File.key().substring(s3File.key().lastIndexOf('/') + 1);
+            String tableName = fileName.endsWith(".csv") ? fileName.substring(0, fileName.length() - 4) : fileName;
+            dto.setFileName(tableName);
+            // 文件大小
+            dto.setFileSize(s3File.size());
+            // 最后编辑时间
+            if (s3File.lastModified() != null) {
+                dto.setLastModifiedTime(LocalDateTime.ofInstant(s3File.lastModified(),
+                        ZoneId.systemDefault()));
+            }
+            return dto;
+        }).toList();
     }
 
     @Override
-    public void deleteCsv(String tableId) {
-        // 1. 获取表信息
-        Table table = tableService.getById(tableId);
-        if (table == null) {
-            return;
-        }
+    public void abortMultipartUpload(String key, String uploadId) {
+        csvStorageService.abortMultipartUpload(key, uploadId);
+    }
 
-        // 2. 删除 S3 文件
-        String s3Path = table.getDataSourceId() + CommonConstants.SLASH
-                + table.getTableName().replaceAll("\\.csv$", "") + ".csv";
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteCsv(String dataSourceId, String fileName) {
+        // 1. 删除 S3 文件
+        String s3Path = dataSourceId + CommonConstants.SLASH + fileName + ".csv";
         csvStorageService.delete(s3Path);
 
-        // 3. 删除 t_table_field 记录
-        tableFieldService.remove(Wrappers.<TableField>lambdaQuery()
-                .eq(TableField::getTableId, tableId));
-
-        // 4. 删除 t_table 记录
-        tableService.removeById(tableId);
+        // 2. 删除关联的表记录
+        Table table = tableService.getOne(Wrappers.<Table>lambdaQuery()
+                .eq(Table::getDataSourceId, dataSourceId)
+                .eq(Table::getTableName, fileName));
+        if (table != null) {
+            // 删除 t_table_field 记录
+            tableFieldService.remove(Wrappers.<TableField>lambdaQuery()
+                    .eq(TableField::getTableId, table.getTableId()));
+            // 删除 t_table 记录
+            tableService.removeById(table.getTableId());
+        }
     }
 }

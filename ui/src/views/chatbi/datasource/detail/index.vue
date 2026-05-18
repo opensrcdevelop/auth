@@ -19,7 +19,9 @@ export default indexTs;
             <copy-text :text="dataSourceId" textColor="#86909c" />
           </div>
         </div>
-        <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn()">测试连接</a-button>
+        <a-button v-if="!isDuckDB" type="primary" @click="hanleTestConn()"
+          >测试连接</a-button
+        >
       </div>
     </page-header>
     <a-tabs :active-key="activeTab" @change="handleTabChange">
@@ -243,11 +245,39 @@ export default indexTs;
           </a-table>
         </div>
       </a-tab-pane>
-    <a-tab-pane v-if="isDuckDB" key="csv_files" title="CSV 文件">
+      <a-tab-pane v-if="isDuckDB" key="csv_files" title="CSV 文件">
         <div class="tab-container csv-files-container">
           <div class="csv-upload-header">
             <span></span>
-            <a-button type="primary" :disabled="csvUploadProgress > 0 && csvUploadProgress < 1" @click="handleCsvFileInputClick">
+            <!-- 上传时显示暂停/继续/取消按钮 -->
+            <div
+              v-if="csvUploadProgress > 0 && csvUploadProgress < 1"
+              class="csv-upload-controls"
+            >
+              <a-space>
+                <a-button
+                  v-if="csvUploadStatus === 'uploading'"
+                  @click="pauseUpload"
+                >
+                  <template #icon><icon-pause /></template>
+                  暂停
+                </a-button>
+                <a-button
+                  v-if="csvUploadStatus === 'paused'"
+                  type="primary"
+                  @click="resumeUpload"
+                >
+                  <template #icon><icon-play-arrow /></template>
+                  继续
+                </a-button>
+                <a-button status="danger" @click="cancelUpload">
+                  <template #icon><icon-close /></template>
+                  取消
+                </a-button>
+              </a-space>
+            </div>
+            <!-- 非上传状态显示上传按钮 -->
+            <a-button v-else type="primary" @click="handleCsvFileInputClick">
               <template #icon><icon-upload /></template>
               上传文件
             </a-button>
@@ -263,14 +293,13 @@ export default indexTs;
           <a-progress
             v-if="csvUploadProgress > 0 && csvUploadProgress < 1"
             :percent="csvUploadProgress"
-            :status="csvUploadStatus"
+            :status="csvUploadStatus === 'paused' ? 'warning' : 'normal'"
             :show-text="true"
             class="csv-upload-progress"
           />
           <!-- 文件列表 -->
           <a-table
             :data="csvFileList"
-            :columns="csvFileColumns"
             :pagination="false"
             :bordered="false"
             class="csv-file-table"
@@ -281,14 +310,18 @@ export default indexTs;
                   <span>{{ record.fileName }}</span>
                 </template>
               </a-table-column>
-              <a-table-column title="上传时间" data-index="uploadTime">
+              <a-table-column title="文件大小" data-index="fileSize">
                 <template #cell="{ record }">
-                  <span>{{ record.uploadTime || '-' }}</span>
+                  <span>{{ formatFileSize(record.fileSize) }}</span>
                 </template>
               </a-table-column>
-              <a-table-column title="字段数" data-index="fieldCount">
+              <a-table-column
+                title="最后编辑时间"
+                data-index="lastModifiedTime"
+                :width="200"
+              >
                 <template #cell="{ record }">
-                  <span>{{ record.fieldCount || '-' }}</span>
+                  <span>{{ record.lastModifiedTime || "-" }}</span>
                 </template>
               </a-table-column>
               <a-table-column title="操作" :width="100">

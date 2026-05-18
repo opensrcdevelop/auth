@@ -492,6 +492,19 @@ export function completeMultipartUpload(
 }
 
 /**
+ * 取消分片上传
+ *
+ * @param key 文件键
+ * @param uploadId 上传ID
+ */
+export function cancelMultipartUpload(key: string, uploadId: string) {
+  return noneLoadingApiRequest.post({
+    url: '/chatbi/csv/multipart/abort',
+    params: { key, uploadId },
+  });
+}
+
+/**
  * 获取 CSV 文件列表
  *
  * @param dataSourceId 数据源ID
@@ -507,11 +520,13 @@ export function getCsvFileList(dataSourceId: string) {
 /**
  * 删除 CSV 文件
  *
- * @param tableId 表ID（也是 CSV 文件记录ID）
+ * @param dataSourceId 数据源ID
+ * @param fileName 文件名（不含 .csv 后缀）
  * @returns 响应结果
  */
-export function deleteCsvFile(tableId: string) {
+export function deleteCsvFile(dataSourceId: string, fileName: string) {
   return apiRequest.delete({
-    url: `/chatbi/csv/${tableId}`,
+    url: '/chatbi/csv',
+    params: { dataSourceId, fileName },
   });
 }

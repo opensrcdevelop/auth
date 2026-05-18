@@ -9,8 +9,8 @@ import {
     completeMultipartUpload,
     getCsvFileList,
     deleteCsvFile,
+    cancelMultipartUpload,
 } from "@/api/chatbi";
-import {getTask} from "@/api/asyncTask";
 import {taskEmitter} from "@/hooks/taskEmitter";
 import router from "@/router";
 import {getQueryString, handleApiError, handleApiSuccess} from "@/util/tool";
@@ -74,16 +74,22 @@ const isDuckDB = computed(() => dataSourceInfoForm.type === "DUCKDB");
 
 /** CSV 文件列表 */
 const csvFileList = reactive<any[]>([]);
-const csvFileColumns = [
-  { title: '文件名', dataIndex: 'fileName' },
-  { title: '上传时间', dataIndex: 'uploadTime' },
-  { title: '字段数', dataIndex: 'fieldCount' },
-];
 const csvFileInputRef = ref();
 
 /** CSV 上传进度 */
 const csvUploadProgress = ref(0);
-const csvUploadStatus = ref<any>('normal');
+const csvUploadStatus = ref<any>('uploading');
+
+/** 上传控制状态 */
+const uploadControl = reactive({
+  isPaused: false,
+  isCancelled: false,
+  currentPartIndex: 0,
+  key: '',
+  uploadId: '',
+  file: null as File | null,
+  uploadedParts: [] as Array<{ partNumber: number; etag: string }>,
+});
 
 /** 数据源信息表单 */
 const dataSourceInfoFormRef = ref();
@@ -443,16 +449,66 @@ const handleCsvFileInputClick = () => {
 };
 
 /**
- * 处理 CSV 文件选择（分片上传）
+ * 暂停上传
+ */
+const pauseUpload = () => {
+  uploadControl.isPaused = true;
+  csvUploadStatus.value = 'paused';
+};
+
+/**
+ * 继续上传
+ */
+const resumeUpload = () => {
+  uploadControl.isPaused = false;
+  csvUploadStatus.value = 'uploading';
+};
+
+/**
+ * 取消上传
+ */
+const cancelUpload = async () => {
+  uploadControl.isCancelled = true;
+  // 尝试调用 S3 abort
+  if (uploadControl.key && uploadControl.uploadId) {
+    try {
+      await cancelMultipartUpload(uploadControl.key, uploadControl.uploadId);
+    } catch (e) {
+      console.error('取消上传失败', e);
+    }
+  }
+  // 重置 UI 状态
+  csvUploadProgress.value = 0;
+  csvUploadStatus.value = 'uploading';
+};
+
+/**
+ * 重置上传状态
+ */
+const resetUploadState = () => {
+  uploadControl.isPaused = false;
+  uploadControl.isCancelled = false;
+  uploadControl.currentPartIndex = 0;
+  uploadControl.key = '';
+  uploadControl.uploadId = '';
+  uploadControl.file = null;
+  uploadControl.uploadedParts = [];
+  csvUploadProgress.value = 0;
+  csvUploadStatus.value = 'uploading';
+};
+
+/**
+ * 处理 CSV 文件选择（分片上传，支持暂停/继续/取消）
  */
 const handleCsvFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;
 
-  // 重置进度
-  csvUploadProgress.value = 0;
-  csvUploadStatus.value = 'normal';
+  // 初始化上传控制状态
+  resetUploadState();
+  uploadControl.file = file;
+  csvUploadStatus.value = 'uploading';
 
   try {
     // 1. 初始化分片上传
@@ -463,20 +519,39 @@ const handleCsvFileChange = async (event: Event) => {
       file.size
     );
     const { key, uploadId, chunkSize } = initResponse.data as any;
+    uploadControl.key = key;
+    uploadControl.uploadId = uploadId;
 
     // 2. 计算分片数量
     const chunkSizeNum = typeof chunkSize === 'number' ? chunkSize : 5 * 1024 * 1024;
     const totalParts = Math.ceil(file.size / chunkSizeNum);
-    const uploadedParts: Array<{ partNumber: number; etag: string }> = [];
 
     // 3. 分片上传
-    for (let i = 1; i <= totalParts; i++) {
+    for (let i = uploadControl.currentPartIndex + 1; i <= totalParts; i++) {
+      // 检测暂停（每次分片开始前检测）
+      while (uploadControl.isPaused) {
+        // 在暂停循环中也要检测取消
+        if (uploadControl.isCancelled) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      // 检测取消
+      if (uploadControl.isCancelled) {
+        return;
+      }
+
       const start = (i - 1) * chunkSizeNum;
       const end = Math.min(i * chunkSizeNum, file.size);
       const chunk = file.slice(start, end);
 
       // 获取预签名URL
       const urlResponse = await getUploadPartUrl(key, uploadId, i);
+      // 检测取消（获取URL后上传前检测）
+      if (uploadControl.isCancelled) {
+        return;
+      }
+
       const presignedUrl = urlResponse.data as any;
 
       // 直接上传到S3
@@ -492,34 +567,38 @@ const handleCsvFileChange = async (event: Event) => {
         throw new Error(`分片 ${i} 上传失败: ${response.status}`);
       }
 
-      // 从响应头获取ETag（AWS S3格式：带引号，MinIO格式：不带引号）
+      // 从响应头获取ETag
       const etag = response.headers.get('ETag') || response.headers.get('etag') || '';
-      uploadedParts.push({ partNumber: i, etag: etag.replace(/"/g, '') });
+      uploadControl.uploadedParts.push({ partNumber: i, etag: etag.replace(/"/g, '') });
+      uploadControl.currentPartIndex = i;
 
-      // 更新进度（转为0-10000的整数，a-progress使用小数）
+      // 更新进度
       csvUploadProgress.value = Math.round((0.1 + (i / totalParts) * 0.8) * 100) / 100;
     }
 
-    // 4. 完成分片上传，获取任务ID
+    // 4. 完成分片上传
     csvUploadProgress.value = 0.95;
-    const taskId = await completeMultipartUpload(
+    await completeMultipartUpload(
       key,
       uploadId,
-      uploadedParts,
+      uploadControl.uploadedParts,
       dataSourceId.value,
       file.name
     );
 
-    // 5. 更新状态，由全局任务通知监听自动刷新列表
+    // 5. 更新状态
     csvUploadProgress.value = 1;
     csvUploadStatus.value = 'success';
     Notification.success('上传成功');
+    resetUploadState();
   } catch (err) {
     csvUploadStatus.value = 'error';
     handleApiError(err, '上传 CSV 文件');
+    resetUploadState();
+  } finally {
+    // 清理 input 值，确保相同文件可以再次上传
+    target.value = '';
   }
-
-  target.value = '';
 };
 
 /**
@@ -540,6 +619,21 @@ const handleDeleteCsvFile = (record: any) => {
         .catch((err: any) => handleApiError(err, '删除 CSV 文件'));
     }
   });
+};
+
+/**
+ * 格式化文件大小
+ */
+const formatFileSize = (bytes: number | undefined): string => {
+  if (bytes == null || bytes === 0) return '-';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  return `${size.toFixed(unitIndex > 0 ? 2 : 0)} ${units[unitIndex]}`;
 };
 
 
@@ -618,14 +712,17 @@ export default defineComponent({
       handleOpenTableFieldListDrawer,
       handleCloseTableFieldListDrawer,
       csvFileList,
-      csvFileColumns,
       csvFileInputRef,
       csvUploadProgress,
       csvUploadStatus,
       handleGetCsvFileList,
       handleCsvFileInputClick,
       handleCsvFileChange,
-      handleDeleteCsvFile
+      handleDeleteCsvFile,
+      formatFileSize,
+      pauseUpload,
+      resumeUpload,
+      cancelUpload,
     };
   },
 });

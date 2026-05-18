@@ -22,10 +22,10 @@ public class CsvFileResponseDto implements Serializable {
     /** 文件名 */
     private String fileName;
 
-    /** 上传时间 */
+    /** 最后编辑时间 */
     @JsonFormat(pattern = CommonConstants.LOCAL_DATETIME_FORMAT_YYYYMMDDHHMMSS)
-    private LocalDateTime uploadTime;
+    private LocalDateTime lastModifiedTime;
 
-    /** 字段数量 */
-    private Integer fieldCount;
+    /** 文件大小（字节） */
+    private Long fileSize;
 }

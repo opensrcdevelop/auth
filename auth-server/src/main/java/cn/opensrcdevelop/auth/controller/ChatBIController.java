@@ -430,6 +430,14 @@ public class ChatBIController {
         return csvFileService.completeMultipartUpload(request);
     }
 
+    @Operation(summary = "取消分片上传", description = "取消进行中的分片上传并清理已上传的分片")
+    @PostMapping("/csv/multipart/abort")
+    @Authorize({"allChatBIDataSourcePermissions", "uploadCsv"})
+    public void abortMultipartUpload(@RequestParam @NotBlank String key,
+            @RequestParam @NotBlank String uploadId) {
+        csvFileService.abortMultipartUpload(key, uploadId);
+    }
+
     @Operation(summary = "获取 CSV 文件列表", description = "获取数据源下的 CSV 文件列表")
     @GetMapping("/csv/list")
     @Authorize({"allChatBIDataSourcePermissions", "getCsvList"})
@@ -438,9 +446,10 @@ public class ChatBIController {
     }
 
     @Operation(summary = "删除 CSV 文件", description = "删除 CSV 文件及关联的表结构")
-    @DeleteMapping("/csv/{tableId}")
+    @DeleteMapping("/csv")
     @Authorize({"allChatBIDataSourcePermissions", "deleteCsv"})
-    public void deleteCsv(@PathVariable @NotBlank String tableId) {
-        csvFileService.deleteCsv(tableId);
+    public void deleteCsv(@RequestParam @NotBlank String dataSourceId,
+            @RequestParam @NotBlank String fileName) {
+        csvFileService.deleteCsv(dataSourceId, fileName);
     }
 }

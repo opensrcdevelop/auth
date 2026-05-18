@@ -1,6 +1,7 @@
 package cn.opensrcdevelop.ai.service.csv;
 
 import cn.opensrcdevelop.ai.service.csv.impl.CsvDatasourceStorageServiceImpl;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -10,6 +11,12 @@ import java.util.List;
  * </p>
  */
 public interface CsvDatasourceStorageService {
+
+    /**
+     * S3 文件信息
+     */
+    record S3FileInfo(String key, long size, Instant lastModified) {
+    }
 
     /**
      * 删除文件
@@ -29,13 +36,13 @@ public interface CsvDatasourceStorageService {
     String getUrl(String filePath);
 
     /**
-     * 列出指定前缀的所有文件路径
+     * 列出指定前缀的所有文件信息
      *
      * @param prefix
      *            文件前缀
-     * @return 文件路径列表
+     * @return 文件信息列表（含大小和最后修改时间）
      */
-    List<String> list(String prefix);
+    List<S3FileInfo> listFiles(String prefix);
 
     /**
      * 初始化分段上传
