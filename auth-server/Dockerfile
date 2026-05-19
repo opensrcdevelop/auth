@@ -19,6 +19,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+RUN python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
 COPY ./build/libs/auth-server-*.jar /app/app.jar
 COPY ./elastic-apm/elastic-apm-agent-*.jar /app/elastic-apm/elastic-apm-agent.jar
 

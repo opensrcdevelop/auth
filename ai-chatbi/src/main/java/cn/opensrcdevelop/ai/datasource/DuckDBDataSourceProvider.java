@@ -5,16 +5,17 @@ import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DuckDBDataSourceProvider {
 
-    private static final Map<String, Connection> CONNECTION_CACHE = new ConcurrentHashMap<>();
+    private static final String DUCK_DB_TEMP_FILE_PREFIX = "duckdb-csv-";
+    private static final String DUCK_DB_TEMP_FILE_SUFFIX = ".db";
 
     private final TableService tableService;
 
@@ -72,43 +74,62 @@ public class DuckDBDataSourceProvider {
     public Connection createConnection(DataSourceConf dataSourceConf) {
         String dataSourceId = dataSourceConf.getDataSourceId();
 
-        // 1. 检查缓存
-        if (CONNECTION_CACHE.containsKey(dataSourceId)) {
-            Connection cached = CONNECTION_CACHE.get(dataSourceId);
-            try {
-                if (!cached.isClosed()) {
-                    return cached;
-                }
-            } catch (SQLException ignored) {
-                // 连接已关闭，移除缓存
-                CONNECTION_CACHE.remove(dataSourceId);
-            }
-        }
-
-        // 2. 获取关联的表
+        // 1. 获取关联的表
         List<Table> tables = tableService.list(
                 Wrappers.<Table>lambdaQuery().eq(Table::getDataSourceId, dataSourceId));
 
         try {
-            // 3. 创建 DuckDB 内存连接（明确读写模式）
+            // 2. 创建 DuckDB 连接，使用临时文件模式
             Properties properties = new Properties();
             properties.setProperty("access_mode", "READ_WRITE");
-            Connection conn = DriverManager.getConnection("jdbc:duckdb:", properties);
+            String tempPath = getTempFilePath(dataSourceId);
+            Files.deleteIfExists(Path.of(tempPath));
+            String jdbcUrl = "jdbc:duckdb:" + tempPath;
+            Connection conn = DriverManager.getConnection(jdbcUrl, properties);
 
-            // 4. 配置 S3 连接参数（使用旧版 SET 方式）
+            // 3. 配置 S3 连接参数（使用旧版 SET 方式）
             configureS3(conn);
 
-            // 5. ATTACH 所有 CSV 文件
+            // 4. ATTACH 所有 CSV 文件
             attachCsvTables(conn, dataSourceId, tables);
 
-            // 6. 缓存连接
-            CONNECTION_CACHE.put(dataSourceId, conn);
-
             return conn;
-        } catch (SQLException ex) {
+        } catch (Exception ex) {
             log.error("创建 DuckDB 连接失败，数据源ID：{}", dataSourceId, ex);
             throw new ServerException("创建 DuckDB 连接失败", ex);
         }
+    }
+
+    /**
+     * 清理 DuckDB 临时文件
+     *
+     * @param dataSourceId
+     *            数据源ID
+     */
+    public void cleanupTempFile(String dataSourceId) {
+        try {
+            String tempFilePath = getTempFilePath(dataSourceId);
+            Files.deleteIfExists(Path.of(tempFilePath));
+            log.debug("已清理 DuckDB 临时文件: {}", tempFilePath);
+        } catch (IOException ex) {
+            log.error("DuckDB 临时文件删除失败", ex);
+        }
+    }
+
+    /**
+     * 获取 DuckDB DataSource
+     * <p>
+     * 创建连接并包装为 DataSource 接口供 JdbcTemplate 使用
+     *
+     * @param dataSourceId
+     *            数据源ID
+     * @return DataSource 接口（内部包装了 DuckDB Connection）
+     */
+    public DataSource getDataSource(String dataSourceId) {
+        DataSourceConf dataSourceConf = new DataSourceConf();
+        dataSourceConf.setDataSourceId(dataSourceId);
+        Connection conn = createConnection(dataSourceConf);
+        return new DuckDBConnectionDataSource(conn, dataSourceId);
     }
 
     /**
@@ -173,9 +194,9 @@ public class DuckDBDataSourceProvider {
                         dataSourceId,
                         table.getTableName());
 
-                // 使用 CREATE TABLE ... FROM read_csv_auto() 语法创建表
-                // 添加 ignore_errors = true 忽略有问题的行（如类型转换错误）
-                String sql = "CREATE TABLE \"" + escapeString(table.getTableName()) + "\" AS " +
+                // 使用 CREATE OR REPLACE TABLE ... FROM read_csv_auto() 语法
+                // 如果表已存在则替换，避免因临时文件重用导致的表冲突
+                String sql = "CREATE OR REPLACE TABLE \"" + escapeString(table.getTableName()) + "\" AS " +
                         "SELECT * FROM read_csv_auto('" + escapeString(s3Path) + "', ignore_errors = true)";
 
                 try {
@@ -185,21 +206,6 @@ public class DuckDBDataSourceProvider {
                     log.error("CSV 表创建失败: {}", table.getTableName(), ex);
                     throw ex;
                 }
-            }
-        }
-    }
-
-    /**
-     * 关闭并移除连接
-     */
-    public void closeConnection(String dataSourceId) {
-        Connection conn = CONNECTION_CACHE.remove(dataSourceId);
-        if (conn != null) {
-            try {
-                conn.close();
-                log.info("DuckDB 连接已关闭: {}", dataSourceId);
-            } catch (SQLException ex) {
-                log.warn("关闭 DuckDB 连接失败", ex);
             }
         }
     }
@@ -216,30 +222,17 @@ public class DuckDBDataSourceProvider {
     }
 
     /**
-     * 获取 DuckDB DataSource
-     * <p>
-     * 创建连接并包装为 DataSource 接口供 JdbcTemplate 使用
-     *
-     * @param dataSourceId
-     *            数据源ID
-     * @return DataSource 接口（内部包装了 DuckDB Connection）
+     * 获取 DuckDB 临时文件路径
      */
-    public DataSource getDataSource(String dataSourceId) {
-        DataSourceConf dataSourceConf = new DataSourceConf();
-        dataSourceConf.setDataSourceId(dataSourceId);
-        Connection conn = createConnection(dataSourceConf);
-        return new DuckDBConnectionDataSource(conn);
+    private String getTempFilePath(String dataSourceId) {
+        return System.getProperty("java.io.tmpdir") + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId + DUCK_DB_TEMP_FILE_SUFFIX;
     }
 
     /**
      * DuckDB 连接包装器，将原生 Connection 适配为 DataSource 接口 用于 JdbcTemplate 操作
      */
-    private static class DuckDBConnectionDataSource implements DataSource {
-        private final Connection connection;
-
-        DuckDBConnectionDataSource(Connection connection) {
-            this.connection = connection;
-        }
+    private record DuckDBConnectionDataSource(Connection connection,
+            String dataSourceId) implements DataSource, AutoCloseable {
 
         @Override
         public Connection getConnection() throws SQLException {
@@ -274,6 +267,16 @@ public class DuckDBDataSourceProvider {
         @Override
         public java.util.logging.Logger getParentLogger() {
             return null;
+        }
+
+        @Override
+        public void close() throws Exception {
+            try {
+                connection.close();
+            } finally {
+                String tempPath = System.getProperty("java.io.tmpdir") + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId + DUCK_DB_TEMP_FILE_SUFFIX;
+                Files.deleteIfExists(Path.of(tempPath));
+            }
         }
 
         @Override

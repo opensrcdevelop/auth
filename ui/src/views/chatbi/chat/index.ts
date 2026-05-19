@@ -1,13 +1,13 @@
-import {computed, defineComponent, onMounted, reactive, ref} from "vue";
+import { computed, defineComponent, onMounted, reactive, ref } from "vue";
 import Chat from "../components/chat/Chat.vue";
 import ChatHistory from "../components/chat/ChatHistory.vue";
-import {getCurrentUser} from "@/api/user";
-import {logoutSubmit} from "@/api/logout";
-import {handleApiError, handleApiSuccess} from "@/util/tool";
-import {Modal, Notification} from "@arco-design/web-vue";
+import { getCurrentUser } from "@/api/user";
+import { logoutSubmit } from "@/api/logout";
+import { handleApiError, handleApiSuccess } from "@/util/tool";
+import { Modal, Notification } from "@arco-design/web-vue";
 import router from "@/router";
-import {AUTH_TOKENS} from "@/util/constants";
-import {useGlobalVariablesStore} from "@/store/globalVariables";
+import { AUTH_TOKENS } from "@/util/constants";
+import { useGlobalVariablesStore } from "@/store/globalVariables";
 
 const globalVariables = useGlobalVariablesStore();
 const chatRef = ref();
@@ -79,8 +79,25 @@ const handleLogout = () => {
 };
 
 const handleSwitchChat = (id: string) => {
-  chatId.value = id;
-  dataSourceDisabled.value = true;
+  if (chatRef.value?.loading) {
+    Modal.warning({
+      title: "切换对话",
+      content: "当前会话尚未完成，切换将中断当前会话，确定要切换吗？",
+      hideCancel: false,
+      okButtonProps: {
+        status: "danger",
+      },
+      onOk: () => {
+        chatId.value = id;
+        dataSourceDisabled.value = true;
+        // 重置聊天内容
+        chatRef.value?.resetChat();
+      },
+    });
+  } else {
+    chatId.value = id;
+    dataSourceDisabled.value = true;
+  }
 };
 
 const handleAddNewChat = () => {

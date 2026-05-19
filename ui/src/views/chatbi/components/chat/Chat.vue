@@ -197,6 +197,13 @@ const init = () => {
 
 defineExpose({
   init,
+  resetChat: () => {
+    messages.length = 0;
+    userInput.value = "";
+    questionId.value = "";
+    abort();
+  },
+  loading,
 });
 
 watch(

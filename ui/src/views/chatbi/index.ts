@@ -1,12 +1,13 @@
 import router from "@/router";
-import {defineComponent, onMounted, ref} from "vue";
+import { defineComponent, onMounted, ref } from "vue";
 import Chat from "./components/chat/Chat.vue";
 import ChatSettings from "./components/settings/ChatSettings.vue";
 import DataSourceManagement from "./components/datasource/DataSourceManagement.vue";
-import {getQueryString} from "@/util/tool";
+import { getQueryString } from "@/util/tool";
 import ChatHistory from "./components/chat/ChatHistory.vue";
 import LLMManagement from "./components/llm/LLMManagement.vue";
 import SampleSqlManagement from "./components/sampleSql/SampleSqlManagement.vue";
+import { Modal } from "@arco-design/web-vue";
 
 const activeTab = ref("chat");
 const chatRef = ref();
@@ -64,15 +65,40 @@ const dataSourceId = ref("");
 const dataSourceDisabled = ref(false);
 
 const handleSwitchChat = (id: string) => {
-  chatId.value = id;
-  // 从会话列表中获取对应会话的数据源ID并设置
-  const chat = chatHistoryRef.value?.chatHistoryList?.find(
-    (item: any) => item.id === id,
-  );
-  if (chat) {
-    dataSourceId.value = chat.dataSourceId;
+  // 如果有正在进行的会话，弹出确认提示
+  if (chatRef.value?.loading) {
+    Modal.warning({
+      title: "切换对话",
+      content: "当前会话尚未完成，切换将中断当前会话，确定要切换吗？",
+      hideCancel: false,
+      okButtonProps: {
+        status: "danger",
+      },
+      onOk: () => {
+        chatId.value = id;
+        // 从会话列表中获取对应会话的数据源ID并设置
+        const chat = chatHistoryRef.value?.chatHistoryList?.find(
+          (item: any) => item.id === id,
+        );
+        if (chat) {
+          dataSourceId.value = chat.dataSourceId;
+        }
+        dataSourceDisabled.value = true;
+        // 重置聊天内容
+        chatRef.value?.resetChat();
+      },
+    });
+  } else {
+    chatId.value = id;
+    // 从会话列表中获取对应会话的数据源ID并设置
+    const chat = chatHistoryRef.value?.chatHistoryList?.find(
+      (item: any) => item.id === id,
+    );
+    if (chat) {
+      dataSourceId.value = chat.dataSourceId;
+    }
+    dataSourceDisabled.value = true;
   }
-  dataSourceDisabled.value = true;
 };
 
 /**

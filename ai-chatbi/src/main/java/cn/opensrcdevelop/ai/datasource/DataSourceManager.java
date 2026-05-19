@@ -108,9 +108,8 @@ public class DataSourceManager {
      */
     public void removeDataSource(String dataSourceId) {
         DATA_SOURCE_CACHE.remove(dataSourceId);
-
-        // 关闭 DuckDB 连接
-        duckDBDataSourceProvider.closeConnection(dataSourceId);
+        // 清理 DuckDB 临时文件
+        duckDBDataSourceProvider.cleanupTempFile(dataSourceId);
     }
 
     /**
