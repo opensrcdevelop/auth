@@ -26,7 +26,7 @@
     "echarts": "^6.0.0",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.3",
+    "jspdf": "^4.2.1",
     "markdown-it": "^14.1.0",
     "md-editor-v3": "^6.0.1",
     "mitt": "^3.0.1",
