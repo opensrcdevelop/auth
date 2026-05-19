@@ -5,6 +5,8 @@ import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.common.exception.ServerException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -225,7 +227,8 @@ public class DuckDBDataSourceProvider {
      * 获取 DuckDB 临时文件路径
      */
     private String getTempFilePath(String dataSourceId) {
-        return System.getProperty("java.io.tmpdir") + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId + DUCK_DB_TEMP_FILE_SUFFIX;
+        return System.getProperty("java.io.tmpdir") + File.separator + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId
+                                                                     + DUCK_DB_TEMP_FILE_SUFFIX;
     }
 
     /**
@@ -274,7 +277,8 @@ public class DuckDBDataSourceProvider {
             try {
                 connection.close();
             } finally {
-                String tempPath = System.getProperty("java.io.tmpdir") + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId + DUCK_DB_TEMP_FILE_SUFFIX;
+                String tempPath = System.getProperty("java.io.tmpdir") + File.separator + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId
+                        + DUCK_DB_TEMP_FILE_SUFFIX;
                 Files.deleteIfExists(Path.of(tempPath));
             }
         }

@@ -209,9 +209,9 @@ const activeChatId = ref("");
 
 /**
  * 切换对话
+ * 注意：仅发送事件，由父组件控制实际切换（父组件可能弹出确认框）
  */
 const handleSwitchChat = (chatHistory: any) => {
-  activeChatId.value = chatHistory.id;
   emits("switchChat", chatHistory.id);
   emits("updateDataSourceId", chatHistory.dataSourceId, true);
 };
@@ -308,8 +308,17 @@ const init = (chatId: string = "") => {
   handleGetChatHistoryList();
 };
 
+/**
+ * 设置当前选中的对话ID
+ * 由父组件在确认切换后调用，避免弹框未确认时提前改变样式
+ */
+const setActiveChatId = (chatId: string) => {
+  activeChatId.value = chatId;
+};
+
 defineExpose({
   init,
+  setActiveChatId,
   activeChatId,
   chatHistoryList,
 });

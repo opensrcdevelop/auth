@@ -92,11 +92,15 @@ const handleSwitchChat = (id: string) => {
         dataSourceDisabled.value = true;
         // 重置聊天内容
         chatRef.value?.resetChat();
+        // 更新 ChatHistory 的选中状态
+        chatHistoryRef.value?.setActiveChatId(id);
       },
     });
   } else {
     chatId.value = id;
     dataSourceDisabled.value = true;
+    // 更新 ChatHistory 的选中状态
+    chatHistoryRef.value?.setActiveChatId(id);
   }
 };
 
