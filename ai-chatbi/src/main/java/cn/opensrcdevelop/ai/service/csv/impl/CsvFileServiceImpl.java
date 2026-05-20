@@ -12,6 +12,10 @@ import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.ai.service.csv.CsvDatasourceStorageService;
 import cn.opensrcdevelop.ai.service.csv.CsvFileService;
+import cn.opensrcdevelop.auth.audit.annotation.Audit;
+import cn.opensrcdevelop.auth.audit.enums.AuditType;
+import cn.opensrcdevelop.auth.audit.enums.ResourceType;
+import cn.opensrcdevelop.auth.audit.enums.SysOperationType;
 import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskSchedulerService;
 import cn.opensrcdevelop.auth.biz.util.AuthUtil;
@@ -71,6 +75,7 @@ public class CsvFileServiceImpl implements CsvFileService {
     }
 
     @Override
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.CREATE, success = "上传了 CSV 文件「{{ #request.key }}」", fail = "上传 CSV 文件「{{ #request.key }}」失败")
     public String completeMultipartUpload(MultipartUploadCompleteRequestDto request) {
         // 1. 转换为存储服务需要的格式
         List<CsvDatasourceStorageServiceImpl.UploadedPart> parts = request.getParts().stream()
@@ -141,6 +146,7 @@ public class CsvFileServiceImpl implements CsvFileService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
+    @Audit(type = AuditType.SYS_OPERATION, resource = ResourceType.CHAT_BI_DATA_SOURCE, sysOperation = SysOperationType.DELETE, success = "删除了 CSV 文件「{{ #dataSourceId }}/{{ #fileName }}」及其关联的表结构", fail = "删除 CSV 文件「{{ #dataSourceId }}/{{ #fileName }}」失败")
     public void deleteCsv(String dataSourceId, String fileName) {
         // 1. 删除 S3 文件
         String s3Path = dataSourceId + CommonConstants.SLASH + fileName + ".csv";
