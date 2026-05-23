@@ -12,6 +12,7 @@ import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.ai.service.csv.CsvDatasourceStorageService;
 import cn.opensrcdevelop.ai.service.csv.CsvFileService;
+import cn.opensrcdevelop.ai.util.DuckDbSqlUtil;
 import cn.opensrcdevelop.auth.audit.annotation.Audit;
 import cn.opensrcdevelop.auth.audit.enums.AuditType;
 import cn.opensrcdevelop.auth.audit.enums.ResourceType;
@@ -152,10 +153,11 @@ public class CsvFileServiceImpl implements CsvFileService {
         String s3Path = dataSourceId + CommonConstants.SLASH + fileName + ".csv";
         csvStorageService.delete(s3Path);
 
-        // 2. 删除关联的表记录
+        // 2. 删除关联的表记录（表名存储时带双引号）
+        String quotedTableName = DuckDbSqlUtil.quoteTableName(fileName);
         Table table = tableService.getOne(Wrappers.<Table>lambdaQuery()
                 .eq(Table::getDataSourceId, dataSourceId)
-                .eq(Table::getTableName, fileName));
+                .eq(Table::getTableName, quotedTableName));
         if (table != null) {
             // 删除 t_table_field 记录
             tableFieldService.remove(Wrappers.<TableField>lambdaQuery()

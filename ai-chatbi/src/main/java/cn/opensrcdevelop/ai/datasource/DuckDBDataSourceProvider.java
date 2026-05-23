@@ -3,9 +3,9 @@ package cn.opensrcdevelop.ai.datasource;
 import cn.opensrcdevelop.ai.entity.DataSourceConf;
 import cn.opensrcdevelop.ai.entity.Table;
 import cn.opensrcdevelop.ai.service.TableService;
+import cn.opensrcdevelop.ai.util.DuckDbSqlUtil;
 import cn.opensrcdevelop.common.exception.ServerException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -190,16 +190,16 @@ public class DuckDBDataSourceProvider {
         try (Statement stmt = conn.createStatement()) {
             for (Table table : tables) {
                 // 路径格式: s3://{bucket}/{dataSourceId}/{tableName}.csv
-                // 与 CsvFileServiceImpl.uploadCsv 中的路径一致
+                String rawTableName = DuckDbSqlUtil.unquoteTableName(table.getTableName());
                 String s3Path = String.format("s3://%s/%s/%s.csv",
                         s3Bucket,
                         dataSourceId,
-                        table.getTableName());
+                        rawTableName);
 
                 // 使用 CREATE OR REPLACE TABLE ... FROM read_csv_auto() 语法
-                // 如果表已存在则替换，避免因临时文件重用导致的表冲突
-                String sql = "CREATE OR REPLACE TABLE \"" + escapeString(table.getTableName()) + "\" AS " +
-                        "SELECT * FROM read_csv_auto('" + escapeString(s3Path) + "', ignore_errors = true)";
+                String sql = "CREATE OR REPLACE TABLE " + table.getTableName() + " AS " +
+                        "SELECT * FROM read_csv_auto('" + DuckDbSqlUtil.escapeString(s3Path)
+                        + "', ignore_errors = true)";
 
                 try {
                     stmt.execute(sql);
@@ -213,22 +213,11 @@ public class DuckDBDataSourceProvider {
     }
 
     /**
-     * 转义 SQL 字符串中的特殊字符
-     */
-    private String escapeString(String input) {
-        if (input == null) {
-            return "";
-        }
-        // 转义单引号和反斜杠
-        return input.replace("\\", "\\\\").replace("'", "\\'");
-    }
-
-    /**
      * 获取 DuckDB 临时文件路径
      */
     private String getTempFilePath(String dataSourceId) {
         return System.getProperty("java.io.tmpdir") + File.separator + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId
-                                                                     + DUCK_DB_TEMP_FILE_SUFFIX;
+                + DUCK_DB_TEMP_FILE_SUFFIX;
     }
 
     /**
@@ -277,7 +266,8 @@ public class DuckDBDataSourceProvider {
             try {
                 connection.close();
             } finally {
-                String tempPath = System.getProperty("java.io.tmpdir") + File.separator + DUCK_DB_TEMP_FILE_PREFIX + dataSourceId
+                String tempPath = System.getProperty("java.io.tmpdir") + File.separator + DUCK_DB_TEMP_FILE_PREFIX
+                        + dataSourceId
                         + DUCK_DB_TEMP_FILE_SUFFIX;
                 Files.deleteIfExists(Path.of(tempPath));
             }

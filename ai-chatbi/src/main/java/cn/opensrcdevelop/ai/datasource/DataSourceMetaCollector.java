@@ -10,6 +10,7 @@ import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.ai.service.csv.CsvDatasourceStorageService;
 import cn.opensrcdevelop.ai.service.csv.CsvParseService;
+import cn.opensrcdevelop.ai.util.DuckDbSqlUtil;
 import cn.opensrcdevelop.common.constants.CommonConstants;
 import cn.opensrcdevelop.common.exception.ServerException;
 import cn.opensrcdevelop.common.util.CommonUtil;
@@ -247,7 +248,7 @@ public class DataSourceMetaCollector {
 
         // 4. 删除 S3 中不再存在的表信息
         List<String> deleteTableIds = existTables.stream()
-                .filter(table -> !csvTableNames.contains(table.getTableName()))
+                .filter(table -> !csvTableNames.contains(DuckDbSqlUtil.unquoteTableName(table.getTableName())))
                 .map(Table::getTableId)
                 .toList();
         if (CollectionUtils.isNotEmpty(deleteTableIds)) {
@@ -258,10 +259,12 @@ public class DataSourceMetaCollector {
         for (String csvFile : csvFiles) {
             // 提取表名
             String tableName = csvFile.substring(csvFile.lastIndexOf('/') + 1).replaceAll("\\.csv$", "");
+            // 双引号转义后存储，与字段保持一致
+            String quotedTableName = DuckDbSqlUtil.quoteTableName(tableName);
 
             // 5.1 检查表是否存在，不存在则创建
             Table tmpTable = tableService.getOne(Wrappers.<Table>lambdaQuery()
-                    .eq(Table::getTableName, tableName)
+                    .eq(Table::getTableName, quotedTableName)
                     .eq(Table::getDataSourceId, dataSourceId));
 
             String tableId;
@@ -270,7 +273,7 @@ public class DataSourceMetaCollector {
                 Table table = new Table();
                 table.setTableId(tableId);
                 table.setDataSourceId(dataSourceId);
-                table.setTableName(tableName);
+                table.setTableName(quotedTableName);
                 table.setToUse(true);
                 tableService.save(table);
             } else {

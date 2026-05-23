@@ -5,6 +5,7 @@ import cn.opensrcdevelop.ai.entity.TableField;
 import cn.opensrcdevelop.ai.service.TableFieldService;
 import cn.opensrcdevelop.ai.service.TableService;
 import cn.opensrcdevelop.ai.service.csv.CsvParseService;
+import cn.opensrcdevelop.ai.util.DuckDbSqlUtil;
 import cn.opensrcdevelop.auth.biz.constants.AsyncTaskTypeEnum;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutor;
 import cn.opensrcdevelop.auth.biz.service.asynctask.AsyncTaskExecutorAnno;
@@ -119,7 +120,8 @@ public class CsvParseAsyncTaskExecutor implements AsyncTaskExecutor {
                 table = new Table();
                 table.setTableId(StringUtils.isNotBlank(tableId) ? tableId : CommonUtil.getUUIDV7String());
                 table.setDataSourceId(dataSourceId);
-                table.setTableName(tableName);
+                // 双引号转义后存储，与字段保持一致
+                table.setTableName(DuckDbSqlUtil.quoteTableName(tableName));
                 table.setToUse(true);
                 tableService.save(table);
             }
