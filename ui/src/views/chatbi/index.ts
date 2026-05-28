@@ -37,9 +37,10 @@ const handleTabChange = (tabKey: string) => {
 const handleTabInit = (tabKey: string) => {
   switch (tabKey) {
     case "chat":
-      chatId.value = "";
-      chatRef.value?.init();
-      chatHistoryRef.value?.init();
+      // 不重置 chatId，保持之前的会话状态
+      chatRef.value?.init(true);
+      // 传入当前 chatId 保持激活状态
+      chatHistoryRef.value?.init(chatId.value);
       break;
     case "chat_settings":
       chatSettingsRef.value?.loadChatConfig();

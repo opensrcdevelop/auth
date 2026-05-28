@@ -15,7 +15,6 @@ import cn.opensrcdevelop.ai.entity.ChatAnswer;
 import cn.opensrcdevelop.ai.enums.ChatContentType;
 import cn.opensrcdevelop.ai.enums.Feedback;
 import cn.opensrcdevelop.ai.service.*;
-import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
 import cn.opensrcdevelop.auth.audit.annotation.Audit;
 import cn.opensrcdevelop.auth.audit.compare.CompareObj;
@@ -32,7 +31,6 @@ import cn.opensrcdevelop.common.util.CommonUtil;
 import cn.opensrcdevelop.common.util.MessageUtil;
 import cn.opensrcdevelop.common.util.RedisUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.zaxxer.hikari.pool.HikariPool;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
@@ -46,7 +44,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -347,6 +344,8 @@ public class ChatBIServiceImpl implements ChatBIService {
             return Tuple.of(null, question);
         }
 
+        SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 100);
+
         String answerId = CommonUtil.getUUIDV7String();
         ChatAnswer chatAnswer = new ChatAnswer();
         chatAnswer.setAnswerId(answerId);
@@ -359,52 +358,7 @@ public class ChatBIServiceImpl implements ChatBIService {
         chatAnswer.setSql(ChatContextHolder.getChatContext().getSql());
         chatAnswer.setInputTokens(ChatContextHolder.getChatContext().getInputTokens().get());
         chatAnswer.setOutputTokens(ChatContextHolder.getChatContext().getOutputTokens().get());
-
-        // 3.1 发送数据查询结果
-        String sql = ChatContextHolder.getChatContext().getSql();
-        if (StringUtils.isNotBlank(sql)) {
-            SseUtil.sendChatBIMd(emitter, "\n> 数据查询：\n\n");
-
-            List<Map<String, Object>> queryData = ChatContextHolder.getChatContext().getQueryData();
-            List<Map<String, Object>> queryColumns = ChatContextHolder.getChatContext().getQueryColumns();
-            Map<String, Object> tableMessage = new HashMap<>();
-            tableMessage.put("sql", SqlFormatter.standard().format(sql));
-            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, queryColumns);
-            tableMessage.putAll(tableConfig);
-            SseUtil.sendChatBITable(emitter, tableMessage);
-        }
-
-        // 3.2 直接回答
         chatAnswer.setAnswer(answerText);
-        SseUtil.sendChatBITextSegmented(emitter, answerText, ChatContentType.MARKDOWN, 30);
-
-        // 3.3 图表
-        Map<String, Object> chartConfig = ChatContextHolder.getChatContext().getChartConfig();
-        if (MapUtils.isNotEmpty(chartConfig)) {
-            chatAnswer.setChartConfig(CommonUtil.serializeObject(chartConfig));
-            var renderResult = ChartRenderer.render(chartConfig, ChatContextHolder.getChatContext().getQueryData());
-            SseUtil.sendChatBIChart(emitter, renderResult._2);
-        }
-
-        // 3.3 报告
-        String reportType = ChatContextHolder.getChatContext().getReportType();
-        String reportText = ChatContextHolder.getChatContext().getReport();
-        if (StringUtils.isNotBlank(reportType) && StringUtils.isNotBlank(reportText)) {
-            chatAnswer.setReportType(reportType);
-            chatAnswer.setReport(reportText);
-
-            SseUtil.sendChatBIMd(emitter, "\n> 已生成分析报告：\n\n");
-
-            if ("markdown".equals(reportType)) {
-                SseUtil.sendChatBIMdReport(emitter, reportText);
-            }
-
-            if ("html".equals(reportType)) {
-                SseUtil.sendChatBIHtmlReport(emitter, reportText);
-            }
-        }
-
-        // 4. 保存回答
         chatAnswerService.save(chatAnswer);
 
         return Tuple.of(answerId, question);

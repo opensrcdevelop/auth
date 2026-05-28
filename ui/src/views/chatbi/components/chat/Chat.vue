@@ -158,10 +158,15 @@ const focusInput = () => {
   });
 };
 
-const init = () => {
+const init = (keepMessages = false) => {
   greetingText.value = greeting();
-  activeChatId.value = "";
-  messages.length = 0;
+  if (keepMessages && props.chatId && messages.length === 0) {
+    // 保持状态且有 chatId 但消息为空，加载历史消息
+    handleGetChatMessageHistory(props.chatId);
+  } else if (!keepMessages) {
+    activeChatId.value = "";
+    messages.length = 0;
+  }
   // 获取已启用的数据源
   getEnabledDataSourceConf()
     .then((result: any) => {
@@ -254,23 +259,28 @@ const handleGetChatMessageHistory = (chatId: string) => {
       data.forEach((item: any) => {
         handleMessage(item);
       });
-      // 历史消息加载完成后，标记有 DONE 的 THINKING 消息为折叠
-      // 使用 replace 方式确保响应式更新
-      const updatedMessages = messages.map((msg) => {
-        if (msg.type === "THINKING") {
-          const hasDone = messages.some(
-            (m) => m.type === "DONE" && m.questionId === msg.questionId,
-          );
-          if (hasDone) {
-            return { ...msg, done: true };
-          }
-        }
-        return msg;
-      });
-      messages.length = 0;
-      messages.push(...updatedMessages);
+      markDoneMessages();
     });
   });
+};
+
+/**
+ * 标记有 DONE 的 THINKING 和 TABLE 消息为折叠
+ */
+const markDoneMessages = () => {
+  const updatedMessages = messages.map((msg) => {
+    if (msg.type === "THINKING" || msg.type === "TABLE") {
+      const hasDone = messages.some(
+        (m) => m.type === "DONE" && m.questionId === msg.questionId,
+      );
+      if (hasDone) {
+        return { ...msg, done: true };
+      }
+    }
+    return msg;
+  });
+  messages.length = 0;
+  messages.push(...updatedMessages);
 };
 
 /**
@@ -424,7 +434,6 @@ const handleAskUserCancel = async () => {
  * 处理消息
  */
 const handleMessage = (message: any) => {
-  scrollToBottom();
   activeChatId.value = message.chatId;
   // 如果当前对话为全新对话，则更新对话历史
   if (activeChatId.value !== props.chatId) {
@@ -434,6 +443,25 @@ const handleMessage = (message: any) => {
   if (message.role === "USER") {
     messages.push(message);
     scrollToBottom();
+    return;
+  }
+
+  // TABLE 消息：新的 TABLE 出现时，之前的 TABLE 折叠
+  if (message.type === "TABLE") {
+    // 将之前的同 questionId TABLE 折叠
+    messages.forEach((item) => {
+      if (item.type === "TABLE" && item.questionId === message.questionId) {
+        item.done = true;
+      }
+    });
+
+    messages.push({
+      role: "assistant",
+      type: message.type,
+      content: message.content,
+      questionId: message.questionId,
+      chatId: message.chatId,
+    });
     return;
   }
 
@@ -447,14 +475,17 @@ const handleMessage = (message: any) => {
       loadingItem.loading = false;
       loadingItem.content = "回答完成";
     }
-    // 标记对应的 THINKING 消息，自动折叠
-    const thinkingItem = messages.find(
-      (item) =>
-        item.questionId === message.questionId && item.type === "THINKING",
-    );
-    if (thinkingItem) {
-      thinkingItem.done = true;
-    }
+
+    // 标记对应的 THINKING 和 TABLE 消息，自动折叠
+    messages.forEach((item) => {
+      if (
+        item.questionId === message.questionId &&
+        (item.type === "THINKING" || item.type === "TABLE")
+      ) {
+        item.done = true;
+      }
+    });
+
     messages.push({
       role: "assistant",
       type: message.type,
@@ -490,8 +521,6 @@ const handleMessage = (message: any) => {
   // 处理向用户提问
   if (message.type === "ASK_USER") {
     askUserQuestions.value = message.content || [];
-
-    console.log("askUserQuestions", askUserQuestions.value);
     askUserVisible.value = true;
     return;
   }
@@ -522,20 +551,25 @@ const handleMessage = (message: any) => {
   ) {
     const last = messages[messages.length - 1];
 
-    // 类型相同，合并内容
-    if (last.type === message.type) {
-      if (
-        ["MARKDOWN", "TEXT", "HTML_REPORT", "THINKING"].includes(
-          message.type,
-        ) &&
-        message.content
-      ) {
-        last.content += message.content;
-      } else if (["ECHARTS", "TABLE"].includes(message.type)) {
-        last.content = message.content;
+    // THINKING/TEXT/MARKDOWN 需要找到最后一个同类型同 questionId 合并
+    if (["THINKING", "TEXT", "MARKDOWN"].includes(message.type)) {
+      let lastMatchIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].type === message.type && messages[i].questionId === message.questionId) {
+          lastMatchIndex = i;
+          break;
+        }
       }
-    } else {
-      // 类型不同追加新消息
+
+      if (lastMatchIndex !== -1) {
+        messages[lastMatchIndex].content += message.content;
+        if (["TEXT", "MARKDOWN"].includes(message.type)) {
+          scrollToBottom();
+        }
+        return;
+      }
+
+      // 没有找到匹配的，直接追加
       messages.push({
         role: "assistant",
         type: message.type,
@@ -543,6 +577,19 @@ const handleMessage = (message: any) => {
         questionId: message.questionId,
         chatId: message.chatId,
       });
+
+      if (["TEXT", "MARKDOWN"].includes(message.type)) {
+        scrollToBottom();
+      }
+    } else {
+      messages.push({
+        role: "assistant",
+        type: message.type,
+        content: message.content,
+        questionId: message.questionId,
+        chatId: message.chatId,
+      });
+      scrollToBottom();
     }
   } else {
     messages.push({

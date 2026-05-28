@@ -6,13 +6,12 @@ import cn.opensrcdevelop.ai.chat.ChatContextHolder;
 import cn.opensrcdevelop.ai.chat.tool.MethodTool;
 import cn.opensrcdevelop.ai.component.QueryResultTempFileManager;
 import cn.opensrcdevelop.ai.datasource.DataSourceManager;
+import cn.opensrcdevelop.ai.util.ChartRenderer;
 import cn.opensrcdevelop.ai.util.SseUtil;
+import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import io.vavr.Tuple;
 import io.vavr.Tuple4;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -127,9 +126,10 @@ public class GenerateExecuteSqlTool implements MethodTool {
         if (!Boolean.TRUE.equals(execSuccess)) {
             response.setError("Failed to execute SQL: %s, error message: %s".formatted(result._3, result._4()));
         } else {
+            String sql = result._3;
             List<Map<String, Object>> queryData = result._2;
             chatContext.setQueryData(queryData);
-            chatContext.setSql(result._3);
+            chatContext.setSql(sql);
 
             // 检查数据条数是否超过阈值，超过则写入临时文件
             String tempFilePath = queryResultTempFileManager.writeQueryDataToTempFile(queryData,
@@ -145,6 +145,14 @@ public class GenerateExecuteSqlTool implements MethodTool {
                 // 未超过阈值，直接返回数据
                 response.setQueryData(queryData);
             }
+
+            // 发送数据查询消息
+            Map<String, Object> tableMessage = new HashMap<>();
+            tableMessage.put("sql", SqlFormatter.standard().format(sql));
+            tableMessage.put("query", queryInstruction);
+            var tableConfig = ChartRenderer.buildArcoTableConfig(queryData, chatContext.getQueryColumns());
+            tableMessage.putAll(tableConfig);
+            SseUtil.sendChatBITable(emitter, tableMessage);
         }
 
         response.setSuccess(execSuccess);

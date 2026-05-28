@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="message.type === 'THINKING'"
-    class="message-thinking-wrapper"
-  >
+  <div v-if="message.type === 'THINKING'" class="message-thinking-wrapper">
     <div class="thinking-header" @click="toggleCollapse">
       <icon-caret-down
         class="collapse-icon"
@@ -21,7 +18,7 @@
 
 <script setup lang="ts">
 import { useMarkdown } from "@/hooks/useMarkdown";
-import {computed, nextTick, ref, watch} from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const { renderMarkdown } = useMarkdown();
 
@@ -31,7 +28,7 @@ const props = withDefaults(
   }>(),
   {
     message: {},
-  }
+  },
 );
 
 const formattedContent = computed(() => {
@@ -53,7 +50,7 @@ watch(
       thinkingContainer.value.scrollTop = thinkingContainer.value.scrollHeight;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // 监听 DONE 消息出现，自动折叠
@@ -64,7 +61,7 @@ watch(
       isCollapsed.value = true;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 
@@ -75,7 +72,7 @@ watch(
   border-left: 2px solid #dfe2e5;
   margin: 12px 0;
   padding-left: 12px;
-  background-color: #f6f8fa;
+  background-color: #fff;
   border-radius: 0 4px 4px 0;
 }
 

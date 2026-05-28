@@ -1,66 +1,75 @@
 <template>
   <div v-if="message.type === 'TABLE'" class="table-container">
-    <div class="view-switch">
-      <a-radio-group v-model="activeView" type="button" size="small">
-        <a-radio value="table">表格视图</a-radio>
-        <a-radio value="sql">SQL 视图</a-radio>
-      </a-radio-group>
-      <div class="view-actions">
-        <a-button
-          v-if="
-            activeView === 'table' &&
-            message.content.data &&
-            message.content.data.length > 0
-          "
-          type="text"
-          size="mini"
-          @click="handleDownloadCsv"
-        >
-          <template #icon>
-            <icon-download />
-          </template>
-          下载 CSV
-        </a-button>
-        <a-button
-          v-if="activeView === 'sql'"
-          type="text"
-          size="mini"
-          @click="handleCopySql"
-        >
-          <template #icon>
-            <icon-copy />
-          </template>
-          复制 SQL
-        </a-button>
+    <div class="table-header" @click="toggleCollapse">
+      <icon-caret-down
+        class="collapse-icon"
+        :class="{ collapsed: isCollapsed }"
+      />
+      <span class="table-label">数据查询：{{ queryTitle }}</span>
+    </div>
+    <div v-show="!isCollapsed">
+      <div class="view-switch">
+        <a-radio-group v-model="activeView" type="button" size="small">
+          <a-radio value="table">表格视图</a-radio>
+          <a-radio value="sql">SQL 视图</a-radio>
+        </a-radio-group>
+        <div class="view-actions">
+          <a-button
+            v-if="
+              activeView === 'table' &&
+              message.content.data &&
+              message.content.data.length > 0
+            "
+            type="text"
+            size="mini"
+            @click="handleDownloadCsv"
+          >
+            <template #icon>
+              <icon-download />
+            </template>
+            下载 CSV
+          </a-button>
+          <a-button
+            v-if="activeView === 'sql'"
+            type="text"
+            size="mini"
+            @click="handleCopySql"
+          >
+            <template #icon>
+              <icon-copy />
+            </template>
+            复制 SQL
+          </a-button>
+        </div>
       </div>
-    </div>
-    <div v-if="activeView === 'table'" class="view-container">
-      <a-table
-        column-resizable
-        stripe
-        :columns="message.content.columns"
-        :data="message.content.data"
-        :pagination="{
-          showTotal: true,
-          showJumper: true,
-          pageSize: 5,
-        }"
-      />
-    </div>
-    <div v-if="activeView === 'sql'" class="view-container">
-      <monaco-editor
-        v-model="message.content.sql"
-        language="sql"
-        :editorOption="editorOptions"
-      />
+      <div v-if="activeView === 'table'" class="view-container">
+        <a-table
+          column-resizable
+          stripe
+          :columns="message.content.columns"
+          :data="message.content.data"
+          :pagination="{
+            showTotal: true,
+            showJumper: true,
+            pageSize: 5,
+          }"
+        />
+      </div>
+      <div v-if="activeView === 'sql'" class="view-container">
+        <monaco-editor
+          v-model="message.content.sql"
+          language="sql"
+          :editorOption="editorOptions"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
-import {Message} from "@arco-design/web-vue";
-import {copyToClipboard} from "@/util/tool";
+import { computed, ref, watch } from "vue";
+import { Message } from "@arco-design/web-vue";
+import { copyToClipboard } from "@/util/tool";
 
 const props = withDefaults(
   defineProps<{
@@ -72,6 +81,29 @@ const props = withDefaults(
 );
 
 const activeView = ref("table");
+const isCollapsed = ref(false);
+
+const queryTitle = computed(() => {
+  if (props.message.content?.query) {
+    return props.message.content.query;
+  }
+  return "-";
+});
+
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
+
+// 监听 DONE 消息出现，自动折叠
+watch(
+  () => props.message.done,
+  (done) => {
+    if (done) {
+      isCollapsed.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 const editorOptions = {
   readOnly: true,
@@ -135,18 +167,44 @@ const handleDownloadCsv = () => {
 <style scoped lang="scss">
 .table-container {
   background-color: #fff;
-  padding: 16px;
-  margin-top: 4px;
-  margin-bottom: 16px;
-  border-radius: 4px;
-  height: 370px;
+  padding: 0px 12px;
+  border-radius: 0 4px 4px 0;
   overflow: auto;
+  border-left: 2px solid #dfe2e5;
+  font-size: 12px;
+  margin-bottom: 12px;
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+    cursor: pointer;
+    user-select: none;
+    color: #6a737d;
+
+    .collapse-icon {
+      flex-shrink: 0;
+      transition: transform 0.2s;
+      transform: rotate(0deg);
+
+      &.collapsed {
+        transform: rotate(-90deg);
+      }
+    }
+
+    .table-label {
+      font-weight: 500;
+      color: #6a737d;
+      word-break: break-word;
+    }
+  }
 
   .view-switch {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .view-actions {
@@ -155,7 +213,7 @@ const handleDownloadCsv = () => {
   }
 
   .view-container {
-    height: 280px;
+    height: 300px;
   }
 }
 </style>
